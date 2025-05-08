@@ -1,0 +1,32 @@
+5/7/2025
+Abstract : write a programming language. 
+Goal : learn how programming languages work under the hood, the programming language we create doesn't have to be very useful or good, it can be a clone of C. I just want to know how to make one.
+
+Restrictions :
+ - no writing an interpreted language. More specifically, we must write our own compiler, and in the end produce executable machine code
+
+Overview : Once we've decided on our grammar, the rest of the work will be in writing the compiler. The process of turning some text written in our language into executable machine code can be divided into 5 main parts
+ - Lexical Analysis
+   - Recognizing keywords, operators, constants, etc.
+ - Parsing
+   - Understanding the stream of tokens, putting them into some sort of structure (like a parse tree)
+ - Semantic Analysis
+   - Understanding the meaning of the parse tree. This is so that we can check for type consistency and other stuff like that.
+ - Optimization
+   - Implementing transparent optimizations to the code. For this project, this phase can be ignored. 
+ - Machine Code Generation
+   - Generating bytecode from our chosen instruction set. 
+
+Short Term Tasks :
+ - figure out how to rigorously define a grammar. 
+ - decide on the 'theme' for the language. Is it going to be a clone of C, or a performance improvement to Python? 
+   - Maybe we do Java, but add operator overloading
+ - pick a target OS and instruction set for the language (can one OS run on different processors with different instruction sets? Perhaps should revisit this later with more knowledge)
+ - define a grammar for the language.  
+ - (Important!!) decide on a name for the language
+   - If we do the Java improvement, maybe Jank is a good name? (holy moly dylan janky??)
+
+5/8/2025
+Ok, we're going to make a C clone targeted towards x86 Linux. I'm thinking that I just use EBNF to define my grammar. 
+
+Hmm, seems like writing an EBNF parser is a project in of itself. I'll have to create a parser generator for EBNF, and then use the output to parse my stuff.
