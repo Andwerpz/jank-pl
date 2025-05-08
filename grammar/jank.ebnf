@@ -1,0 +1,46 @@
+
+(* I loooove dylan janky *)
+
+alpha   = "A" | "B" | "C" | "D" | "E" | "F" | "G"
+        | "H" | "I" | "J" | "K" | "L" | "M" | "N"
+        | "O" | "P" | "Q" | "R" | "S" | "T" | "U"
+        | "V" | "W" | "X" | "Y" | "Z" | "a" | "b"
+        | "c" | "d" | "e" | "f" | "g" | "h" | "i"
+        | "j" | "k" | "l" | "m" | "n" | "o" | "p"
+        | "q" | "r" | "s" | "t" | "u" | "v" | "w"
+        | "x" | "y" | "z" ;
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+number = digit, { digit } ;
+
+(* 
+structures should define whitespace within themselves. 
+Whitespace outside will be defined by an enclosing structure 
+the only exception is 'program', which needs to define whitespace outside of itself as it doesn't have any enclosing structure
+*)
+ws = " " | "\t" | "\n" | "\r" ;             (* whitespace *)
+rws = ws , { ws } ;                         (* required whitespace *)
+ows = { ws } ;                              (* optional whitespace *)
+
+identifier = alpha , { alpha | digit | "_" } ;
+type_identifier = "int" | "float" | "void" ;
+
+(* TODO *)
+expression = identifier | number ;
+
+(* int a = b *)
+declaration = type_identifier , rws , identifier , rws , "=" , rws , expression ;
+
+(* int foo *)
+parameter = type_identifier , rws , identifier ;
+parameter_list = [ parameter , { ows , "," , ows , parameter } ] ;
+
+statement = declaration , ows , ";" ;
+compound_statement = "{" , ows , { statement | compound_statement } , ows , "}" ;
+
+(* void main *)
+function_definition = type_identifier , rws , identifier ;
+(* void main(int foo) { } *)
+function = function_definition , ows , "(" , ows , parameter_list , ows , ")" , ows , compound_statement ;
+
+program = { ows , function , ows } ;
+
