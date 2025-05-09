@@ -17,9 +17,9 @@ structures should define whitespace within themselves.
 Whitespace outside will be defined by an enclosing structure 
 the only exception is 'program', which needs to define whitespace outside of itself as it doesn't have any enclosing structure
 *)
-ws = " " | "\t" | "\n" | "\r" ;             (* whitespace *)
-rws = ws , { ws } ;                         (* required whitespace *)
-ows = { ws } ;                              (* optional whitespace *)
+ws = " " | "\n" | "\t" | "\r" | "\f" | "\b" ;   (* whitespace *)
+rws = ws , { ws } ;                             (* required whitespace *)
+ows = { ws } ;                                  (* optional whitespace *)
 
 identifier = alpha , { alpha | digit | "_" } ;
 type_identifier = "int" | "float" | "void" ;
@@ -42,5 +42,5 @@ function_definition = type_identifier , rws , identifier ;
 (* void main(int foo) { } *)
 function = function_definition , ows , "(" , ows , parameter_list , ows , ")" , ows , compound_statement ;
 
-program = { ows , function , ows } ;
+program = { ows , function } , ows ;
 

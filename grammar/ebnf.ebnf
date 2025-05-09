@@ -1,0 +1,41 @@
+(*
+EBNF definition of the EBNF Im going to use
+*)
+
+letter = "A" | "B" | "C" | "D" | "E" | "F" | "G"
+       | "H" | "I" | "J" | "K" | "L" | "M" | "N"
+       | "O" | "P" | "Q" | "R" | "S" | "T" | "U"
+       | "V" | "W" | "X" | "Y" | "Z" | "a" | "b"
+       | "c" | "d" | "e" | "f" | "g" | "h" | "i"
+       | "j" | "k" | "l" | "m" | "n" | "o" | "p"
+       | "q" | "r" | "s" | "t" | "u" | "v" | "w"
+       | "x" | "y" | "z" | "_" ;
+digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+symbol = "[" | "]" | "{" | "}" | "(" | ")" | "<" | ">"
+       | "'" | "=" | "|" | "." | "," | ";" | "-" | "+" 
+       | "*" | "?" | ":" ;
+escape = "\\" , ( "n" | "t" | "r" | "f" | "b" | "\"" | "\\" ) ;
+
+identifier = letter, { letter } ;
+
+comment_char = letter | digit | ws | "\\" ;
+comment = "(*" , { comment_char } , "*)" ;
+ws = " " | "\n" | "\t" | "\r" | "\f" | "\b" | comment ;   (* treat comments as whitespace *)
+rws = ws , { ws } ;                                       (* required whitespace *)
+ows = { ws } ;                                            (* optional whitespace *)
+
+terminal_char = letter | digit | symbol | escape ;
+terminal = "\"" , terminal_char , { terminal_char } , "\"" ;
+
+term = "(" , rws , alternation , rws , ")"      (* grouping *)
+     | "[" , rws , alternation , rws , "]"      (* zero or one *)
+     | "{" , rws , alternation , rws , "}"      (* zero or more *)
+     | terminal
+     | identifier ;                     
+
+concatenation = term , { rws , "," , rws , term } ;
+alternation = concatenation , { rws , "|" , rws , concatenation } ;
+
+rule = identifier , rws , "=" , rws , alternation , rws , ";" ;
+
+grammar = { ows , rule } , ows ;
