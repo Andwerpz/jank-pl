@@ -44,7 +44,7 @@ ASM syntax will be in [AT&T](https://en.wikipedia.org/wiki/X86_assembly_language
 
 Assembler will convert ASM to [ELF](https://en.wikipedia.org/wiki/Executable_and_Linkable_Format)
 
-`gcc -nostartfiles -no-pie -o bello.o bello.s`
+`gcc -nostartfiles -no-pie -o bello.out bello.s`
 
 ### 5/9/2025
 Seems like making a greedy EBNF parser is the easiest way to go. This means that my grammar will be restricted to being unambiguous, but that is perfectly fine. 
