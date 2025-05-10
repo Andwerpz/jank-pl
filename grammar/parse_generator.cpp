@@ -25,70 +25,105 @@ struct alternation;
 struct rule;
 struct grammar;
 
-struct grammar {
-    vector<rule*> rs;
-    grammar(vector<rule*> _rs) {
-        rs = _rs;
+struct letter {
+    char c;
+    letter(char _c) {
+        c = _c;
     }
 };
 
-struct rule {
-    identifier *i;
-    alternation *a;
-    rule(identifier *_i, alternation *_a) {
-        i = _i;
-        a = _a;
+struct digit {
+    char c;
+    digit(char _c) {
+        c = _c;
     }
 };
 
-struct alternation {
-    vector<concatenation*> cs;
-    alternation(vector<concatenation*> _cs) {
-        cs = _cs;
+struct symbol {
+    char c;
+    symbol(char _c) {
+        c = _c;
     }
 };
 
-struct concatenation {
-    vector<term*> ts;
-    concatenation(vector<term*> _ts) {
-        ts = _ts;
+struct escape {
+    char c;
+    escape(char _c) {
+        c = _c;
     }
 };
 
-struct term {
-    bool is_grouping = false;
-    bool is_zo = false;
-    bool is_zm = false;
-    bool is_terminal = false;
-    bool is_identifier = false;
-
-    alternation *a;
-    terminal *t;
-    identifier *i;
-
-    term(string type, alternation *_a) {
-        if(type == "()") is_grouping = true;
-        else if(type == "[]") is_zo = true;
-        else if(type == "{}") is_zm = true;
-        else assert(false);
-        a = _a;
-    }
-
-    term(terminal *_t){
-        is_terminal = true;
-        t = _t;
-    }
-
-    term(identifier *_i) {
-        is_identifier = true;
-        i = _i;
+struct identifier {
+    vector<letter*> ls;
+    identifier(vector<letter*> _ls){
+        ls = _ls;
     }
 };
 
-struct terminal {
-    vector<terminal_char*> cs;
-    terminal(vector<terminal_char*> _cs) {
-        cs = _cs;
+struct comment_char {
+    bool is_letter = false;
+    letter *l;
+    comment_char(letter *_l) {
+        is_letter = true;
+        l = _l;
+    }
+
+    bool is_digit = false;
+    digit *d;
+    comment_char(digit *_d) {
+        is_digit = true;
+        d = _d;
+    }
+
+    bool is_wspace = false;
+    wspace *w;
+    comment_char(wspace *_w) {
+        is_wspace = true;
+        w = _w;
+    }
+
+    bool is_literal = false;
+    char c;
+    comment_char(char _c) {
+        is_literal = true;
+        c = _c;
+    }
+};
+
+struct comment {
+    vector<comment_char*> s;
+    comment(vector<comment_char*> _s) {
+        s = _s;
+    }
+};
+
+struct wspace {
+    bool is_comment = false;
+    comment *com;
+    wspace(comment* _com) {
+        is_comment = true;
+        com = _com;
+    }
+
+    bool is_literal = false;
+    char c;
+    wspace(char _c) {
+        is_literal = true;
+        c = _c;
+    }
+};
+
+struct rwspace {
+    vector<wspace*> ss;
+    rwspace(vector<wspace*> _ss) {
+        ss = _ss;
+    }
+};
+
+struct owspace {
+    vector<wspace*> ss;
+    owspace(vector<wspace*> _ss) {
+        ss = _ss;
     }
 };
 
@@ -129,105 +164,70 @@ struct terminal_char {
     }
 };
 
-struct owspace {
-    vector<wspace*> ss;
-    owspace(vector<wspace*> _ss) {
-        ss = _ss;
+struct terminal {
+    vector<terminal_char*> cs;
+    terminal(vector<terminal_char*> _cs) {
+        cs = _cs;
     }
 };
 
-struct rwspace {
-    vector<wspace*> ss;
-    rwspace(vector<wspace*> _ss) {
-        ss = _ss;
+struct term {
+    bool is_grouping = false;
+    bool is_zo = false;
+    bool is_zm = false;
+    bool is_terminal = false;
+    bool is_identifier = false;
+
+    alternation *a;
+    terminal *t;
+    identifier *i;
+
+    term(string type, alternation *_a) {
+        if(type == "()") is_grouping = true;
+        else if(type == "[]") is_zo = true;
+        else if(type == "{}") is_zm = true;
+        else assert(false);
+        a = _a;
+    }
+
+    term(terminal *_t){
+        is_terminal = true;
+        t = _t;
+    }
+
+    term(identifier *_i) {
+        is_identifier = true;
+        i = _i;
     }
 };
 
-struct wspace {
-    bool is_comment = false;
-    comment *com;
-    wspace(comment* _com) {
-        is_comment = true;
-        com = _com;
-    }
-
-    bool is_literal = false;
-    char c;
-    wspace(char _c) {
-        is_literal = true;
-        c = _c;
+struct concatenation {
+    vector<term*> ts;
+    concatenation(vector<term*> _ts) {
+        ts = _ts;
     }
 };
 
-struct comment {
-    vector<comment_char*> s;
-    comment(vector<comment_char*> _s) {
-        s = _s;
+struct alternation {
+    vector<concatenation*> cs;
+    alternation(vector<concatenation*> _cs) {
+        cs = _cs;
     }
 };
 
-struct comment_char {
-    bool is_letter = false;
-    letter *l;
-    comment_char(letter *_l) {
-        is_letter = true;
-        l = _l;
-    }
-
-    bool is_digit = false;
-    digit *d;
-    comment_char(digit *_d) {
-        is_digit = true;
-        d = _d;
-    }
-
-    bool is_wspace = false;
-    wspace *w;
-    comment_char(wspace *_w) {
-        is_wspace = true;
-        w = _w;
-    }
-
-    bool is_literal = false;
-    char c;
-    comment_char(char _c) {
-        is_literal = true;
-        c = _c;
+struct rule {
+    identifier *i;
+    alternation *a;
+    rule(identifier *_i, alternation *_a) {
+        i = _i;
+        a = _a;
     }
 };
 
-struct identifier {
-    vector<letter*> ls;
-    identifier(vector<letter*> _ls){
-        ls = _ls;
-    }
-};
-
-struct escape {
-    char c;
-    escape(char _c) {
-        c = _c;
-    }
-};
-
-struct symbol {
-    char c;
-    symbol(char _c) {
-        c = _c;
-    }
-};
-
-struct digit {
-    char c;
-    digit(char _c) {
-        c = _c;
-    }
-};
-
-struct letter {
-    char c;
-    letter(char _c) {
-        c = _c;
+struct grammar {
+    vector<rule*> rs;
+    grammar(vector<rule*> _rs) {
+        rs = _rs;
     }
 };
 
@@ -741,7 +741,6 @@ grammar* parse_grammar() {
 }
 
 // -- PRINT FUNCTIONS --
-// TODO
 void print_letter(letter *l);
 void print_digit(digit *d);
 void print_symbol(symbol *s);
@@ -759,6 +758,126 @@ void print_concatenation(concatenation *c);
 void print_alternation(alternation *a);
 void print_rule(rule *r);
 void print_grammar(grammar *g);
+
+void print_letter(letter *l) {
+    cout << l->c;
+}
+
+void print_digit(digit *d) {
+    cout << d->c;
+}
+
+void print_symbol(symbol *s) {
+    cout << s->c;
+}
+
+void print_escape(escape *e) {
+    cout << "\\" << e->c;
+}
+
+void print_identifier(identifier *i) {
+    for(int j = 0; j < i->ls.size(); j++) {
+        print_letter(i->ls[j]);
+    }
+}
+
+void print_comment_char(comment_char* c) {
+    if(c->is_letter) print_letter(c->l);
+    else if(c->is_digit) print_digit(c->d);
+    else if(c->is_wspace) print_wspace(c->w);
+    else if(c->is_literal) cout << c->c;
+    else assert(false);
+}
+
+void print_comment(comment *c) {
+    for(int i = 0; i < c->s.size(); i++){
+        print_comment_char(c->s[i]);
+    }
+}
+
+void print_wspace(wspace *w) {
+    cout << w->c;
+}
+
+void print_rwspace(rwspace *w){
+    for(int i = 0; i < w->ss.size(); i++){
+        print_wspace(w->ss[i]);
+    }
+}
+
+void print_owspace(owspace *w){
+    for(int i = 0; i < w->ss.size(); i++){
+        print_wspace(w->ss[i]);
+    }
+}
+
+void print_terminal_char(terminal_char *c) {
+    if(c->is_letter) print_letter(c->l);
+    else if(c->is_digit) print_digit(c->d);
+    else if(c->is_symbol) print_symbol(c->s);
+    else if(c->is_escape) print_escape(c->e);
+    else if(c->is_literal) cout << c->c;
+    else assert(false);
+}
+
+void print_terminal(terminal *t) {
+    cout << "\"";
+    for(int i = 0; i < t->cs.size(); i++){
+        print_terminal_char(t->cs[i]);
+    }
+    cout << "\"";
+}
+
+void print_term(term *t) {
+    if(t->is_grouping) {
+        cout << "( ";
+        print_alternation(t->a);
+        cout << " )";
+    }
+    else if(t->is_zo) {
+        cout << "[ ";
+        print_alternation(t->a);
+        cout << " ]";
+    }
+    else if(t->is_zm) {
+        cout << "{ "; 
+        print_alternation(t->a);
+        cout << " }";
+    }
+    else if(t->is_terminal) print_terminal(t->t);
+    else if(t->is_identifier) print_identifier(t->i);
+    else assert(false);
+}
+
+void print_concatenation(concatenation *c){
+    print_term(c->ts[0]);
+    for(int i = 1; i < c->ts.size(); i++){
+        cout << " , ";
+        print_term(c->ts[i]);
+    }
+}
+
+void print_alternation(alternation *a) {
+    print_concatenation(a->cs[0]);
+    for(int i = 1; i < a->cs.size(); i++){
+        cout << " | ";
+        print_concatenation(a->cs[i]);
+    }
+}
+
+void print_rule(rule *r){
+    print_identifier(r->i);
+    cout << " = ";
+    print_alternation(r->a);
+    cout << " ;";
+}
+
+void print_grammar(grammar *g) {
+    for(int i = 0; i < g->rs.size(); i++){
+        print_rule(g->rs[i]);
+        cout << "\n";
+    }
+}
 
 // -- MAIN --
 
@@ -795,6 +914,7 @@ signed main() {
     }
     else {
         cout << "SUCCESS : " << g->rs.size() << "\n";
+        print_grammar(g);
         // for(int i = 0; i < g->rs.size(); i++){
         //     cout << "RULE : " << g->rs[i]
         // }

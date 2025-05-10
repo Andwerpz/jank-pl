@@ -30,3 +30,6 @@ Short Term Tasks :
 Ok, we're going to make a C clone targeted towards x86 Linux. I'm thinking that I just use EBNF to define my grammar. 
 
 Hmm, seems like writing an EBNF parser is a project in of itself. I'll have to create a parser generator for EBNF, and then use the output to parse my stuff.
+
+5/9/2025
+Seems like making a greedy EBNF parser is the easiest way to go. This means that my grammar will be restricted to being unambiguous, but that is perfectly fine. 
