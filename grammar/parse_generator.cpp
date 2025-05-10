@@ -120,6 +120,13 @@ struct terminal_char {
         is_escape = true;
         e = _e;
     }
+
+    bool is_literal = false;
+    char c;
+    terminal_char(char _c) {
+        is_literal = true;
+        c = _c;
+    }
 };
 
 struct owspace {
@@ -268,6 +275,7 @@ string next_chars(int n) {
 }
 
 // -- PARSE FUNCTIONS --
+bool parse_debug = false;
 letter* parse_letter();
 digit* parse_digit();
 symbol* parse_symbol();
@@ -316,7 +324,10 @@ symbol* parse_symbol() {
     is_valid |= c == '(' || c == ')' || c == '<' || c == '>';
     is_valid |= c == '\'' || c == '=' || c == '|' || c == '.';
     is_valid |= c == ',' || c == ';' || c == '-' || c == '+';
-    is_valid |= c == '*' || c == '?' || c == ':';
+    is_valid |= c == '*' || c == '?' || c == ':' || c == '!';
+    is_valid |= c == '@' || c == '#' || c == '$' || c == '%';
+    is_valid |= c == '^' || c == '&' || c == '/' || c == '~';
+    is_valid |= c == '`';
     if(is_valid) {
         rm_stack();
         return new symbol(c);
@@ -364,7 +375,16 @@ comment_char* parse_comment_char() {
     {   //literal
         push_stack();
         char c = next_char();
-        if(c == '\\') {
+        bool is_valid = false;
+        is_valid |= c == '[' || c == ']' || c == '{' || c == '}';
+        is_valid |= c == '(' || c == ')' || c == '<' || c == '>';
+        is_valid |= c == '\'' || c == '=' || c == '|' || c == '.';
+        is_valid |= c == ',' || c == ';' || c == '-' || c == '+';
+        is_valid |= c == '?' || c == ':' || c == '!';
+        is_valid |= c == '@' || c == '#' || c == '$' || c == '%';
+        is_valid |= c == '^' || c == '&' || c == '/';
+        is_valid |= c == '~' || c == '`' || c == '\\' || c == '\"';
+        if(is_valid) {
             rm_stack();
             return new comment_char(c);
         }
@@ -440,6 +460,15 @@ terminal_char* parse_terminal_char() {
     if(auto d = parse_digit()) return new terminal_char(d);
     if(auto s = parse_symbol()) return new terminal_char(s);
     if(auto e = parse_escape()) return new terminal_char(e);
+    {   //literal
+        push_stack();
+        char c = next_char();
+        if(c == ' ') {
+            rm_stack();
+            return new terminal_char(c);
+        }
+        pop_stack();
+    }
     return nullptr;
 }
 
@@ -638,6 +667,9 @@ alternation* parse_alternation() {
 }
 
 rule* parse_rule() {
+    if(parse_debug) {
+        cout << "PARSE RULE : " << ptr << endl;
+    }
     push_stack();
     rwspace *ws;
     identifier *i = parse_identifier();
@@ -678,6 +710,9 @@ rule* parse_rule() {
 }
 
 grammar* parse_grammar() {
+    if(parse_debug) {
+        cout << "PARSE GRAMMAR : " << ptr << endl;
+    }
     push_stack();
     owspace *ws;
     vector<rule*> rs;
@@ -701,16 +736,69 @@ grammar* parse_grammar() {
         pop_stack();
         return nullptr;
     }
+    rm_stack();
     return new grammar(rs);
+}
+
+// -- PRINT FUNCTIONS --
+// TODO
+void print_letter(letter *l);
+void print_digit(digit *d);
+void print_symbol(symbol *s);
+void print_escape(escape *e);
+void print_identifier(identifier *i);
+void print_comment_char(comment_char *c);
+void print_comment(comment *c);
+void print_wspace(wspace *w);
+void print_rwspace(rwspace *w);
+void print_owspace(owspace *o);
+void print_terminal_char(terminal_char *c);
+void print_terminal(terminal *t);
+void print_term(term *t);
+void print_concatenation(concatenation *c);
+void print_alternation(alternation *a);
+void print_rule(rule *r);
+void print_grammar(grammar *g);
+
+// -- MAIN --
+
+string read_file(const string& filename) {
+    ifstream file(filename); 
+    if (!file) {
+        throw runtime_error("Failed to open file: " + filename);
+    }
+    ostringstream buffer;
+    buffer << file.rdbuf(); 
+    return buffer.str();     
 }
 
 signed main() {
     ios_base::sync_with_stdio(false);
     cin.tie(NULL); cout.tie(NULL);
     
+    
     // read it in
+    string filename;
+    cin >> filename;
+    s = read_file(filename);
+    cout << "S : \n" << s << endl;
 
     // build parse tree  
+    ptr = 0;
+    grammar *g = parse_grammar();
+    if(ptr_stack.size() != 0){
+        cout << "PTR STACK SIZE : " << ptr_stack.size() << "\n";
+    }
+    assert(ptr_stack.size() == 0);
+    if(g == nullptr) {
+        cout << "FAILED\n";
+    }
+    else {
+        cout << "SUCCESS : " << g->rs.size() << "\n";
+        // for(int i = 0; i < g->rs.size(); i++){
+        //     cout << "RULE : " << g->rs[i]
+        // }
+    }
     
     // spit out code
     

@@ -1,11 +1,21 @@
+dylan = "jank" ;
 
-alpha   = "A" | "B" | "C" | "D" | "E" | "F" | "G"
-        | "H" | "I" | "J" | "K" | "L" | "M" | "N"
-        | "O" | "P" | "Q" | "R" | "S" | "T" | "U"
-        | "V" | "W" | "X" | "Y" | "Z" | "a" | "b"
-        | "c" | "d" | "e" | "f" | "g" | "h" | "i"
-        | "j" | "k" | "l" | "m" | "n" | "o" | "p"
-        | "q" | "r" | "s" | "t" | "u" | "v" | "w"
-        | "x" | "y" | "z" ;
-digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
-number = digit, { digit } ;
+(* it's janking time!! (yay) *)
+(* holy moly, I can't wait to use these comments everywhere!!! *)    
+rws = ws , { ws } ;                                   
+ows = { ws } ;                                        
+
+(* comments can contain everything except for asterisks *)
+(* also, idk a better way to handle this without implementing set subtraction in the grammar *)
+comment_char    = letter | digit | ws 
+                | "[" | "]" | "{" | "}" | "(" | ")" | "<" | ">"         (* everything that symbol has except for the asterisk *)
+                | "'" | "=" | "|" | "." | "," | ";" | "-" | "+"         (* but including double quotes and backslash *)
+                | "?" | ":" | "!" | "@" | "#" | "$" | "%" | "^"
+                | "&" | "*" | "/" | "~" | "`" | "\\" | "\"" ;
+comment = "(*" , { comment_char } , "*)" ;
+ws = " " | "\n" | "\t" | "\r" | "\f" | "\b" | comment ;   (* treat comments as whitespace *)
+rws = ws , { ws } ;                                       (* required whitespace *)
+ows = { ws } ;                                            (* optional whitespace *)
+
+
+nesting = { { { { comment } } } } ;
