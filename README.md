@@ -48,3 +48,24 @@ Assembler will convert ASM to [ELF](https://en.wikipedia.org/wiki/Executable_and
 
 ### 5/9/2025
 Seems like making a greedy EBNF parser is the easiest way to go. This means that my grammar will be restricted to being unambiguous, but that is perfectly fine. 
+
+### 5/10/2025
+Assembly components that I need to parse:
+- Directives
+  - begin with the `.`
+- Labels
+  - end with the `:`
+- Instructions (Mnemonics)
+  - opcodes
+- Operands
+  - operands to instructions
+    - Registers: %rax, %rdi, %rsp
+    - Immediates: $1, $0xFF
+    - Symbols: msg, len
+    - Memory: (%rax), 4(%rsp), etc.
+- Expressions
+  - can appear in data declarations or label math:
+    - len = . - msg
+- Comments
+- String / Data
+  - ascii stuff
