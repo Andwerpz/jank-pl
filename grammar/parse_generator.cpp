@@ -741,141 +741,686 @@ grammar* parse_grammar() {
 }
 
 // -- PRINT FUNCTIONS --
-void print_letter(letter *l);
-void print_digit(digit *d);
-void print_symbol(symbol *s);
-void print_escape(escape *e);
-void print_identifier(identifier *i);
-void print_comment_char(comment_char *c);
-void print_comment(comment *c);
-void print_wspace(wspace *w);
-void print_rwspace(rwspace *w);
-void print_owspace(owspace *o);
-void print_terminal_char(terminal_char *c);
-void print_terminal(terminal *t);
-void print_term(term *t);
-void print_concatenation(concatenation *c);
-void print_alternation(alternation *a);
-void print_rule(rule *r);
-void print_grammar(grammar *g);
+//these are named print functions as they originally just printed to the console. 
+//ah whatever, it's not like anyone else is going to look at this code :P
+string print_letter(letter *l);
+string print_digit(digit *d);
+string print_symbol(symbol *s);
+string print_escape(escape *e);
+string print_identifier(identifier *i);
+string print_comment_char(comment_char *c);
+string print_comment(comment *c);
+string print_wspace(wspace *w);
+string print_rwspace(rwspace *w);
+string print_owspace(owspace *o);
+string print_terminal_char(terminal_char *c);
+string print_terminal(terminal *t);
+string print_term(term *t);
+string print_concatenation(concatenation *c);
+string print_alternation(alternation *a);
+string print_rule(rule *r);
+string print_grammar(grammar *g);
 
-void print_letter(letter *l) {
-    cout << l->c;
+string print_letter(letter *l) {
+    return string(1, l->c);
 }
 
-void print_digit(digit *d) {
-    cout << d->c;
+string print_digit(digit *d) {
+    return string(1, d->c);
 }
 
-void print_symbol(symbol *s) {
-    cout << s->c;
+string print_symbol(symbol *s) {
+    return string(1, s->c);
 }
 
-void print_escape(escape *e) {
-    cout << "\\" << e->c;
+string print_escape(escape *e) {
+    return "\\" + string(1, e->c);
 }
 
-void print_identifier(identifier *i) {
+string print_identifier(identifier *i) {
+    string ans = "";
     for(int j = 0; j < i->ls.size(); j++) {
-        print_letter(i->ls[j]);
+        ans += print_letter(i->ls[j]);
     }
+    return ans;
 }
 
-void print_comment_char(comment_char* c) {
-    if(c->is_letter) print_letter(c->l);
-    else if(c->is_digit) print_digit(c->d);
-    else if(c->is_wspace) print_wspace(c->w);
-    else if(c->is_literal) cout << c->c;
+string print_comment_char(comment_char* c) {
+    if(c->is_letter) return print_letter(c->l);
+    else if(c->is_digit) return print_digit(c->d);
+    else if(c->is_wspace) return print_wspace(c->w);
+    else if(c->is_literal) return string(1, c->c);
     else assert(false);
 }
 
-void print_comment(comment *c) {
+string print_comment(comment *c) {
+    string ans = "";
     for(int i = 0; i < c->s.size(); i++){
-        print_comment_char(c->s[i]);
+        ans += print_comment_char(c->s[i]);
     }
+    return ans;
 }
 
-void print_wspace(wspace *w) {
-    cout << w->c;
+string print_wspace(wspace *w) {
+    return string(1, w->c);
 }
 
-void print_rwspace(rwspace *w){
+string print_rwspace(rwspace *w){
+    string ans = "";
     for(int i = 0; i < w->ss.size(); i++){
-        print_wspace(w->ss[i]);
+        ans += print_wspace(w->ss[i]);
     }
+    return ans;
 }
 
-void print_owspace(owspace *w){
+string print_owspace(owspace *w){
+    string ans = "";
     for(int i = 0; i < w->ss.size(); i++){
-        print_wspace(w->ss[i]);
+        ans += print_wspace(w->ss[i]);
     }
+    return ans;
 }
 
-void print_terminal_char(terminal_char *c) {
-    if(c->is_letter) print_letter(c->l);
-    else if(c->is_digit) print_digit(c->d);
-    else if(c->is_symbol) print_symbol(c->s);
-    else if(c->is_escape) print_escape(c->e);
-    else if(c->is_literal) cout << c->c;
+string print_terminal_char(terminal_char *c) {
+    if(c->is_letter) return print_letter(c->l);
+    else if(c->is_digit) return print_digit(c->d);
+    else if(c->is_symbol) return print_symbol(c->s);
+    else if(c->is_escape) return print_escape(c->e);
+    else if(c->is_literal) return string(1, c->c);
     else assert(false);
 }
 
-void print_terminal(terminal *t) {
-    cout << "\"";
+string print_terminal(terminal *t) {
+    string ans = "";
+    ans += "\"";
     for(int i = 0; i < t->cs.size(); i++){
-        print_terminal_char(t->cs[i]);
+        ans += print_terminal_char(t->cs[i]);
     }
-    cout << "\"";
+    ans += "\"";
+    return ans;
 }
 
-void print_term(term *t) {
+string print_term(term *t) {
+    string ans = "";
     if(t->is_grouping) {
-        cout << "( ";
-        print_alternation(t->a);
-        cout << " )";
+        ans += "( ";
+        ans += print_alternation(t->a);
+        ans += " )";
     }
     else if(t->is_zo) {
-        cout << "[ ";
-        print_alternation(t->a);
-        cout << " ]";
+        ans += "[ ";
+        ans += print_alternation(t->a);
+        ans += " ]";
     }
     else if(t->is_zm) {
-        cout << "{ "; 
-        print_alternation(t->a);
-        cout << " }";
+        ans += "{ "; 
+        ans += print_alternation(t->a);
+        ans += " }";
     }
-    else if(t->is_terminal) print_terminal(t->t);
-    else if(t->is_identifier) print_identifier(t->i);
+    else if(t->is_terminal) ans += print_terminal(t->t);
+    else if(t->is_identifier) ans += print_identifier(t->i);
     else assert(false);
+    return ans;
 }
 
-void print_concatenation(concatenation *c){
-    print_term(c->ts[0]);
+string print_concatenation(concatenation *c){
+    string ans = "";
+    ans += print_term(c->ts[0]);
     for(int i = 1; i < c->ts.size(); i++){
-        cout << " , ";
-        print_term(c->ts[i]);
+        ans += " , ";
+        ans += print_term(c->ts[i]);
     }
+    return ans;
 }
 
-void print_alternation(alternation *a) {
-    print_concatenation(a->cs[0]);
+string print_alternation(alternation *a) {
+    string ans = "";
+    ans += print_concatenation(a->cs[0]);
     for(int i = 1; i < a->cs.size(); i++){
-        cout << " | ";
-        print_concatenation(a->cs[i]);
+        ans += " | ";
+        ans += print_concatenation(a->cs[i]);
+    }
+    return ans;
+}
+
+string print_rule(rule *r){
+    string ans = "";
+    ans += print_identifier(r->i);
+    ans += " = ";
+    ans += print_alternation(r->a);
+    ans += " ;";
+    return ans;
+}
+
+string print_grammar(grammar *g) {
+    string ans = "";
+    for(int i = 0; i < g->rs.size(); i++){
+        ans += print_rule(g->rs[i]);
+        ans += "\n";
+    }
+    return ans;
+}
+
+// -- GENERATOR FUNCTIONS --
+
+// indent controller
+int indent_level;
+const int INDENT_WIDTH = 4;
+string indent() {
+    return string(indent_level * INDENT_WIDTH, ' ');
+}
+
+/*
+STRUCTS
+ - all groupings get their own struct. all concatenations will get their own struct
+ - concatenations will get multiple fields in a struct
+ - alternations will get one or more concatenations in a struct
+ - substructs will be named according to their depth and which one they are within their current depth. 
+   - ('a' + depth) + (child index)
+   - I consider a struct that is a direct child of the root to be depth 0
+ - terminals will become strings
+ - fields within a concatenation will be named "t" + (field index)
+   - if you ever need to use 't' in a substruct name, then consider reworking the grammar
+ - if current struct has alternations, will prepend every concatenation struct with 'bool is_t + (field index)'
+
+PARSERS
+ - parse functions will be a part of the structs. This way I don't have to remember the struct geneaology when creating the parsers
+ - every struct should have a parse function. It will return a struct pointer on success and nullptr on failure. 
+ - going through the parse function should be the way you create new structs. 
+   - note that I'm not explicitly making the constructor private, use your best judgement. 
+ - parse functions should only reference the parse functions of root level structs and structs of depth + 1. 
+
+NEW FEATURES
+ - concatenations with just a terminal should get simplified down into a string
+ - alternations with just strings should get simplified down into one string
+ - add to_string or something equivalent. 
+
+lets look at an example rule
+
+//concatenation = term , { rws , "," , rws , term } ;
+struct concatenation {
+    struct a0 {
+        rws *t0;
+        string t1;
+        rws *t2;
+        term *t3;
+        a0(rws *_t0, string _t1, rws *_t2, term *_t3) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+        }
+        static a0* parse() {
+            push_stack();
+            rws *x0 = rws::parse();
+            if(x0 == nullptr) {pop_stack(); return nullptr;}
+            string x1 = next_chars(1);
+            if(x1 != ",") {pop_stack(); return nullptr;}
+            rws *x2 = rws::parse();
+            if(x2 == nullptr) {pop_stack(); return nullptr;}
+            term *x3 = term::parse();
+            if(x3 == nullptr) {pop_stack(); return nullptr;}
+            rm_stack();
+            return new a0(x0, x1, x2, x3);
+        }
+    };
+    term *t0;
+    vector<a0*> t1;
+    concatenation(term *_t0, vector<a0*> _t1) {
+        t0 = _t0;
+        t1 = _t1;
+    }
+    static concatenation* parse() {
+        push_stack();
+        term *x0 = term::parse();
+        if(x0 == nullptr) {pop_stack(); return nullptr;}
+        vector<a0*> x1;
+        while(true) {
+            a0 *tmp = a0::parse();
+            if(tmp == nullptr) break;
+            x1.push_back(tmp);
+        }
+        rm_stack();
+        return new concatenation(x0, x1);
+    }
+};
+
+To resolve circular dependencies, all the structs will first be forward declared without their 
+parse functions, then all the parse functions will be defined afterwards. 
+*/
+
+//struct depth controller
+int struct_depth;
+
+void generate_struct_from_concatenation(concatenation *c, string struct_name);
+void generate_struct_from_alternation(alternation *a, string struct_name);
+void generate_struct_from_rule(rule *r);
+
+void generate_parse_from_concatenation(concatenation *c, string struct_name);
+void generate_parse_from_alternation(alternation *a, string struct_name);
+void generate_parse_from_rule(rule *r);
+
+string process_escapes(string s) {
+    // cerr << "PROCESS ESCAPES : " << s << endl;
+    string res = "";
+    for(int i = 0; i < s.size(); i++){
+        if(s[i] != '\\') {
+            res.push_back(s[i]);
+            continue;
+        }
+        assert(i + 1 < s.size());
+        if(s[i + 1] == 'n') res.push_back('\n');
+        else if(s[i + 1] == 't') res.push_back('\t');
+        else if(s[i + 1] == 'r') res.push_back('\r');
+        else if(s[i + 1] == 'f') res.push_back('\f');
+        else if(s[i + 1] == 'b') res.push_back('\b');
+        else if(s[i + 1] == '\\') res.push_back('\\');
+        else if(s[i + 1] == '\"') res.push_back('\"');
+        else assert(false);
+        i ++;
+    }
+    return res;
+}
+
+void generate_struct_from_concatenation(concatenation *c, string struct_name){
+    cout << indent() << "struct " << struct_name << " {\n";
+    struct_depth ++;
+    indent_level ++;
+
+    //gather info
+    int substr_ind = 0;
+    string layer_char = string(1, 'a' + struct_depth - 1);
+    vector<string> type_sid, var_sid;
+    for(int i = 0; i < c->ts.size(); i++){
+        string ctype = "";
+        term *t = c->ts[i];
+        if(t->is_grouping) {
+            ctype = layer_char + to_string(substr_ind ++);
+            generate_struct_from_alternation(t->a, ctype);
+        }
+        else if(t->is_zo) {
+            ctype = layer_char + to_string(substr_ind ++);
+            generate_struct_from_alternation(t->a, ctype);
+        }
+        else if(t->is_zm) {
+            ctype = layer_char + to_string(substr_ind ++);
+            generate_struct_from_alternation(t->a, ctype);
+        }
+        else if(t->is_terminal) {
+            ctype = "std::string";
+        }
+        else if(t->is_identifier) {
+            ctype = print_identifier(t->i);
+        }
+        else assert(false);
+        type_sid.push_back(ctype);
+        var_sid.push_back("t" + to_string(i));
+    }   
+
+    //print fields
+    for(int i = 0; i < c->ts.size(); i++){  //print out term declarations
+        term *t = c->ts[i];
+        if(t->is_grouping) {
+            cout << indent() << type_sid[i] << " *" << var_sid[i] << ";\n";
+        }
+        else if(t->is_zo) {
+            cout << indent() << type_sid[i] << " *" << var_sid[i] << ";\n";
+        }
+        else if(t->is_zm) {
+            cout << indent() << "std::vector<" << type_sid[i] << "*> " << var_sid[i] << ";\n";
+        }
+        else if(t->is_terminal) {
+            cout << indent() << type_sid[i] << " " << var_sid[i] << ";\n";
+        }
+        else if(t->is_identifier) {
+            cout << indent() << type_sid[i] << " *" << var_sid[i] << ";\n";
+        }
+        else assert(false);
+    }
+
+    //constructor
+    cout << indent() << struct_name << "(";
+    for(int i = 0; i < c->ts.size(); i++){
+        term *t = c->ts[i];
+        if(t->is_grouping) {
+            cout << type_sid[i] << " *_" << var_sid[i];
+        }
+        else if(t->is_zo) {
+            cout << type_sid[i] << " *_" << var_sid[i];
+        }
+        else if(t->is_zm) {
+            cout << "std::vector<" << type_sid[i] << "*> _" << var_sid[i];
+        }
+        else if(t->is_terminal) {
+            cout << type_sid[i] << " _" << var_sid[i];
+        }
+        else if(t->is_identifier) {
+            cout << type_sid[i] << " *_" << var_sid[i];
+        }
+        else assert(false);
+        if(i + 1 != c->ts.size()) {
+            cout << ", ";
+        }
+    }
+    cout << ") {\n";
+    indent_level ++;
+    for(int i = 0; i < c->ts.size(); i++){
+        cout << indent() << var_sid[i] << " = _" << var_sid[i] << ";\n";
+    }
+    indent_level --;
+    cout << indent() << "}\n";
+
+    //parser declaration
+    cout << indent() << "static " << struct_name << "* parse();\n";
+
+    indent_level --;
+    struct_depth --;
+    cout << indent() << "};\n";
+}
+
+void generate_struct_from_alternation(alternation *a, string struct_name){
+    if(a->cs.size() == 1){  //there is only one option
+        generate_struct_from_concatenation(a->cs[0], struct_name);
+    }
+    else {  //there are multiple options; need to do some substructs. 
+        cout << indent() << "struct " << struct_name << " {\n";
+        struct_depth ++;
+        indent_level ++;
+        
+        string layer_char = string(1, 'a' + struct_depth - 1);
+        vector<string> type_sid, var_sid;
+        for(int i = 0; i < a->cs.size(); i++){
+            type_sid.push_back(layer_char + to_string(i));
+            var_sid.push_back("t" + to_string(i));
+        }
+
+        //substructs
+        for(int i = 0; i < a->cs.size(); i++){
+            generate_struct_from_concatenation(a->cs[i], type_sid[i]);
+        }
+
+        //struct fields
+        for(int i = 0; i < a->cs.size(); i++){
+            cout << indent() << "bool is_" << type_sid[i] << " = false;\n";
+            cout << indent() << type_sid[i] << " *" << var_sid[i] << ";\n";
+        }
+
+        //constructors
+        for(int i = 0; i < a->cs.size(); i++){
+            cout << indent() << struct_name << "(" << type_sid[i] << " *_" << var_sid[i] << ") {\n";
+            indent_level ++;
+            cout << indent() << "is_" << type_sid[i] << " = true;\n";
+            cout << indent() << var_sid[i] << " = _" << var_sid[i] << ";\n";
+            indent_level --;
+            cout << indent() << "}\n";
+        }
+
+        //parser declaration
+        cout << indent() << "static " << struct_name << "* parse();\n";
+
+        indent_level --;
+        struct_depth --;
+        cout << indent() << "};\n";
     }
 }
 
-void print_rule(rule *r){
-    print_identifier(r->i);
-    cout << " = ";
-    print_alternation(r->a);
-    cout << " ;";
+//generates the struct definition. The struct will still need to be pre-declared. 
+void generate_struct_from_rule(rule *r){
+    struct_depth = 0;
+    identifier *id = r->i;
+    alternation *a = r->a;
+    cout << "// " << print_rule(r) << "\n";
+    generate_struct_from_alternation(a, print_identifier(id));
 }
 
-void print_grammar(grammar *g) {
-    for(int i = 0; i < g->rs.size(); i++){
-        print_rule(g->rs[i]);
+void generate_parse_from_concatenation(concatenation *c, string struct_name) {
+    struct_depth ++;
+
+    //gather info, generate child parsers
+    int substr_ind = 0;
+    string layer_char = string(1, 'a' + struct_depth - 1);
+    vector<string> type_sid, var_sid;
+    for(int i = 0; i < c->ts.size(); i++){
+        string ctype = "";
+        term *t = c->ts[i];
+        if(t->is_grouping) {
+            ctype = struct_name + "::" + layer_char + to_string(substr_ind);
+            generate_parse_from_alternation(t->a, struct_name + "::" + layer_char + to_string(substr_ind ++));
+        }
+        else if(t->is_zo) {
+            ctype = struct_name + "::" + layer_char + to_string(substr_ind);
+            generate_parse_from_alternation(t->a, struct_name + "::" + layer_char + to_string(substr_ind ++));
+        }
+        else if(t->is_zm) {
+            ctype = struct_name + "::" + layer_char + to_string(substr_ind);
+            generate_parse_from_alternation(t->a, struct_name + "::" + layer_char + to_string(substr_ind ++));
+        }
+        else if(t->is_terminal) {
+            ctype = "std::string";
+        }
+        else if(t->is_identifier) {
+            ctype = print_identifier(t->i);
+        }
+        else assert(false);
+        type_sid.push_back(ctype);
+        var_sid.push_back("t" + to_string(i));
+    }   
+
+    //generate parser
+    cout << indent() << struct_name << "* " << struct_name << "::parse() {\n";
+    indent_level ++;
+    cout << indent() << "push_stack();\n";
+    for(int i = 0; i < c->ts.size(); i++) {
+        term *t = c->ts[i];
+        if(t->is_grouping) {
+            cout << indent() << type_sid[i] << " *_" << var_sid[i] << " = " << type_sid[i] << "::parse();\n";
+            cout << indent() << "if(_" << var_sid[i] << " == nullptr) {pop_stack(); return nullptr;}\n";
+        }
+        else if(t->is_zo) {
+            cout << indent() << type_sid[i] << " *_" << var_sid[i] << " = " << type_sid[i] << "::parse();\n";
+        }
+        else if(t->is_zm) {
+            cout << indent() << "std::vector<" << type_sid[i] << "*> _" << var_sid[i] << ";\n";
+            cout << indent() << "while(true) {\n";
+            indent_level ++;
+            cout << indent() << type_sid[i] << " *tmp = " << type_sid[i] << "::parse();\n";
+            cout << indent() << "if(tmp == nullptr) break;\n";
+            cout << indent() << "_" << var_sid[i] << ".push_back(tmp);\n";
+            indent_level --;
+            cout << indent() << "}\n";
+        }
+        else if(t->is_terminal) {
+            string terminal_str = print_terminal(t->t); //with quotes, escapes
+            assert(terminal_str.size() >= 3);
+            int real_sz = process_escapes(terminal_str.substr(1, terminal_str.size() - 2)).size();  //need to process all escapes to determine size
+            cout << indent() << "std::string _" << var_sid[i] << " = next_chars(" << real_sz << ");\n";
+            cout << indent() << "if(_" << var_sid[i] << " != " << terminal_str << ") {pop_stack(); return nullptr;}\n";
+        }
+        else if(t->is_identifier) {
+            cout << indent() << type_sid[i] << " *_" << var_sid[i] << " = " << type_sid[i] << "::parse();\n";
+            cout << indent() << "if(_" << var_sid[i] << " == nullptr) {pop_stack(); return nullptr;}\n";
+        }
+        else assert(false);
+    }
+    cout << indent() << "rm_stack();\n";
+    cout << indent() << "return new " << struct_name << "(";
+    for(int i = 0; i < c->ts.size(); i++){
+        cout << "_" << var_sid[i];
+        if(i + 1 != c->ts.size()) {
+            cout << ", ";
+        }
+    }
+    cout << ");\n";
+    indent_level --;
+    cout << indent() << "}\n";
+    cout << "\n";
+
+    struct_depth --;
+}
+
+void generate_parse_from_alternation(alternation *a, string struct_name) {
+    if(a->cs.size() == 1) {
+        generate_parse_from_concatenation(a->cs[0], struct_name);
+    }
+    else {
+        struct_depth ++;
+
+        //gather info, generate child parsers
+        vector<string> type_sid, var_sid;
+        string layer_char = string(1, 'a' + struct_depth - 1);
+        for(int i = 0; i < a->cs.size(); i++){
+            type_sid.push_back(struct_name + "::" + layer_char + to_string(i));
+            var_sid.push_back("t" + to_string(i));
+            generate_parse_from_concatenation(a->cs[i], struct_name + "::" + layer_char + to_string(i));
+        }
+
+        //define parser
+        cout << indent() << struct_name << "* " << struct_name << "::parse() {\n";
+        indent_level ++;
+        for(int i = 0; i < a->cs.size(); i++) {
+            string cvar = "x" + to_string(i);
+            cout << indent() << "if(auto x = " << type_sid[i] << "::parse()) return new " << struct_name << "(x);\n";
+        }
+        cout << indent() << "return nullptr;\n";
+        indent_level --;
+        cout << indent() << "}\n";
         cout << "\n";
+
+        struct_depth --;
+    }
+    
+}
+
+void generate_parse_from_rule(rule *r) {
+    struct_depth = 0;
+    identifier *id = r->i;
+    alternation *a = r->a;
+    generate_parse_from_alternation(a, print_identifier(id));
+}
+
+string get_current_date_string() {
+    auto now = chrono::system_clock::now();
+    time_t now_c = chrono::system_clock::to_time_t(now);
+    tm *parts = localtime(&now_c);
+
+    ostringstream oss;
+    oss << put_time(parts, "%m-%d-%Y");
+    return oss.str();
+}
+
+void generate_program(grammar *g){
+    indent_level = 0;
+    cout << "// Date Generated : " << get_current_date_string() << "\n";
+    cout << "#include <vector>\n";
+    cout << "#include <string>\n";
+    cout << "#include <cassert>\n";
+    cout << "#include <iostream>\n";
+    cout << "#include <stack>\n";
+    cout << "#include <fstream>\n";
+    cout << "#include <sstream>\n";
+    cout << "#include <stdexcept>\n";
+    // cout << "using namespace std;\n";
+    cout << "\n";
+
+    // parse controller
+    {
+        string tmp = 
+R"(// -- PARSE CONTROLLER --
+//the grammar to be parsed
+std::string s;
+
+//where we are in the string
+int ptr;
+
+//this is so we know where to backtrack to
+std::stack<int> ptr_stack;
+
+//use before trying an optional grammar rule
+void push_stack() {
+    ptr_stack.push(ptr);
+}
+
+//use when grammar rule fails to parse
+void pop_stack() {
+    assert(ptr_stack.size() != 0);
+    ptr = ptr_stack.top();
+    ptr_stack.pop();
+}
+
+//use when grammar rule parses successfully. 
+void rm_stack() {
+    assert(ptr_stack.size() != 0);
+    ptr_stack.pop();
+}
+
+//the stack should be unaffected by any parse function. 
+
+char next_char() {
+    if(ptr >= s.size()) return '\0';
+    return s[ptr ++];
+}
+
+std::string next_chars(int n) {
+    assert(n > 0);
+    if(ptr + n > s.size()) return "";
+    std::string ans = s.substr(ptr, n);
+    ptr += n;
+    return ans;
+}
+)";
+        cout << tmp << "\n";
+    }
+
+    //struct defs
+    {   
+        //forward declare structs
+        for(int i = 0; i < g->rs.size(); i++){
+            cout << "struct " << print_identifier(g->rs[i]->i) << ";\n";
+        }
+        cout << "\n";
+
+        for(int i = 0; i < g->rs.size(); i++){
+            generate_struct_from_rule(g->rs[i]);
+            cout << "\n";
+        }
+    }
+
+    //parse defs
+    {
+        for(int i = 0; i < g->rs.size(); i++){
+            generate_parse_from_rule(g->rs[i]);
+        }
+    }
+
+    //main
+    {
+        //assumes that the last rule defined is the one you want to parse
+        string root_sid = print_identifier(g->rs[g->rs.size() - 1]->i);
+
+        cout << indent() << "std::string read_file(const std::string& filename) {\n";
+        indent_level ++;
+        cout << indent() << "std::ifstream file(filename);\n";
+        cout << indent() << "if(!file) throw std::runtime_error(\"Failed to open file : \" + filename);\n";
+        cout << indent() << "std::ostringstream buffer;\n";
+        cout << indent() << "buffer << file.rdbuf();\n";
+        cout << indent() << "return buffer.str();\n";
+        indent_level --;
+        cout << indent() << "}\n";
+        cout << indent() << "\n";
+        cout << indent() << "int main() {\n";
+        indent_level ++;
+        cout << indent() << "std::string filename;\n";
+        cout << indent() << "std::cin >> filename;\n";
+        cout << indent() << "s = read_file(filename);\n";
+        cout << indent() << "std::cout << \"PARSING\\n\";\n";
+        cout << indent() << "ptr = 0;\n";
+        cout << indent() << root_sid << " *x = " << root_sid << "::parse();\n";
+        cout << indent() << "assert(ptr_stack.size() == 0);\n";
+        cout << indent() << "if(x == nullptr) {std::cout << \"FAILED\\n\"; return 0;}\n";
+        cout << indent() << "std::cout << \"SUCCESS\\n\";\n";
+        cout << indent() << "return 0;\n";
+        indent_level --;
+        cout << indent() << "}";
     }
 }
 
@@ -891,18 +1436,49 @@ string read_file(const string& filename) {
     return buffer.str();     
 }
 
+bool do_semantic_checks(grammar *g) {
+    // - are there identifiers that are defined twice
+    set<string> defined_identifiers;
+    {
+        for(int i = 0; i < g->rs.size(); i++){
+            identifier *id = g->rs[i]->i;
+            string sid = "";
+            for(int j = 0; j < id->ls.size(); j++){
+                sid.push_back(id->ls[j]->c);
+            }
+            if(defined_identifiers.count(sid)) {
+                cout << "DOUBLE DEFINED IDENTIFIER : " << sid << "\n";
+                return false;
+            }
+            defined_identifiers.insert(sid);
+        }
+    }
+
+    // - are there identifiers that aren't defined in a rule
+    {
+
+    }
+
+    return true;
+}
+
 signed main() {
     ios_base::sync_with_stdio(false);
     cin.tie(NULL); cout.tie(NULL);
     
-    
     // read it in
     string filename;
     cin >> filename;
+
+    // make sure filename ends with ".ebnf"
+    cout << filename.substr(filename.size() - 5) << endl;
+    assert(filename.size() >= 5 && filename.substr(filename.size() - 5) == ".ebnf");
+    
     s = read_file(filename);
-    cout << "S : \n" << s << endl;
+    filename = filename.substr(0, filename.size() - 5);
 
     // build parse tree  
+    cout << "PARSING GRAMMAR\n";
     ptr = 0;
     grammar *g = parse_grammar();
     if(ptr_stack.size() != 0){
@@ -911,16 +1487,34 @@ signed main() {
     assert(ptr_stack.size() == 0);
     if(g == nullptr) {
         cout << "FAILED\n";
+        return 0;
     }
     else {
         cout << "SUCCESS : " << g->rs.size() << "\n";
-        print_grammar(g);
-        // for(int i = 0; i < g->rs.size(); i++){
-        //     cout << "RULE : " << g->rs[i]
-        // }
+        cout << print_grammar(g) << "\n";
     }
     
-    // spit out code
+    // some semantic checking.
+    cout << "RUNNING SEMANTIC CHECKS\n";
+    if(!do_semantic_checks(g)) {
+        cout << "SEMANTIC CHECKS FAILED\n";
+        return 0;
+    }
+    cout << "SEMANTIC CHECKS PASSED\n\n";
     
+    // spit out code
+    cout << "GENERATING PROGRAM\n";
+
+    // switch cout to point to file
+    ofstream out(filename + "_parser.cpp");
+    if (!out) {
+        cout << "Failed to open " + filename + "_parser.cpp\n";
+        return 0;
+    }
+    streambuf *coutbuf = cout.rdbuf(); 
+    cout.rdbuf(out.rdbuf()); 
+    generate_program(g);
+    cout.rdbuf(coutbuf); // required to not segfault D:
+
     return 0;
 }

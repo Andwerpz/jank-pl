@@ -23,7 +23,7 @@ comment_char    = letter | digit | ws
                 | "[" | "]" | "{" | "}" | "(" | ")" | "<" | ">"         (* everything that symbol has except for the asterisk *)
                 | "'" | "=" | "|" | "." | "," | ";" | "-" | "+"         (* but including double quotes and backslash *)
                 | "?" | ":" | "!" | "@" | "#" | "$" | "%" | "^"
-                | "&" | "*" | "/" | "~" | "`" | "\\" | "\"" ;
+                | "&" | "/" | "~" | "`" | "\\" | "\"" ;
 comment = "(*" , { comment_char } , "*)" ;
 ws = " " | "\n" | "\t" | "\r" | "\f" | "\b" | comment ;   (* treat comments as whitespace *)
 rws = ws , { ws } ;                                       (* required whitespace *)

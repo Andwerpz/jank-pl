@@ -35,7 +35,7 @@ parameter = type_identifier , rws , identifier ;
 parameter_list = [ parameter , { ows , "," , ows , parameter } ] ;
 
 statement = declaration , ows , ";" ;
-compound_statement = "{" , ows , { statement | compound_statement } , ows , "}" ;
+compound_statement = "{" , ows , { ( statement | compound_statement ) , ows } , "}" ;
 
 (* void main *)
 function_definition = type_identifier , rws , identifier ;

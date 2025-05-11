@@ -1,0 +1,9 @@
+
+int main() {
+    int x = 10;
+}
+
+int foo(int arg1, int arg2) {
+    int y = 10;
+    int z = 100;
+}
