@@ -69,3 +69,10 @@ Assembly components that I need to parse:
 - Comments
 - String / Data
   - ascii stuff
+
+### 5/12/2025
+Seems like writing all the EBNF in one file will be very annoying. TODO, implement some sort of equivalent to #include but for my .ebnf files. The workflow will be like this: Parse .ebnf file with #include. Get all files referenced by #include. Parse those files. Once we build the full dependency graph, just insert the rest of the files in an arbitrary order into the final file, and insert the original file last (all without #includes). Finally, parse the resulting file. Circular dependencies are fine. 
+
+Note that any ebnf parser generated will not automatically resolve #includes, that part is reserved for semantic analysis. It will just check if the syntax is correct. 
+
+Also, will add '<' '>' as a new grouping tool to signify one or more. 

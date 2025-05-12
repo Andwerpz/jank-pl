@@ -69,6 +69,9 @@ struct alternation;
 struct rule;
 struct include;
 struct grammar;
+struct number;
+struct test_description;
+struct test;
 
 // letter = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" | "_" ;
 struct letter {
@@ -2306,6 +2309,48 @@ struct grammar {
     static grammar* parse();
 };
 
+// number = < digit > ;
+struct number {
+    struct a0 {
+        digit *t0;
+        a0(digit *_t0) {
+            t0 = _t0;
+        }
+        static a0* parse();
+    };
+    std::vector<a0*> t0;
+    number(std::vector<a0*> _t0) {
+        t0 = _t0;
+    }
+    static number* parse();
+};
+
+// test_description = number , rws , number ;
+struct test_description {
+    number *t0;
+    rws *t1;
+    number *t2;
+    test_description(number *_t0, rws *_t1, number *_t2) {
+        t0 = _t0;
+        t1 = _t1;
+        t2 = _t2;
+    }
+    static test_description* parse();
+};
+
+// test = test_description , rws , grammar ;
+struct test {
+    test_description *t0;
+    rws *t1;
+    grammar *t2;
+    test(test_description *_t0, rws *_t1, grammar *_t2) {
+        t0 = _t0;
+        t1 = _t1;
+        t2 = _t2;
+    }
+    static test* parse();
+};
+
 letter::a0* letter::a0::parse() {
     push_stack();
     std::string _t0 = next_chars(1);
@@ -3973,6 +4018,51 @@ grammar* grammar::parse() {
     return new grammar(_t0, _t1, _t2);
 }
 
+number::a0* number::a0::parse() {
+    push_stack();
+    digit *_t0 = digit::parse();
+    if(_t0 == nullptr) {pop_stack(); return nullptr;}
+    rm_stack();
+    return new number::a0(_t0);
+}
+
+number* number::parse() {
+    push_stack();
+    std::vector<number::a0*> _t0;
+    while(true) {
+        number::a0 *tmp = number::a0::parse();
+        if(tmp == nullptr) break;
+        _t0.push_back(tmp);
+    }
+    if(_t0.size() == 0) {pop_stack(); return nullptr;}
+    rm_stack();
+    return new number(_t0);
+}
+
+test_description* test_description::parse() {
+    push_stack();
+    number *_t0 = number::parse();
+    if(_t0 == nullptr) {pop_stack(); return nullptr;}
+    rws *_t1 = rws::parse();
+    if(_t1 == nullptr) {pop_stack(); return nullptr;}
+    number *_t2 = number::parse();
+    if(_t2 == nullptr) {pop_stack(); return nullptr;}
+    rm_stack();
+    return new test_description(_t0, _t1, _t2);
+}
+
+test* test::parse() {
+    push_stack();
+    test_description *_t0 = test_description::parse();
+    if(_t0 == nullptr) {pop_stack(); return nullptr;}
+    rws *_t1 = rws::parse();
+    if(_t1 == nullptr) {pop_stack(); return nullptr;}
+    grammar *_t2 = grammar::parse();
+    if(_t2 == nullptr) {pop_stack(); return nullptr;}
+    rm_stack();
+    return new test(_t0, _t1, _t2);
+}
+
 std::string read_file(const std::string& filename) {
     std::ifstream file(filename);
     if(!file) throw std::runtime_error("Failed to open file : " + filename);
@@ -3987,7 +4077,7 @@ int main() {
     s = read_file(filename);
     std::cout << "PARSING\n";
     ptr = 0;
-    grammar *x = grammar::parse();
+    test *x = test::parse();
     assert(ptr_stack.size() == 0);
     if(x == nullptr) {std::cout << "FAILED\n"; return 0;}
     std::cout << "SUCCESS\n";

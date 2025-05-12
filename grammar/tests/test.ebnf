@@ -1,0 +1,7 @@
+#include "../ebnf/ebnf.ebnf" ;
+
+(* amount of rules defined in the grammar *)
+(* amount of rules that should successfully parse *)
+number = < digit > ;
+test_description = number , rws , number ;
+test = test_description , rws , grammar ;

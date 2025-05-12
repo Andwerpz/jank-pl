@@ -23,6 +23,7 @@ struct term;
 struct concatenation;
 struct alternation;
 struct rule;
+struct include;
 struct grammar;
 
 struct letter {
@@ -175,6 +176,7 @@ struct term {
     bool is_grouping = false;
     bool is_zo = false;
     bool is_zm = false;
+    bool is_om = false;
     bool is_terminal = false;
     bool is_identifier = false;
 
@@ -186,6 +188,7 @@ struct term {
         if(type == "()") is_grouping = true;
         else if(type == "[]") is_zo = true;
         else if(type == "{}") is_zm = true;
+        else if(type == "<>") is_om = true;
         else assert(false);
         a = _a;
     }
@@ -224,32 +227,41 @@ struct rule {
     }
 };
 
+struct include {
+    terminal *t;
+    include(terminal *_t) {
+        t = _t;
+    }
+};
+
 struct grammar {
+    vector<include*> is;
     vector<rule*> rs;
-    grammar(vector<rule*> _rs) {
+    grammar(vector<include*> _is, vector<rule*> _rs) {
+        is = _is;
         rs = _rs;
     }
 };
 
 // -- PARSE CONTROLLER --
 //the grammar to be parsed
-string s;
+string parse_str;
 
 //where we are in the string
-int ptr;
+int parse_ptr;
 
 //this is so we know where to backtrack to
 stack<int> ptr_stack;
 
 //use before trying an optional grammar rule
 void push_stack() {
-    ptr_stack.push(ptr);
+    ptr_stack.push(parse_ptr);
 }
 
 //use when grammar rule fails to parse
 void pop_stack() {
     assert(ptr_stack.size() != 0);
-    ptr = ptr_stack.top();
+    parse_ptr = ptr_stack.top();
     ptr_stack.pop();
 }
 
@@ -262,15 +274,15 @@ void rm_stack() {
 //the stack should be unaffected by any parse function. 
 
 char next_char() {
-    if(ptr >= s.size()) return '\0';
-    return s[ptr ++];
+    if(parse_ptr >= parse_str.size()) return '\0';
+    return parse_str[parse_ptr ++];
 }
 
 string next_chars(int n) {
     assert(n > 0);
-    if(ptr + n > s.size()) return "";
-    string ans = s.substr(ptr, n);
-    ptr += n;
+    if(parse_ptr + n > parse_str.size()) return "";
+    string ans = parse_str.substr(parse_ptr, n);
+    parse_ptr += n;
     return ans;
 }
 
@@ -292,6 +304,7 @@ term* parse_term();
 concatenation* parse_concatenation();
 alternation* parse_alternation();
 rule* parse_rule();
+include* parse_include();
 grammar* parse_grammar();
 
 letter* parse_letter() {
@@ -581,6 +594,34 @@ term* parse_term() {
         rm_stack();
         return new term("{}", a);
     } while(false);
+    do {    // one or more
+        push_stack();
+        if(next_char() != '<') {
+            pop_stack();
+            break;
+        }
+        rwspace *ws1 = parse_rwspace();
+        if(ws1 == nullptr) {
+            pop_stack();
+            break;
+        }
+        alternation* a = parse_alternation();
+        if(a == nullptr) {
+            pop_stack();
+            break;
+        }
+        rwspace *ws2 = parse_rwspace();
+        if(ws2 == nullptr) {
+            pop_stack();
+            break;
+        }
+        if(next_char() != '>') {
+            pop_stack();
+            break;
+        }
+        rm_stack();
+        return new term("<>", a);
+    } while(false);
     if(auto t = parse_terminal()) return new term(t);
     if(auto i = parse_identifier()) return new term(i);
     return nullptr;
@@ -668,7 +709,7 @@ alternation* parse_alternation() {
 
 rule* parse_rule() {
     if(parse_debug) {
-        cout << "PARSE RULE : " << ptr << endl;
+        cout << "PARSE RULE : " << parse_ptr << endl;
     }
     push_stack();
     rwspace *ws;
@@ -709,12 +750,58 @@ rule* parse_rule() {
     return new rule(i, a);
 }
 
+include* parse_include() {
+    push_stack();
+    rwspace *ws;
+    if(next_chars(8) != "#include") {
+        pop_stack();
+        return nullptr;
+    }
+    ws = parse_rwspace();
+    if(ws == nullptr) {
+        pop_stack();
+        return nullptr;
+    }
+    terminal *t = parse_terminal();
+    if(t == nullptr) {
+        pop_stack();
+        return nullptr;
+    }
+    ws = parse_rwspace();
+    if(ws == nullptr) {
+        pop_stack();
+        return nullptr;
+    }
+    if(next_chars(1) != ";") {
+        pop_stack();
+        return nullptr;
+    }
+    rm_stack();
+    return new include(t);
+}
+
 grammar* parse_grammar() {
     if(parse_debug) {
-        cout << "PARSE GRAMMAR : " << ptr << endl;
+        cout << "PARSE GRAMMAR : " << parse_ptr << endl;
     }
     push_stack();
     owspace *ws;
+    vector<include*> is;
+    while(true) {
+        push_stack();
+        ws = parse_owspace();
+        if(ws == nullptr) {
+            pop_stack();
+            break;
+        }
+        include *i = parse_include();
+        if(i == nullptr) {
+            pop_stack();
+            break;
+        }
+        rm_stack();
+        is.push_back(i);
+    }
     vector<rule*> rs;
     while(true) {
         push_stack();
@@ -737,7 +824,7 @@ grammar* parse_grammar() {
         return nullptr;
     }
     rm_stack();
-    return new grammar(rs);
+    return new grammar(is, rs);
 }
 
 // -- PRINT FUNCTIONS --
@@ -759,6 +846,7 @@ string print_term(term *t);
 string print_concatenation(concatenation *c);
 string print_alternation(alternation *a);
 string print_rule(rule *r);
+string print_include(include *i);
 string print_grammar(grammar *g);
 
 string print_letter(letter *l) {
@@ -857,6 +945,11 @@ string print_term(term *t) {
         ans += print_alternation(t->a);
         ans += " }";
     }
+    else if(t->is_om) {
+        ans += "< ";
+        ans += print_alternation(t->a);
+        ans += " >";
+    }
     else if(t->is_terminal) ans += print_terminal(t->t);
     else if(t->is_identifier) ans += print_identifier(t->i);
     else assert(false);
@@ -892,8 +985,17 @@ string print_rule(rule *r){
     return ans;
 }
 
+string print_include(include *i){
+    return "#include " + print_terminal(i->t) + " ;";
+}
+
 string print_grammar(grammar *g) {
     string ans = "";
+    for(int i = 0; i < g->is.size(); i++){
+        ans += print_include(g->is[i]);
+        ans += "\n";
+    }
+    ans += "\n";
     for(int i = 0; i < g->rs.size(); i++){
         ans += print_rule(g->rs[i]);
         ans += "\n";
@@ -929,6 +1031,9 @@ PARSERS
  - going through the parse function should be the way you create new structs. 
    - note that I'm not explicitly making the constructor private, use your best judgement. 
  - parse functions should only reference the parse functions of root level structs and structs of depth + 1. 
+
+IMPLEMENTED FEATURES
+ - alternations with just one option should get simplified down into that option
 
 NEW FEATURES
  - concatenations with just a terminal should get simplified down into a string
@@ -1001,7 +1106,6 @@ void generate_parse_from_alternation(alternation *a, string struct_name);
 void generate_parse_from_rule(rule *r);
 
 string process_escapes(string s) {
-    // cerr << "PROCESS ESCAPES : " << s << endl;
     string res = "";
     for(int i = 0; i < s.size(); i++){
         if(s[i] != '\\') {
@@ -1046,6 +1150,10 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
             ctype = layer_char + to_string(substr_ind ++);
             generate_struct_from_alternation(t->a, ctype);
         }
+        else if(t->is_om) {
+            ctype = layer_char + to_string(substr_ind ++);
+            generate_struct_from_alternation(t->a, ctype);
+        }
         else if(t->is_terminal) {
             ctype = "std::string";
         }
@@ -1069,6 +1177,9 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
         else if(t->is_zm) {
             cout << indent() << "std::vector<" << type_sid[i] << "*> " << var_sid[i] << ";\n";
         }
+        else if(t->is_om) {
+            cout << indent() << "std::vector<" << type_sid[i] << "*> " << var_sid[i] << ";\n";
+        }
         else if(t->is_terminal) {
             cout << indent() << type_sid[i] << " " << var_sid[i] << ";\n";
         }
@@ -1089,6 +1200,9 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
             cout << type_sid[i] << " *_" << var_sid[i];
         }
         else if(t->is_zm) {
+            cout << "std::vector<" << type_sid[i] << "*> _" << var_sid[i];
+        }
+        else if(t->is_om) {
             cout << "std::vector<" << type_sid[i] << "*> _" << var_sid[i];
         }
         else if(t->is_terminal) {
@@ -1195,6 +1309,10 @@ void generate_parse_from_concatenation(concatenation *c, string struct_name) {
             ctype = struct_name + "::" + layer_char + to_string(substr_ind);
             generate_parse_from_alternation(t->a, struct_name + "::" + layer_char + to_string(substr_ind ++));
         }
+        else if(t->is_om) {
+            ctype = struct_name + "::" + layer_char + to_string(substr_ind);
+            generate_parse_from_alternation(t->a, struct_name + "::" + layer_char + to_string(substr_ind ++));
+        }
         else if(t->is_terminal) {
             ctype = "std::string";
         }
@@ -1228,6 +1346,17 @@ void generate_parse_from_concatenation(concatenation *c, string struct_name) {
             cout << indent() << "_" << var_sid[i] << ".push_back(tmp);\n";
             indent_level --;
             cout << indent() << "}\n";
+        }
+        else if(t->is_om) {
+            cout << indent() << "std::vector<" << type_sid[i] << "*> _" << var_sid[i] << ";\n";
+            cout << indent() << "while(true) {\n";
+            indent_level ++;
+            cout << indent() << type_sid[i] << " *tmp = " << type_sid[i] << "::parse();\n";
+            cout << indent() << "if(tmp == nullptr) break;\n";
+            cout << indent() << "_" << var_sid[i] << ".push_back(tmp);\n";
+            indent_level --;
+            cout << indent() << "}\n";
+            cout << indent() << "if(_" << var_sid[i] << ".size() == 0) {pop_stack(); return nullptr;}\n";
         }
         else if(t->is_terminal) {
             string terminal_str = print_terminal(t->t); //with quotes, escapes
@@ -1420,7 +1549,7 @@ std::string next_chars(int n) {
         cout << indent() << "std::cout << \"SUCCESS\\n\";\n";
         cout << indent() << "return 0;\n";
         indent_level --;
-        cout << indent() << "}";
+        cout << indent() << "}\n";
     }
 }
 
@@ -1456,65 +1585,216 @@ bool do_semantic_checks(grammar *g) {
 
     // - are there identifiers that aren't defined in a rule
     {
+        function<bool(identifier*)> is_valid_identifier;
+        function<bool(term*)> is_valid_term;
+        function<bool(concatenation*)> is_valid_concatenation;
+        function<bool(alternation*)> is_valid_alternation;
+        function<bool(rule*)> is_valid_rule;
+        function<bool(grammar*)> is_valid_grammar;
 
+        is_valid_identifier = [&](identifier *i) -> bool {
+            string istr = print_identifier(i);
+            if(!defined_identifiers.count(istr)) {
+                cout << "UNDEFINED IDENTIFIER : " << istr << "\n";
+                return false;
+            } 
+            return true;
+        };
+
+        is_valid_term = [&](term *t) -> bool {
+            bool ans = true;
+            if(t->is_grouping) {
+                ans = is_valid_alternation(t->a);
+            }
+            else if(t->is_zo) {
+                ans = is_valid_alternation(t->a);
+            }
+            else if(t->is_zm) {
+                ans = is_valid_alternation(t->a);
+            }
+            else if(t->is_om) {
+                ans = is_valid_alternation(t->a);
+            }
+            else if(t->is_terminal) {
+                //do nothing
+            }
+            else if(t->is_identifier) {
+                ans = is_valid_identifier(t->i);
+            }
+            else assert(false);
+            return ans;
+        };
+
+        is_valid_concatenation = [&](concatenation *c) -> bool {
+            bool ans = true;
+            for(int i = 0; i < c->ts.size(); i++){
+                ans = ans & is_valid_term(c->ts[i]);
+            }
+            return ans;
+        };
+
+        is_valid_alternation = [&](alternation *a) -> bool {
+            bool ans = true;
+            for(int i = 0; i < a->cs.size(); i++){
+                ans = ans & is_valid_concatenation(a->cs[i]);
+            }
+            return ans;
+        };
+
+        is_valid_rule = [&](rule *r) -> bool {
+            bool ans = true;
+            ans = ans & is_valid_identifier(r->i);
+            ans = ans & is_valid_alternation(r->a);
+            return ans;
+        };
+
+        is_valid_grammar = [&](grammar *g) -> bool {
+            bool ans = true;
+            for(int i = 0; i < g->rs.size(); i++) {
+                ans = ans & is_valid_rule(g->rs[i]);
+            }
+            return ans;
+        };
+
+        if(!is_valid_grammar(g)) {
+            return false;
+        }
     }
 
     return true;
 }
 
-signed main() {
-    ios_base::sync_with_stdio(false);
-    cin.tie(NULL); cout.tie(NULL);
-    
-    // read it in
-    string filename;
-    cin >> filename;
-
-    // make sure filename ends with ".ebnf"
-    cout << filename.substr(filename.size() - 5) << endl;
-    assert(filename.size() >= 5 && filename.substr(filename.size() - 5) == ".ebnf");
-    
-    s = read_file(filename);
-    filename = filename.substr(0, filename.size() - 5);
-
-    // build parse tree  
-    cout << "PARSING GRAMMAR\n";
-    ptr = 0;
+grammar* parse_string(string s) {
+    parse_str = s;
+    parse_ptr = 0;
     grammar *g = parse_grammar();
-    if(ptr_stack.size() != 0){
-        cout << "PTR STACK SIZE : " << ptr_stack.size() << "\n";
+    assert(ptr_stack.size() == 0);
+    if(g == nullptr) return nullptr;
+    else return g;
+}
+
+
+grammar* parse_file(string filename) {
+    // make sure filename ends with ".ebnf"
+    if(filename.size() < 5 || filename.substr(filename.size() - 5) != ".ebnf") {
+        cout << "<filename> must end with \".ebnf\"\n";
+        return nullptr;
     }
+    return parse_string(read_file(filename));
+}
+
+string read_cstr(char* s) {
+    string ans = "";
+    int ptr = 0;
+    while(s[ptr] != '\0') {
+        ans.push_back(s[ptr ++]);
+    }
+    return ans;
+}
+
+signed main(int argc, char* argv[]) {
+    if(argc == 1) {
+        cout << "USAGE : <filename>\n";
+        cout << " -o <output_filename>\n";
+        cout << "<filename> must end with \".ebnf\"\n";
+        return 1;
+    }
+
+    // read it in
+    int argptr = 1;
+    string filename = read_cstr(argv[argptr ++]);
+    bool output_redirect = false;
+    string output_filename = "";
+    while(argptr != argc) {
+        string opt = read_cstr(argv[argptr ++]);
+        if(opt == "-o") {
+            if(argptr == argc) {
+                cout << "DIDN'T PROVIDE OUTPUT FILENAME\n";
+                return 1;
+            }
+            output_redirect = true;
+            output_filename = read_cstr(argv[argptr ++]);
+        }
+        else {
+            cout << "INVALID OPTION : " << opt << "\n";
+            return 1;
+        }
+    }
+
+    // link
+    cout << "LINKING\n";
+    string combined_ebnf = "";
+    {
+        set<string> parsed_files;
+        function<bool(string)> dfs = [&](string filename) -> bool { 
+            if(parsed_files.count(filename)) return true;
+            parsed_files.insert(filename);
+            cout << filename << "\n";
+            grammar *g = parse_file(filename);
+            if(g == nullptr) {
+                cout << "FAILED TO PARSE\n";
+                return false;
+            }
+            for(int i = 0; i < g->is.size(); i++){
+                include *in = g->is[i];
+                string n_filename = print_terminal(in->t);
+                n_filename = n_filename.substr(1, n_filename.size() - 2);
+                if(!dfs(n_filename)) {
+                    return false;
+                }
+            }
+            for(int i = 0; i < g->rs.size(); i++){
+                combined_ebnf += print_rule(g->rs[i]) + "\n";
+            }
+            combined_ebnf += "\n";
+            return true;
+        };
+        if(!dfs(filename)) {
+            cout << "LINKING FAILED\n";
+            return 1;
+        }
+        cout << "LINKING PASSED\n\n";
+    }
+
+    // parse
+    cout << "PARSING\n";
+    grammar *g = parse_string(combined_ebnf);
     assert(ptr_stack.size() == 0);
     if(g == nullptr) {
-        cout << "FAILED\n";
-        return 0;
+        cout << "PARSING FAILED\n";
+        return 1;
     }
-    else {
-        cout << "SUCCESS : " << g->rs.size() << "\n";
-        cout << print_grammar(g) << "\n";
-    }
+    cout << "PARSING PASSED\n";
+    cout << print_grammar(g) << "\n";
     
     // some semantic checking.
     cout << "RUNNING SEMANTIC CHECKS\n";
     if(!do_semantic_checks(g)) {
         cout << "SEMANTIC CHECKS FAILED\n";
-        return 0;
+        return 1;
     }
     cout << "SEMANTIC CHECKS PASSED\n\n";
     
     // spit out code
     cout << "GENERATING PROGRAM\n";
 
-    // switch cout to point to file
-    ofstream out(filename + "_parser.cpp");
-    if (!out) {
-        cout << "Failed to open " + filename + "_parser.cpp\n";
-        return 0;
+    // generate code
+    if(output_redirect) {
+        streambuf *coutbuf = cout.rdbuf(); 
+        ofstream out = ofstream(output_filename);
+        if (!out) {
+            cout << "Failed to open " << output_filename << "\n";
+            return 1;
+        }
+        cout.rdbuf(out.rdbuf());  
+        generate_program(g);
+        cout.rdbuf(coutbuf); // required to not segfault D:
     }
-    streambuf *coutbuf = cout.rdbuf(); 
-    cout.rdbuf(out.rdbuf()); 
-    generate_program(g);
-    cout.rdbuf(coutbuf); // required to not segfault D:
+    else {
+        generate_program(g);
+    }
+    
+    cout << "DONE GENERATING\n";
 
     return 0;
 }

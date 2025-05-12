@@ -15,7 +15,7 @@ symbol = "[" | "]" | "{" | "}" | "(" | ")" | "<" | ">"                  (* every
        | "^" | "&" | "/" | "~" | "`" ;
 escape = "\\" , ( "n" | "t" | "r" | "f" | "b" | "\"" | "\\" ) ;
 
-identifier = letter , { letter } ;
+identifier = < letter > ;
 
 (* comments can contain everything except for asterisks *)
 (* also, idk a better way to handle this without implementing set subtraction in the grammar *)
@@ -26,15 +26,16 @@ comment_char    = letter | digit | ws
                 | "&" | "/" | "~" | "`" | "\\" | "\"" ;
 comment = "(*" , { comment_char } , "*)" ;
 ws = " " | "\n" | "\t" | "\r" | "\f" | "\b" | comment ;   (* treat comments as whitespace *)
-rws = ws , { ws } ;                                       (* required whitespace *)
+rws = < ws > ;                                       (* required whitespace *)
 ows = { ws } ;                                            (* optional whitespace *)
 
 terminal_char = letter | digit | symbol | escape | " " ;
-terminal = "\"" , terminal_char , { terminal_char } , "\"" ;
+terminal = "\"" , < terminal_char > , "\"" ;
 
 term = "(" , rws , alternation , rws , ")"      (* grouping *)
      | "[" , rws , alternation , rws , "]"      (* zero or one *)
      | "{" , rws , alternation , rws , "}"      (* zero or more *)
+     | "<" , rws , alternation , rws , ">"      (* one or more *)
      | terminal
      | identifier ;                     
 
@@ -42,5 +43,5 @@ concatenation = term , { rws , "," , rws , term } ;
 alternation = concatenation , { rws , "|" , rws , concatenation } ;
 
 rule = identifier , rws , "=" , rws , alternation , rws , ";" ;
-
-grammar = { ows , rule } , ows ;
+include = "#include" , rws , terminal , rws , ";" ;
+grammar = { ows , include } , { ows , rule } , ows ;
