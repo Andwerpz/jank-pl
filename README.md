@@ -75,4 +75,6 @@ Seems like writing all the EBNF in one file will be very annoying. TODO, impleme
 
 Note that any ebnf parser generated will not automatically resolve #includes, that part is reserved for semantic analysis. It will just check if the syntax is correct. 
 
-Also, will add '<' '>' as a new grouping tool to signify one or more. 
+Also, will add `<` `>` as a new grouping tool to signify one or more. 
+
+We'll stray from the C and C++ convention of having to declare stuff before using it. It'll be more like Java, as long as its declared somewhere, you're able to use it. 

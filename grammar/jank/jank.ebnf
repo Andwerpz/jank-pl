@@ -1,3 +1,5 @@
+#include "expression.ebnf" ;
+#include "function.ebnf" ;
 
 (* I loooove dylan janky *)
 
@@ -10,7 +12,7 @@ alpha   = "A" | "B" | "C" | "D" | "E" | "F" | "G"
         | "q" | "r" | "s" | "t" | "u" | "v" | "w"
         | "x" | "y" | "z" ;
 digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
-number = digit , { digit } ;
+number = < digit > ;
 
 (* 
 structures should define whitespace within themselves. 
@@ -18,29 +20,23 @@ Whitespace outside will be defined by an enclosing structure
 the only exception is 'program', which needs to define whitespace outside of itself as it doesn't have any enclosing structure
 *)
 ws = " " | "\n" | "\t" | "\r" | "\f" | "\b" ;   (* whitespace *)
-rws = ws , { ws } ;                             (* required whitespace *)
+rws = < ws > ;                                  (* required whitespace *)
 ows = { ws } ;                                  (* optional whitespace *)
 
 identifier = alpha , { alpha | digit | "_" } ;
-type_identifier = "int" | "float" | "void" ;
-
-(* TODO *)
-expression = identifier | number ;
 
 (* int a = b *)
-declaration = type_identifier , rws , identifier , rws , "=" , rws , expression ;
+declaration = identifier , rws , identifier , rws , "=" , rws , expression ;
 
 (* int foo *)
-parameter = type_identifier , rws , identifier ;
+parameter = identifier , rws , identifier ;
 parameter_list = [ parameter , { ows , "," , ows , parameter } ] ;
+
+argument = identifier ;
+argument_list = [ argument , { ows , "," , ows , argument } ] ;
 
 statement = declaration , ows , ";" ;
 compound_statement = "{" , ows , { ( statement | compound_statement ) , ows } , "}" ;
-
-(* void main *)
-function_definition = type_identifier , rws , identifier ;
-(* void main(int foo) { } *)
-function = function_definition , ows , "(" , ows , parameter_list , ows , ")" , ows , compound_statement ;
 
 program = { ows , function } , ows ;
 

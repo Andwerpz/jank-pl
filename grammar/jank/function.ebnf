@@ -1,0 +1,10 @@
+#include "jank.ebnf" ;
+
+(* void main *)
+function_definition = identifier , rws , identifier ;
+
+(* void main(int foo) { } *)
+function = function_definition , ows , "(" , ows , parameter_list , ows , ")" , ows , compound_statement ;
+
+(* print("asdf") *)
+function_call = identifier , ows , "(" , ows , argument_list , ows , ")" ;

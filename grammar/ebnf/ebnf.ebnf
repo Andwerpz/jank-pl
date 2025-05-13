@@ -26,7 +26,7 @@ comment_char    = letter | digit | ws
                 | "&" | "/" | "~" | "`" | "\\" | "\"" ;
 comment = "(*" , { comment_char } , "*)" ;
 ws = " " | "\n" | "\t" | "\r" | "\f" | "\b" | comment ;   (* treat comments as whitespace *)
-rws = < ws > ;                                       (* required whitespace *)
+rws = < ws > ;                                            (* required whitespace *)
 ows = { ws } ;                                            (* optional whitespace *)
 
 terminal_char = letter | digit | symbol | escape | " " ;
