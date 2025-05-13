@@ -74,32 +74,18 @@ namespace parser {
     struct compound_statement;
     struct program;
 
-    // function_definition = identifier , rws , identifier ;
+    // function_definition = identifier , rws , identifier , ows , "(" , ows , parameter_list , ows , ")" ;
     struct function_definition {
         identifier *t0;
         rws *t1;
         identifier *t2;
-        function_definition(identifier *_t0, rws *_t1, identifier *_t2) {
-            t0 = _t0;
-            t1 = _t1;
-            t2 = _t2;
-        }
-        static function_definition* parse();
-        std::string to_string();
-    };
-
-    // function = function_definition , ows , "(" , ows , parameter_list , ows , ")" , ows , compound_statement ;
-    struct function {
-        function_definition *t0;
-        ows *t1;
-        std::string t2;
         ows *t3;
-        parameter_list *t4;
+        std::string t4;
         ows *t5;
-        std::string t6;
+        parameter_list *t6;
         ows *t7;
-        compound_statement *t8;
-        function(function_definition *_t0, ows *_t1, std::string _t2, ows *_t3, parameter_list *_t4, ows *_t5, std::string _t6, ows *_t7, compound_statement *_t8) {
+        std::string t8;
+        function_definition(identifier *_t0, rws *_t1, identifier *_t2, ows *_t3, std::string _t4, ows *_t5, parameter_list *_t6, ows *_t7, std::string _t8) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -109,6 +95,20 @@ namespace parser {
             t6 = _t6;
             t7 = _t7;
             t8 = _t8;
+        }
+        static function_definition* parse();
+        std::string to_string();
+    };
+
+    // function = function_definition , ows , compound_statement ;
+    struct function {
+        function_definition *t0;
+        ows *t1;
+        compound_statement *t2;
+        function(function_definition *_t0, ows *_t1, compound_statement *_t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
         }
         static function* parse();
         std::string to_string();
@@ -1666,8 +1666,20 @@ namespace parser {
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
         identifier *_t2 = identifier::parse();
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t3 = ows::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t4 = next_chars(1);
+        if(_t4 != "(") {pop_stack(); return nullptr;}
+        ows *_t5 = ows::parse();
+        if(_t5 == nullptr) {pop_stack(); return nullptr;}
+        parameter_list *_t6 = parameter_list::parse();
+        if(_t6 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t7 = ows::parse();
+        if(_t7 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t8 = next_chars(1);
+        if(_t8 != ")") {pop_stack(); return nullptr;}
         rm_stack();
-        return new function_definition(_t0, _t1, _t2);
+        return new function_definition(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8);
     }
 
     std::string function_definition::to_string() {
@@ -1675,6 +1687,12 @@ namespace parser {
         ans += t0->to_string();
         ans += t1->to_string();
         ans += t2->to_string();
+        ans += t3->to_string();
+        ans += t4;
+        ans += t5->to_string();
+        ans += t6->to_string();
+        ans += t7->to_string();
+        ans += t8;
         return ans;
     }
 
@@ -1684,35 +1702,17 @@ namespace parser {
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         ows *_t1 = ows::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t2 = next_chars(1);
-        if(_t2 != "(") {pop_stack(); return nullptr;}
-        ows *_t3 = ows::parse();
-        if(_t3 == nullptr) {pop_stack(); return nullptr;}
-        parameter_list *_t4 = parameter_list::parse();
-        if(_t4 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t5 = ows::parse();
-        if(_t5 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t6 = next_chars(1);
-        if(_t6 != ")") {pop_stack(); return nullptr;}
-        ows *_t7 = ows::parse();
-        if(_t7 == nullptr) {pop_stack(); return nullptr;}
-        compound_statement *_t8 = compound_statement::parse();
-        if(_t8 == nullptr) {pop_stack(); return nullptr;}
+        compound_statement *_t2 = compound_statement::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        return new function(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8);
+        return new function(_t0, _t1, _t2);
     }
 
     std::string function::to_string() {
         std::string ans = "";
         ans += t0->to_string();
         ans += t1->to_string();
-        ans += t2;
-        ans += t3->to_string();
-        ans += t4->to_string();
-        ans += t5->to_string();
-        ans += t6;
-        ans += t7->to_string();
-        ans += t8->to_string();
+        ans += t2->to_string();
         return ans;
     }
 

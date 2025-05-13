@@ -1,7 +1,7 @@
 
 int main() {
     int x = 10;
-    float y = x;
+    int y = x;
 }
 
 int foo(int arg1, int arg2) {
@@ -9,6 +9,6 @@ int foo(int arg1, int arg2) {
     int z = 100;
 }
 
-void bar(float arg2, int arg_3) {
+void bar(string arg2, int arg_3) {
     int abc_def = 20;
 }

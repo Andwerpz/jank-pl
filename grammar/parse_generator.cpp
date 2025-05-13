@@ -1034,11 +1034,12 @@ PARSERS
 
 IMPLEMENTED FEATURES
  - alternations with just one option should get simplified down into that option
+ - add to_string or something equivalent. 
 
 NEW FEATURES
  - concatenations with just a terminal should get simplified down into a string
  - alternations with just strings should get simplified down into one string
- - add to_string or something equivalent. 
+ - ability to auto-generate methods that will find all of some structure A within structure B and return a vector of them in order
 
 lets look at an example rule
 

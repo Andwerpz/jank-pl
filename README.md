@@ -78,3 +78,6 @@ Note that any ebnf parser generated will not automatically resolve #includes, th
 Also, will add `<` `>` as a new grouping tool to signify one or more. 
 
 We'll stray from the C and C++ convention of having to declare stuff before using it. It'll be more like Java, as long as its declared somewhere, you're able to use it. 
+
+### 5/13/2025
+Added `to_string()` feature to all parser structs. This will probably be the last feature addition to the parser in a while. 
