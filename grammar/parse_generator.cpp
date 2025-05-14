@@ -1503,7 +1503,7 @@ string get_current_date_string() {
     tm *parts = localtime(&now_c);
 
     ostringstream oss;
-    oss << put_time(parts, "%m-%d-%Y");
+    oss << put_time(parts, "%m-%d-%Y %H:%M:%S");
     return oss.str();
 }
 

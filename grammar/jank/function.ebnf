@@ -1,7 +1,7 @@
 #include "jank.ebnf" ;
 
 (* void main(int foo) *)
-function_definition = identifier , rws , identifier , ows , "(" , ows , parameter_list , ows , ")" ;
+function_definition = type , rws , identifier , ows , "(" , ows , parameter_list , ows , ")" ;
 
 (* void main(int foo) { } *)
 function = function_definition , ows , compound_statement ;

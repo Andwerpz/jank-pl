@@ -23,19 +23,20 @@ ws = " " | "\n" | "\t" | "\r" | "\f" | "\b" ;   (* whitespace *)
 rws = < ws > ;                                  (* required whitespace *)
 ows = { ws } ;                                  (* optional whitespace *)
 
+type = alpha , { alpha | digit | "_" } ;
 identifier = alpha , { alpha | digit | "_" } ;
 
 (* int a = b *)
-declaration = identifier , rws , identifier , rws , "=" , rws , expression ;
+declaration = type , rws , identifier , rws , "=" , rws , expression ;
 
 (* int foo *)
-parameter = identifier , rws , identifier ;
+parameter = type , rws , identifier ;
 parameter_list = [ parameter , { ows , "," , ows , parameter } ] ;
+argument_list = [ identifier , { ows , "," , ows , identifier } ] ;
 
-argument = identifier ;
-argument_list = [ argument , { ows , "," , ows , argument } ] ;
-
-statement = declaration , ows , ";" ;
+statement = declaration , ows , ";" 
+          | function_call , ows , ";" 
+          | "return" , rws , expression , ows , ";" ;
 compound_statement = "{" , ows , { ( statement | compound_statement ) , ows } , "}" ;
 
 program = { ows , function } , ows ;
