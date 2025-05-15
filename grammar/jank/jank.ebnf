@@ -2,6 +2,11 @@
 #include "function.ebnf" ;
 
 (* I loooove dylan janky *)
+(*
+TODO
+ - comments
+ - global variables
+*)
 
 alpha   = "A" | "B" | "C" | "D" | "E" | "F" | "G"
         | "H" | "I" | "J" | "K" | "L" | "M" | "N"
@@ -12,7 +17,7 @@ alpha   = "A" | "B" | "C" | "D" | "E" | "F" | "G"
         | "q" | "r" | "s" | "t" | "u" | "v" | "w"
         | "x" | "y" | "z" ;
 digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
-number = < digit > ;
+escape = "\\" , ( "n" | "t" | "r" | "f" | "b" | "\"" | "\\" ) ;
 
 (* 
 structures should define whitespace within themselves. 
@@ -32,11 +37,11 @@ declaration = type , rws , identifier , rws , "=" , rws , expression ;
 (* int foo *)
 parameter = type , rws , identifier ;
 parameter_list = [ parameter , { ows , "," , ows , parameter } ] ;
-argument_list = [ identifier , { ows , "," , ows , identifier } ] ;
+argument_list = [ expression , { ows , "," , ows , expression } ] ;
 
 statement = declaration , ows , ";" 
           | function_call , ows , ";" 
-          | "return" , rws , expression , ows , ";" ;
+          | "return" , [ rws , expression ] , ows , ";" ;
 compound_statement = "{" , ows , { ( statement | compound_statement ) , ows } , "}" ;
 
 program = { ows , function } , ows ;

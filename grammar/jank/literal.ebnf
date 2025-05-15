@@ -1,0 +1,7 @@
+#include "jank.ebnf" ;
+
+literal_integer = < digit > ;
+literal_float = literal_integer , "." , literal_integer ;
+
+(* TODO support other types of literals like strings / floats / chars *)
+literal = literal_integer ;

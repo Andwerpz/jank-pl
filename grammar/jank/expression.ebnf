@@ -1,10 +1,11 @@
 #include "jank.ebnf" ;
 #include "function.ebnf" ;
+#include "literal.ebnf" ;
 
 (* math expressions *)
 (* currently, + - (multiply) / are supported *)
 (* TODO support more operations *)
 
-expr_factor = [ "+" , ows | "-" , ows ] , ( function_call | identifier | number | "(" , ows , expression , ows , ")" ) ;
+expr_factor = [ "+" , ows | "-" , ows ] , ( function_call | identifier | literal | "(" , ows , expression , ows , ")" ) ;
 expr_term = expr_factor , { ows , ( "*" | "/" ) , ows , expr_factor } ;
 expression = expr_term , { ows , ( "+" | "-" ) , ows , expr_term } ;
