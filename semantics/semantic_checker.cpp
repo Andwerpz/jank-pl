@@ -29,6 +29,46 @@ TODO
  - figure out how to nicely handle type converting operations. Maybe just keep a big list of what operations
    are valid, like (int + int = int) and (int * float = float) are valid but (string * string) is invalid. 
 
+CODE GENERATION
+ - store all variables on the stack. This is much less performant, but much easier to implement
+ - when going into function, have a 'stack barrier' and then define the positions of all the local variables
+   relative to that stack barrier (negative offset? stack grows down??)
+ - can also use stack to store temporary variables in calculations. 
+ - really only using registers as temp storage. 
+ - when exiting from a function, also store the return value on the stack. 
+ - when storing stuff, I need to know the size in bytes of each type. Should probably figure out a way to
+   determine that. Or maybe, I'll just store memory pointers on the stack. 
+
+ - if we want to store big structs in the heap, will have to implement malloc :/
+ - perhaps can start with a simple implementation: we just never reuse the space
+
+ - primitives will be pass by copy (they'll be stored on the stack) while user defined structs will be 
+   pass by reference (we'll store a pointer to them on the stack)
+
+ - before a function is called, caller needs to put new base pointer, and put in the parameters into the stack.
+   then, when the function is actually entered, callee will treat these as variables. 
+
+ - the caller must save any registers they wish to maintain
+ - the caller must pass the arguments onto the stack. 
+ - the callee is responsible for setting up and returning the base pointer
+
+int foo(int x) {
+    return x * x;
+}
+
+int main() {
+    int x = 10;
+    int y = x;
+    return 0;
+}
+
+foo:
+    # expects x at rbp - 0?
+    
+
+main:
+
+
 */
 
 // -- STRUCT DEFS --
@@ -200,11 +240,26 @@ struct FunctionSignature {
     
     bool operator==(FunctionSignature& other) {
         if(*id != *(other.id)) return false;
-        if(input_types != other.input_types) return false;
+        if(input_types.size() != other.input_types.size()) return false;
+        for(int i = 0; i < input_types.size(); i++){
+            if(*(input_types[i]) != *(other.input_types[i])) return false;
+        }
         return true;
     }
     bool operator!=(FunctionSignature& other) {
         return !(*this == other);
+    }
+
+    std::string to_string() {
+        std::string ans = "";
+        ans += id->name;
+        ans += "(";
+        for(int i = 0; i < input_types.size(); i++) {
+            ans += input_types[i]->name;
+            if(i + 1 != input_types.size()) ans += ", ";
+        }
+        ans += ")";
+        return ans;
     }
 };
 
@@ -285,6 +340,7 @@ std::vector<Variable*> declared_variables;
 std::stack<std::vector<Variable*>> declaration_stack;
 
 Type* find_variable_type(Identifier *id) {
+    std::cout << "FIND VARIABLE TYPE : " << id->name << std::endl;
     for(int i = 0; i < declared_variables.size(); i++){
         if(*(declared_variables[i]->id) == *id) return declared_variables[i]->type;
     }
@@ -315,7 +371,9 @@ bool is_function_declared(FunctionSignature *fs) {
 }
 
 Function* get_function(FunctionSignature *fs) {
+    std::cout << "GET FUNCTION : " << fs->to_string() << "\n";
     for(int i = 0; i < declared_functions.size(); i++){
+        std::cout << declared_functions[i]->fs->to_string() << "\n";
         if(*fs == *(declared_functions[i]->fs)) {
             return declared_functions[i];
         }
@@ -326,16 +384,18 @@ Function* get_function(FunctionSignature *fs) {
 //checks against all variables, functions
 bool is_identifier_used(Identifier *id) {
     for(int i = 0; i < declared_functions.size(); i++){
-        if(*id == *(declared_functions[i]->id)) return false;
+        if(*id == *(declared_functions[i]->id)) return true;
     }
     for(int i = 0; i < declared_variables.size(); i++){
-        if(*id == *(declared_variables[i]->id)) return false;
+        if(*id == *(declared_variables[i]->id)) return true;
     }
-    return true;
+    return false;
 }
 
 bool add_variable(Type *t, Identifier *id) {
+    assert(t != nullptr && id != nullptr);
     assert(declaration_stack.size() != 0);
+    std::cout << "ADDING VARIABLE : " << id->name << std::endl;
     if(is_identifier_used(id)) return false;
     Variable *v = new Variable(t, id);
     declared_variables.push_back(v);
@@ -344,6 +404,8 @@ bool add_variable(Type *t, Identifier *id) {
 }
 
 void remove_variable(Identifier *id) {
+    assert(id != nullptr);
+    std::cout << "REMOVING VARIABLE : " << id->name << std::endl;
     int ind = -1;
     for(int i = 0; i < declared_variables.size(); i++){
         if(*id == *(declared_variables[i]->id)) {
@@ -369,7 +431,6 @@ void pop_declaration_stack() {
 }
 
 // -- STRUCT FUNCTIONS --
-
 Literal* Literal::convert(parser::literal *n) {
     //for now, only integer literals are supported by the grammar
     return new IntegerLiteral(stoi(n->to_string()));
@@ -557,6 +618,10 @@ Type* Expression::Term::resolve_type() {
     for(int i = 0; i < factors.size(); i++){
         types.push_back(factors[i]->resolve_type());
     }
+    // - make sure all the types are resolved
+    for(int i = 0; i < factors.size(); i++){
+        if(types[i] == nullptr) return nullptr;
+    }
     //just make sure all the types are equal for now
     for(int i = 0; i < factors.size() - 1; i++){
         if(*(types[i]) != *(types[i + 1])) return nullptr;
@@ -572,6 +637,10 @@ Type* Expression::resolve_type() {
     std::vector<Type*> types;
     for(int i = 0; i < terms.size(); i++){
         types.push_back(terms[i]->resolve_type());
+    }
+    // - make sure all types are resolved
+    for(int i = 0; i < terms.size(); i++){
+        if(types[i] == nullptr) return nullptr;
     }
     //just make sure all the types are equal for now
     for(int i = 0; i < terms.size() - 1; i++){
@@ -847,7 +916,18 @@ bool Program::is_well_formed() {
     }
 
     // - there must be a function with function signature 'int main()'
-    // TODO
+    {
+        FunctionSignature *main_fs = new FunctionSignature(new Identifier("main"), {});
+        Function *f = get_function(main_fs);
+        if(f == nullptr) {
+            std::cout << "Missing main function\n";
+            return false;
+        }
+        if(*(f->type) != Type("int")) {
+            std::cout << "main has wrong return type (must be int)\n";
+            return false;
+        }
+    }
 
     //collect all type definitions. For now, just the primitive types are defined
     declared_types.push_back(new Type("int"));

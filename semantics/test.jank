@@ -1,14 +1,1 @@
 
-int main() {
-    int x = 10;
-    int y = x;
-}
-
-int foo(int arg1, int arg2) {
-    int y = 10;
-    int z = 100;
-}
-
-void bar(string arg2, int arg_3) {
-    int abc_def = 20;
-}
