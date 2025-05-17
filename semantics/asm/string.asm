@@ -3,7 +3,8 @@
 .global strlen
 .global int_to_string
 
-# puts(string_ptr)
+# prints string to stdout
+# - string_ptr
 puts:
     push %rbp               # set up new stack frame
     mov %rsp, %rbp
@@ -23,8 +24,8 @@ puts:
     pop %rbp                # return old stack frame
     ret
 
-# strlen(string_ptr)
 # finds the length of a null terminated string
+# - string_ptr
 strlen:
     push %rbp
     mov %rsp, %rbp
@@ -42,7 +43,7 @@ strlen:
     pop %rbp
     ret
 
-# int_to_string(x)
 # returns a pointer to the created string
+# - (int) x
 int_to_string:
-
+    
