@@ -11,7 +11,7 @@ _start:
     call puts
     pop %rax
 
-    mov     $60, %rax       # syscall: exit
-    xor     %rdi, %rdi      # exit code 0
-    syscall
+    mov $0, %rax
+    push %rax
+    call sys_exit
     

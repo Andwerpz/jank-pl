@@ -3,29 +3,33 @@
 .global strlen
 .global int_to_string
 
+# void puts(string s)
 # prints string to stdout
-# - string_ptr
 puts:
     push %rbp               # set up new stack frame
     mov %rsp, %rbp
 
+                            # call sys_write(1, string_ptr, strlen(string_ptr))
+    mov $1, %rax            # file descriptor : stdout
+    push %rax
+
+    mov 16(%rbp), %rax      # buffer to write from
+    push %rax
+
     mov 16(%rbp), %rax      # call strlen to find length of string
     push %rax
     call strlen
-    pop %rbx
-    mov %rax, %rbx          # put strlen into %rbx
+    add $8, %rsp
+    push %rax
 
-    mov     $1, %rax        # syscall: write
-    mov     $1, %rdi        # file descriptor: stdout
-    mov     16(%rbp), %rsi  # buffer to write
-    mov     %rbx, %rdx      # number of bytes
-    syscall
+    call sys_write
+    add $24, %rsp
 
     pop %rbp                # return old stack frame
     ret
 
+# int strlen(string s)
 # finds the length of a null terminated string
-# - string_ptr
 strlen:
     push %rbp
     mov %rsp, %rbp
@@ -43,7 +47,12 @@ strlen:
     pop %rbp
     ret
 
+# string int_to_string(int x)
 # returns a pointer to the created string
-# - (int) x
 int_to_string:
-    
+    push %rbp
+    mov %rsp, %rbp
+
+
+    pop %rbp
+    ret

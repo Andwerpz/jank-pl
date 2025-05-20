@@ -1480,7 +1480,7 @@ void generate_fndef_from_alternation(alternation *a, string struct_name) {
         for(int i = 0; i < a->cs.size(); i++){
             cout << indent() << "if(is_" << (layer_char + to_string(i)) << ") return " << var_sid[i] << "->to_string();\n";
         }
-        cout << "assert(false);\n";
+        cout << indent() << "assert(false);\n";
         indent_level --;    
         cout << indent() << "}\n";
         cout << "\n";

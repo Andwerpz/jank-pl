@@ -3,9 +3,32 @@
 #include "literal.ebnf" ;
 
 (* math expressions *)
-(* currently, + - (multiply) / are supported *)
-(* TODO support more operations *)
+(* for now, the result should always be an int *)
+(* TODO handle casting. This should be an unary operator, like "(" , type , ")" *)
 
-expr_factor = [ "+" , ows | "-" , ows ] , ( function_call | identifier | literal | "(" , ows , expression , ows , ")" ) ;
-expr_term = expr_factor , { ows , ( "*" | "/" ) , ows , expr_factor } ;
-expression = expr_term , { ows , ( "+" | "-" ) , ows , expr_term } ;
+(* in order of precedence *)
+(* +x -x ~x !x *)
+(* <mult> / % *)
+(* + - *)
+(* << >> *)
+(* < <= > >= *)
+(* == != *)
+(* & *)
+(* ^ *)
+(* | *)
+(* && *)
+(* || *)
+
+expr_primary = function_call | identifier | literal | "(" , ows , expression , ows , ")" ;
+expr_unary = ( "+" | "-" | "~" | "!" ) , ows , expr_unary
+           | expr_primary ;
+expr_multiplicative = expr_unary , { ows , ( "*" | "/" | "%" ) , ows , expr_unary } ;
+expr_additive = expr_multiplicative , { ows , ( "+" | "-" ) , ows , expr_multiplicative } ;
+expr_shift = expr_additive , { ows , ( "<<" | ">>" ) , ows , expr_additive } ;
+expr_relational = expr_shift , { ows , ( "<" | "<=" | ">" | ">=" ) , ows , expr_shift } ;
+expr_equality = expr_relational , { ows , ( "==" | "!=" ) , ows , expr_relational } ;
+expr_bit_and = expr_equality , { ows , "&" , ows , expr_equality } ;
+expr_bit_xor = expr_bit_and , { ows , "^" , ows , expr_bit_and } ;
+expr_bit_or = expr_bit_xor , { ows , "|" , ows , expr_bit_xor } ;
+expr_logical_and = expr_bit_or , { ows , "&&" , ows , expr_bit_or } ;
+expression = expr_logical_and , { ows , "||" , ows , expr_logical_and } ;

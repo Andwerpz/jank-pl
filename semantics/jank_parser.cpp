@@ -1,4 +1,4 @@
-// Date Generated : 05-14-2025 22:41:04
+// Date Generated : 05-19-2025 17:46:18
 #include <vector>
 #include <string>
 #include <cassert>
@@ -58,22 +58,36 @@ namespace parser {
     struct literal_integer;
     struct literal_float;
     struct literal;
-    struct expr_factor;
-    struct expr_term;
+    struct expr_primary;
+    struct expr_unary;
+    struct expr_multiplicative;
+    struct expr_additive;
+    struct expr_shift;
+    struct expr_relational;
+    struct expr_equality;
+    struct expr_bit_and;
+    struct expr_bit_xor;
+    struct expr_bit_or;
+    struct expr_logical_and;
     struct expression;
     struct alpha;
     struct digit;
     struct escape;
+    struct line_comment;
+    struct multiline_comment;
     struct ws;
     struct rws;
     struct ows;
     struct type;
     struct identifier;
     struct declaration;
+    struct assignment;
     struct parameter;
     struct parameter_list;
     struct argument_list;
     struct statement;
+    struct simple_statement;
+    struct control_statement;
     struct compound_statement;
     struct program;
 
@@ -181,124 +195,248 @@ namespace parser {
         std::string to_string();
     };
 
-    // expr_factor = [ "+" , ows | "-" , ows ] , ( function_call | identifier | literal | "(" , ows , expression , ows , ")" ) ;
-    struct expr_factor {
+    // expr_primary = function_call | identifier | literal | "(" , ows , expression , ows , ")" ;
+    struct expr_primary {
         struct a0 {
-            struct b0 {
-                std::string t0;
-                ows *t1;
-                b0(std::string _t0, ows *_t1) {
-                    t0 = _t0;
-                    t1 = _t1;
-                }
-                static b0* parse();
-                std::string to_string();
-            };
-            struct b1 {
-                std::string t0;
-                ows *t1;
-                b1(std::string _t0, ows *_t1) {
-                    t0 = _t0;
-                    t1 = _t1;
-                }
-                static b1* parse();
-                std::string to_string();
-            };
-            bool is_b0 = false;
-            b0 *t0;
-            bool is_b1 = false;
-            b1 *t1;
-            a0(b0 *_t0) {
-                is_b0 = true;
+            function_call *t0;
+            a0(function_call *_t0) {
                 t0 = _t0;
-            }
-            a0(b1 *_t1) {
-                is_b1 = true;
-                t1 = _t1;
             }
             static a0* parse();
             std::string to_string();
         };
         struct a1 {
-            struct b0 {
-                function_call *t0;
-                b0(function_call *_t0) {
-                    t0 = _t0;
-                }
-                static b0* parse();
-                std::string to_string();
-            };
-            struct b1 {
-                identifier *t0;
-                b1(identifier *_t0) {
-                    t0 = _t0;
-                }
-                static b1* parse();
-                std::string to_string();
-            };
-            struct b2 {
-                literal *t0;
-                b2(literal *_t0) {
-                    t0 = _t0;
-                }
-                static b2* parse();
-                std::string to_string();
-            };
-            struct b3 {
-                std::string t0;
-                ows *t1;
-                expression *t2;
-                ows *t3;
-                std::string t4;
-                b3(std::string _t0, ows *_t1, expression *_t2, ows *_t3, std::string _t4) {
-                    t0 = _t0;
-                    t1 = _t1;
-                    t2 = _t2;
-                    t3 = _t3;
-                    t4 = _t4;
-                }
-                static b3* parse();
-                std::string to_string();
-            };
-            bool is_b0 = false;
-            b0 *t0;
-            bool is_b1 = false;
-            b1 *t1;
-            bool is_b2 = false;
-            b2 *t2;
-            bool is_b3 = false;
-            b3 *t3;
-            a1(b0 *_t0) {
-                is_b0 = true;
+            identifier *t0;
+            a1(identifier *_t0) {
                 t0 = _t0;
-            }
-            a1(b1 *_t1) {
-                is_b1 = true;
-                t1 = _t1;
-            }
-            a1(b2 *_t2) {
-                is_b2 = true;
-                t2 = _t2;
-            }
-            a1(b3 *_t3) {
-                is_b3 = true;
-                t3 = _t3;
             }
             static a1* parse();
             std::string to_string();
         };
+        struct a2 {
+            literal *t0;
+            a2(literal *_t0) {
+                t0 = _t0;
+            }
+            static a2* parse();
+            std::string to_string();
+        };
+        struct a3 {
+            std::string t0;
+            ows *t1;
+            expression *t2;
+            ows *t3;
+            std::string t4;
+            a3(std::string _t0, ows *_t1, expression *_t2, ows *_t3, std::string _t4) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+                t4 = _t4;
+            }
+            static a3* parse();
+            std::string to_string();
+        };
+        bool is_a0 = false;
         a0 *t0;
+        bool is_a1 = false;
         a1 *t1;
-        expr_factor(a0 *_t0, a1 *_t1) {
+        bool is_a2 = false;
+        a2 *t2;
+        bool is_a3 = false;
+        a3 *t3;
+        expr_primary(a0 *_t0) {
+            is_a0 = true;
             t0 = _t0;
+        }
+        expr_primary(a1 *_t1) {
+            is_a1 = true;
             t1 = _t1;
         }
-        static expr_factor* parse();
+        expr_primary(a2 *_t2) {
+            is_a2 = true;
+            t2 = _t2;
+        }
+        expr_primary(a3 *_t3) {
+            is_a3 = true;
+            t3 = _t3;
+        }
+        static expr_primary* parse();
         std::string to_string();
     };
 
-    // expr_term = expr_factor , { ows , ( "*" | "/" ) , ows , expr_factor } ;
-    struct expr_term {
+    // expr_unary = ( "+" | "-" | "~" | "!" ) , ows , expr_unary | expr_primary ;
+    struct expr_unary {
+        struct a0 {
+            struct b0 {
+                struct c0 {
+                    std::string t0;
+                    c0(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c0* parse();
+                    std::string to_string();
+                };
+                struct c1 {
+                    std::string t0;
+                    c1(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c1* parse();
+                    std::string to_string();
+                };
+                struct c2 {
+                    std::string t0;
+                    c2(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c2* parse();
+                    std::string to_string();
+                };
+                struct c3 {
+                    std::string t0;
+                    c3(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c3* parse();
+                    std::string to_string();
+                };
+                bool is_c0 = false;
+                c0 *t0;
+                bool is_c1 = false;
+                c1 *t1;
+                bool is_c2 = false;
+                c2 *t2;
+                bool is_c3 = false;
+                c3 *t3;
+                b0(c0 *_t0) {
+                    is_c0 = true;
+                    t0 = _t0;
+                }
+                b0(c1 *_t1) {
+                    is_c1 = true;
+                    t1 = _t1;
+                }
+                b0(c2 *_t2) {
+                    is_c2 = true;
+                    t2 = _t2;
+                }
+                b0(c3 *_t3) {
+                    is_c3 = true;
+                    t3 = _t3;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            b0 *t0;
+            ows *t1;
+            expr_unary *t2;
+            a0(b0 *_t0, ows *_t1, expr_unary *_t2) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        struct a1 {
+            expr_primary *t0;
+            a1(expr_primary *_t0) {
+                t0 = _t0;
+            }
+            static a1* parse();
+            std::string to_string();
+        };
+        bool is_a0 = false;
+        a0 *t0;
+        bool is_a1 = false;
+        a1 *t1;
+        expr_unary(a0 *_t0) {
+            is_a0 = true;
+            t0 = _t0;
+        }
+        expr_unary(a1 *_t1) {
+            is_a1 = true;
+            t1 = _t1;
+        }
+        static expr_unary* parse();
+        std::string to_string();
+    };
+
+    // expr_multiplicative = expr_unary , { ows , ( "*" | "/" | "%" ) , ows , expr_unary } ;
+    struct expr_multiplicative {
+        struct a0 {
+            struct b0 {
+                struct c0 {
+                    std::string t0;
+                    c0(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c0* parse();
+                    std::string to_string();
+                };
+                struct c1 {
+                    std::string t0;
+                    c1(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c1* parse();
+                    std::string to_string();
+                };
+                struct c2 {
+                    std::string t0;
+                    c2(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c2* parse();
+                    std::string to_string();
+                };
+                bool is_c0 = false;
+                c0 *t0;
+                bool is_c1 = false;
+                c1 *t1;
+                bool is_c2 = false;
+                c2 *t2;
+                b0(c0 *_t0) {
+                    is_c0 = true;
+                    t0 = _t0;
+                }
+                b0(c1 *_t1) {
+                    is_c1 = true;
+                    t1 = _t1;
+                }
+                b0(c2 *_t2) {
+                    is_c2 = true;
+                    t2 = _t2;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            ows *t0;
+            b0 *t1;
+            ows *t2;
+            expr_unary *t3;
+            a0(ows *_t0, b0 *_t1, ows *_t2, expr_unary *_t3) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        expr_unary *t0;
+        std::vector<a0*> t1;
+        expr_multiplicative(expr_unary *_t0, std::vector<a0*> _t1) {
+            t0 = _t0;
+            t1 = _t1;
+        }
+        static expr_multiplicative* parse();
+        std::string to_string();
+    };
+
+    // expr_additive = expr_multiplicative , { ows , ( "+" | "-" ) , ows , expr_multiplicative } ;
+    struct expr_additive {
         struct a0 {
             struct b0 {
                 struct c0 {
@@ -335,8 +473,8 @@ namespace parser {
             ows *t0;
             b0 *t1;
             ows *t2;
-            expr_factor *t3;
-            a0(ows *_t0, b0 *_t1, ows *_t2, expr_factor *_t3) {
+            expr_multiplicative *t3;
+            a0(ows *_t0, b0 *_t1, ows *_t2, expr_multiplicative *_t3) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -345,56 +483,330 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        expr_factor *t0;
+        expr_multiplicative *t0;
         std::vector<a0*> t1;
-        expr_term(expr_factor *_t0, std::vector<a0*> _t1) {
+        expr_additive(expr_multiplicative *_t0, std::vector<a0*> _t1) {
             t0 = _t0;
             t1 = _t1;
         }
-        static expr_term* parse();
+        static expr_additive* parse();
         std::string to_string();
     };
 
-    // expression = expr_term , { ows , ( "+" | "-" ) , ows , expr_term } ;
+    // expr_shift = expr_additive , { ows , ( "<<" | ">>" ) , ows , expr_additive } ;
+    struct expr_shift {
+        struct a0 {
+            struct b0 {
+                struct c0 {
+                    std::string t0;
+                    c0(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c0* parse();
+                    std::string to_string();
+                };
+                struct c1 {
+                    std::string t0;
+                    c1(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c1* parse();
+                    std::string to_string();
+                };
+                bool is_c0 = false;
+                c0 *t0;
+                bool is_c1 = false;
+                c1 *t1;
+                b0(c0 *_t0) {
+                    is_c0 = true;
+                    t0 = _t0;
+                }
+                b0(c1 *_t1) {
+                    is_c1 = true;
+                    t1 = _t1;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            ows *t0;
+            b0 *t1;
+            ows *t2;
+            expr_additive *t3;
+            a0(ows *_t0, b0 *_t1, ows *_t2, expr_additive *_t3) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        expr_additive *t0;
+        std::vector<a0*> t1;
+        expr_shift(expr_additive *_t0, std::vector<a0*> _t1) {
+            t0 = _t0;
+            t1 = _t1;
+        }
+        static expr_shift* parse();
+        std::string to_string();
+    };
+
+    // expr_relational = expr_shift , { ows , ( "<" | "<=" | ">" | ">=" ) , ows , expr_shift } ;
+    struct expr_relational {
+        struct a0 {
+            struct b0 {
+                struct c0 {
+                    std::string t0;
+                    c0(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c0* parse();
+                    std::string to_string();
+                };
+                struct c1 {
+                    std::string t0;
+                    c1(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c1* parse();
+                    std::string to_string();
+                };
+                struct c2 {
+                    std::string t0;
+                    c2(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c2* parse();
+                    std::string to_string();
+                };
+                struct c3 {
+                    std::string t0;
+                    c3(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c3* parse();
+                    std::string to_string();
+                };
+                bool is_c0 = false;
+                c0 *t0;
+                bool is_c1 = false;
+                c1 *t1;
+                bool is_c2 = false;
+                c2 *t2;
+                bool is_c3 = false;
+                c3 *t3;
+                b0(c0 *_t0) {
+                    is_c0 = true;
+                    t0 = _t0;
+                }
+                b0(c1 *_t1) {
+                    is_c1 = true;
+                    t1 = _t1;
+                }
+                b0(c2 *_t2) {
+                    is_c2 = true;
+                    t2 = _t2;
+                }
+                b0(c3 *_t3) {
+                    is_c3 = true;
+                    t3 = _t3;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            ows *t0;
+            b0 *t1;
+            ows *t2;
+            expr_shift *t3;
+            a0(ows *_t0, b0 *_t1, ows *_t2, expr_shift *_t3) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        expr_shift *t0;
+        std::vector<a0*> t1;
+        expr_relational(expr_shift *_t0, std::vector<a0*> _t1) {
+            t0 = _t0;
+            t1 = _t1;
+        }
+        static expr_relational* parse();
+        std::string to_string();
+    };
+
+    // expr_equality = expr_relational , { ows , ( "==" | "!=" ) , ows , expr_relational } ;
+    struct expr_equality {
+        struct a0 {
+            struct b0 {
+                struct c0 {
+                    std::string t0;
+                    c0(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c0* parse();
+                    std::string to_string();
+                };
+                struct c1 {
+                    std::string t0;
+                    c1(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c1* parse();
+                    std::string to_string();
+                };
+                bool is_c0 = false;
+                c0 *t0;
+                bool is_c1 = false;
+                c1 *t1;
+                b0(c0 *_t0) {
+                    is_c0 = true;
+                    t0 = _t0;
+                }
+                b0(c1 *_t1) {
+                    is_c1 = true;
+                    t1 = _t1;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            ows *t0;
+            b0 *t1;
+            ows *t2;
+            expr_relational *t3;
+            a0(ows *_t0, b0 *_t1, ows *_t2, expr_relational *_t3) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        expr_relational *t0;
+        std::vector<a0*> t1;
+        expr_equality(expr_relational *_t0, std::vector<a0*> _t1) {
+            t0 = _t0;
+            t1 = _t1;
+        }
+        static expr_equality* parse();
+        std::string to_string();
+    };
+
+    // expr_bit_and = expr_equality , { ows , "&" , ows , expr_equality } ;
+    struct expr_bit_and {
+        struct a0 {
+            ows *t0;
+            std::string t1;
+            ows *t2;
+            expr_equality *t3;
+            a0(ows *_t0, std::string _t1, ows *_t2, expr_equality *_t3) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        expr_equality *t0;
+        std::vector<a0*> t1;
+        expr_bit_and(expr_equality *_t0, std::vector<a0*> _t1) {
+            t0 = _t0;
+            t1 = _t1;
+        }
+        static expr_bit_and* parse();
+        std::string to_string();
+    };
+
+    // expr_bit_xor = expr_bit_and , { ows , "^" , ows , expr_bit_and } ;
+    struct expr_bit_xor {
+        struct a0 {
+            ows *t0;
+            std::string t1;
+            ows *t2;
+            expr_bit_and *t3;
+            a0(ows *_t0, std::string _t1, ows *_t2, expr_bit_and *_t3) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        expr_bit_and *t0;
+        std::vector<a0*> t1;
+        expr_bit_xor(expr_bit_and *_t0, std::vector<a0*> _t1) {
+            t0 = _t0;
+            t1 = _t1;
+        }
+        static expr_bit_xor* parse();
+        std::string to_string();
+    };
+
+    // expr_bit_or = expr_bit_xor , { ows , "|" , ows , expr_bit_xor } ;
+    struct expr_bit_or {
+        struct a0 {
+            ows *t0;
+            std::string t1;
+            ows *t2;
+            expr_bit_xor *t3;
+            a0(ows *_t0, std::string _t1, ows *_t2, expr_bit_xor *_t3) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        expr_bit_xor *t0;
+        std::vector<a0*> t1;
+        expr_bit_or(expr_bit_xor *_t0, std::vector<a0*> _t1) {
+            t0 = _t0;
+            t1 = _t1;
+        }
+        static expr_bit_or* parse();
+        std::string to_string();
+    };
+
+    // expr_logical_and = expr_bit_or , { ows , "&&" , ows , expr_bit_or } ;
+    struct expr_logical_and {
+        struct a0 {
+            ows *t0;
+            std::string t1;
+            ows *t2;
+            expr_bit_or *t3;
+            a0(ows *_t0, std::string _t1, ows *_t2, expr_bit_or *_t3) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        expr_bit_or *t0;
+        std::vector<a0*> t1;
+        expr_logical_and(expr_bit_or *_t0, std::vector<a0*> _t1) {
+            t0 = _t0;
+            t1 = _t1;
+        }
+        static expr_logical_and* parse();
+        std::string to_string();
+    };
+
+    // expression = expr_logical_and , { ows , "||" , ows , expr_logical_and } ;
     struct expression {
         struct a0 {
-            struct b0 {
-                struct c0 {
-                    std::string t0;
-                    c0(std::string _t0) {
-                        t0 = _t0;
-                    }
-                    static c0* parse();
-                    std::string to_string();
-                };
-                struct c1 {
-                    std::string t0;
-                    c1(std::string _t0) {
-                        t0 = _t0;
-                    }
-                    static c1* parse();
-                    std::string to_string();
-                };
-                bool is_c0 = false;
-                c0 *t0;
-                bool is_c1 = false;
-                c1 *t1;
-                b0(c0 *_t0) {
-                    is_c0 = true;
-                    t0 = _t0;
-                }
-                b0(c1 *_t1) {
-                    is_c1 = true;
-                    t1 = _t1;
-                }
-                static b0* parse();
-                std::string to_string();
-            };
             ows *t0;
-            b0 *t1;
+            std::string t1;
             ows *t2;
-            expr_term *t3;
-            a0(ows *_t0, b0 *_t1, ows *_t2, expr_term *_t3) {
+            expr_logical_and *t3;
+            a0(ows *_t0, std::string _t1, ows *_t2, expr_logical_and *_t3) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -403,9 +815,9 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        expr_term *t0;
+        expr_logical_and *t0;
         std::vector<a0*> t1;
-        expression(expr_term *_t0, std::vector<a0*> _t1) {
+        expression(expr_logical_and *_t0, std::vector<a0*> _t1) {
             t0 = _t0;
             t1 = _t1;
         }
@@ -1407,7 +1819,141 @@ namespace parser {
         std::string to_string();
     };
 
-    // ws = " " | "\n" | "\t" | "\r" | "\f" | "\b" ;
+    // line_comment = "//" , { alpha | digit | " " } , "\n" ;
+    struct line_comment {
+        struct a0 {
+            struct b0 {
+                alpha *t0;
+                b0(alpha *_t0) {
+                    t0 = _t0;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            struct b1 {
+                digit *t0;
+                b1(digit *_t0) {
+                    t0 = _t0;
+                }
+                static b1* parse();
+                std::string to_string();
+            };
+            struct b2 {
+                std::string t0;
+                b2(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b2* parse();
+                std::string to_string();
+            };
+            bool is_b0 = false;
+            b0 *t0;
+            bool is_b1 = false;
+            b1 *t1;
+            bool is_b2 = false;
+            b2 *t2;
+            a0(b0 *_t0) {
+                is_b0 = true;
+                t0 = _t0;
+            }
+            a0(b1 *_t1) {
+                is_b1 = true;
+                t1 = _t1;
+            }
+            a0(b2 *_t2) {
+                is_b2 = true;
+                t2 = _t2;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        std::string t0;
+        std::vector<a0*> t1;
+        std::string t2;
+        line_comment(std::string _t0, std::vector<a0*> _t1, std::string _t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static line_comment* parse();
+        std::string to_string();
+    };
+
+    // multiline_comment = "/*" , { alpha | digit | " " | "\n" } , "*/" ;
+    struct multiline_comment {
+        struct a0 {
+            struct b0 {
+                alpha *t0;
+                b0(alpha *_t0) {
+                    t0 = _t0;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            struct b1 {
+                digit *t0;
+                b1(digit *_t0) {
+                    t0 = _t0;
+                }
+                static b1* parse();
+                std::string to_string();
+            };
+            struct b2 {
+                std::string t0;
+                b2(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b2* parse();
+                std::string to_string();
+            };
+            struct b3 {
+                std::string t0;
+                b3(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b3* parse();
+                std::string to_string();
+            };
+            bool is_b0 = false;
+            b0 *t0;
+            bool is_b1 = false;
+            b1 *t1;
+            bool is_b2 = false;
+            b2 *t2;
+            bool is_b3 = false;
+            b3 *t3;
+            a0(b0 *_t0) {
+                is_b0 = true;
+                t0 = _t0;
+            }
+            a0(b1 *_t1) {
+                is_b1 = true;
+                t1 = _t1;
+            }
+            a0(b2 *_t2) {
+                is_b2 = true;
+                t2 = _t2;
+            }
+            a0(b3 *_t3) {
+                is_b3 = true;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        std::string t0;
+        std::vector<a0*> t1;
+        std::string t2;
+        multiline_comment(std::string _t0, std::vector<a0*> _t1, std::string _t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static multiline_comment* parse();
+        std::string to_string();
+    };
+
+    // ws = " " | "\n" | "\t" | "\r" | "\f" | "\b" | line_comment | multiline_comment ;
     struct ws {
         struct a0 {
             std::string t0;
@@ -1457,6 +2003,22 @@ namespace parser {
             static a5* parse();
             std::string to_string();
         };
+        struct a6 {
+            line_comment *t0;
+            a6(line_comment *_t0) {
+                t0 = _t0;
+            }
+            static a6* parse();
+            std::string to_string();
+        };
+        struct a7 {
+            multiline_comment *t0;
+            a7(multiline_comment *_t0) {
+                t0 = _t0;
+            }
+            static a7* parse();
+            std::string to_string();
+        };
         bool is_a0 = false;
         a0 *t0;
         bool is_a1 = false;
@@ -1469,6 +2031,10 @@ namespace parser {
         a4 *t4;
         bool is_a5 = false;
         a5 *t5;
+        bool is_a6 = false;
+        a6 *t6;
+        bool is_a7 = false;
+        a7 *t7;
         ws(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
@@ -1492,6 +2058,14 @@ namespace parser {
         ws(a5 *_t5) {
             is_a5 = true;
             t5 = _t5;
+        }
+        ws(a6 *_t6) {
+            is_a6 = true;
+            t6 = _t6;
+        }
+        ws(a7 *_t7) {
+            is_a7 = true;
+            t7 = _t7;
         }
         static ws* parse();
         std::string to_string();
@@ -1649,16 +2223,16 @@ namespace parser {
         std::string to_string();
     };
 
-    // declaration = type , rws , identifier , rws , "=" , rws , expression ;
+    // declaration = type , rws , identifier , ows , "=" , ows , expression ;
     struct declaration {
         type *t0;
         rws *t1;
         identifier *t2;
-        rws *t3;
+        ows *t3;
         std::string t4;
-        rws *t5;
+        ows *t5;
         expression *t6;
-        declaration(type *_t0, rws *_t1, identifier *_t2, rws *_t3, std::string _t4, rws *_t5, expression *_t6) {
+        declaration(type *_t0, rws *_t1, identifier *_t2, ows *_t3, std::string _t4, ows *_t5, expression *_t6) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -1668,6 +2242,24 @@ namespace parser {
             t6 = _t6;
         }
         static declaration* parse();
+        std::string to_string();
+    };
+
+    // assignment = identifier , ows , "=" , ows , expression ;
+    struct assignment {
+        identifier *t0;
+        ows *t1;
+        std::string t2;
+        ows *t3;
+        expression *t4;
+        assignment(identifier *_t0, ows *_t1, std::string _t2, ows *_t3, expression *_t4) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
+        }
+        static assignment* parse();
         std::string to_string();
     };
 
@@ -1753,8 +2345,56 @@ namespace parser {
         std::string to_string();
     };
 
-    // statement = declaration , ows , ";" | function_call , ows , ";" | "return" , [ rws , expression ] , ows , ";" ;
+    // statement = simple_statement | control_statement | compound_statement ;
     struct statement {
+        struct a0 {
+            simple_statement *t0;
+            a0(simple_statement *_t0) {
+                t0 = _t0;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        struct a1 {
+            control_statement *t0;
+            a1(control_statement *_t0) {
+                t0 = _t0;
+            }
+            static a1* parse();
+            std::string to_string();
+        };
+        struct a2 {
+            compound_statement *t0;
+            a2(compound_statement *_t0) {
+                t0 = _t0;
+            }
+            static a2* parse();
+            std::string to_string();
+        };
+        bool is_a0 = false;
+        a0 *t0;
+        bool is_a1 = false;
+        a1 *t1;
+        bool is_a2 = false;
+        a2 *t2;
+        statement(a0 *_t0) {
+            is_a0 = true;
+            t0 = _t0;
+        }
+        statement(a1 *_t1) {
+            is_a1 = true;
+            t1 = _t1;
+        }
+        statement(a2 *_t2) {
+            is_a2 = true;
+            t2 = _t2;
+        }
+        static statement* parse();
+        std::string to_string();
+    };
+
+    // simple_statement = declaration , ows , ";" | function_call , ows , ";" | "return" , [ rws , expression ] , ows , ";" | assignment , ows , ";" ;
+    struct simple_statement {
         struct a0 {
             declaration *t0;
             ows *t1;
@@ -1803,66 +2443,204 @@ namespace parser {
             static a2* parse();
             std::string to_string();
         };
+        struct a3 {
+            assignment *t0;
+            ows *t1;
+            std::string t2;
+            a3(assignment *_t0, ows *_t1, std::string _t2) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+            }
+            static a3* parse();
+            std::string to_string();
+        };
         bool is_a0 = false;
         a0 *t0;
         bool is_a1 = false;
         a1 *t1;
         bool is_a2 = false;
         a2 *t2;
-        statement(a0 *_t0) {
+        bool is_a3 = false;
+        a3 *t3;
+        simple_statement(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
         }
-        statement(a1 *_t1) {
+        simple_statement(a1 *_t1) {
             is_a1 = true;
             t1 = _t1;
         }
-        statement(a2 *_t2) {
+        simple_statement(a2 *_t2) {
             is_a2 = true;
             t2 = _t2;
         }
-        static statement* parse();
+        simple_statement(a3 *_t3) {
+            is_a3 = true;
+            t3 = _t3;
+        }
+        static simple_statement* parse();
         std::string to_string();
     };
 
-    // compound_statement = "{" , ows , { ( statement | compound_statement ) , ows } , "}" ;
-    struct compound_statement {
+    // control_statement = "if" , ows , "(" , ows , expression , ows , ")" , ows , statement , [ rws , "else" , rws , statement ] | "while" , ows , "(" , ows , expression , ows , ")" , ows , statement | "for" , ows , "(" , ows , [ declaration ] , ows , ";" , ows , [ expression ] , ows , ";" , ows , [ assignment ] , ows , ")" , ows , statement ;
+    struct control_statement {
         struct a0 {
             struct b0 {
-                struct c0 {
-                    statement *t0;
-                    c0(statement *_t0) {
-                        t0 = _t0;
-                    }
-                    static c0* parse();
-                    std::string to_string();
-                };
-                struct c1 {
-                    compound_statement *t0;
-                    c1(compound_statement *_t0) {
-                        t0 = _t0;
-                    }
-                    static c1* parse();
-                    std::string to_string();
-                };
-                bool is_c0 = false;
-                c0 *t0;
-                bool is_c1 = false;
-                c1 *t1;
-                b0(c0 *_t0) {
-                    is_c0 = true;
+                rws *t0;
+                std::string t1;
+                rws *t2;
+                statement *t3;
+                b0(rws *_t0, std::string _t1, rws *_t2, statement *_t3) {
                     t0 = _t0;
-                }
-                b0(c1 *_t1) {
-                    is_c1 = true;
                     t1 = _t1;
+                    t2 = _t2;
+                    t3 = _t3;
                 }
                 static b0* parse();
                 std::string to_string();
             };
-            b0 *t0;
+            std::string t0;
             ows *t1;
-            a0(b0 *_t0, ows *_t1) {
+            std::string t2;
+            ows *t3;
+            expression *t4;
+            ows *t5;
+            std::string t6;
+            ows *t7;
+            statement *t8;
+            b0 *t9;
+            a0(std::string _t0, ows *_t1, std::string _t2, ows *_t3, expression *_t4, ows *_t5, std::string _t6, ows *_t7, statement *_t8, b0 *_t9) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+                t4 = _t4;
+                t5 = _t5;
+                t6 = _t6;
+                t7 = _t7;
+                t8 = _t8;
+                t9 = _t9;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        struct a1 {
+            std::string t0;
+            ows *t1;
+            std::string t2;
+            ows *t3;
+            expression *t4;
+            ows *t5;
+            std::string t6;
+            ows *t7;
+            statement *t8;
+            a1(std::string _t0, ows *_t1, std::string _t2, ows *_t3, expression *_t4, ows *_t5, std::string _t6, ows *_t7, statement *_t8) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+                t4 = _t4;
+                t5 = _t5;
+                t6 = _t6;
+                t7 = _t7;
+                t8 = _t8;
+            }
+            static a1* parse();
+            std::string to_string();
+        };
+        struct a2 {
+            struct b0 {
+                declaration *t0;
+                b0(declaration *_t0) {
+                    t0 = _t0;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            struct b1 {
+                expression *t0;
+                b1(expression *_t0) {
+                    t0 = _t0;
+                }
+                static b1* parse();
+                std::string to_string();
+            };
+            struct b2 {
+                assignment *t0;
+                b2(assignment *_t0) {
+                    t0 = _t0;
+                }
+                static b2* parse();
+                std::string to_string();
+            };
+            std::string t0;
+            ows *t1;
+            std::string t2;
+            ows *t3;
+            b0 *t4;
+            ows *t5;
+            std::string t6;
+            ows *t7;
+            b1 *t8;
+            ows *t9;
+            std::string t10;
+            ows *t11;
+            b2 *t12;
+            ows *t13;
+            std::string t14;
+            ows *t15;
+            statement *t16;
+            a2(std::string _t0, ows *_t1, std::string _t2, ows *_t3, b0 *_t4, ows *_t5, std::string _t6, ows *_t7, b1 *_t8, ows *_t9, std::string _t10, ows *_t11, b2 *_t12, ows *_t13, std::string _t14, ows *_t15, statement *_t16) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+                t4 = _t4;
+                t5 = _t5;
+                t6 = _t6;
+                t7 = _t7;
+                t8 = _t8;
+                t9 = _t9;
+                t10 = _t10;
+                t11 = _t11;
+                t12 = _t12;
+                t13 = _t13;
+                t14 = _t14;
+                t15 = _t15;
+                t16 = _t16;
+            }
+            static a2* parse();
+            std::string to_string();
+        };
+        bool is_a0 = false;
+        a0 *t0;
+        bool is_a1 = false;
+        a1 *t1;
+        bool is_a2 = false;
+        a2 *t2;
+        control_statement(a0 *_t0) {
+            is_a0 = true;
+            t0 = _t0;
+        }
+        control_statement(a1 *_t1) {
+            is_a1 = true;
+            t1 = _t1;
+        }
+        control_statement(a2 *_t2) {
+            is_a2 = true;
+            t2 = _t2;
+        }
+        static control_statement* parse();
+        std::string to_string();
+    };
+
+    // compound_statement = "{" , ows , { statement , ows } , "}" ;
+    struct compound_statement {
+        struct a0 {
+            statement *t0;
+            ows *t1;
+            a0(statement *_t0, ows *_t1) {
                 t0 = _t0;
                 t1 = _t1;
             }
@@ -2062,95 +2840,49 @@ namespace parser {
         return ans;
     }
 
-    expr_factor::a0::b0* expr_factor::a0::b0::parse() {
-        push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "+") {pop_stack(); return nullptr;}
-        ows *_t1 = ows::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        rm_stack();
-        return new expr_factor::a0::b0(_t0, _t1);
-    }
-
-    std::string expr_factor::a0::b0::to_string() {
-        std::string ans = "";
-        ans += t0;
-        ans += t1->to_string();
-        return ans;
-    }
-
-    expr_factor::a0::b1* expr_factor::a0::b1::parse() {
-        push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "-") {pop_stack(); return nullptr;}
-        ows *_t1 = ows::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        rm_stack();
-        return new expr_factor::a0::b1(_t0, _t1);
-    }
-
-    std::string expr_factor::a0::b1::to_string() {
-        std::string ans = "";
-        ans += t0;
-        ans += t1->to_string();
-        return ans;
-    }
-
-    expr_factor::a0* expr_factor::a0::parse() {
-        if(auto x = expr_factor::a0::b0::parse()) return new expr_factor::a0(x);
-        if(auto x = expr_factor::a0::b1::parse()) return new expr_factor::a0(x);
-        return nullptr;
-    }
-
-    std::string expr_factor::a0::to_string() {
-        if(is_b0) return t0->to_string();
-        if(is_b1) return t1->to_string();
-assert(false);
-    }
-
-    expr_factor::a1::b0* expr_factor::a1::b0::parse() {
+    expr_primary::a0* expr_primary::a0::parse() {
         push_stack();
         function_call *_t0 = function_call::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        return new expr_factor::a1::b0(_t0);
+        return new expr_primary::a0(_t0);
     }
 
-    std::string expr_factor::a1::b0::to_string() {
+    std::string expr_primary::a0::to_string() {
         std::string ans = "";
         ans += t0->to_string();
         return ans;
     }
 
-    expr_factor::a1::b1* expr_factor::a1::b1::parse() {
+    expr_primary::a1* expr_primary::a1::parse() {
         push_stack();
         identifier *_t0 = identifier::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        return new expr_factor::a1::b1(_t0);
+        return new expr_primary::a1(_t0);
     }
 
-    std::string expr_factor::a1::b1::to_string() {
+    std::string expr_primary::a1::to_string() {
         std::string ans = "";
         ans += t0->to_string();
         return ans;
     }
 
-    expr_factor::a1::b2* expr_factor::a1::b2::parse() {
+    expr_primary::a2* expr_primary::a2::parse() {
         push_stack();
         literal *_t0 = literal::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        return new expr_factor::a1::b2(_t0);
+        return new expr_primary::a2(_t0);
     }
 
-    std::string expr_factor::a1::b2::to_string() {
+    std::string expr_primary::a2::to_string() {
         std::string ans = "";
         ans += t0->to_string();
         return ans;
     }
 
-    expr_factor::a1::b3* expr_factor::a1::b3::parse() {
+    expr_primary::a3* expr_primary::a3::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
         if(_t0 != "(") {pop_stack(); return nullptr;}
@@ -2163,10 +2895,10 @@ assert(false);
         std::string _t4 = next_chars(1);
         if(_t4 != ")") {pop_stack(); return nullptr;}
         rm_stack();
-        return new expr_factor::a1::b3(_t0, _t1, _t2, _t3, _t4);
+        return new expr_primary::a3(_t0, _t1, _t2, _t3, _t4);
     }
 
-    std::string expr_factor::a1::b3::to_string() {
+    std::string expr_primary::a3::to_string() {
         std::string ans = "";
         ans += t0;
         ans += t1->to_string();
@@ -2176,93 +2908,211 @@ assert(false);
         return ans;
     }
 
-    expr_factor::a1* expr_factor::a1::parse() {
-        if(auto x = expr_factor::a1::b0::parse()) return new expr_factor::a1(x);
-        if(auto x = expr_factor::a1::b1::parse()) return new expr_factor::a1(x);
-        if(auto x = expr_factor::a1::b2::parse()) return new expr_factor::a1(x);
-        if(auto x = expr_factor::a1::b3::parse()) return new expr_factor::a1(x);
+    expr_primary* expr_primary::parse() {
+        if(auto x = expr_primary::a0::parse()) return new expr_primary(x);
+        if(auto x = expr_primary::a1::parse()) return new expr_primary(x);
+        if(auto x = expr_primary::a2::parse()) return new expr_primary(x);
+        if(auto x = expr_primary::a3::parse()) return new expr_primary(x);
         return nullptr;
     }
 
-    std::string expr_factor::a1::to_string() {
-        if(is_b0) return t0->to_string();
-        if(is_b1) return t1->to_string();
-        if(is_b2) return t2->to_string();
-        if(is_b3) return t3->to_string();
-assert(false);
+    std::string expr_primary::to_string() {
+        if(is_a0) return t0->to_string();
+        if(is_a1) return t1->to_string();
+        if(is_a2) return t2->to_string();
+        if(is_a3) return t3->to_string();
+        assert(false);
     }
 
-    expr_factor* expr_factor::parse() {
+    expr_unary::a0::b0::c0* expr_unary::a0::b0::c0::parse() {
         push_stack();
-        expr_factor::a0 *_t0 = expr_factor::a0::parse();
-        expr_factor::a1 *_t1 = expr_factor::a1::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(1);
+        if(_t0 != "+") {pop_stack(); return nullptr;}
         rm_stack();
-        return new expr_factor(_t0, _t1);
+        return new expr_unary::a0::b0::c0(_t0);
     }
 
-    std::string expr_factor::to_string() {
+    std::string expr_unary::a0::b0::c0::to_string() {
         std::string ans = "";
-        if(t0 != nullptr) ans += t0->to_string();
-        ans += t1->to_string();
+        ans += t0;
         return ans;
     }
 
-    expr_term::a0::b0::c0* expr_term::a0::b0::c0::parse() {
+    expr_unary::a0::b0::c1* expr_unary::a0::b0::c1::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "-") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_unary::a0::b0::c1(_t0);
+    }
+
+    std::string expr_unary::a0::b0::c1::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_unary::a0::b0::c2* expr_unary::a0::b0::c2::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "~") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_unary::a0::b0::c2(_t0);
+    }
+
+    std::string expr_unary::a0::b0::c2::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_unary::a0::b0::c3* expr_unary::a0::b0::c3::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "!") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_unary::a0::b0::c3(_t0);
+    }
+
+    std::string expr_unary::a0::b0::c3::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_unary::a0::b0* expr_unary::a0::b0::parse() {
+        if(auto x = expr_unary::a0::b0::c0::parse()) return new expr_unary::a0::b0(x);
+        if(auto x = expr_unary::a0::b0::c1::parse()) return new expr_unary::a0::b0(x);
+        if(auto x = expr_unary::a0::b0::c2::parse()) return new expr_unary::a0::b0(x);
+        if(auto x = expr_unary::a0::b0::c3::parse()) return new expr_unary::a0::b0(x);
+        return nullptr;
+    }
+
+    std::string expr_unary::a0::b0::to_string() {
+        if(is_c0) return t0->to_string();
+        if(is_c1) return t1->to_string();
+        if(is_c2) return t2->to_string();
+        if(is_c3) return t3->to_string();
+        assert(false);
+    }
+
+    expr_unary::a0* expr_unary::a0::parse() {
+        push_stack();
+        expr_unary::a0::b0 *_t0 = expr_unary::a0::b0::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        expr_unary *_t2 = expr_unary::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_unary::a0(_t0, _t1, _t2);
+    }
+
+    std::string expr_unary::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2->to_string();
+        return ans;
+    }
+
+    expr_unary::a1* expr_unary::a1::parse() {
+        push_stack();
+        expr_primary *_t0 = expr_primary::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_unary::a1(_t0);
+    }
+
+    std::string expr_unary::a1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    expr_unary* expr_unary::parse() {
+        if(auto x = expr_unary::a0::parse()) return new expr_unary(x);
+        if(auto x = expr_unary::a1::parse()) return new expr_unary(x);
+        return nullptr;
+    }
+
+    std::string expr_unary::to_string() {
+        if(is_a0) return t0->to_string();
+        if(is_a1) return t1->to_string();
+        assert(false);
+    }
+
+    expr_multiplicative::a0::b0::c0* expr_multiplicative::a0::b0::c0::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
         if(_t0 != "*") {pop_stack(); return nullptr;}
         rm_stack();
-        return new expr_term::a0::b0::c0(_t0);
+        return new expr_multiplicative::a0::b0::c0(_t0);
     }
 
-    std::string expr_term::a0::b0::c0::to_string() {
+    std::string expr_multiplicative::a0::b0::c0::to_string() {
         std::string ans = "";
         ans += t0;
         return ans;
     }
 
-    expr_term::a0::b0::c1* expr_term::a0::b0::c1::parse() {
+    expr_multiplicative::a0::b0::c1* expr_multiplicative::a0::b0::c1::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
         if(_t0 != "/") {pop_stack(); return nullptr;}
         rm_stack();
-        return new expr_term::a0::b0::c1(_t0);
+        return new expr_multiplicative::a0::b0::c1(_t0);
     }
 
-    std::string expr_term::a0::b0::c1::to_string() {
+    std::string expr_multiplicative::a0::b0::c1::to_string() {
         std::string ans = "";
         ans += t0;
         return ans;
     }
 
-    expr_term::a0::b0* expr_term::a0::b0::parse() {
-        if(auto x = expr_term::a0::b0::c0::parse()) return new expr_term::a0::b0(x);
-        if(auto x = expr_term::a0::b0::c1::parse()) return new expr_term::a0::b0(x);
+    expr_multiplicative::a0::b0::c2* expr_multiplicative::a0::b0::c2::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "%") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_multiplicative::a0::b0::c2(_t0);
+    }
+
+    std::string expr_multiplicative::a0::b0::c2::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_multiplicative::a0::b0* expr_multiplicative::a0::b0::parse() {
+        if(auto x = expr_multiplicative::a0::b0::c0::parse()) return new expr_multiplicative::a0::b0(x);
+        if(auto x = expr_multiplicative::a0::b0::c1::parse()) return new expr_multiplicative::a0::b0(x);
+        if(auto x = expr_multiplicative::a0::b0::c2::parse()) return new expr_multiplicative::a0::b0(x);
         return nullptr;
     }
 
-    std::string expr_term::a0::b0::to_string() {
+    std::string expr_multiplicative::a0::b0::to_string() {
         if(is_c0) return t0->to_string();
         if(is_c1) return t1->to_string();
-assert(false);
+        if(is_c2) return t2->to_string();
+        assert(false);
     }
 
-    expr_term::a0* expr_term::a0::parse() {
+    expr_multiplicative::a0* expr_multiplicative::a0::parse() {
         push_stack();
         ows *_t0 = ows::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        expr_term::a0::b0 *_t1 = expr_term::a0::b0::parse();
+        expr_multiplicative::a0::b0 *_t1 = expr_multiplicative::a0::b0::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
         ows *_t2 = ows::parse();
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        expr_factor *_t3 = expr_factor::parse();
+        expr_unary *_t3 = expr_unary::parse();
         if(_t3 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        return new expr_term::a0(_t0, _t1, _t2, _t3);
+        return new expr_multiplicative::a0(_t0, _t1, _t2, _t3);
     }
 
-    std::string expr_term::a0::to_string() {
+    std::string expr_multiplicative::a0::to_string() {
         std::string ans = "";
         ans += t0->to_string();
         ans += t1->to_string();
@@ -2271,76 +3121,580 @@ assert(false);
         return ans;
     }
 
-    expr_term* expr_term::parse() {
+    expr_multiplicative* expr_multiplicative::parse() {
         push_stack();
-        expr_factor *_t0 = expr_factor::parse();
+        expr_unary *_t0 = expr_unary::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        std::vector<expr_term::a0*> _t1;
+        std::vector<expr_multiplicative::a0*> _t1;
         while(true) {
-            expr_term::a0 *tmp = expr_term::a0::parse();
+            expr_multiplicative::a0 *tmp = expr_multiplicative::a0::parse();
             if(tmp == nullptr) break;
             _t1.push_back(tmp);
         }
         rm_stack();
-        return new expr_term(_t0, _t1);
+        return new expr_multiplicative(_t0, _t1);
     }
 
-    std::string expr_term::to_string() {
+    std::string expr_multiplicative::to_string() {
         std::string ans = "";
         ans += t0->to_string();
         for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
         return ans;
     }
 
-    expression::a0::b0::c0* expression::a0::b0::c0::parse() {
+    expr_additive::a0::b0::c0* expr_additive::a0::b0::c0::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
         if(_t0 != "+") {pop_stack(); return nullptr;}
         rm_stack();
-        return new expression::a0::b0::c0(_t0);
+        return new expr_additive::a0::b0::c0(_t0);
     }
 
-    std::string expression::a0::b0::c0::to_string() {
+    std::string expr_additive::a0::b0::c0::to_string() {
         std::string ans = "";
         ans += t0;
         return ans;
     }
 
-    expression::a0::b0::c1* expression::a0::b0::c1::parse() {
+    expr_additive::a0::b0::c1* expr_additive::a0::b0::c1::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
         if(_t0 != "-") {pop_stack(); return nullptr;}
         rm_stack();
-        return new expression::a0::b0::c1(_t0);
+        return new expr_additive::a0::b0::c1(_t0);
     }
 
-    std::string expression::a0::b0::c1::to_string() {
+    std::string expr_additive::a0::b0::c1::to_string() {
         std::string ans = "";
         ans += t0;
         return ans;
     }
 
-    expression::a0::b0* expression::a0::b0::parse() {
-        if(auto x = expression::a0::b0::c0::parse()) return new expression::a0::b0(x);
-        if(auto x = expression::a0::b0::c1::parse()) return new expression::a0::b0(x);
+    expr_additive::a0::b0* expr_additive::a0::b0::parse() {
+        if(auto x = expr_additive::a0::b0::c0::parse()) return new expr_additive::a0::b0(x);
+        if(auto x = expr_additive::a0::b0::c1::parse()) return new expr_additive::a0::b0(x);
         return nullptr;
     }
 
-    std::string expression::a0::b0::to_string() {
+    std::string expr_additive::a0::b0::to_string() {
         if(is_c0) return t0->to_string();
         if(is_c1) return t1->to_string();
-assert(false);
+        assert(false);
+    }
+
+    expr_additive::a0* expr_additive::a0::parse() {
+        push_stack();
+        ows *_t0 = ows::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        expr_additive::a0::b0 *_t1 = expr_additive::a0::b0::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        expr_multiplicative *_t3 = expr_multiplicative::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_additive::a0(_t0, _t1, _t2, _t3);
+    }
+
+    std::string expr_additive::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2->to_string();
+        ans += t3->to_string();
+        return ans;
+    }
+
+    expr_additive* expr_additive::parse() {
+        push_stack();
+        expr_multiplicative *_t0 = expr_multiplicative::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::vector<expr_additive::a0*> _t1;
+        while(true) {
+            expr_additive::a0 *tmp = expr_additive::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        rm_stack();
+        return new expr_additive(_t0, _t1);
+    }
+
+    std::string expr_additive::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
+    }
+
+    expr_shift::a0::b0::c0* expr_shift::a0::b0::c0::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "<<") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_shift::a0::b0::c0(_t0);
+    }
+
+    std::string expr_shift::a0::b0::c0::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_shift::a0::b0::c1* expr_shift::a0::b0::c1::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != ">>") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_shift::a0::b0::c1(_t0);
+    }
+
+    std::string expr_shift::a0::b0::c1::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_shift::a0::b0* expr_shift::a0::b0::parse() {
+        if(auto x = expr_shift::a0::b0::c0::parse()) return new expr_shift::a0::b0(x);
+        if(auto x = expr_shift::a0::b0::c1::parse()) return new expr_shift::a0::b0(x);
+        return nullptr;
+    }
+
+    std::string expr_shift::a0::b0::to_string() {
+        if(is_c0) return t0->to_string();
+        if(is_c1) return t1->to_string();
+        assert(false);
+    }
+
+    expr_shift::a0* expr_shift::a0::parse() {
+        push_stack();
+        ows *_t0 = ows::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        expr_shift::a0::b0 *_t1 = expr_shift::a0::b0::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        expr_additive *_t3 = expr_additive::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_shift::a0(_t0, _t1, _t2, _t3);
+    }
+
+    std::string expr_shift::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2->to_string();
+        ans += t3->to_string();
+        return ans;
+    }
+
+    expr_shift* expr_shift::parse() {
+        push_stack();
+        expr_additive *_t0 = expr_additive::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::vector<expr_shift::a0*> _t1;
+        while(true) {
+            expr_shift::a0 *tmp = expr_shift::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        rm_stack();
+        return new expr_shift(_t0, _t1);
+    }
+
+    std::string expr_shift::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
+    }
+
+    expr_relational::a0::b0::c0* expr_relational::a0::b0::c0::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "<") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_relational::a0::b0::c0(_t0);
+    }
+
+    std::string expr_relational::a0::b0::c0::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_relational::a0::b0::c1* expr_relational::a0::b0::c1::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "<=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_relational::a0::b0::c1(_t0);
+    }
+
+    std::string expr_relational::a0::b0::c1::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_relational::a0::b0::c2* expr_relational::a0::b0::c2::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != ">") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_relational::a0::b0::c2(_t0);
+    }
+
+    std::string expr_relational::a0::b0::c2::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_relational::a0::b0::c3* expr_relational::a0::b0::c3::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != ">=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_relational::a0::b0::c3(_t0);
+    }
+
+    std::string expr_relational::a0::b0::c3::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_relational::a0::b0* expr_relational::a0::b0::parse() {
+        if(auto x = expr_relational::a0::b0::c0::parse()) return new expr_relational::a0::b0(x);
+        if(auto x = expr_relational::a0::b0::c1::parse()) return new expr_relational::a0::b0(x);
+        if(auto x = expr_relational::a0::b0::c2::parse()) return new expr_relational::a0::b0(x);
+        if(auto x = expr_relational::a0::b0::c3::parse()) return new expr_relational::a0::b0(x);
+        return nullptr;
+    }
+
+    std::string expr_relational::a0::b0::to_string() {
+        if(is_c0) return t0->to_string();
+        if(is_c1) return t1->to_string();
+        if(is_c2) return t2->to_string();
+        if(is_c3) return t3->to_string();
+        assert(false);
+    }
+
+    expr_relational::a0* expr_relational::a0::parse() {
+        push_stack();
+        ows *_t0 = ows::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        expr_relational::a0::b0 *_t1 = expr_relational::a0::b0::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        expr_shift *_t3 = expr_shift::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_relational::a0(_t0, _t1, _t2, _t3);
+    }
+
+    std::string expr_relational::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2->to_string();
+        ans += t3->to_string();
+        return ans;
+    }
+
+    expr_relational* expr_relational::parse() {
+        push_stack();
+        expr_shift *_t0 = expr_shift::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::vector<expr_relational::a0*> _t1;
+        while(true) {
+            expr_relational::a0 *tmp = expr_relational::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        rm_stack();
+        return new expr_relational(_t0, _t1);
+    }
+
+    std::string expr_relational::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
+    }
+
+    expr_equality::a0::b0::c0* expr_equality::a0::b0::c0::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "==") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_equality::a0::b0::c0(_t0);
+    }
+
+    std::string expr_equality::a0::b0::c0::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_equality::a0::b0::c1* expr_equality::a0::b0::c1::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "!=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_equality::a0::b0::c1(_t0);
+    }
+
+    std::string expr_equality::a0::b0::c1::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_equality::a0::b0* expr_equality::a0::b0::parse() {
+        if(auto x = expr_equality::a0::b0::c0::parse()) return new expr_equality::a0::b0(x);
+        if(auto x = expr_equality::a0::b0::c1::parse()) return new expr_equality::a0::b0(x);
+        return nullptr;
+    }
+
+    std::string expr_equality::a0::b0::to_string() {
+        if(is_c0) return t0->to_string();
+        if(is_c1) return t1->to_string();
+        assert(false);
+    }
+
+    expr_equality::a0* expr_equality::a0::parse() {
+        push_stack();
+        ows *_t0 = ows::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        expr_equality::a0::b0 *_t1 = expr_equality::a0::b0::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        expr_relational *_t3 = expr_relational::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_equality::a0(_t0, _t1, _t2, _t3);
+    }
+
+    std::string expr_equality::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2->to_string();
+        ans += t3->to_string();
+        return ans;
+    }
+
+    expr_equality* expr_equality::parse() {
+        push_stack();
+        expr_relational *_t0 = expr_relational::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::vector<expr_equality::a0*> _t1;
+        while(true) {
+            expr_equality::a0 *tmp = expr_equality::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        rm_stack();
+        return new expr_equality(_t0, _t1);
+    }
+
+    std::string expr_equality::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
+    }
+
+    expr_bit_and::a0* expr_bit_and::a0::parse() {
+        push_stack();
+        ows *_t0 = ows::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t1 = next_chars(1);
+        if(_t1 != "&") {pop_stack(); return nullptr;}
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        expr_equality *_t3 = expr_equality::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_bit_and::a0(_t0, _t1, _t2, _t3);
+    }
+
+    std::string expr_bit_and::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1;
+        ans += t2->to_string();
+        ans += t3->to_string();
+        return ans;
+    }
+
+    expr_bit_and* expr_bit_and::parse() {
+        push_stack();
+        expr_equality *_t0 = expr_equality::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::vector<expr_bit_and::a0*> _t1;
+        while(true) {
+            expr_bit_and::a0 *tmp = expr_bit_and::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        rm_stack();
+        return new expr_bit_and(_t0, _t1);
+    }
+
+    std::string expr_bit_and::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
+    }
+
+    expr_bit_xor::a0* expr_bit_xor::a0::parse() {
+        push_stack();
+        ows *_t0 = ows::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t1 = next_chars(1);
+        if(_t1 != "^") {pop_stack(); return nullptr;}
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        expr_bit_and *_t3 = expr_bit_and::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_bit_xor::a0(_t0, _t1, _t2, _t3);
+    }
+
+    std::string expr_bit_xor::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1;
+        ans += t2->to_string();
+        ans += t3->to_string();
+        return ans;
+    }
+
+    expr_bit_xor* expr_bit_xor::parse() {
+        push_stack();
+        expr_bit_and *_t0 = expr_bit_and::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::vector<expr_bit_xor::a0*> _t1;
+        while(true) {
+            expr_bit_xor::a0 *tmp = expr_bit_xor::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        rm_stack();
+        return new expr_bit_xor(_t0, _t1);
+    }
+
+    std::string expr_bit_xor::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
+    }
+
+    expr_bit_or::a0* expr_bit_or::a0::parse() {
+        push_stack();
+        ows *_t0 = ows::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t1 = next_chars(1);
+        if(_t1 != "|") {pop_stack(); return nullptr;}
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        expr_bit_xor *_t3 = expr_bit_xor::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_bit_or::a0(_t0, _t1, _t2, _t3);
+    }
+
+    std::string expr_bit_or::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1;
+        ans += t2->to_string();
+        ans += t3->to_string();
+        return ans;
+    }
+
+    expr_bit_or* expr_bit_or::parse() {
+        push_stack();
+        expr_bit_xor *_t0 = expr_bit_xor::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::vector<expr_bit_or::a0*> _t1;
+        while(true) {
+            expr_bit_or::a0 *tmp = expr_bit_or::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        rm_stack();
+        return new expr_bit_or(_t0, _t1);
+    }
+
+    std::string expr_bit_or::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
+    }
+
+    expr_logical_and::a0* expr_logical_and::a0::parse() {
+        push_stack();
+        ows *_t0 = ows::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t1 = next_chars(2);
+        if(_t1 != "&&") {pop_stack(); return nullptr;}
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        expr_bit_or *_t3 = expr_bit_or::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_logical_and::a0(_t0, _t1, _t2, _t3);
+    }
+
+    std::string expr_logical_and::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1;
+        ans += t2->to_string();
+        ans += t3->to_string();
+        return ans;
+    }
+
+    expr_logical_and* expr_logical_and::parse() {
+        push_stack();
+        expr_bit_or *_t0 = expr_bit_or::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::vector<expr_logical_and::a0*> _t1;
+        while(true) {
+            expr_logical_and::a0 *tmp = expr_logical_and::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        rm_stack();
+        return new expr_logical_and(_t0, _t1);
+    }
+
+    std::string expr_logical_and::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
     }
 
     expression::a0* expression::a0::parse() {
         push_stack();
         ows *_t0 = ows::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        expression::a0::b0 *_t1 = expression::a0::b0::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t1 = next_chars(2);
+        if(_t1 != "||") {pop_stack(); return nullptr;}
         ows *_t2 = ows::parse();
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        expr_term *_t3 = expr_term::parse();
+        expr_logical_and *_t3 = expr_logical_and::parse();
         if(_t3 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new expression::a0(_t0, _t1, _t2, _t3);
@@ -2349,7 +3703,7 @@ assert(false);
     std::string expression::a0::to_string() {
         std::string ans = "";
         ans += t0->to_string();
-        ans += t1->to_string();
+        ans += t1;
         ans += t2->to_string();
         ans += t3->to_string();
         return ans;
@@ -2357,7 +3711,7 @@ assert(false);
 
     expression* expression::parse() {
         push_stack();
-        expr_term *_t0 = expr_term::parse();
+        expr_logical_and *_t0 = expr_logical_and::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         std::vector<expression::a0*> _t1;
         while(true) {
@@ -3213,7 +4567,7 @@ assert(false);
         if(is_a49) return t49->to_string();
         if(is_a50) return t50->to_string();
         if(is_a51) return t51->to_string();
-assert(false);
+        assert(false);
     }
 
     digit::a0* digit::a0::parse() {
@@ -3381,7 +4735,7 @@ assert(false);
         if(is_a7) return t7->to_string();
         if(is_a8) return t8->to_string();
         if(is_a9) return t9->to_string();
-assert(false);
+        assert(false);
     }
 
     escape::a0::b0* escape::a0::b0::parse() {
@@ -3501,7 +4855,7 @@ assert(false);
         if(is_b4) return t4->to_string();
         if(is_b5) return t5->to_string();
         if(is_b6) return t6->to_string();
-assert(false);
+        assert(false);
     }
 
     escape* escape::parse() {
@@ -3518,6 +4872,182 @@ assert(false);
         std::string ans = "";
         ans += t0;
         ans += t1->to_string();
+        return ans;
+    }
+
+    line_comment::a0::b0* line_comment::a0::b0::parse() {
+        push_stack();
+        alpha *_t0 = alpha::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new line_comment::a0::b0(_t0);
+    }
+
+    std::string line_comment::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    line_comment::a0::b1* line_comment::a0::b1::parse() {
+        push_stack();
+        digit *_t0 = digit::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new line_comment::a0::b1(_t0);
+    }
+
+    std::string line_comment::a0::b1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    line_comment::a0::b2* line_comment::a0::b2::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != " ") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new line_comment::a0::b2(_t0);
+    }
+
+    std::string line_comment::a0::b2::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    line_comment::a0* line_comment::a0::parse() {
+        if(auto x = line_comment::a0::b0::parse()) return new line_comment::a0(x);
+        if(auto x = line_comment::a0::b1::parse()) return new line_comment::a0(x);
+        if(auto x = line_comment::a0::b2::parse()) return new line_comment::a0(x);
+        return nullptr;
+    }
+
+    std::string line_comment::a0::to_string() {
+        if(is_b0) return t0->to_string();
+        if(is_b1) return t1->to_string();
+        if(is_b2) return t2->to_string();
+        assert(false);
+    }
+
+    line_comment* line_comment::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "//") {pop_stack(); return nullptr;}
+        std::vector<line_comment::a0*> _t1;
+        while(true) {
+            line_comment::a0 *tmp = line_comment::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        std::string _t2 = next_chars(1);
+        if(_t2 != "\n") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new line_comment(_t0, _t1, _t2);
+    }
+
+    std::string line_comment::to_string() {
+        std::string ans = "";
+        ans += t0;
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        ans += t2;
+        return ans;
+    }
+
+    multiline_comment::a0::b0* multiline_comment::a0::b0::parse() {
+        push_stack();
+        alpha *_t0 = alpha::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new multiline_comment::a0::b0(_t0);
+    }
+
+    std::string multiline_comment::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    multiline_comment::a0::b1* multiline_comment::a0::b1::parse() {
+        push_stack();
+        digit *_t0 = digit::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new multiline_comment::a0::b1(_t0);
+    }
+
+    std::string multiline_comment::a0::b1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    multiline_comment::a0::b2* multiline_comment::a0::b2::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != " ") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new multiline_comment::a0::b2(_t0);
+    }
+
+    std::string multiline_comment::a0::b2::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    multiline_comment::a0::b3* multiline_comment::a0::b3::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "\n") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new multiline_comment::a0::b3(_t0);
+    }
+
+    std::string multiline_comment::a0::b3::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    multiline_comment::a0* multiline_comment::a0::parse() {
+        if(auto x = multiline_comment::a0::b0::parse()) return new multiline_comment::a0(x);
+        if(auto x = multiline_comment::a0::b1::parse()) return new multiline_comment::a0(x);
+        if(auto x = multiline_comment::a0::b2::parse()) return new multiline_comment::a0(x);
+        if(auto x = multiline_comment::a0::b3::parse()) return new multiline_comment::a0(x);
+        return nullptr;
+    }
+
+    std::string multiline_comment::a0::to_string() {
+        if(is_b0) return t0->to_string();
+        if(is_b1) return t1->to_string();
+        if(is_b2) return t2->to_string();
+        if(is_b3) return t3->to_string();
+        assert(false);
+    }
+
+    multiline_comment* multiline_comment::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "/*") {pop_stack(); return nullptr;}
+        std::vector<multiline_comment::a0*> _t1;
+        while(true) {
+            multiline_comment::a0 *tmp = multiline_comment::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        std::string _t2 = next_chars(2);
+        if(_t2 != "*/") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new multiline_comment(_t0, _t1, _t2);
+    }
+
+    std::string multiline_comment::to_string() {
+        std::string ans = "";
+        ans += t0;
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        ans += t2;
         return ans;
     }
 
@@ -3605,6 +5135,34 @@ assert(false);
         return ans;
     }
 
+    ws::a6* ws::a6::parse() {
+        push_stack();
+        line_comment *_t0 = line_comment::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new ws::a6(_t0);
+    }
+
+    std::string ws::a6::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    ws::a7* ws::a7::parse() {
+        push_stack();
+        multiline_comment *_t0 = multiline_comment::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new ws::a7(_t0);
+    }
+
+    std::string ws::a7::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
     ws* ws::parse() {
         if(auto x = ws::a0::parse()) return new ws(x);
         if(auto x = ws::a1::parse()) return new ws(x);
@@ -3612,6 +5170,8 @@ assert(false);
         if(auto x = ws::a3::parse()) return new ws(x);
         if(auto x = ws::a4::parse()) return new ws(x);
         if(auto x = ws::a5::parse()) return new ws(x);
+        if(auto x = ws::a6::parse()) return new ws(x);
+        if(auto x = ws::a7::parse()) return new ws(x);
         return nullptr;
     }
 
@@ -3622,7 +5182,9 @@ assert(false);
         if(is_a3) return t3->to_string();
         if(is_a4) return t4->to_string();
         if(is_a5) return t5->to_string();
-assert(false);
+        if(is_a6) return t6->to_string();
+        if(is_a7) return t7->to_string();
+        assert(false);
     }
 
     rws::a0* rws::a0::parse() {
@@ -3743,7 +5305,7 @@ assert(false);
         if(is_b0) return t0->to_string();
         if(is_b1) return t1->to_string();
         if(is_b2) return t2->to_string();
-assert(false);
+        assert(false);
     }
 
     type* type::parse() {
@@ -3820,7 +5382,7 @@ assert(false);
         if(is_b0) return t0->to_string();
         if(is_b1) return t1->to_string();
         if(is_b2) return t2->to_string();
-assert(false);
+        assert(false);
     }
 
     identifier* identifier::parse() {
@@ -3852,11 +5414,11 @@ assert(false);
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
         identifier *_t2 = identifier::parse();
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        rws *_t3 = rws::parse();
+        ows *_t3 = ows::parse();
         if(_t3 == nullptr) {pop_stack(); return nullptr;}
         std::string _t4 = next_chars(1);
         if(_t4 != "=") {pop_stack(); return nullptr;}
-        rws *_t5 = rws::parse();
+        ows *_t5 = ows::parse();
         if(_t5 == nullptr) {pop_stack(); return nullptr;}
         expression *_t6 = expression::parse();
         if(_t6 == nullptr) {pop_stack(); return nullptr;}
@@ -3873,6 +5435,32 @@ assert(false);
         ans += t4;
         ans += t5->to_string();
         ans += t6->to_string();
+        return ans;
+    }
+
+    assignment* assignment::parse() {
+        push_stack();
+        identifier *_t0 = identifier::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(1);
+        if(_t2 != "=") {pop_stack(); return nullptr;}
+        ows *_t3 = ows::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        expression *_t4 = expression::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new assignment(_t0, _t1, _t2, _t3, _t4);
+    }
+
+    std::string assignment::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2;
+        ans += t3->to_string();
+        ans += t4->to_string();
         return ans;
     }
 
@@ -4012,80 +5600,43 @@ assert(false);
 
     statement::a0* statement::a0::parse() {
         push_stack();
-        declaration *_t0 = declaration::parse();
+        simple_statement *_t0 = simple_statement::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t1 = ows::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t2 = next_chars(1);
-        if(_t2 != ";") {pop_stack(); return nullptr;}
         rm_stack();
-        return new statement::a0(_t0, _t1, _t2);
+        return new statement::a0(_t0);
     }
 
     std::string statement::a0::to_string() {
         std::string ans = "";
         ans += t0->to_string();
-        ans += t1->to_string();
-        ans += t2;
         return ans;
     }
 
     statement::a1* statement::a1::parse() {
         push_stack();
-        function_call *_t0 = function_call::parse();
+        control_statement *_t0 = control_statement::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t1 = ows::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t2 = next_chars(1);
-        if(_t2 != ";") {pop_stack(); return nullptr;}
         rm_stack();
-        return new statement::a1(_t0, _t1, _t2);
+        return new statement::a1(_t0);
     }
 
     std::string statement::a1::to_string() {
         std::string ans = "";
         ans += t0->to_string();
-        ans += t1->to_string();
-        ans += t2;
-        return ans;
-    }
-
-    statement::a2::b0* statement::a2::b0::parse() {
-        push_stack();
-        rws *_t0 = rws::parse();
-        if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        expression *_t1 = expression::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        rm_stack();
-        return new statement::a2::b0(_t0, _t1);
-    }
-
-    std::string statement::a2::b0::to_string() {
-        std::string ans = "";
-        ans += t0->to_string();
-        ans += t1->to_string();
         return ans;
     }
 
     statement::a2* statement::a2::parse() {
         push_stack();
-        std::string _t0 = next_chars(6);
-        if(_t0 != "return") {pop_stack(); return nullptr;}
-        statement::a2::b0 *_t1 = statement::a2::b0::parse();
-        ows *_t2 = ows::parse();
-        if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t3 = next_chars(1);
-        if(_t3 != ";") {pop_stack(); return nullptr;}
+        compound_statement *_t0 = compound_statement::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        return new statement::a2(_t0, _t1, _t2, _t3);
+        return new statement::a2(_t0);
     }
 
     std::string statement::a2::to_string() {
         std::string ans = "";
-        ans += t0;
-        if(t1 != nullptr) ans += t1->to_string();
-        ans += t2->to_string();
-        ans += t3;
+        ans += t0->to_string();
         return ans;
     }
 
@@ -4100,52 +5651,343 @@ assert(false);
         if(is_a0) return t0->to_string();
         if(is_a1) return t1->to_string();
         if(is_a2) return t2->to_string();
-assert(false);
+        assert(false);
     }
 
-    compound_statement::a0::b0::c0* compound_statement::a0::b0::c0::parse() {
+    simple_statement::a0* simple_statement::a0::parse() {
         push_stack();
-        statement *_t0 = statement::parse();
+        declaration *_t0 = declaration::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(1);
+        if(_t2 != ";") {pop_stack(); return nullptr;}
         rm_stack();
-        return new compound_statement::a0::b0::c0(_t0);
+        return new simple_statement::a0(_t0, _t1, _t2);
     }
 
-    std::string compound_statement::a0::b0::c0::to_string() {
+    std::string simple_statement::a0::to_string() {
         std::string ans = "";
         ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2;
         return ans;
     }
 
-    compound_statement::a0::b0::c1* compound_statement::a0::b0::c1::parse() {
+    simple_statement::a1* simple_statement::a1::parse() {
         push_stack();
-        compound_statement *_t0 = compound_statement::parse();
+        function_call *_t0 = function_call::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(1);
+        if(_t2 != ";") {pop_stack(); return nullptr;}
         rm_stack();
-        return new compound_statement::a0::b0::c1(_t0);
+        return new simple_statement::a1(_t0, _t1, _t2);
     }
 
-    std::string compound_statement::a0::b0::c1::to_string() {
+    std::string simple_statement::a1::to_string() {
         std::string ans = "";
         ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2;
         return ans;
     }
 
-    compound_statement::a0::b0* compound_statement::a0::b0::parse() {
-        if(auto x = compound_statement::a0::b0::c0::parse()) return new compound_statement::a0::b0(x);
-        if(auto x = compound_statement::a0::b0::c1::parse()) return new compound_statement::a0::b0(x);
+    simple_statement::a2::b0* simple_statement::a2::b0::parse() {
+        push_stack();
+        rws *_t0 = rws::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        expression *_t1 = expression::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new simple_statement::a2::b0(_t0, _t1);
+    }
+
+    std::string simple_statement::a2::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        return ans;
+    }
+
+    simple_statement::a2* simple_statement::a2::parse() {
+        push_stack();
+        std::string _t0 = next_chars(6);
+        if(_t0 != "return") {pop_stack(); return nullptr;}
+        simple_statement::a2::b0 *_t1 = simple_statement::a2::b0::parse();
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t3 = next_chars(1);
+        if(_t3 != ";") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new simple_statement::a2(_t0, _t1, _t2, _t3);
+    }
+
+    std::string simple_statement::a2::to_string() {
+        std::string ans = "";
+        ans += t0;
+        if(t1 != nullptr) ans += t1->to_string();
+        ans += t2->to_string();
+        ans += t3;
+        return ans;
+    }
+
+    simple_statement::a3* simple_statement::a3::parse() {
+        push_stack();
+        assignment *_t0 = assignment::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(1);
+        if(_t2 != ";") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new simple_statement::a3(_t0, _t1, _t2);
+    }
+
+    std::string simple_statement::a3::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2;
+        return ans;
+    }
+
+    simple_statement* simple_statement::parse() {
+        if(auto x = simple_statement::a0::parse()) return new simple_statement(x);
+        if(auto x = simple_statement::a1::parse()) return new simple_statement(x);
+        if(auto x = simple_statement::a2::parse()) return new simple_statement(x);
+        if(auto x = simple_statement::a3::parse()) return new simple_statement(x);
         return nullptr;
     }
 
-    std::string compound_statement::a0::b0::to_string() {
-        if(is_c0) return t0->to_string();
-        if(is_c1) return t1->to_string();
-assert(false);
+    std::string simple_statement::to_string() {
+        if(is_a0) return t0->to_string();
+        if(is_a1) return t1->to_string();
+        if(is_a2) return t2->to_string();
+        if(is_a3) return t3->to_string();
+        assert(false);
+    }
+
+    control_statement::a0::b0* control_statement::a0::b0::parse() {
+        push_stack();
+        rws *_t0 = rws::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t1 = next_chars(4);
+        if(_t1 != "else") {pop_stack(); return nullptr;}
+        rws *_t2 = rws::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        statement *_t3 = statement::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new control_statement::a0::b0(_t0, _t1, _t2, _t3);
+    }
+
+    std::string control_statement::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1;
+        ans += t2->to_string();
+        ans += t3->to_string();
+        return ans;
+    }
+
+    control_statement::a0* control_statement::a0::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "if") {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(1);
+        if(_t2 != "(") {pop_stack(); return nullptr;}
+        ows *_t3 = ows::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        expression *_t4 = expression::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t5 = ows::parse();
+        if(_t5 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t6 = next_chars(1);
+        if(_t6 != ")") {pop_stack(); return nullptr;}
+        ows *_t7 = ows::parse();
+        if(_t7 == nullptr) {pop_stack(); return nullptr;}
+        statement *_t8 = statement::parse();
+        if(_t8 == nullptr) {pop_stack(); return nullptr;}
+        control_statement::a0::b0 *_t9 = control_statement::a0::b0::parse();
+        rm_stack();
+        return new control_statement::a0(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9);
+    }
+
+    std::string control_statement::a0::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2;
+        ans += t3->to_string();
+        ans += t4->to_string();
+        ans += t5->to_string();
+        ans += t6;
+        ans += t7->to_string();
+        ans += t8->to_string();
+        if(t9 != nullptr) ans += t9->to_string();
+        return ans;
+    }
+
+    control_statement::a1* control_statement::a1::parse() {
+        push_stack();
+        std::string _t0 = next_chars(5);
+        if(_t0 != "while") {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(1);
+        if(_t2 != "(") {pop_stack(); return nullptr;}
+        ows *_t3 = ows::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        expression *_t4 = expression::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t5 = ows::parse();
+        if(_t5 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t6 = next_chars(1);
+        if(_t6 != ")") {pop_stack(); return nullptr;}
+        ows *_t7 = ows::parse();
+        if(_t7 == nullptr) {pop_stack(); return nullptr;}
+        statement *_t8 = statement::parse();
+        if(_t8 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new control_statement::a1(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8);
+    }
+
+    std::string control_statement::a1::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2;
+        ans += t3->to_string();
+        ans += t4->to_string();
+        ans += t5->to_string();
+        ans += t6;
+        ans += t7->to_string();
+        ans += t8->to_string();
+        return ans;
+    }
+
+    control_statement::a2::b0* control_statement::a2::b0::parse() {
+        push_stack();
+        declaration *_t0 = declaration::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new control_statement::a2::b0(_t0);
+    }
+
+    std::string control_statement::a2::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    control_statement::a2::b1* control_statement::a2::b1::parse() {
+        push_stack();
+        expression *_t0 = expression::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new control_statement::a2::b1(_t0);
+    }
+
+    std::string control_statement::a2::b1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    control_statement::a2::b2* control_statement::a2::b2::parse() {
+        push_stack();
+        assignment *_t0 = assignment::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new control_statement::a2::b2(_t0);
+    }
+
+    std::string control_statement::a2::b2::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    control_statement::a2* control_statement::a2::parse() {
+        push_stack();
+        std::string _t0 = next_chars(3);
+        if(_t0 != "for") {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(1);
+        if(_t2 != "(") {pop_stack(); return nullptr;}
+        ows *_t3 = ows::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        control_statement::a2::b0 *_t4 = control_statement::a2::b0::parse();
+        ows *_t5 = ows::parse();
+        if(_t5 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t6 = next_chars(1);
+        if(_t6 != ";") {pop_stack(); return nullptr;}
+        ows *_t7 = ows::parse();
+        if(_t7 == nullptr) {pop_stack(); return nullptr;}
+        control_statement::a2::b1 *_t8 = control_statement::a2::b1::parse();
+        ows *_t9 = ows::parse();
+        if(_t9 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t10 = next_chars(1);
+        if(_t10 != ";") {pop_stack(); return nullptr;}
+        ows *_t11 = ows::parse();
+        if(_t11 == nullptr) {pop_stack(); return nullptr;}
+        control_statement::a2::b2 *_t12 = control_statement::a2::b2::parse();
+        ows *_t13 = ows::parse();
+        if(_t13 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t14 = next_chars(1);
+        if(_t14 != ")") {pop_stack(); return nullptr;}
+        ows *_t15 = ows::parse();
+        if(_t15 == nullptr) {pop_stack(); return nullptr;}
+        statement *_t16 = statement::parse();
+        if(_t16 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new control_statement::a2(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9, _t10, _t11, _t12, _t13, _t14, _t15, _t16);
+    }
+
+    std::string control_statement::a2::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2;
+        ans += t3->to_string();
+        if(t4 != nullptr) ans += t4->to_string();
+        ans += t5->to_string();
+        ans += t6;
+        ans += t7->to_string();
+        if(t8 != nullptr) ans += t8->to_string();
+        ans += t9->to_string();
+        ans += t10;
+        ans += t11->to_string();
+        if(t12 != nullptr) ans += t12->to_string();
+        ans += t13->to_string();
+        ans += t14;
+        ans += t15->to_string();
+        ans += t16->to_string();
+        return ans;
+    }
+
+    control_statement* control_statement::parse() {
+        if(auto x = control_statement::a0::parse()) return new control_statement(x);
+        if(auto x = control_statement::a1::parse()) return new control_statement(x);
+        if(auto x = control_statement::a2::parse()) return new control_statement(x);
+        return nullptr;
+    }
+
+    std::string control_statement::to_string() {
+        if(is_a0) return t0->to_string();
+        if(is_a1) return t1->to_string();
+        if(is_a2) return t2->to_string();
+        assert(false);
     }
 
     compound_statement::a0* compound_statement::a0::parse() {
         push_stack();
-        compound_statement::a0::b0 *_t0 = compound_statement::a0::b0::parse();
+        statement *_t0 = statement::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         ows *_t1 = ows::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}

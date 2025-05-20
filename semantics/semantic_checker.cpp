@@ -8,6 +8,7 @@
 #include <stdexcept>
 #include <variant>
 #include <optional>
+#include <map>
 #include "jank_parser.cpp"
 
 /*
@@ -78,10 +79,17 @@ struct Identifier;
 struct Type;
 struct Expression;
 struct Declaration;
+struct Assignment;
 struct Statement;
+struct SimpleStatement;
 struct DeclarationStatement;
 struct FunctionCallStatement;
 struct ReturnStatement;
+struct AssignmentStatement;
+struct ControlStatement;
+struct IfStatement;
+struct WhileStatement;
+struct ForStatement;
 struct CompoundStatement;
 struct Function;
 struct FunctionSignature;
@@ -131,37 +139,143 @@ struct Type {
     bool operator!=(const Type& other) {
         return !(*this == other);
     }
+
+    bool operator<(const Type& other) {
+        return name < other.name;
+    }
 };
 
 struct Expression {
-    struct Factor {
+    struct Primary {
         using val_t = std::variant<FunctionCall*, Identifier*, Literal*, Expression*>;
-        std::string unary_op = "+";
         val_t val;
-        Factor(std::string _unary_op, val_t _val) {
-            unary_op = _unary_op;
+        Primary(val_t _val) {
             val = _val;
         }
-        static Factor* convert(parser::expr_factor *f);
+        static Primary* convert(parser::expr_primary *e); 
         Type* resolve_type();
     };
 
-    struct Term {
-        std::vector<Factor*> factors;
-        std::vector<std::string> operators;
-        Term(std::vector<Factor*> _factors, std::vector<std::string> _operators) {
-            factors = _factors;
-            operators = _operators;
+    struct Unary {
+        std::string op;
+        std::variant<Primary*, Unary*> val;
+        Unary(std::string _op, Unary *_val) {
+            assert(_val != nullptr);
+            op = _op;
+            val = _val;
         }
-        static Term* convert(parser::expr_term *t);
+        Unary(Primary *_val) {
+            assert(_val != nullptr);
+            val = _val;
+        }
+        static Unary* convert(parser::expr_unary *e);
         Type* resolve_type();
     };
 
-    std::vector<Term*> terms;
-    std::vector<std::string> operators;
-    Expression(std::vector<Term*> _terms, std::vector<std::string> _operators) {
+    struct Multiplicative {
+        std::vector<std::string> ops;
+        std::vector<Unary*> terms;
+        Multiplicative(std::vector<std::string> _ops, std::vector<Unary*> _terms) {
+            ops = _ops;
+            terms = _terms;
+        }
+        static Multiplicative* convert(parser::expr_multiplicative *e);
+        Type* resolve_type();
+    };
+
+    struct Additive {
+        std::vector<std::string> ops;
+        std::vector<Multiplicative*> terms;
+        Additive(std::vector<std::string> _ops, std::vector<Multiplicative*> _terms) {
+            ops = _ops;
+            terms = _terms;
+        }
+        static Additive* convert(parser::expr_additive *e);
+        Type* resolve_type();
+    };
+
+    struct Shift {
+        std::vector<std::string> ops;
+        std::vector<Additive*> terms;
+        Shift(std::vector<std::string> _ops, std::vector<Additive*> _terms) {
+            ops = _ops;
+            terms = _terms;
+        }
+        static Shift* convert(parser::expr_shift *e);
+        Type* resolve_type();
+    };
+
+    struct Relational {
+        std::vector<std::string> ops;
+        std::vector<Shift*> terms;
+        Relational(std::vector<std::string> _ops, std::vector<Shift*> _terms) {
+            ops = _ops;
+            terms = _terms;
+        }
+        static Relational* convert(parser::expr_relational *e);
+        Type* resolve_type();
+    };
+
+    struct Equality {
+        std::vector<std::string> ops;
+        std::vector<Relational*> terms;
+        Equality(std::vector<std::string> _ops, std::vector<Relational*> _terms) {
+            ops = _ops;
+            terms = _terms;
+        }
+        static Equality* convert(parser::expr_equality *e);
+        Type* resolve_type();
+    };
+
+    struct BitAnd {
+        std::vector<std::string> ops;
+        std::vector<Equality*> terms;
+        BitAnd(std::vector<std::string> _ops, std::vector<Equality*> _terms) {
+            ops = _ops;
+            terms = _terms;
+        }
+        static BitAnd* convert(parser::expr_bit_and *e);
+        Type* resolve_type();
+    };
+
+    struct BitXor {
+        std::vector<std::string> ops;
+        std::vector<BitAnd*> terms;
+        BitXor(std::vector<std::string> _ops, std::vector<BitAnd*> _terms) {
+            ops = _ops;
+            terms = _terms;
+        }
+        static BitXor* convert(parser::expr_bit_xor *e);
+        Type* resolve_type();
+    };
+
+    struct BitOr {
+        std::vector<std::string> ops;
+        std::vector<BitXor*> terms;
+        BitOr(std::vector<std::string> _ops, std::vector<BitXor*> _terms) {
+            ops = _ops;
+            terms = _terms;
+        }
+        static BitOr* convert(parser::expr_bit_or *e);
+        Type* resolve_type();
+    };
+
+    struct LogicalAnd {
+        std::vector<std::string> ops;
+        std::vector<BitOr*> terms;
+        LogicalAnd(std::vector<std::string> _ops, std::vector<BitOr*> _terms) {
+            ops = _ops;
+            terms = _terms;
+        }
+        static LogicalAnd* convert(parser::expr_logical_and* e);
+        Type* resolve_type();
+    };
+
+    std::vector<std::string> ops;
+    std::vector<LogicalAnd*> terms;
+    Expression(std::vector<std::string> _ops, std::vector<LogicalAnd*> _terms) {
+        ops = _ops;
         terms = _terms;
-        operators = _operators;
     }
     static Expression* convert(parser::expression *e);
     Type* resolve_type();
@@ -180,34 +294,48 @@ struct Declaration {
     bool is_well_formed();
 };
 
+struct Assignment {
+    Identifier *id;
+    Expression *expr;
+    Assignment(Identifier *_id, Expression *_expr) {
+        id = _id;
+        expr = _expr;
+    }
+    static Assignment* convert(parser::assignment *a);
+    bool is_well_formed();
+};
+
 struct Statement {
     static Statement* convert(parser::statement *s);
     virtual bool is_well_formed() = 0;
     virtual bool is_always_returning() = 0;
-    virtual bool has_nonvoid_return() = 0;
 };
 
-struct DeclarationStatement : public Statement {
+struct SimpleStatement : public Statement {
+    static SimpleStatement* convert(parser::simple_statement *s);
+    virtual bool is_well_formed() = 0;
+    virtual bool is_always_returning() = 0;
+};
+
+struct DeclarationStatement : public SimpleStatement {
     Declaration *declaration;
     DeclarationStatement(Declaration *_declaration) {
         declaration = _declaration;
     }
     bool is_well_formed() override;
     bool is_always_returning() override;
-    bool has_nonvoid_return() override;
 };
 
-struct FunctionCallStatement : public Statement {
+struct FunctionCallStatement : public SimpleStatement {
     FunctionCall *function_call;
     FunctionCallStatement(FunctionCall *_function_call) {
         function_call = _function_call;
     }
     bool is_well_formed() override;
     bool is_always_returning() override;
-    bool has_nonvoid_return() override;
 };
 
-struct ReturnStatement : public Statement {
+struct ReturnStatement : public SimpleStatement {
     std::optional<Expression*> opt_expr;
     ReturnStatement(Expression* expr) {
         if(expr == nullptr) opt_expr = std::nullopt;
@@ -215,18 +343,76 @@ struct ReturnStatement : public Statement {
     }
     bool is_well_formed() override;
     bool is_always_returning() override;
-    bool has_nonvoid_return() override;
 };
 
-struct CompoundStatement {
-    std::vector<std::variant<Statement*, CompoundStatement*>> statements;
-    CompoundStatement(std::vector<std::variant<Statement*, CompoundStatement*>> _statements) {
+struct AssignmentStatement : public SimpleStatement {
+    Assignment *assignment;
+    AssignmentStatement(Assignment *a) {
+        assignment = a;
+    }
+    bool is_well_formed() override;
+    bool is_always_returning() override;
+};
+
+struct ControlStatement : public Statement {
+    static ControlStatement* convert(parser::control_statement *s);
+    virtual bool is_well_formed() = 0;
+    virtual bool is_always_returning() = 0;
+};
+
+struct IfStatement : public ControlStatement {
+    std::vector<Expression*> exprs;
+    std::vector<Statement*> statements;
+    std::optional<Statement*> else_statement;
+    IfStatement(std::vector<Expression*> _exprs, std::vector<Statement*> _statements, Statement *_else_statement) {
+        exprs = _exprs;
+        statements = _statements;
+        if(_else_statement == nullptr) else_statement = std::nullopt;
+        else else_statement = _else_statement;
+        assert(statements.size() >= 0);
+        assert(exprs.size() == statements.size());
+    }
+    bool is_well_formed() override;
+    bool is_always_returning() override;
+};
+
+struct WhileStatement : public ControlStatement {
+    Expression *expr;
+    Statement *statement;
+    WhileStatement(Expression *_expr, Statement *_statement) {
+        expr = _expr;
+        statement = _statement;
+    }
+    bool is_well_formed() override;
+    bool is_always_returning() override;
+};
+
+struct ForStatement : public ControlStatement {
+    std::optional<Declaration*> declaration;
+    std::optional<Expression*> expr;
+    std::optional<Assignment*> assignment;
+    Statement *statement;
+    ForStatement(Declaration *_declaration, Expression *_expr, Assignment *_assignment, Statement *_statement) {
+        if(_declaration == nullptr) declaration = std::nullopt;
+        else declaration = _declaration;
+        if(_expr == nullptr) expr = std::nullopt;
+        else expr = _expr;
+        if(_assignment == nullptr) assignment = std::nullopt;
+        else assignment = _assignment;
+        statement = _statement;
+    }
+    bool is_well_formed() override;
+    bool is_always_returning() override;
+};  
+
+struct CompoundStatement : public Statement {
+    std::vector<Statement*> statements;
+    CompoundStatement(std::vector<Statement*> _statements) {
         statements = _statements;
     }
     static CompoundStatement* convert(parser::compound_statement *s);
     bool is_well_formed();
     bool is_always_returning();
-    bool has_nonvoid_return();
 };
 
 //name and input types. Does not include return type
@@ -339,6 +525,74 @@ std::vector<Function*> declared_functions;
 std::vector<Variable*> declared_variables;
 std::stack<std::vector<Variable*>> declaration_stack;
 
+struct TypeConversionKey {
+    std::optional<Type*> left;
+    std::string op;
+    Type* right;    
+    TypeConversionKey(Type* _left, std::string _op, Type* _right) {
+        assert(_left != nullptr);
+        left = _left;
+        op = _op;
+        right = _right;
+    }
+    TypeConversionKey(std::string _op, Type* _right) {
+        left = std::nullopt;
+        op = _op;
+        right = _right;
+    }
+
+    bool operator<(const TypeConversionKey& other) const {
+        if (left.has_value() != other.left.has_value()) {
+            return left.has_value() < other.left.has_value();
+        }
+        if (left.has_value() && *(left.value()) != *(other.left.value())) {
+            return *(left.value()) < *(other.left.value()); // Compare pointers
+        }
+        if (op != other.op) {
+            return op < other.op;
+        }
+        return *right < *other.right; // Compare pointers
+    }
+};  
+
+//assumes left is in %rax and right is in %rbx
+//will place the answer into %rax
+struct TypeConversion {
+    Type* res_type;
+    std::vector<std::string> instructions;
+    TypeConversion() {
+        res_type = nullptr;
+    }
+    TypeConversion(Type *_res_type, std::vector<std::string> _instructions) {
+        res_type = _res_type;
+        instructions = _instructions;
+    }
+};
+
+std::map<TypeConversionKey, TypeConversion> conversion_map;
+
+Type* find_resulting_type(Type* left, std::string op, Type* right) {
+    if(left == nullptr || right == nullptr) return nullptr;
+    assert(op.size() != 0);
+    TypeConversionKey key = {left, op, right};
+    if(!conversion_map.count(key)) {
+        std::cout << "Invalid type conversion : " << left->name << " " << op << " " << right->name << "\n";
+        return nullptr;
+    }
+    return conversion_map[key].res_type;
+}
+
+Type* find_resulting_type(std::string op, Type* right) {
+    if(right == nullptr) return nullptr;
+    assert(op.size() != 0);
+    TypeConversionKey key = {op, right};
+    if(!conversion_map.count(key)) {
+        std::cout << "Invalid type conversion : " << op << " " << right->name << "\n";
+        return nullptr;
+    }
+    return conversion_map[key].res_type;
+}
+
 Type* find_variable_type(Identifier *id) {
     std::cout << "FIND VARIABLE TYPE : " << id->name << std::endl;
     for(int i = 0; i < declared_variables.size(); i++){
@@ -370,12 +624,30 @@ bool is_function_declared(FunctionSignature *fs) {
     return false;
 }
 
+bool is_variable_declared(Identifier *id) {
+    for(int i = 0; i < declared_variables.size(); i++){
+        if(*id == *(declared_variables[i]->id)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 Function* get_function(FunctionSignature *fs) {
     std::cout << "GET FUNCTION : " << fs->to_string() << "\n";
     for(int i = 0; i < declared_functions.size(); i++){
-        std::cout << declared_functions[i]->fs->to_string() << "\n";
         if(*fs == *(declared_functions[i]->fs)) {
             return declared_functions[i];
+        }
+    }
+    return nullptr;
+}
+
+Variable* get_variable(Identifier *id) {
+    std::cout << "GET VARIABLE : " << id->name << "\n";
+    for(int i = 0; i < declared_variables.size(); i++){
+        if(*id == *(declared_variables[i]->id)) {
+            return declared_variables[i];
         }
     }
     return nullptr;
@@ -444,59 +716,145 @@ Type* Type::convert(parser::type *t) {
     return new Type(t->to_string());
 }
 
-Expression::Factor* Expression::Factor::convert(parser::expr_factor *f){
-    std::string unary_op = "+";
-    if(f->t0 != nullptr) {
-        //we have an unary operator
-        parser::expr_factor::a0 *unary = f->t0;
-        if(unary->is_b0) {
-            unary_op = unary->t0->t0;
-        }
-        else if(unary->is_b1) {
-            unary_op = unary->t1->t0;
-        }
-        else assert(false);
+Expression::Primary* Expression::Primary::convert(parser::expr_primary *e) {
+    Expression::Primary::val_t val;
+    if(e->is_a0) {
+        val = FunctionCall::convert(e->t0->t0);
     }
-    
-    //parse main body 
-    parser::expr_factor::a1 *body = f->t1;
-    Expression::Factor::val_t val;
-    if(body->is_b0) {
-        val = FunctionCall::convert(body->t0->t0);
+    else if(e->is_a1) {
+        val = Identifier::convert(e->t1->t0);
     }
-    else if(body->is_b1){
-        val = Identifier::convert(body->t1->t0);
+    else if(e->is_a2) {
+        val = Literal::convert(e->t2->t0);
     }
-    else if(body->is_b2) {
-        val = Literal::convert(body->t2->t0);
-    }
-    else if(body->is_b3) {
-        val = Expression::convert(body->t3->t2);
+    else if(e->is_a3) {
+        val = Expression::convert(e->t3->t2);
     }
     else assert(false);
-    return new Expression::Factor(unary_op, val);
+    return new Expression::Primary(val);
 }
 
-Expression::Term* Expression::Term::convert(parser::expr_term *t) {
-    std::vector<Factor*> factors;
-    std::vector<std::string> operators;
-    factors.push_back(Expression::Factor::convert(t->t0));
-    for(int i = 0; i < t->t1.size(); i++){
-        operators.push_back(t->t1[i]->t1->to_string());
-        factors.push_back(Expression::Factor::convert(t->t1[i]->t3));
+Expression::Unary* Expression::Unary::convert(parser::expr_unary *e) {
+    if(e->is_a0) {  //unary operator + unary expression
+        std::string op = e->t0->t0->to_string();
+        Expression::Unary *u = Expression::Unary::convert(e->t0->t2);
+        return new Expression::Unary(op, u);
     }
-    return new Expression::Term(factors, operators);
+    else if(e->is_a1) { //primary expression
+        Expression::Primary *p = Expression::Primary::convert(e->t1->t0);
+        return new Expression::Unary(p);
+    }
+    else assert(false);
+}
+
+Expression::Multiplicative* Expression::Multiplicative::convert(parser::expr_multiplicative *e) {
+    std::vector<std::string> ops;
+    std::vector<Expression::Unary*> terms;
+    terms.push_back(Expression::Unary::convert(e->t0));
+    for(int i = 0; i < e->t1.size(); i++){
+        ops.push_back(e->t1[i]->t1->to_string());
+        terms.push_back(Expression::Unary::convert(e->t1[i]->t3));
+    }
+    return new Expression::Multiplicative(ops, terms);
+}
+
+Expression::Additive* Expression::Additive::convert(parser::expr_additive *e) {
+    std::vector<std::string> ops;
+    std::vector<Expression::Multiplicative*> terms;
+    terms.push_back(Expression::Multiplicative::convert(e->t0));
+    for(int i = 0; i < e->t1.size(); i++){
+        ops.push_back(e->t1[i]->t1->to_string());
+        terms.push_back(Expression::Multiplicative::convert(e->t1[i]->t3));
+    }
+    return new Expression::Additive(ops, terms);
+}
+
+Expression::Shift* Expression::Shift::convert(parser::expr_shift *e) {
+    std::vector<std::string> ops;
+    std::vector<Expression::Additive*> terms;
+    terms.push_back(Expression::Additive::convert(e->t0));
+    for(int i = 0; i < e->t1.size(); i++){
+        ops.push_back(e->t1[i]->t1->to_string());
+        terms.push_back(Expression::Additive::convert(e->t1[i]->t3));
+    }
+    return new Expression::Shift(ops, terms);
+}
+
+Expression::Relational* Expression::Relational::convert(parser::expr_relational *e) {
+    std::vector<std::string> ops;
+    std::vector<Expression::Shift*> terms;
+    terms.push_back(Expression::Shift::convert(e->t0));
+    for(int i = 0; i < e->t1.size(); i++){
+        ops.push_back(e->t1[i]->t1->to_string());
+        terms.push_back(Expression::Shift::convert(e->t1[i]->t3));
+    }
+    return new Expression::Relational(ops, terms);
+}
+
+Expression::Equality* Expression::Equality::convert(parser::expr_equality *e) {
+    std::vector<std::string> ops;
+    std::vector<Expression::Relational*> terms;
+    terms.push_back(Expression::Relational::convert(e->t0));
+    for(int i = 0; i < e->t1.size(); i++){
+        ops.push_back(e->t1[i]->t1->to_string());
+        terms.push_back(Expression::Relational::convert(e->t1[i]->t3));
+    }
+    return new Expression::Equality(ops, terms);
+}
+
+Expression::BitAnd* Expression::BitAnd::convert(parser::expr_bit_and *e) {
+    std::vector<std::string> ops;
+    std::vector<Expression::Equality*> terms;
+    terms.push_back(Expression::Equality::convert(e->t0));
+    for(int i = 0; i < e->t1.size(); i++){
+        ops.push_back(e->t1[i]->t1);
+        terms.push_back(Expression::Equality::convert(e->t1[i]->t3));
+    }
+    return new Expression::BitAnd(ops, terms);
+}
+
+Expression::BitXor* Expression::BitXor::convert(parser::expr_bit_xor *e) {
+    std::vector<std::string> ops;
+    std::vector<Expression::BitAnd*> terms;
+    terms.push_back(Expression::BitAnd::convert(e->t0));
+    for(int i = 0; i < e->t1.size(); i++){
+        ops.push_back(e->t1[i]->t1);
+        terms.push_back(Expression::BitAnd::convert(e->t1[i]->t3));
+    }
+    return new Expression::BitXor(ops, terms);
+}
+
+Expression::BitOr* Expression::BitOr::convert(parser::expr_bit_or *e) {
+    std::vector<std::string> ops;
+    std::vector<Expression::BitXor*> terms;
+    terms.push_back(Expression::BitXor::convert(e->t0));
+    for(int i = 0; i < e->t1.size(); i++){
+        ops.push_back(e->t1[i]->t1);
+        terms.push_back(Expression::BitXor::convert(e->t1[i]->t3));
+    }
+    return new Expression::BitOr(ops, terms);
+}
+
+Expression::LogicalAnd* Expression::LogicalAnd::convert(parser::expr_logical_and *e) {
+    std::vector<std::string> ops;
+    std::vector<Expression::BitOr*> terms;
+    terms.push_back(Expression::BitOr::convert(e->t0));
+    for(int i = 0; i < e->t1.size(); i++){
+        ops.push_back(e->t1[i]->t1);
+        terms.push_back(Expression::BitOr::convert(e->t1[i]->t3));
+    }
+    return new Expression::LogicalAnd(ops, terms);
 }
 
 Expression* Expression::convert(parser::expression *e) {
-    std::vector<Term*> terms;
-    std::vector<std::string> operators;
-    terms.push_back(Expression::Term::convert(e->t0));
+    std::vector<std::string> ops;
+    std::vector<Expression::LogicalAnd*> terms;
+    terms.push_back(Expression::LogicalAnd::convert(e->t0));
     for(int i = 0; i < e->t1.size(); i++){
-        operators.push_back(e->t1[i]->t1->to_string());
-        terms.push_back(Expression::Term::convert(e->t1[i]->t3));
+        ops.push_back(e->t1[i]->t1);
+        terms.push_back(Expression::LogicalAnd::convert(e->t1[i]->t3));
     }
-    return new Expression(terms, operators);
+    return new Expression(ops, terms);
 }
 
 Declaration* Declaration::convert(parser::declaration *d) {
@@ -506,7 +864,26 @@ Declaration* Declaration::convert(parser::declaration *d) {
     return new Declaration(type, name, expr);
 }
 
+Assignment* Assignment::convert(parser::assignment *a) {
+    Identifier *id = Identifier::convert(a->t0);
+    Expression *expr = Expression::convert(a->t4);
+    return new Assignment(id, expr);
+}
+
 Statement* Statement::convert(parser::statement *s) {
+    if(s->is_a0) {  //simple statement
+        return SimpleStatement::convert(s->t0->t0);
+    }
+    else if(s->is_a1) { //control statement
+        return ControlStatement::convert(s->t1->t0);
+    }
+    else if(s->is_a2) { //compound statement
+        return CompoundStatement::convert(s->t2->t0);
+    }
+    else assert(false);
+}
+
+SimpleStatement* SimpleStatement::convert(parser::simple_statement *s) {
     if(s->is_a0) {  //declaration
         Declaration *declaration = Declaration::convert(s->t0->t0);
         return new DeclarationStatement(declaration);
@@ -523,20 +900,61 @@ Statement* Statement::convert(parser::statement *s) {
         }
         return new ReturnStatement(expr);
     }
+    else if(s->is_a3) { //assignment
+        Assignment *assignment = Assignment::convert(s->t3->t0);
+        return new AssignmentStatement(assignment);
+    }
+    else assert(false);
+}
+
+ControlStatement* ControlStatement::convert(parser::control_statement *s) {
+    if(s->is_a0) {  //if statement
+        std::vector<Statement*> statements;
+        std::vector<Expression*> exprs;
+        Statement *else_statement = nullptr;
+        parser::control_statement *ptr = s;
+        while(true) {
+            assert(ptr->is_a0);
+            exprs.push_back(Expression::convert(ptr->t0->t4));
+            statements.push_back(Statement::convert(ptr->t0->t8));
+            if(ptr->t0->t9 == nullptr) break;   //else doesn't exist
+            Statement* tmp_stmt = Statement::convert(ptr->t0->t9->t3);
+            if(!ptr->t0->t9->t3->is_a1) {  //statement isn't control statement
+                else_statement = Statement::convert(ptr->t0->t9->t3);
+                break;
+            }
+            parser::control_statement *nxt_ptr = ptr->t0->t9->t3->t1->t0;
+            if(!nxt_ptr->is_a0) {   //statement isn't if statement
+                else_statement = Statement::convert(ptr->t0->t9->t3);
+                break;
+            }
+            ptr = nxt_ptr;
+        }
+        return new IfStatement(exprs, statements, else_statement);
+    }
+    else if(s->is_a1){  //while statement
+        Expression *expr = Expression::convert(s->t1->t4);
+        Statement *statement = Statement::convert(s->t1->t8);
+        return new WhileStatement(expr, statement);
+    }
+    else if(s->is_a2) { //for statement
+        Declaration *declaration = nullptr;
+        if(s->t2->t4 != nullptr) declaration = Declaration::convert(s->t2->t4->t0);
+        Expression *expr = nullptr;
+        if(s->t2->t8 != nullptr) expr = Expression::convert(s->t2->t8->t0);
+        Assignment *assignment = nullptr;
+        if(s->t2->t12 != nullptr) assignment = Assignment::convert(s->t2->t12->t0);
+        Statement *statement = Statement::convert(s->t2->t16);
+        return new ForStatement(declaration, expr, assignment, statement);
+    }
     else assert(false);
 }
 
 CompoundStatement* CompoundStatement::convert(parser::compound_statement *s) {
-    std::vector<std::variant<Statement*, CompoundStatement*>> statements;
+    std::vector<Statement*> statements;
     std::vector<parser::compound_statement::a0*> slist = s->t2;
     for(int i = 0; i < slist.size(); i++){
-        parser::compound_statement::a0* tmp0 = slist[i];
-        if(tmp0->t0->is_c0) {   //statement
-            statements.push_back(Statement::convert(tmp0->t0->t0->t0));
-        }
-        else {  //compound statement
-            statements.push_back(CompoundStatement::convert(tmp0->t0->t1->t0));
-        }
+        statements.push_back(Statement::convert(slist[i]->t0));
     }
     return new CompoundStatement(statements);
 }
@@ -589,7 +1007,7 @@ Type* IntegerLiteral::resolve_type() {
     return new Type("int");
 }
 
-Type* Expression::Factor::resolve_type() {
+Type* Expression::Primary::resolve_type() {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *f = std::get<FunctionCall*>(val);
         return f->resolve_type();
@@ -607,46 +1025,98 @@ Type* Expression::Factor::resolve_type() {
         return e->resolve_type();
     }
     else assert(false);
-}   
+}
 
-Type* Expression::Term::resolve_type() {
-    if(factors.size() == 0) {
-        return nullptr;
+Type* Expression::Unary::resolve_type() {
+    if(std::holds_alternative<Primary*>(val)) {
+        Expression::Primary *p = std::get<Expression::Primary*>(val);
+        return p->resolve_type();
     }
-    assert(factors.size() - 1 == operators.size());
-    std::vector<Type*> types;
-    for(int i = 0; i < factors.size(); i++){
-        types.push_back(factors[i]->resolve_type());
+    else if(std::holds_alternative<Unary*>(val)) {
+        Expression::Unary *u = std::get<Expression::Unary*>(val);
+        return find_resulting_type(op, u->resolve_type());
     }
-    // - make sure all the types are resolved
-    for(int i = 0; i < factors.size(); i++){
-        if(types[i] == nullptr) return nullptr;
+    else assert(false);
+}
+
+Type* Expression::Multiplicative::resolve_type() {
+    Type *left = terms[0]->resolve_type();
+    for(int i = 1; i < terms.size(); i++){
+        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
     }
-    //just make sure all the types are equal for now
-    for(int i = 0; i < factors.size() - 1; i++){
-        if(*(types[i]) != *(types[i + 1])) return nullptr;
+    return left;
+}
+
+Type* Expression::Additive::resolve_type() {
+    Type *left = terms[0]->resolve_type();
+    for(int i = 1; i < terms.size(); i++){
+        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
     }
-    return types[0];
+    return left;
+}
+
+Type* Expression::Shift::resolve_type() {
+    Type *left = terms[0]->resolve_type();
+    for(int i = 1; i < terms.size(); i++){
+        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+    }
+    return left;
+}
+
+Type* Expression::Relational::resolve_type() {
+    Type *left = terms[0]->resolve_type();
+    for(int i = 1; i < terms.size(); i++){
+        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+    }
+    return left;
+}
+
+Type* Expression::Equality::resolve_type() {
+    Type *left = terms[0]->resolve_type();
+    for(int i = 1; i < terms.size(); i++){
+        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+    }
+    return left;
+}
+
+Type* Expression::BitAnd::resolve_type() {
+    Type *left = terms[0]->resolve_type();
+    for(int i = 1; i < terms.size(); i++){
+        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+    }
+    return left;
+}
+
+Type* Expression::BitXor::resolve_type() {
+    Type *left = terms[0]->resolve_type();
+    for(int i = 1; i < terms.size(); i++){
+        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+    }
+    return left;
+}
+
+Type* Expression::BitOr::resolve_type() {
+    Type *left = terms[0]->resolve_type();
+    for(int i = 1; i < terms.size(); i++){
+        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+    }
+    return left;
+}
+
+Type* Expression::LogicalAnd::resolve_type() {
+    Type *left = terms[0]->resolve_type();
+    for(int i = 1; i < terms.size(); i++){
+        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+    }
+    return left;
 }
 
 Type* Expression::resolve_type() {
-    if(terms.size() == 0) {
-        return nullptr;
+    Type *left = terms[0]->resolve_type();
+    for(int i = 1; i < terms.size(); i++){
+        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
     }
-    assert(terms.size() - 1 == operators.size());
-    std::vector<Type*> types;
-    for(int i = 0; i < terms.size(); i++){
-        types.push_back(terms[i]->resolve_type());
-    }
-    // - make sure all types are resolved
-    for(int i = 0; i < terms.size(); i++){
-        if(types[i] == nullptr) return nullptr;
-    }
-    //just make sure all the types are equal for now
-    for(int i = 0; i < terms.size() - 1; i++){
-        if(*(types[i]) != *(types[i + 1])) return nullptr;
-    }
-    return types[0];
+    return left;
 }
 
 Type* FunctionCall::resolve_type() {
@@ -672,37 +1142,6 @@ FunctionSignature* FunctionCall::resolve_function_signature() {
     return new FunctionSignature(id, types);
 }
 
-bool DeclarationStatement::has_nonvoid_return() {
-    return false;
-}
-
-bool FunctionCallStatement::has_nonvoid_return() {
-    return false;
-}
-
-bool ReturnStatement::has_nonvoid_return() {
-    return opt_expr.has_value();
-}
-
-bool CompoundStatement::has_nonvoid_return() {
-    for(int i = 0; i < statements.size(); i++){
-        if(std::holds_alternative<Statement*>(statements[i])) {
-            Statement *s = std::get<Statement*>(statements[i]);
-            if(s->has_nonvoid_return()) {
-                return true;
-            }
-        }
-        else if(std::holds_alternative<CompoundStatement*>(statements[i])) {
-            CompoundStatement *cs = std::get<CompoundStatement*>(statements[i]);
-            if(cs->has_nonvoid_return()) {
-                return true;
-            }
-        }
-        else assert(false);
-    }
-    return false;
-}
-
 bool DeclarationStatement::is_always_returning() {
     return false;
 }
@@ -715,21 +1154,31 @@ bool ReturnStatement::is_always_returning() {
     return true;
 }
 
-bool CompoundStatement::is_always_returning() {
+bool AssignmentStatement::is_always_returning() {
+    return false;
+}
+
+bool IfStatement::is_always_returning() {
+    //every statement must return 
     for(int i = 0; i < statements.size(); i++){
-        if(std::holds_alternative<Statement*>(statements[i])) {
-            Statement *s = std::get<Statement*>(statements[i]);
-            if(s->is_always_returning()) {
-                return true;
-            }
-        }
-        else if(std::holds_alternative<CompoundStatement*>(statements[i])) {
-            CompoundStatement *cs = std::get<CompoundStatement*>(statements[i]);
-            if(cs->is_always_returning()) {
-                return true;
-            }
-        }
-        else assert(false);
+        if(!statements[i]->is_always_returning()) return false;
+    }
+    if(else_statement.has_value() && !else_statement.value()->is_always_returning()) return false;
+    return true;
+}
+
+bool WhileStatement::is_always_returning() {
+    return statement->is_always_returning();
+}
+
+bool ForStatement::is_always_returning() {
+    return statement->is_always_returning();
+}
+
+bool CompoundStatement::is_always_returning() {
+    //for now, don't worry about unreachable code
+    for(int i = 0; i < statements.size(); i++){
+        if(statements[i]->is_always_returning()) return true;
     }
     return false;
 }
@@ -743,7 +1192,7 @@ bool Declaration::is_well_formed() {
     // - does the expression resolve to a type?
     Type *expr_type = expr->resolve_type();
     if(expr_type == nullptr || !is_type_declared(expr_type)) {
-        std::cout << "Expression does not resolve to existing type\n";
+        std::cout << "Declaration expression does not resolve to existing type\n";
         return false;
     }
     // - does the type of the expression match with the type being used?
@@ -754,6 +1203,32 @@ bool Declaration::is_well_formed() {
     // - is the identifier being used already taken?
     if(!add_variable(type, id)) {
         std::cout << "Identifier already used : " << id->name << "\n";
+        return false;
+    }
+    return true;
+}
+
+bool Assignment::is_well_formed() {
+    // - does the expression resolve to a type?
+    Type *t = expr->resolve_type();
+    if(t == nullptr) {
+        std::cout << "Assignment expression does not resolve to type\n";
+        return false;
+    }
+    // - does the type the expression resolves to exist?
+    if(!is_type_declared(t)) {
+        std::cout << "Assignment expression does not resolve to existing type\n";
+        return false;
+    }
+    // - does the variable exist?
+    Variable *v = get_variable(id);
+    if(v == nullptr) {
+        std::cout << "Assignment variable does not exist : " << id->name << "\n";
+        return false;
+    }
+    // - does the type of the expression match the variable type?
+    if(*t != *(v->type)) {
+        std::cout << "Assignment expression type and variable type mismatch\n";
         return false;
     }
     return true;
@@ -803,28 +1278,87 @@ bool ReturnStatement::is_well_formed() {
     return true;
 }
 
+bool AssignmentStatement::is_well_formed() {
+    // - is the assignment well formed?
+    if(!assignment->is_well_formed()) {
+        std::cout << "Assignment not well formed\n";
+        return false;
+    }
+    return true;
+}
+
+bool IfStatement::is_well_formed() {
+    // - do all expressions resolve to type 'int'?
+    for(int i = 0; i < exprs.size(); i++){
+        Type *t = exprs[i]->resolve_type();
+        if(t == nullptr || *t != Type("int")) {
+            return false;
+        }
+    }
+    // - are all of the statements well formed?
+    for(int i = 0; i < statements.size(); i++){
+        if(!statements[i]->is_well_formed()) {
+            return false;
+        }
+    }
+    return true;
+}
+
+bool WhileStatement::is_well_formed() {
+    // - does the expression resolve to type 'int'?
+    Type *t = expr->resolve_type();
+    if(t == nullptr || *t != Type("int")) {
+        return false;
+    }
+    // - is the statement well formed?
+    if(!statement->is_well_formed()) {
+        return false;
+    }
+    return true;
+}
+
+bool ForStatement::is_well_formed() {
+    push_declaration_stack();
+
+    // - is the declaration well formed? 
+    if(declaration.has_value()) {
+        if(!declaration.value()->is_well_formed()) {
+            return false;
+        }
+    }
+    // - does the expression resolve to type 'int'?
+    if(expr.has_value()) {
+        Type *t = expr.value()->resolve_type();
+        if(t == nullptr || *t != Type("int")) {
+            return false;
+        }
+    }
+    // - is the assignment well formed?
+    if(assignment.has_value()) {
+        if(!assignment.value()->is_well_formed()) {
+            return false;
+        }
+    }
+    // - is the statement well formed?
+    if(!statement->is_well_formed()) {
+        return false;
+    }
+
+    pop_declaration_stack();
+    return true;
+}
+
 bool CompoundStatement::is_well_formed() {
     push_declaration_stack();
 
     // - are all statements within well formed?
     for(int i = 0; i < statements.size(); i++){
-        if(std::holds_alternative<Statement*>(statements[i])) {
-            Statement *s = std::get<Statement*>(statements[i]);
-            if(!s->is_well_formed()) {
-                return false;
-            }
+        if(!statements[i]->is_well_formed()) {
+            return false;
         }
-        else if(std::holds_alternative<CompoundStatement*>(statements[i])) {
-            CompoundStatement *cs = std::get<CompoundStatement*>(statements[i]);
-            if(!cs->is_well_formed()) {
-                return false;
-            }
-        }
-        else assert(false);
     }
 
     pop_declaration_stack();
-
     return true;
 }
 
@@ -853,9 +1387,8 @@ bool Function::is_well_formed() {
         return false;
     }
     
+    // - if type is not void, check for existence of return statement as last reachable statement
     if(*type != Type("void")) {
-        // - if type is not void, check for existence of return statement as last reachable statement
-
         // from any point of runnable code, we expect that it should be able to reach a return statement. 
         // this effectively means that the last statement should always be a return statement, regardless of 
         // the rest of the code, as the statement right before it needs to be able to return. 
@@ -879,13 +1412,6 @@ bool Function::is_well_formed() {
             return false;
         }
     }
-    else {
-        // - if type is void, check that all the return statements are empty, if they exist
-        if(body->has_nonvoid_return()) {
-            std::cout << "Function body has non-void return in void function\n";
-            return false;
-        }
-    }
 
     //unregister parameters as variables
     pop_declaration_stack();
@@ -894,11 +1420,81 @@ bool Function::is_well_formed() {
 }
 
 bool Program::is_well_formed() {
-    enclosing_function = nullptr;
-    declared_functions.clear();
-    declared_types.clear();
-    declared_variables.clear();
-    while(declaration_stack.size()) declaration_stack.pop();
+    // - set up semantic checker controller
+    {
+        conversion_map.clear();
+        enclosing_function = nullptr;
+        declared_functions.clear();
+        declared_types.clear();
+        declared_variables.clear();
+        while(declaration_stack.size()) declaration_stack.pop();
+
+        // - primitive types
+        Type *p_int = new Type("int");
+        declared_types.push_back(p_int);
+
+        // - populate conversion map
+        conversion_map[{p_int, "+", p_int}] = {p_int, {"add %rbx, %rax"}};
+        conversion_map[{p_int, "-", p_int}] = {p_int, {"sub %rbx, %rax"}};
+        conversion_map[{p_int, "*", p_int}] = {p_int, {"imul %rbx, %rax"}};
+        conversion_map[{p_int, "/", p_int}] = {p_int, {
+            "cqo",
+            "idiv %rbx",
+        }};
+        conversion_map[{p_int, "%", p_int}] = {p_int, {
+            "cqo",
+            "idiv %rbx",
+            "mov %rdx, %rax",
+        }};
+        conversion_map[{p_int, "&", p_int}] = {p_int, {"and %rbx, %rax"}};
+        conversion_map[{p_int, "^", p_int}] = {p_int, {"xor %rbx, %rax"}};
+        conversion_map[{p_int, "|", p_int}] = {p_int, {"or %rbx, %rax"}};
+        conversion_map[{p_int, "&&", p_int}] = {p_int, {/* going to implement short circuiting */}};
+        conversion_map[{p_int, "||", p_int}] = {p_int, {/* going to implement short circuiting */}};
+        conversion_map[{p_int, "==", p_int}] = {p_int, {
+            "cmp %rbx, %rax",
+            "sete %al",
+            "movzx %al, %rax",
+        }};
+        conversion_map[{p_int, "!=", p_int}] = {p_int, {
+            "cmp %rbx, %rax",
+            "setne %al",
+            "movzx %al, %rax",
+        }};
+        conversion_map[{p_int, "<", p_int}] = {p_int, {
+            "cmp %rbx, %rax",
+            "setl %al",
+            "movzx %al, %rax",
+        }};
+        conversion_map[{p_int, ">", p_int}] = {p_int, {
+            "cmp %rbx, %rax",
+            "setg %al",
+            "movzx %al, %rax",
+        }};
+        conversion_map[{p_int, "<=", p_int}] = {p_int, {
+            "cmp %rbx, %rax",
+            "setle %al",
+            "movzx %al, %rax",
+        }};
+        conversion_map[{p_int, ">=", p_int}] = {p_int, {
+            "cmp %rbx, %rax",
+            "setge %al",
+            "movzx %al, %rax",
+        }};
+        conversion_map[{p_int, "<<", p_int}] = {p_int, {
+            "push %rcx",
+            "mov %rbx, %rcx",
+            "sal %cl, %rax",
+            "pop %rcx",
+        }};
+        conversion_map[{p_int, ">>", p_int}] = {p_int, {
+            "push %rcx",
+            "mov %rbx, %rcx",
+            "sar %cl, %rax",
+            "pop %rcx",
+        }};
+    }
+    
 
     push_declaration_stack();
 
@@ -928,9 +1524,6 @@ bool Program::is_well_formed() {
             return false;
         }
     }
-
-    //collect all type definitions. For now, just the primitive types are defined
-    declared_types.push_back(new Type("int"));
 
     // - make sure every function is well formed
     for(int i = 0; i < functions.size(); i++){
@@ -980,6 +1573,7 @@ int main(int argc, char* argv[]) {
 
     Program *program = nullptr;
     {
+        std::cout << "CHECKING SYNTAX" << std::endl;
         std::string code = read_file(filename);
         parser::s = code;
         parser::ptr = 0;
@@ -988,18 +1582,19 @@ int main(int argc, char* argv[]) {
             std::cout << "SYNTAX ERROR\n";
             return 1;
         }
-        std::cout << "SYNTAX PASS\n";
+        std::cout << "SYNTAX PASS" << std::endl;
+        std::cout << "CONVERTING ..." << std::endl;
         program = Program::convert(p);
     }
    
-    std::cout << "FUNCTION DEFINITIONS : \n";
+    std::cout << "FUNCTION DEFINITIONS : " << std::endl;
     for(int i = 0; i < program->functions.size(); i++){
         std::cout << "NAME : " << program->functions[i]->id->name << ", TYPE : " << program->functions[i]->type->name << ", PARAMS :\n";
         for(int j = 0; j < program->functions[i]->parameters.size(); j++){
             Function::Parameter *param = program->functions[i]->parameters[j];
             std::cout << param->type->name << " " << param->id->name << "\n";
         }
-        std::cout << "NR STATEMENTS : " << program->functions[i]->body->statements.size() << "\n";
+        std::cout << "NR STATEMENTS : " << program->functions[i]->body->statements.size() << std::endl;
     }
 
     if(!program->is_well_formed()) {
