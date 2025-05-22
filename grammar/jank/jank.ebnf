@@ -4,7 +4,6 @@
 (* I loooove dylan janky *)
 (*
 TODO
- - comments
  - global variables
 *)
 
@@ -32,7 +31,10 @@ ws = " " | "\n" | "\t" | "\r" | "\f" | "\b"
 rws = < ws > ;                                  (* required whitespace *)
 ows = { ws } ;                                  (* optional whitespace *)
 
-type = alpha , { alpha | digit | "_" } ;
+type = base_type | pointer_type ;
+pointer_type = type , "*" ;
+base_type = alpha , { alpha | digit | "_" } ;
+
 identifier = alpha , { alpha | digit | "_" } ;
 
 (* int a = b *)

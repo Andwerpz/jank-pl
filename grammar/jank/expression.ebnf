@@ -7,6 +7,7 @@
 (* TODO handle casting. This should be an unary operator, like "(" , type , ")" *)
 
 (* in order of precedence *)
+(* x[<expr>] *)
 (* +x -x ~x !x *)
 (* <mult> / % *)
 (* + - *)
@@ -20,12 +21,12 @@
 (* || *)
 
 expr_primary = function_call | identifier | literal | "(" , ows , expression , ows , ")" ;
-expr_unary = ( "+" | "-" | "~" | "!" ) , ows , expr_unary
-           | expr_primary ;
+expr_postfix = expr_primary , { ows , "[" , ows , expression , ows , "]" } ;
+expr_unary = ( "+" | "-" | "~" | "!" ) , ows , expr_unary | expr_postfix ;
 expr_multiplicative = expr_unary , { ows , ( "*" | "/" | "%" ) , ows , expr_unary } ;
 expr_additive = expr_multiplicative , { ows , ( "+" | "-" ) , ows , expr_multiplicative } ;
 expr_shift = expr_additive , { ows , ( "<<" | ">>" ) , ows , expr_additive } ;
-expr_relational = expr_shift , { ows , ( "<" | "<=" | ">" | ">=" ) , ows , expr_shift } ;
+expr_relational = expr_shift , { ows , ( "<=" | "<" | ">=" | ">" ) , ows , expr_shift } ;   (* must have '<=' before '<' to support greedy parsing *)
 expr_equality = expr_relational , { ows , ( "==" | "!=" ) , ows , expr_relational } ;
 expr_bit_and = expr_equality , { ows , "&" , ows , expr_equality } ;
 expr_bit_xor = expr_bit_and , { ows , "^" , ows , expr_bit_and } ;

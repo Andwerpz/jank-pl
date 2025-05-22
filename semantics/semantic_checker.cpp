@@ -9,6 +9,7 @@
 #include <variant>
 #include <optional>
 #include <map>
+#include <unordered_map>
 #include "jank_parser.cpp"
 
 /*
@@ -21,14 +22,50 @@ Takes in a .jank file, generates AST using jank_parser, then makes sure the prog
 If the program is well formed, will spit out equivalent assembly code
 
 For now, I will only support int as a valid type
+To support a binary operator, you have to provide what types it takes in as well as results in, as well as 
+some inline assembly code to actually perform the operation. 
+logical && and || are a special case as I need to implement short circuiting, which can't be inlined as it
+requires jumps. 
+The two arguments of binary operators are assumed to be %rax, %rbx, and the result should get stored into %rax
 
 will have two functions for checking, resolve_type() and is_well_formed(). 
 resolve_type() returns nullptr if not well formed
-these functions will only work with the proper context from declared_functions and declared_variables. 
+these functions will only work with the proper context from declared_functions and declared_variables.
+is_well_formed() will also emit asm.
 
-TODO 
- - figure out how to nicely handle type converting operations. Maybe just keep a big list of what operations
-   are valid, like (int + int = int) and (int * float = float) are valid but (string * string) is invalid. 
+Expression::emit_asm() and all of its subclasses will generate some assembly that will transparently compute
+the result and put it into %rax
+
+Literal::emit_asm() will generate some asm that transparently initializes the literal and puts the value
+into %rax
+
+to access local variables, do <offset>(%rbp) and lookup the offset in the declared_variables array. 
+to use subroutine local variables, do <offset>(%rsp), and do your own book-keeping. All asm generated
+within a subroutine should do everything transparently on the stack, except for output values of course. 
+
+Registers are caller saved, there is no guarantee on transparency with those. These saves should happen not 
+only before function calls, but before every subroutine. 
+
+Anything that can enclose a DeclarationStatement cannot make use of the stack to save stuff, as variable
+declaration needs to happen when the next offset position on the stack is available. 
+
+ReturnStatement should clean up the current stack frame and return. 
+
+FunctionCallStatement does not need to save any registers, but it does need to gather all arguments and 
+pass them in via the stack. For now, function calls will behave like Java function calls, where everything
+is pass by value.
+
+TODO
+ - make sure that int main() is never called
+ - make actual C++ style pass by copy and reference. 
+ - figure out how to let the user access heap memory (arrays and stuff)
+   - maybe implement pointers? so int* x is an int pointer, and x stores some heap memory address
+   - don't just use raw ints for pointers so we can have char* s, and indexing into s will increment differently than indexing into x
+   - need a way to compute the size of any type. For now, can hardcode all primitive types. 
+   - sizeof() should be evaluated on the semantic checking level? any occurrence of sizeof() should turn into an integer literal
+   - for now, just hardcode a sizeof() lookup table. 
+   - all pointers will be 8 byte integers. 
+ - implement better calc_size() for Type. Currently, it's just a bunch of special cases
 
 CODE GENERATION
  - store all variables on the stack. This is much less performant, but much easier to implement
@@ -52,31 +89,16 @@ CODE GENERATION
  - the caller must save any registers they wish to maintain
  - the caller must pass the arguments onto the stack. 
  - the callee is responsible for setting up and returning the base pointer
-
-int foo(int x) {
-    return x * x;
-}
-
-int main() {
-    int x = 10;
-    int y = x;
-    return 0;
-}
-
-foo:
-    # expects x at rbp - 0?
-    
-
-main:
-
-
 */
 
 // -- STRUCT DEFS --
 struct Literal;
 struct IntegerLiteral;
+struct SizeofLiteral;
 struct Identifier;
 struct Type;
+struct BaseType;
+struct PointerType;
 struct Expression;
 struct Declaration;
 struct Assignment;
@@ -101,6 +123,7 @@ struct Variable;
 struct Literal {
     static Literal* convert(parser::literal *n);
     virtual Type* resolve_type() = 0;
+    virtual void emit_asm() = 0;    //some inline assembly to initialize this literal into %rax
 };
 
 struct IntegerLiteral : public Literal {
@@ -109,6 +132,16 @@ struct IntegerLiteral : public Literal {
         val = _val;
     }
     Type* resolve_type() override;
+    void emit_asm() override;
+};
+
+struct SizeofLiteral : public Literal {
+    Type *type;
+    SizeofLiteral(Type *_type) {
+        type = _type;
+    }
+    Type* resolve_type() override;
+    void emit_asm() override;
 };
 
 struct Identifier {
@@ -127,21 +160,65 @@ struct Identifier {
 };
 
 struct Type {
+    static Type* convert(parser::type *t);
+    virtual int calc_size() = 0;
+
+    virtual bool equals(const Type *other) const = 0;
+    bool operator==(const Type& other) const {return equals(&other);}
+    bool operator!=(const Type& other) const {return !equals(&other);}
+    virtual size_t hash() const = 0;
+    virtual std::string to_string() = 0;
+};
+
+struct BaseType : public Type {
     std::string name;
-    Type(std::string _name) {
+    BaseType(std::string _name) {
         name = _name;
     }
-    static Type* convert(parser::type *t);
+    static BaseType* convert(parser::base_type *t);
 
-    bool operator==(const Type& other) {
-        return name == other.name;
-    }
-    bool operator!=(const Type& other) {
-        return !(*this == other);
+    int calc_size() override {
+        if(name == "int") return 8;
+        else if(name == "char") return 1;
+        assert(false);
     }
 
-    bool operator<(const Type& other) {
-        return name < other.name;
+    bool equals(const Type *other) const override {
+        if(auto x = dynamic_cast<const BaseType*>(other)) return name == x->name;
+        return false;
+    }
+
+    size_t hash() const override {
+        return std::hash<std::string>()(name) ^ 0x9e3779b9;
+    }
+
+    std::string to_string() {
+        return name;
+    }
+};  
+
+struct PointerType : public Type {
+    Type *type;
+    PointerType(Type *_type) {
+        type = _type;
+    }
+    static PointerType* convert(parser::pointer_type *t);
+
+    int calc_size() override {
+        return 8;
+    }
+
+    bool equals(const Type *other) const override {
+        if(auto x = dynamic_cast<const PointerType*>(other)) return *type == *(x->type);
+        return false;
+    }
+
+    size_t hash() const override {
+        return type->hash() ^ 0x13952424;
+    }
+
+    std::string to_string() {
+        return type->to_string() + "*";
     }
 };
 
@@ -154,22 +231,37 @@ struct Expression {
         }
         static Primary* convert(parser::expr_primary *e); 
         Type* resolve_type();
+        void emit_asm();
+    };
+
+    struct Postfix {
+        using val_op = std::variant<Expression*>;
+        Primary* term;
+        std::vector<val_op> ops;
+        Postfix(Primary *_term, std::vector<val_op> _ops) { 
+            term = _term;
+            ops = _ops;
+        }
+        static Postfix* convert(parser::expr_postfix *e);
+        Type* resolve_type();
+        void emit_asm();
     };
 
     struct Unary {
         std::string op;
-        std::variant<Primary*, Unary*> val;
+        std::variant<Postfix*, Unary*> val;
         Unary(std::string _op, Unary *_val) {
             assert(_val != nullptr);
             op = _op;
             val = _val;
         }
-        Unary(Primary *_val) {
+        Unary(Postfix *_val) {
             assert(_val != nullptr);
             val = _val;
         }
         static Unary* convert(parser::expr_unary *e);
         Type* resolve_type();
+        void emit_asm();
     };
 
     struct Multiplicative {
@@ -181,6 +273,7 @@ struct Expression {
         }
         static Multiplicative* convert(parser::expr_multiplicative *e);
         Type* resolve_type();
+        void emit_asm();
     };
 
     struct Additive {
@@ -192,6 +285,7 @@ struct Expression {
         }
         static Additive* convert(parser::expr_additive *e);
         Type* resolve_type();
+        void emit_asm();
     };
 
     struct Shift {
@@ -203,6 +297,7 @@ struct Expression {
         }
         static Shift* convert(parser::expr_shift *e);
         Type* resolve_type();
+        void emit_asm();
     };
 
     struct Relational {
@@ -214,6 +309,7 @@ struct Expression {
         }
         static Relational* convert(parser::expr_relational *e);
         Type* resolve_type();
+        void emit_asm();
     };
 
     struct Equality {
@@ -225,6 +321,7 @@ struct Expression {
         }
         static Equality* convert(parser::expr_equality *e);
         Type* resolve_type();
+        void emit_asm();
     };
 
     struct BitAnd {
@@ -236,6 +333,7 @@ struct Expression {
         }
         static BitAnd* convert(parser::expr_bit_and *e);
         Type* resolve_type();
+        void emit_asm();
     };
 
     struct BitXor {
@@ -247,6 +345,7 @@ struct Expression {
         }
         static BitXor* convert(parser::expr_bit_xor *e);
         Type* resolve_type();
+        void emit_asm();
     };
 
     struct BitOr {
@@ -258,6 +357,7 @@ struct Expression {
         }
         static BitOr* convert(parser::expr_bit_or *e);
         Type* resolve_type();
+        void emit_asm();
     };
 
     struct LogicalAnd {
@@ -269,6 +369,7 @@ struct Expression {
         }
         static LogicalAnd* convert(parser::expr_logical_and* e);
         Type* resolve_type();
+        void emit_asm();
     };
 
     std::vector<std::string> ops;
@@ -279,6 +380,7 @@ struct Expression {
     }
     static Expression* convert(parser::expression *e);
     Type* resolve_type();
+    void emit_asm();
 };
 
 struct Declaration {
@@ -292,6 +394,7 @@ struct Declaration {
     }
     static Declaration* convert(parser::declaration *d);
     bool is_well_formed();
+    void emit_asm();
 };
 
 struct Assignment {
@@ -303,6 +406,7 @@ struct Assignment {
     }
     static Assignment* convert(parser::assignment *a);
     bool is_well_formed();
+    void emit_asm();
 };
 
 struct Statement {
@@ -441,7 +545,7 @@ struct FunctionSignature {
         ans += id->name;
         ans += "(";
         for(int i = 0; i < input_types.size(); i++) {
-            ans += input_types[i]->name;
+            ans += input_types[i]->to_string();
             if(i + 1 != input_types.size()) ans += ", ";
         }
         ans += ")";
@@ -474,6 +578,14 @@ struct Function {
         parameters = _parameters;
         body = _body;
     }   
+
+    //use when inputting pre-defined asm functions
+    Function(Type *_type, Identifier *_id, std::vector<Type*> input_types) {
+        fs = new FunctionSignature(_id, input_types);
+        id = _id;
+        type = _type;
+    }
+
     static Function* convert(parser::function *f);
     bool is_well_formed();
 
@@ -496,6 +608,7 @@ struct FunctionCall {
     static FunctionCall* convert(parser::function_call *f);
     Type* resolve_type();
     FunctionSignature* resolve_function_signature();
+    void emit_asm();
 };
 
 //right now, a program is just a collection of functions. 
@@ -509,15 +622,18 @@ struct Program {
     bool is_well_formed();
 };
 
-// -- SEMANTIC ANALYSIS CONTROLLER --
+// -- SEMANTIC ANALYSIS + CODE GENERATION CONTROLLER --
 struct Variable {
     Type *type;
     Identifier *id;
+    int stack_offset;
     Variable(Type *_type, Identifier *_id) {
         id = _id;
         type = _type;
     }
 };
+
+std::ofstream fout("test.asm");
 
 Function* enclosing_function;
 std::vector<Type*> declared_types;
@@ -525,37 +641,74 @@ std::vector<Function*> declared_functions;
 std::vector<Variable*> declared_variables;
 std::stack<std::vector<Variable*>> declaration_stack;
 
+int local_var_stack_offset;
+int label_counter;
+
+//adds some helpful (?) comments in the generated asm. 
+bool asm_debug = false;
+
+std::string create_new_label() {
+    std::string ans = "L" + std::to_string(label_counter++);
+    return ans;
+}
+
 struct TypeConversionKey {
     std::optional<Type*> left;
     std::string op;
-    Type* right;    
-    TypeConversionKey(Type* _left, std::string _op, Type* _right) {
+    std::optional<Type*> right;
+    TypeConversionKey(Type *_left, std::string _op, Type *_right) {
         assert(_left != nullptr);
+        assert(_right != nullptr);
         left = _left;
         op = _op;
         right = _right;
     }
-    TypeConversionKey(std::string _op, Type* _right) {
+    TypeConversionKey(std::string _op, Type *_right) {
+        assert(_right != nullptr);
         left = std::nullopt;
         op = _op;
         right = _right;
     }
+    TypeConversionKey(Type *_left, std::string _op) {
+        assert(_left != nullptr);
+        left = _left;
+        op = _op;
+        right = std::nullopt;
+    }
 
-    bool operator<(const TypeConversionKey& other) const {
-        if (left.has_value() != other.left.has_value()) {
-            return left.has_value() < other.left.has_value();
-        }
-        if (left.has_value() && *(left.value()) != *(other.left.value())) {
-            return *(left.value()) < *(other.left.value()); // Compare pointers
-        }
-        if (op != other.op) {
-            return op < other.op;
-        }
-        return *right < *other.right; // Compare pointers
+    bool operator==(const TypeConversionKey& other) const {
+        if(left.has_value() != other.left.has_value()) return false;
+        if(left.has_value() && *(left.value()) != *(other.left.value())) return false;
+        if(right.has_value() != other.right.has_value()) return false;
+        if(right.has_value() && *(right.value()) != *(other.right.value())) return false;
+        return op == other.op;
     }
 };  
 
-//assumes left is in %rax and right is in %rbx
+namespace std {
+    template<>
+    struct hash<TypeConversionKey> {
+        size_t operator()(const TypeConversionKey& key) const {
+            size_t seed = 0;
+            if(key.left.has_value()) hash_combine(seed, key.left.value()->hash());
+            else hash_combine(seed, 0);
+            if(key.right.has_value()) hash_combine(seed, key.right.value()->hash());
+            else hash_combine(seed, 0);
+            hash_combine(seed, std::hash<std::string>()(key.op));
+            return seed;
+        }
+    private:
+        // Helper function to combine hashes
+        static void hash_combine(size_t& seed, size_t value) {
+            seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        }
+    };
+}
+
+//for binary operators, assumes left is in %rax and right is in %rbx
+//for prefix unary operators, assumes right is in %rax
+//for suffix unary operators, assumes left is in %rax. 
+//for the indexing operator specifically, '[]', the result of the expression is in %rbx
 //will place the answer into %rax
 struct TypeConversion {
     Type* res_type;
@@ -567,16 +720,18 @@ struct TypeConversion {
         res_type = _res_type;
         instructions = _instructions;
     }
+
+    void emit_asm();
 };
 
-std::map<TypeConversionKey, TypeConversion> conversion_map;
+std::unordered_map<TypeConversionKey, TypeConversion> conversion_map;
 
 Type* find_resulting_type(Type* left, std::string op, Type* right) {
     if(left == nullptr || right == nullptr) return nullptr;
     assert(op.size() != 0);
     TypeConversionKey key = {left, op, right};
     if(!conversion_map.count(key)) {
-        std::cout << "Invalid type conversion : " << left->name << " " << op << " " << right->name << "\n";
+        std::cout << "Invalid type conversion : " << left->to_string() << " " << op << " " << right->to_string() << "\n";
         return nullptr;
     }
     return conversion_map[key].res_type;
@@ -587,10 +742,32 @@ Type* find_resulting_type(std::string op, Type* right) {
     assert(op.size() != 0);
     TypeConversionKey key = {op, right};
     if(!conversion_map.count(key)) {
-        std::cout << "Invalid type conversion : " << op << " " << right->name << "\n";
+        std::cout << "Invalid type conversion : " << op << " " << right->to_string() << "\n";
         return nullptr;
     }
     return conversion_map[key].res_type;
+}
+
+TypeConversion* find_type_conversion(Type* left, std::string op, Type* right) {
+    if(left == nullptr || right == nullptr) return nullptr;
+    assert(op.size() != 0);
+    TypeConversionKey key = {left, op, right};
+    if(!conversion_map.count(key)) {
+        std::cout << "Invalid type conversion : " << left->to_string() << " " << op << " " << right->to_string() << "\n";
+        return nullptr;
+    }
+    return &(conversion_map[key]);
+}
+
+TypeConversion* find_type_conversion(std::string op, Type* right) {
+    if(right == nullptr) return nullptr;
+    assert(op.size() != 0);
+    TypeConversionKey key = {op, right};
+    if(!conversion_map.count(key)) {
+        std::cout << "Invalid type conversion : " << op << " " << right->to_string() << "\n";
+        return nullptr;
+    }
+    return &(conversion_map[key]);
 }
 
 Type* find_variable_type(Identifier *id) {
@@ -664,15 +841,15 @@ bool is_identifier_used(Identifier *id) {
     return false;
 }
 
-bool add_variable(Type *t, Identifier *id) {
+Variable* add_variable(Type *t, Identifier *id) {
     assert(t != nullptr && id != nullptr);
     assert(declaration_stack.size() != 0);
     std::cout << "ADDING VARIABLE : " << id->name << std::endl;
-    if(is_identifier_used(id)) return false;
+    if(is_identifier_used(id)) return nullptr;
     Variable *v = new Variable(t, id);
     declared_variables.push_back(v);
     declaration_stack.top().push_back(v);
-    return true;
+    return v;
 }
 
 void remove_variable(Identifier *id) {
@@ -702,6 +879,10 @@ void pop_declaration_stack() {
     }
 }
 
+std::string indent() {
+    return "    ";  //4 spaces
+}
+
 // -- STRUCT FUNCTIONS --
 Literal* Literal::convert(parser::literal *n) {
     //for now, only integer literals are supported by the grammar
@@ -713,7 +894,21 @@ Identifier* Identifier::convert(parser::identifier *i) {
 }
 
 Type* Type::convert(parser::type *t) {
-    return new Type(t->to_string());
+    if(t->is_a0) {
+        return BaseType::convert(t->t0->t0);
+    }
+    else if(t->is_a1) {
+        return PointerType::convert(t->t1->t0);
+    }
+    else assert(false);
+}
+
+BaseType* BaseType::convert(parser::base_type *t) {
+    return new BaseType(t->to_string());
+}
+
+PointerType* PointerType::convert(parser::pointer_type *t) {
+    return new PointerType(Type::convert(t->t0));
 }
 
 Expression::Primary* Expression::Primary::convert(parser::expr_primary *e) {
@@ -734,14 +929,25 @@ Expression::Primary* Expression::Primary::convert(parser::expr_primary *e) {
     return new Expression::Primary(val);
 }
 
+Expression::Postfix* Expression::Postfix::convert(parser::expr_postfix *e) {
+    Expression::Primary *term = Expression::Primary::convert(e->t0);
+    std::vector<val_op> ops;
+    for(int i = 0; i < e->t1.size(); i++){
+        std::string op = "[]";
+        Expression* expr = Expression::convert(e->t1[i]->t3);
+        ops.push_back(expr);
+    }
+    return new Expression::Postfix(term, ops);
+}
+
 Expression::Unary* Expression::Unary::convert(parser::expr_unary *e) {
     if(e->is_a0) {  //unary operator + unary expression
         std::string op = e->t0->t0->to_string();
         Expression::Unary *u = Expression::Unary::convert(e->t0->t2);
         return new Expression::Unary(op, u);
     }
-    else if(e->is_a1) { //primary expression
-        Expression::Primary *p = Expression::Primary::convert(e->t1->t0);
+    else if(e->is_a1) { //postfix expression
+        Expression::Postfix *p = Expression::Postfix::convert(e->t1->t0);
         return new Expression::Unary(p);
     }
     else assert(false);
@@ -1004,7 +1210,7 @@ Program* Program::convert(parser::program *p) {
 }
 
 Type* IntegerLiteral::resolve_type() {
-    return new Type("int");
+    return new BaseType("int");
 }
 
 Type* Expression::Primary::resolve_type() {
@@ -1027,9 +1233,28 @@ Type* Expression::Primary::resolve_type() {
     else assert(false);
 }
 
+Type* Expression::Postfix::resolve_type() {
+    Type *t = term->resolve_type();
+    for(int i = 0; i < ops.size(); i++){
+        val_op op = ops[i];
+        if(std::holds_alternative<Expression*>(op)) {   //indexing
+            Expression *expr = std::get<Expression*>(op);
+            Type *et = expr->resolve_type();
+            if(et == nullptr) return nullptr;
+            if(*et != BaseType("int")) return nullptr;  //can't index without int
+            if(auto x = dynamic_cast<PointerType*>(t)) {
+                t = x->type;
+            }
+            else return nullptr;    //can't index into non-pointer
+        }
+        else assert(false);
+    }
+    return t;
+}
+
 Type* Expression::Unary::resolve_type() {
-    if(std::holds_alternative<Primary*>(val)) {
-        Expression::Primary *p = std::get<Expression::Primary*>(val);
+    if(std::holds_alternative<Postfix*>(val)) {
+        Expression::Postfix *p = std::get<Expression::Postfix*>(val);
         return p->resolve_type();
     }
     else if(std::holds_alternative<Unary*>(val)) {
@@ -1183,10 +1408,270 @@ bool CompoundStatement::is_always_returning() {
     return false;
 }
 
+void TypeConversion::emit_asm() {
+    for(int i = 0; i < instructions.size(); i++){
+        fout << indent() << instructions[i] << "\n";
+    }
+}
+
+void IntegerLiteral::emit_asm() {
+    fout << indent() << "mov $" << val << ", %rax\n";
+}
+
+void Expression::Primary::emit_asm() {
+    if(std::holds_alternative<FunctionCall*>(val)) {
+        FunctionCall *f = std::get<FunctionCall*>(val);
+        f->emit_asm();
+    }
+    else if(std::holds_alternative<Identifier*>(val)) {
+        Identifier *id = std::get<Identifier*>(val);
+        Variable *v = get_variable(id);
+        assert(v != nullptr);
+        fout << indent() << "mov " << v->stack_offset << "(%rbp), %rax\n";
+    }
+    else if(std::holds_alternative<Literal*>(val)) {
+        Literal *l = std::get<Literal*>(val);
+        l->emit_asm();
+    }
+    else if(std::holds_alternative<Expression*>(val)) {
+        Expression *e = std::get<Expression*>(val);
+        e->emit_asm();
+    }
+    else assert(false);
+}
+
+void Expression::Postfix::emit_asm() {
+    Type *t = term->resolve_type();
+    term->emit_asm();   
+    for(int i = 0; i < ops.size(); i++){
+        val_op op = ops[i];
+        if(std::holds_alternative<Expression*>(op)) {   //indexing
+            //t must be PointerType
+            assert(dynamic_cast<PointerType*>(t) != nullptr);
+            t = (dynamic_cast<PointerType*>(t))->type;
+
+            //save %rax to stack
+            fout << indent() << "push %rax\n";
+
+            //evaluate expression
+            Expression *expr = std::get<Expression*>(op);
+            assert(expr != nullptr);
+            expr->emit_asm();
+
+            //move expression result to %rbx
+            fout << indent() << "mov %rax, %rbx\n";
+
+            //return old %rax
+            fout << indent() << "pop %rax\n";
+
+            //find sizeof struct
+            int sz = t->calc_size();
+
+            //move data
+            if(sz == 1) fout << indent() << "movb (%rax, %rbx, 1), %al\n";
+            else if(sz == 2) fout << indent() << "movw (%rax, %rbx, 2), %ax\n";
+            else if(sz == 4) fout << indent() << "movl (%rax, %rbx, 4), %eax\n";
+            else if(sz == 8) fout << indent() << "movq (%rax, %rbx, 8), %rax\n";
+            else assert(false);  //TODO : figure out what happens when struct size is > 8 bytes. 
+        }
+        else assert(false);
+    }
+}
+
+void Expression::Unary::emit_asm() {
+    if(std::holds_alternative<Postfix*>(val)) {
+        Expression::Postfix *p = std::get<Expression::Postfix*>(val);
+        p->emit_asm();
+    }
+    else if(std::holds_alternative<Unary*>(val)) {
+        Expression::Unary *u = std::get<Expression::Unary*>(val);
+        u->emit_asm();
+        TypeConversion *tc = find_type_conversion(op, u->resolve_type());
+        tc->emit_asm();
+    }
+    else assert(false);
+}
+
+void Expression::Multiplicative::emit_asm() {
+    terms[0]->emit_asm();
+    for(int i = 1; i < terms.size(); i++){
+        fout << indent() << "push %rax\n";
+        terms[i]->emit_asm();
+        fout << indent() << "mov %rax, %rbx\n";
+        fout << indent() << "pop %rax\n";
+        
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        tc->emit_asm();
+    }
+}
+
+void Expression::Additive::emit_asm() {
+    terms[0]->emit_asm();
+    for(int i = 1; i < terms.size(); i++){
+        fout << indent() << "push %rax\n";
+        terms[i]->emit_asm();
+        fout << indent() << "mov %rax, %rbx\n";
+        fout << indent() << "pop %rax\n";
+        
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        tc->emit_asm();
+    }
+}
+
+void Expression::Shift::emit_asm() {
+    terms[0]->emit_asm();
+    for(int i = 1; i < terms.size(); i++){
+        fout << indent() << "push %rax\n";
+        terms[i]->emit_asm();
+        fout << indent() << "mov %rax, %rbx\n";
+        fout << indent() << "pop %rax\n";
+        
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        tc->emit_asm();
+    }
+}
+
+void Expression::Relational::emit_asm() {
+    terms[0]->emit_asm();
+    for(int i = 1; i < terms.size(); i++){
+        fout << indent() << "push %rax\n";
+        terms[i]->emit_asm();
+        fout << indent() << "mov %rax, %rbx\n";
+        fout << indent() << "pop %rax\n";
+        
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        tc->emit_asm();
+    }
+}
+
+void Expression::Equality::emit_asm() {
+    terms[0]->emit_asm();
+    for(int i = 1; i < terms.size(); i++){
+        fout << indent() << "push %rax\n";
+        terms[i]->emit_asm();
+        fout << indent() << "mov %rax, %rbx\n";
+        fout << indent() << "pop %rax\n";
+        
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        tc->emit_asm();
+    }
+}
+
+void Expression::BitAnd::emit_asm() {
+    terms[0]->emit_asm();
+    for(int i = 1; i < terms.size(); i++){
+        fout << indent() << "push %rax\n";
+        terms[i]->emit_asm();
+        fout << indent() << "mov %rax, %rbx\n";
+        fout << indent() << "pop %rax\n";
+        
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        tc->emit_asm();
+    }
+}
+
+void Expression::BitXor::emit_asm() {
+    terms[0]->emit_asm();
+    for(int i = 1; i < terms.size(); i++){
+        fout << indent() << "push %rax\n";
+        terms[i]->emit_asm();
+        fout << indent() << "mov %rax, %rbx\n";
+        fout << indent() << "pop %rax\n";
+        
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        tc->emit_asm();
+    }
+}
+
+void Expression::BitOr::emit_asm() {
+    terms[0]->emit_asm();
+    for(int i = 1; i < terms.size(); i++){
+        fout << indent() << "push %rax\n";
+        terms[i]->emit_asm();
+        fout << indent() << "mov %rax, %rbx\n";
+        fout << indent() << "pop %rax\n";
+        
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        tc->emit_asm();
+    }
+}
+
+void Expression::LogicalAnd::emit_asm() {
+    terms[0]->emit_asm();
+    std::string label = "no-label";
+    if(terms.size() > 1) label = create_new_label();
+    for(int i = 1; i < terms.size(); i++){
+        fout << indent() << "cmp $0, %rax\n";
+        fout << indent() << "je " << label << "\n";
+
+        fout << indent() << "push %rax\n";
+        terms[i]->emit_asm();
+        fout << indent() << "mov %rax, %rbx\n";
+        fout << indent() << "pop %rax\n";
+
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        tc->emit_asm();
+    }
+    if(terms.size() > 1) fout << label << ":\n";
+}
+
+void Expression::emit_asm() {   //logical or
+    terms[0]->emit_asm();
+    std::string label = "no-label";
+    if(terms.size() > 1) label = create_new_label();
+    for(int i = 1; i < terms.size(); i++){
+        fout << indent() << "cmp $0, %rax\n";
+        fout << indent() << "jne " << label << "\n";
+
+        fout << indent() << "push %rax\n";
+        terms[i]->emit_asm();
+        fout << indent() << "mov %rax, %rbx\n";
+        fout << indent() << "pop %rax\n";
+
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        tc->emit_asm();
+    }
+    if(terms.size() > 1) fout << label << ":\n";
+}
+
+void FunctionCall::emit_asm() {
+    if(asm_debug) fout << indent() << "# calling function : " << id->name << "\n";
+
+    //gather arguments and push them to the stack. 
+    for(int i = 0; i < argument_list.size(); i++){
+        Expression *e = argument_list[i];
+        e->emit_asm();
+        fout << indent() << "push %rax\n";
+    }
+
+    //call function
+    fout << indent() << "call " << id->name << "\n";
+
+    //clean up arguments
+    fout << indent() << "add $" << 8 * argument_list.size() << ", %rsp\n";
+}
+
+void Declaration::emit_asm() {
+    Variable *v = get_variable(id);
+    assert(v != nullptr);
+    v->stack_offset = local_var_stack_offset;
+    local_var_stack_offset -= 8;
+    expr->emit_asm();
+    if(asm_debug) fout << indent() << "# initialize local variable : " << type->to_string() << " " << id->name << "\n";
+    fout << indent() << "push %rax\n";
+}
+
+void Assignment::emit_asm() {
+    Variable *v = get_variable(id);
+    assert(v != nullptr);
+    expr->emit_asm();
+    fout << indent() << "mov %rax, " << v->stack_offset << "(%rbp)\n";
+}
+
 bool Declaration::is_well_formed() {
     // - is the type being used declared?
     if(!is_type_declared(type)) {
-        std::cout << "Declaration using undeclared type : " << type->name << "\n";
+        std::cout << "Declaration using undeclared type : " << type->to_string() << "\n";
         return false;
     }
     // - does the expression resolve to a type?
@@ -1201,8 +1686,9 @@ bool Declaration::is_well_formed() {
         return false;
     }
     // - is the identifier being used already taken?
-    if(!add_variable(type, id)) {
-        std::cout << "Identifier already used : " << id->name << "\n";
+    Variable *v = add_variable(type, id);
+    if(v == nullptr) {
+        std::cout << "Unable to add variable : " << type->to_string() << " " << id->name << "\n";
         return false;
     }
     return true;
@@ -1240,6 +1726,9 @@ bool DeclarationStatement::is_well_formed() {
         std::cout << "Declaration not well formed\n";
         return false;
     }
+
+    declaration->emit_asm();
+
     return true;
 }
 
@@ -1255,6 +1744,9 @@ bool FunctionCallStatement::is_well_formed() {
         std::cout << "Reference to undeclared function : " << fs->id << "\n";
         return false;
     }
+
+    function_call->emit_asm();
+
     return true;
 }
 
@@ -1265,7 +1757,7 @@ bool ReturnStatement::is_well_formed() {
         Expression *expr = opt_expr.value();
         t = expr->resolve_type();
     }
-    else t = new Type("void");
+    else t = new BaseType("void");
     if(t == nullptr) {
         std::cout << "Return expression does not resolve to type\n";
         return false;
@@ -1275,6 +1767,29 @@ bool ReturnStatement::is_well_formed() {
         std::cout << "Return type does not match enclosing function\n";
         return false;
     }
+
+    //put return value into %rax
+    if(*t != BaseType("void")) {
+        assert(opt_expr.has_value());
+        opt_expr.value()->emit_asm();
+    }
+
+    //clean up local variables
+    if(declared_variables.size() != 0) {
+        fout << indent() << "add $" << declaration_stack.top().size() * 8 << ", %rsp\n";
+    }
+
+    if(FunctionSignature(new Identifier("main"), {}) == *(enclosing_function->fs)) {
+        //function is main, use exit syscall instead
+        fout << indent() << "push %rax\n";
+        fout << indent() << "call sys_exit\n";
+    }
+    else {
+        //return from function
+        fout << indent() << "pop %rbp\n";
+        fout << indent() << "ret\n";
+    }
+
     return true;
 }
 
@@ -1284,6 +1799,9 @@ bool AssignmentStatement::is_well_formed() {
         std::cout << "Assignment not well formed\n";
         return false;
     }
+
+    assignment->emit_asm();
+
     return true;
 }
 
@@ -1291,29 +1809,84 @@ bool IfStatement::is_well_formed() {
     // - do all expressions resolve to type 'int'?
     for(int i = 0; i < exprs.size(); i++){
         Type *t = exprs[i]->resolve_type();
-        if(t == nullptr || *t != Type("int")) {
+        if(t == nullptr || *t != BaseType("int")) {
             return false;
         }
     }
+
+    if(asm_debug) fout << indent() << "# if statement start\n";
+    std::vector<std::string> labels;
+    for(int i = 0; i < statements.size(); i++){
+        labels.push_back(create_new_label());
+    }
+    std::string else_label = "no-label";
+    if(else_statement.has_value()) else_label = create_new_label();
+    std::string end_if_label = create_new_label();
+
+    //check each expression one by one to see where we should jump to
+    for(int i = 0; i < exprs.size(); i++){
+        exprs[i]->emit_asm();
+        fout << indent() << "cmp $0, %rax\n";
+        fout << indent() << "jne " << labels[i] << "\n";
+    }
+    if(else_statement.has_value()) fout << indent() << "jmp " << else_label << "\n";
+    else fout << indent() << "jmp " << end_if_label << "\n";
+
     // - are all of the statements well formed?
     for(int i = 0; i < statements.size(); i++){
+        fout << labels[i] << ":\n";
         if(!statements[i]->is_well_formed()) {
             return false;
         }
+        fout << indent() << "jmp " << end_if_label << "\n";
     }
+
+    // - is else statement well formed?
+    if(else_statement.has_value()) {
+        fout << else_label << ":\n";
+        if(!else_statement.value()->is_well_formed()) {
+            return false;
+        }
+        fout << indent() << "jmp " << end_if_label << "\n";
+    }
+
+    fout << end_if_label << ":\n";
+    if(asm_debug) fout << indent() << "# if statement end\n";
+
     return true;
 }
 
 bool WhileStatement::is_well_formed() {
     // - does the expression resolve to type 'int'?
     Type *t = expr->resolve_type();
-    if(t == nullptr || *t != Type("int")) {
+    if(t == nullptr || *t != BaseType("int")) {
         return false;
     }
+
+    if(asm_debug) fout << indent() << "# while loop start\n";
+
+    std::string loop_start_label = create_new_label();
+    std::string loop_end_label = create_new_label();
+    fout << loop_start_label << ":\n";
+
+    //check loop condition
+    expr->emit_asm();
+    fout << indent() << "cmp $0, %rax\n";
+    fout << indent() << "je " << loop_end_label << "\n";
+
     // - is the statement well formed?
     if(!statement->is_well_formed()) {
         return false;
     }
+
+    //jump to start of loop
+    fout << indent() << "jmp " << loop_start_label << "\n";
+
+    //end of loop
+    fout << loop_end_label << ":\n";
+
+    if(asm_debug) fout << indent() << "# while loop end\n";
+
     return true;
 }
 
@@ -1329,7 +1902,7 @@ bool ForStatement::is_well_formed() {
     // - does the expression resolve to type 'int'?
     if(expr.has_value()) {
         Type *t = expr.value()->resolve_type();
-        if(t == nullptr || *t != Type("int")) {
+        if(t == nullptr || *t != BaseType("int")) {
             return false;
         }
     }
@@ -1339,10 +1912,44 @@ bool ForStatement::is_well_formed() {
             return false;
         }
     }
+
+    //declare loop variable
+    if(declaration.has_value()) declaration.value()->emit_asm();
+
+    if(asm_debug) fout << indent() << "# for loop start\n";
+
+    //start of loop
+    std::string loop_start_label = create_new_label();
+    std::string loop_end_label = create_new_label();
+    fout << loop_start_label << ":\n";
+
+    //check loop condition
+    if(expr.has_value()) {
+        expr.value()->emit_asm();
+        fout << indent() << "cmp $0, %rax\n";
+        fout << indent() << "je " << loop_end_label << "\n";
+    }
+
     // - is the statement well formed?
     if(!statement->is_well_formed()) {
         return false;
     }
+
+    //loop variable assignment
+    if(assignment.has_value()) assignment.value()->emit_asm();
+
+    //jump to start of loop
+    fout << indent() << "jmp " << loop_start_label << "\n";
+
+    //end of loop
+    fout << loop_end_label << ":\n";
+
+    //remove local variables from stack
+    if(declaration_stack.top().size() != 0) {
+        fout << indent() << "add $" << declaration_stack.top().size() * 8 << ", %rsp\n";
+    }
+
+    if(asm_debug) fout << indent() << "# for loop end\n";
 
     pop_declaration_stack();
     return true;
@@ -1358,6 +1965,11 @@ bool CompoundStatement::is_well_formed() {
         }
     }
 
+    //remove local variables from stack
+    if(declaration_stack.top().size() != 0) {
+        fout << indent() << "add $" << declaration_stack.top().size() * 8 << ", %rsp\n";
+    }
+
     pop_declaration_stack();
     return true;
 }
@@ -1365,21 +1977,49 @@ bool CompoundStatement::is_well_formed() {
 bool Function::is_well_formed() {
     push_declaration_stack();
 
+    bool is_main = FunctionSignature(new Identifier("main"), {}) == *fs;
+
+    //print function label
+    //if function signature is main(), substitute main for _start
+    if(is_main) {
+        fout << ".global _start\n";
+        fout << "_start:\n";
+    }
+    else {
+        fout << ".global " << id->name << "\n";
+        fout << id->name << ":\n";
+    }
+
+    //setup function stack frame
+    fout << indent() << "push %rbp\n";
+    fout << indent() << "mov %rsp, %rbp\n";
+
     // - do all parameters correspond to existing types?
     for(int i = 0; i < parameters.size(); i++){
         if(!is_type_declared(parameters[i]->type)) {
-            std::cout << "Undeclared type : " << parameters[i]->type->name << "\n";
+            std::cout << "Undeclared type : " << parameters[i]->type->to_string() << "\n";
             return false;
         }
     }
 
+    // - is return type of function existing or void?
+    if(!is_type_declared(type) && *type != BaseType("void")) {
+        std::cout << "Function undeclared return type : " << type->to_string() << " " << id->name << "\n";
+        return false;
+    }
+
     //register parameters as variables
+    local_var_stack_offset = 8 + 8 * parameters.size();
     for(int i = 0; i < parameters.size(); i++){
-        if(!add_variable(parameters[i]->type, parameters[i]->id)) {
-            std::cout << "Identifier already used : " << parameters[i]->id << "\n";
+        Variable* v = add_variable(parameters[i]->type, parameters[i]->id);
+        if(v == nullptr) {
+            std::cout << "Unable to add variable : " << parameters[i]->type->to_string() << " " << parameters[i]->id->name << "\n";
             return false;
         }
+        v->stack_offset = local_var_stack_offset;
+        local_var_stack_offset -= 8;
     }
+    local_var_stack_offset = -8;
 
     // - make sure body is well formed
     if(!body->is_well_formed()) {
@@ -1388,7 +2028,7 @@ bool Function::is_well_formed() {
     }
     
     // - if type is not void, check for existence of return statement as last reachable statement
-    if(*type != Type("void")) {
+    if(*type != BaseType("void")) {
         // from any point of runnable code, we expect that it should be able to reach a return statement. 
         // this effectively means that the last statement should always be a return statement, regardless of 
         // the rest of the code, as the statement right before it needs to be able to return. 
@@ -1412,6 +2052,13 @@ bool Function::is_well_formed() {
             return false;
         }
     }
+    else {
+        //add trailing return for void functions
+        fout << indent() << "pop %rbp\n";
+        fout << indent() << "ret\n";
+    }
+
+    fout << "\n";
 
     //unregister parameters as variables
     pop_declaration_stack();
@@ -1428,12 +2075,26 @@ bool Program::is_well_formed() {
         declared_types.clear();
         declared_variables.clear();
         while(declaration_stack.size()) declaration_stack.pop();
+        label_counter = 0;
+
+        // - sys functions
+        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts"), {new BaseType("int")}));
+        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts_endl"), {new BaseType("int")}));
+        declared_functions.push_back(new Function(new BaseType("int"), new Identifier("int_to_string"), {new BaseType("int")}));
 
         // - primitive types
-        Type *p_int = new Type("int");
+        Type *p_int = new BaseType("int");
         declared_types.push_back(p_int);
 
         // - populate conversion map
+        conversion_map[{"+", p_int}] = {p_int, {}};
+        conversion_map[{"-", p_int}] = {p_int, {"neg %rax"}};
+        conversion_map[{"~", p_int}] = {p_int, {"not %rax"}};
+        conversion_map[{"!", p_int}] = {p_int, {
+            "test %rax, %rax",
+            "sete %al",
+            "movzx %al, %rax",
+        }};
         conversion_map[{p_int, "+", p_int}] = {p_int, {"add %rbx, %rax"}};
         conversion_map[{p_int, "-", p_int}] = {p_int, {"sub %rbx, %rax"}};
         conversion_map[{p_int, "*", p_int}] = {p_int, {"imul %rbx, %rax"}};
@@ -1449,8 +2110,24 @@ bool Program::is_well_formed() {
         conversion_map[{p_int, "&", p_int}] = {p_int, {"and %rbx, %rax"}};
         conversion_map[{p_int, "^", p_int}] = {p_int, {"xor %rbx, %rax"}};
         conversion_map[{p_int, "|", p_int}] = {p_int, {"or %rbx, %rax"}};
-        conversion_map[{p_int, "&&", p_int}] = {p_int, {/* going to implement short circuiting */}};
-        conversion_map[{p_int, "||", p_int}] = {p_int, {/* going to implement short circuiting */}};
+        conversion_map[{p_int, "&&", p_int}] = {p_int, {
+            "test %rax, %rax\n",
+            "setne %al\n",
+            "movzx %al, %rax\n",
+            "test %rbx, %rbx\n",
+            "setne %bl\n",
+            "movzx %bl, %rbx\n",
+            "and %rbx, %rax\n",
+        }};
+        conversion_map[{p_int, "||", p_int}] = {p_int, {
+            "test %rax, %rax\n",
+            "setne %al\n",
+            "movzx %al, %rax\n",
+            "test %rbx, %rbx\n",
+            "setne %bl\n",
+            "movzx %bl, %rbx\n",
+            "or %rbx, %rax\n",
+        }};
         conversion_map[{p_int, "==", p_int}] = {p_int, {
             "cmp %rbx, %rax",
             "sete %al",
@@ -1498,6 +2175,8 @@ bool Program::is_well_formed() {
 
     push_declaration_stack();
 
+    fout << ".section .text\n";
+
     // - are there any duplicate function definitions?
     for(int i = 0; i < functions.size(); i++){
         for(int j = i + 1; j < functions.size(); j++) {
@@ -1519,7 +2198,7 @@ bool Program::is_well_formed() {
             std::cout << "Missing main function\n";
             return false;
         }
-        if(*(f->type) != Type("int")) {
+        if(*(f->type) != BaseType("int")) {
             std::cout << "main has wrong return type (must be int)\n";
             return false;
         }
@@ -1589,10 +2268,10 @@ int main(int argc, char* argv[]) {
    
     std::cout << "FUNCTION DEFINITIONS : " << std::endl;
     for(int i = 0; i < program->functions.size(); i++){
-        std::cout << "NAME : " << program->functions[i]->id->name << ", TYPE : " << program->functions[i]->type->name << ", PARAMS :\n";
+        std::cout << "NAME : " << program->functions[i]->id->name << ", TYPE : " << program->functions[i]->type->to_string() << ", PARAMS :\n";
         for(int j = 0; j < program->functions[i]->parameters.size(); j++){
             Function::Parameter *param = program->functions[i]->parameters[j];
-            std::cout << param->type->name << " " << param->id->name << "\n";
+            std::cout << param->type->to_string() << " " << param->id->name << "\n";
         }
         std::cout << "NR STATEMENTS : " << program->functions[i]->body->statements.size() << std::endl;
     }
