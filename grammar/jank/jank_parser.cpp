@@ -1,4 +1,4 @@
-// Date Generated : 05-21-2025 17:29:21
+// Date Generated : 05-22-2025 19:42:58
 #include <vector>
 #include <string>
 #include <cassert>
@@ -2199,19 +2199,19 @@ namespace parser {
         std::string to_string();
     };
 
-    // type = base_type | pointer_type ;
+    // type = pointer_type | base_type ;
     struct type {
         struct a0 {
-            base_type *t0;
-            a0(base_type *_t0) {
+            pointer_type *t0;
+            a0(pointer_type *_t0) {
                 t0 = _t0;
             }
             static a0* parse();
             std::string to_string();
         };
         struct a1 {
-            pointer_type *t0;
-            a1(pointer_type *_t0) {
+            base_type *t0;
+            a1(base_type *_t0) {
                 t0 = _t0;
             }
             static a1* parse();
@@ -2233,11 +2233,19 @@ namespace parser {
         std::string to_string();
     };
 
-    // pointer_type = type , "*" ;
+    // pointer_type = base_type , < "*" > ;
     struct pointer_type {
-        type *t0;
-        std::string t1;
-        pointer_type(type *_t0, std::string _t1) {
+        struct a0 {
+            std::string t0;
+            a0(std::string _t0) {
+                t0 = _t0;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        base_type *t0;
+        std::vector<a0*> t1;
+        pointer_type(base_type *_t0, std::vector<a0*> _t1) {
             t0 = _t0;
             t1 = _t1;
         }
@@ -2383,19 +2391,39 @@ namespace parser {
         std::string to_string();
     };
 
-    // assignment = identifier , ows , "=" , ows , expression ;
+    // assignment = identifier , { ows , "[" , ows , expression , ows , "]" } , ows , "=" , ows , expression ;
     struct assignment {
+        struct a0 {
+            ows *t0;
+            std::string t1;
+            ows *t2;
+            expression *t3;
+            ows *t4;
+            std::string t5;
+            a0(ows *_t0, std::string _t1, ows *_t2, expression *_t3, ows *_t4, std::string _t5) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+                t4 = _t4;
+                t5 = _t5;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
         identifier *t0;
-        ows *t1;
-        std::string t2;
-        ows *t3;
-        expression *t4;
-        assignment(identifier *_t0, ows *_t1, std::string _t2, ows *_t3, expression *_t4) {
+        std::vector<a0*> t1;
+        ows *t2;
+        std::string t3;
+        ows *t4;
+        expression *t5;
+        assignment(identifier *_t0, std::vector<a0*> _t1, ows *_t2, std::string _t3, ows *_t4, expression *_t5) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
             t3 = _t3;
             t4 = _t4;
+            t5 = _t5;
         }
         static assignment* parse();
         std::string to_string();
@@ -5532,7 +5560,7 @@ namespace parser {
 
     type::a0* type::a0::parse() {
         push_stack();
-        base_type *_t0 = base_type::parse();
+        pointer_type *_t0 = pointer_type::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new type::a0(_t0);
@@ -5546,7 +5574,7 @@ namespace parser {
 
     type::a1* type::a1::parse() {
         push_stack();
-        pointer_type *_t0 = pointer_type::parse();
+        base_type *_t0 = base_type::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new type::a1(_t0);
@@ -5570,12 +5598,31 @@ namespace parser {
         assert(false);
     }
 
+    pointer_type::a0* pointer_type::a0::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "*") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new pointer_type::a0(_t0);
+    }
+
+    std::string pointer_type::a0::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
     pointer_type* pointer_type::parse() {
         push_stack();
-        type *_t0 = type::parse();
+        base_type *_t0 = base_type::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t1 = next_chars(1);
-        if(_t1 != "*") {pop_stack(); return nullptr;}
+        std::vector<pointer_type::a0*> _t1;
+        while(true) {
+            pointer_type::a0 *tmp = pointer_type::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        if(_t1.size() == 0) {pop_stack(); return nullptr;}
         rm_stack();
         return new pointer_type(_t0, _t1);
     }
@@ -5583,7 +5630,7 @@ namespace parser {
     std::string pointer_type::to_string() {
         std::string ans = "";
         ans += t0->to_string();
-        ans += t1;
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
         return ans;
     }
 
@@ -5773,29 +5820,65 @@ namespace parser {
         return ans;
     }
 
+    assignment::a0* assignment::a0::parse() {
+        push_stack();
+        ows *_t0 = ows::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t1 = next_chars(1);
+        if(_t1 != "[") {pop_stack(); return nullptr;}
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        expression *_t3 = expression::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t4 = ows::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t5 = next_chars(1);
+        if(_t5 != "]") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new assignment::a0(_t0, _t1, _t2, _t3, _t4, _t5);
+    }
+
+    std::string assignment::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1;
+        ans += t2->to_string();
+        ans += t3->to_string();
+        ans += t4->to_string();
+        ans += t5;
+        return ans;
+    }
+
     assignment* assignment::parse() {
         push_stack();
         identifier *_t0 = identifier::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t1 = ows::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t2 = next_chars(1);
-        if(_t2 != "=") {pop_stack(); return nullptr;}
-        ows *_t3 = ows::parse();
-        if(_t3 == nullptr) {pop_stack(); return nullptr;}
-        expression *_t4 = expression::parse();
+        std::vector<assignment::a0*> _t1;
+        while(true) {
+            assignment::a0 *tmp = assignment::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t3 = next_chars(1);
+        if(_t3 != "=") {pop_stack(); return nullptr;}
+        ows *_t4 = ows::parse();
         if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        expression *_t5 = expression::parse();
+        if(_t5 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        return new assignment(_t0, _t1, _t2, _t3, _t4);
+        return new assignment(_t0, _t1, _t2, _t3, _t4, _t5);
     }
 
     std::string assignment::to_string() {
         std::string ans = "";
         ans += t0->to_string();
-        ans += t1->to_string();
-        ans += t2;
-        ans += t3->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        ans += t2->to_string();
+        ans += t3;
         ans += t4->to_string();
+        ans += t5->to_string();
         return ans;
     }
 

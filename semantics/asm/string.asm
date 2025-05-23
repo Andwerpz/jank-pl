@@ -52,6 +52,49 @@ puts_endl:
     pop %rbp
     ret
 
+# void puti(int x)
+# prints int to stdout 
+.global puti
+puti:
+    push %rbp
+    mov %rsp, %rbp
+
+    # call int_to_string(x)
+    mov 16(%rbp), %rax
+    push %rax
+    call int_to_string
+    add $8, %rsp    
+
+    # call puts(%rax)
+    push %rax
+    call puts
+    add $8, %rsp
+
+    pop %rbp
+    ret
+
+# void puti_endl(int x)
+# prints int to stdout with trailing endl
+.global puti_endl
+puti_endl:
+    push %rbp
+    mov %rsp, %rbp
+
+    # call puti
+    mov 16(%rbp), %rax
+    push %rax
+    call puti
+    add $8, %rsp
+
+    # call puts(endl)
+    lea endl(%rip), %rax
+    push %rax
+    call puts
+    add $8, %rsp
+
+    pop %rbp
+    ret
+
 # int strlen(int s)
 # finds the length of a null terminated string
 .global strlen
@@ -82,7 +125,7 @@ int_to_string:
     # allocate some space for the string
     mov $20, %rax
     push %rax
-    call malloc
+    call malloc_char
     add $8, %rsp              
     mov %rax, %rbx          # %rbx points to the start of the buffer
     mov 16(%rbp), %rax      # %rax now stores the integer

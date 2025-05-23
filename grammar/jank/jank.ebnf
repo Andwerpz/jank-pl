@@ -31,8 +31,8 @@ ws = " " | "\n" | "\t" | "\r" | "\f" | "\b"
 rws = < ws > ;                                  (* required whitespace *)
 ows = { ws } ;                                  (* optional whitespace *)
 
-type = base_type | pointer_type ;
-pointer_type = type , "*" ;
+type = pointer_type | base_type ;
+pointer_type = base_type , < "*" > ;
 base_type = alpha , { alpha | digit | "_" } ;
 
 identifier = alpha , { alpha | digit | "_" } ;
@@ -40,7 +40,7 @@ identifier = alpha , { alpha | digit | "_" } ;
 (* int a = b *)
 declaration = type , rws , identifier , ows , "=" , ows , expression ;
 (* a = b *)
-assignment = identifier , ows , "=" , ows , expression ;
+assignment = identifier , { ows , "[" , ows , expression , ows , "]" } , ows , "=" , ows , expression ;
 
 (* int foo *)
 parameter = type , rws , identifier ;

@@ -55,6 +55,16 @@ FunctionCallStatement does not need to save any registers, but it does need to g
 pass them in via the stack. For now, function calls will behave like Java function calls, where everything
 is pass by value.
 
+For the purpose of looking up type conversions, any PointerType will be translated into BaseType("int")
+
+Any type t where sizeof(t) <= 8, it's going to be stored directly on the stack. If sizeof(t) > 8, we'll store a 
+pointer to t on the stack. When passing anything by reference, we'll have to keep track of it in Variable whether
+or not it was passed by reference, and we'll store a pointer to the stack address instead of the actual
+value / pointer. When accessing / modifying the passed by reference variable, we'll just dereference it first.
+
+As long as we're consistent with how we treat types that are of size <= and > 8, then passing by reference 
+shouldn't be an issue; it should affect all types the same. 
+
 TODO
  - make sure that int main() is never called
  - make actual C++ style pass by copy and reference. 
@@ -66,6 +76,8 @@ TODO
    - for now, just hardcode a sizeof() lookup table. 
    - all pointers will be 8 byte integers. 
  - implement better calc_size() for Type. Currently, it's just a bunch of special cases
+ - right now, we can't have two functions with the same name as they'll generate the same label name in asm. Make it so 
+   that all functions generate some kind of unique function label like "F<counter>"
 
 CODE GENERATION
  - store all variables on the stack. This is much less performant, but much easier to implement
@@ -399,9 +411,11 @@ struct Declaration {
 
 struct Assignment {
     Identifier *id;
+    std::vector<Expression*> index_expr;
     Expression *expr;
-    Assignment(Identifier *_id, Expression *_expr) {
+    Assignment(Identifier *_id, std::vector<Expression*> _index_expr, Expression *_expr) {
         id = _id;
+        index_expr = _index_expr;
         expr = _expr;
     }
     static Assignment* convert(parser::assignment *a);
@@ -623,6 +637,10 @@ struct Program {
 };
 
 // -- SEMANTIC ANALYSIS + CODE GENERATION CONTROLLER --
+std::string indent() {
+    return "    ";  //4 spaces
+}
+
 struct Variable {
     Type *type;
     Identifier *id;
@@ -645,11 +663,41 @@ int local_var_stack_offset;
 int label_counter;
 
 //adds some helpful (?) comments in the generated asm. 
-bool asm_debug = false;
+bool asm_debug = true;
 
 std::string create_new_label() {
     std::string ans = "L" + std::to_string(label_counter++);
     return ans;
+}
+
+//expects %rax = array start, %rbx = array index
+//will put return value into %rax
+void emit_retrieve_array(int sz) {
+    if(sz == 1) fout << indent() << "movb (%rax, %rbx, 1), %al\n";
+    else if(sz == 2) fout << indent() << "movw (%rax, %rbx, 2), %ax\n";
+    else if(sz == 4) fout << indent() << "movl (%rax, %rbx, 4), %eax\n";
+    else if(sz == 8) fout << indent() << "movq (%rax, %rbx, 8), %rax\n";
+    else assert(false);  //TODO : figure out what happens when struct size is > 8 bytes. 
+}
+
+//expects %rax = array start, %rbx = array index, %rcx = value
+//writes %rcx (or whatever portion of %rcx) into array
+void emit_write_array(int sz) {
+    if(sz == 1) fout << indent() << "movb %cl, (%rax, %rbx, 1)\n";
+    else if(sz == 2) fout << indent() << "movw %cx, (%rax, %rbx, 2)\n";
+    else if(sz == 4) fout << indent() << "movl %ecx, (%rax, %rbx, 4)\n";
+    else if(sz == 8) fout << indent() << "movq %rcx, (%rax, %rbx, 8)\n";
+    else assert(false);
+}
+
+//expects %rax = value, %rbx = mem address
+//stores %rax into (%rbx)
+void emit_mem_store(int sz) {
+    if(sz == 1) fout << indent() << "movb %al, (%rbx)\n";
+    else if(sz == 2) fout << indent() << "movw %ax, (%rbx)\n";
+    else if(sz == 4) fout << indent() << "movl %eax, (%rbx)\n";
+    else if(sz == 8) fout << indent() << "movq %rax, (%rbx)\n";
+    else assert(false);
 }
 
 struct TypeConversionKey {
@@ -729,6 +777,8 @@ std::unordered_map<TypeConversionKey, TypeConversion> conversion_map;
 Type* find_resulting_type(Type* left, std::string op, Type* right) {
     if(left == nullptr || right == nullptr) return nullptr;
     assert(op.size() != 0);
+    if(dynamic_cast<PointerType*>(left)) left = new BaseType("int");
+    if(dynamic_cast<PointerType*>(right)) right = new BaseType("int");
     TypeConversionKey key = {left, op, right};
     if(!conversion_map.count(key)) {
         std::cout << "Invalid type conversion : " << left->to_string() << " " << op << " " << right->to_string() << "\n";
@@ -740,6 +790,7 @@ Type* find_resulting_type(Type* left, std::string op, Type* right) {
 Type* find_resulting_type(std::string op, Type* right) {
     if(right == nullptr) return nullptr;
     assert(op.size() != 0);
+    if(dynamic_cast<PointerType*>(right)) right = new BaseType("int");
     TypeConversionKey key = {op, right};
     if(!conversion_map.count(key)) {
         std::cout << "Invalid type conversion : " << op << " " << right->to_string() << "\n";
@@ -751,6 +802,8 @@ Type* find_resulting_type(std::string op, Type* right) {
 TypeConversion* find_type_conversion(Type* left, std::string op, Type* right) {
     if(left == nullptr || right == nullptr) return nullptr;
     assert(op.size() != 0);
+    if(dynamic_cast<PointerType*>(left)) left = new BaseType("int");
+    if(dynamic_cast<PointerType*>(right)) right = new BaseType("int");
     TypeConversionKey key = {left, op, right};
     if(!conversion_map.count(key)) {
         std::cout << "Invalid type conversion : " << left->to_string() << " " << op << " " << right->to_string() << "\n";
@@ -762,6 +815,7 @@ TypeConversion* find_type_conversion(Type* left, std::string op, Type* right) {
 TypeConversion* find_type_conversion(std::string op, Type* right) {
     if(right == nullptr) return nullptr;
     assert(op.size() != 0);
+    if(dynamic_cast<PointerType*>(right)) right = new BaseType("int");
     TypeConversionKey key = {op, right};
     if(!conversion_map.count(key)) {
         std::cout << "Invalid type conversion : " << op << " " << right->to_string() << "\n";
@@ -786,6 +840,7 @@ Type* find_function_type(FunctionSignature *fs) {
 }
 
 bool is_type_declared(Type *t) {
+    if(auto x = dynamic_cast<PointerType*>(t)) return is_type_declared(x->type);
     for(int i = 0; i < declared_types.size(); i++){
         if(*(declared_types[i]) == *t) return true;
     }
@@ -873,14 +928,11 @@ void push_declaration_stack() {
 void pop_declaration_stack() {
     assert(declaration_stack.size() != 0);
     std::vector<Variable*> top = declaration_stack.top();
+    local_var_stack_offset += top.size() * 8;
     declaration_stack.pop();
     for(int i = 0; i < top.size(); i++){
         remove_variable(top[i]->id);
     }
-}
-
-std::string indent() {
-    return "    ";  //4 spaces
 }
 
 // -- STRUCT FUNCTIONS --
@@ -895,10 +947,10 @@ Identifier* Identifier::convert(parser::identifier *i) {
 
 Type* Type::convert(parser::type *t) {
     if(t->is_a0) {
-        return BaseType::convert(t->t0->t0);
+        return PointerType::convert(t->t0->t0);
     }
     else if(t->is_a1) {
-        return PointerType::convert(t->t1->t0);
+        return BaseType::convert(t->t1->t0);
     }
     else assert(false);
 }
@@ -908,7 +960,11 @@ BaseType* BaseType::convert(parser::base_type *t) {
 }
 
 PointerType* PointerType::convert(parser::pointer_type *t) {
-    return new PointerType(Type::convert(t->t0));
+    Type *type = BaseType::convert(t->t0);
+    for(int i = 0; i < t->t1.size() - 1; i++){
+        type = new PointerType(type);
+    }
+    return new PointerType(type);
 }
 
 Expression::Primary* Expression::Primary::convert(parser::expr_primary *e) {
@@ -1072,8 +1128,12 @@ Declaration* Declaration::convert(parser::declaration *d) {
 
 Assignment* Assignment::convert(parser::assignment *a) {
     Identifier *id = Identifier::convert(a->t0);
-    Expression *expr = Expression::convert(a->t4);
-    return new Assignment(id, expr);
+    std::vector<Expression*> index_expr;
+    for(int i = 0; i < a->t1.size(); i++){
+        index_expr.push_back(Expression::convert(a->t1[i]->t3));
+    }
+    Expression *expr = Expression::convert(a->t5);
+    return new Assignment(id, index_expr, expr);
 }
 
 Statement* Statement::convert(parser::statement *s) {
@@ -1468,11 +1528,7 @@ void Expression::Postfix::emit_asm() {
             int sz = t->calc_size();
 
             //move data
-            if(sz == 1) fout << indent() << "movb (%rax, %rbx, 1), %al\n";
-            else if(sz == 2) fout << indent() << "movw (%rax, %rbx, 2), %ax\n";
-            else if(sz == 4) fout << indent() << "movl (%rax, %rbx, 4), %eax\n";
-            else if(sz == 8) fout << indent() << "movq (%rax, %rbx, 8), %rax\n";
-            else assert(false);  //TODO : figure out what happens when struct size is > 8 bytes. 
+            emit_retrieve_array(sz);
         }
         else assert(false);
     }
@@ -1664,8 +1720,45 @@ void Declaration::emit_asm() {
 void Assignment::emit_asm() {
     Variable *v = get_variable(id);
     assert(v != nullptr);
+
+    if(asm_debug) fout << indent() << "# assignment start\n";
+
+    //evaluate expression
     expr->emit_asm();
-    fout << indent() << "mov %rax, " << v->stack_offset << "(%rbp)\n";
+
+    if(index_expr.size() == 0){
+        //store into stack
+        fout << indent() << "mov %rax, " << v->stack_offset << "(%rbp)\n";
+    }
+    else {
+        //push expression value onto stack
+        fout << indent() << "push %rax\n";
+
+        //find index to place value into
+        fout << indent() << "lea " << v->stack_offset << "(%rbp), %rax\n";  //%rax points at the stack
+        Type *t = v->type;
+        for(int i = 0; i < index_expr.size(); i++){
+            //compute index
+            fout << indent() << "push %rax\n";
+            index_expr[i]->emit_asm();
+            fout << indent() << "mov %rax, %rbx\n";
+            fout << indent() << "pop %rax\n";
+
+            PointerType *pt = dynamic_cast<PointerType*>(t);
+            assert(pt != nullptr);
+            int sz = pt->type->calc_size();
+            fout << indent() << "mov (%rax), %rax\n";   //%rax now points at the beginning of the array
+            fout << indent() << "lea (%rax, %rbx, " << sz << "), %rax\n";
+            t = pt->type;
+        }
+        fout << indent() << "mov %rax, %rbx\n";
+
+        //store value
+        fout << indent() << "pop %rax\n";   //expression value
+        emit_mem_store(t->calc_size());
+    }
+
+    if(asm_debug) fout << indent() << "# assignment end\n";
 }
 
 bool Declaration::is_well_formed() {
@@ -1696,13 +1789,13 @@ bool Declaration::is_well_formed() {
 
 bool Assignment::is_well_formed() {
     // - does the expression resolve to a type?
-    Type *t = expr->resolve_type();
-    if(t == nullptr) {
+    Type *et = expr->resolve_type();
+    if(et == nullptr) {
         std::cout << "Assignment expression does not resolve to type\n";
         return false;
     }
     // - does the type the expression resolves to exist?
-    if(!is_type_declared(t)) {
+    if(!is_type_declared(et)) {
         std::cout << "Assignment expression does not resolve to existing type\n";
         return false;
     }
@@ -1712,8 +1805,25 @@ bool Assignment::is_well_formed() {
         std::cout << "Assignment variable does not exist : " << id->name << "\n";
         return false;
     }
+    // - do all of the indexing expressions resolve to int?
+    for(int i = 0; i < index_expr.size(); i++){
+        if(*(index_expr[i]->resolve_type()) != BaseType("int")) {
+            std::cout << "Indexing expression must resolve to int\n";
+            return false;
+        }
+    }
+    // - can we actually index into this variable?
+    Type *vt = v->type;
+    for(int i = 0; i < index_expr.size(); i++){
+        PointerType *pt = dynamic_cast<PointerType*>(vt);
+        if(pt == nullptr) {
+            std::cout << "Can't index into non-pointer\n";
+            return false;
+        }
+        vt = pt->type;
+    }
     // - does the type of the expression match the variable type?
-    if(*t != *(v->type)) {
+    if(*et != *vt) {
         std::cout << "Assignment expression type and variable type mismatch\n";
         return false;
     }
@@ -2078,13 +2188,19 @@ bool Program::is_well_formed() {
         label_counter = 0;
 
         // - sys functions
-        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts"), {new BaseType("int")}));
-        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts_endl"), {new BaseType("int")}));
-        declared_functions.push_back(new Function(new BaseType("int"), new Identifier("int_to_string"), {new BaseType("int")}));
+        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts"), {new PointerType(new BaseType("char"))}));
+        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts_endl"), {new PointerType(new BaseType("char"))}));
+        declared_functions.push_back(new Function(new PointerType(new BaseType("char")), new Identifier("int_to_string"), {new BaseType("int")}));
+        declared_functions.push_back(new Function(new PointerType(new BaseType("char")), new Identifier("malloc_char"), {new BaseType("int")}));
+        declared_functions.push_back(new Function(new PointerType(new BaseType("int")), new Identifier("malloc_int"), {new BaseType("int")}));
+        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puti"), {new BaseType("int")}));
+        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puti_endl"), {new BaseType("int")}));
 
         // - primitive types
         Type *p_int = new BaseType("int");
         declared_types.push_back(p_int);
+        Type *p_char = new BaseType("char");
+        declared_types.push_back(p_char);
 
         // - populate conversion map
         conversion_map[{"+", p_int}] = {p_int, {}};

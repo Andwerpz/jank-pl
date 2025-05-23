@@ -20,7 +20,7 @@
 (* && *)
 (* || *)
 
-expr_primary = function_call | identifier | literal | "(" , ows , expression , ows , ")" ;
+expr_primary = literal | function_call | identifier | "(" , ows , expression , ows , ")" ;
 expr_postfix = expr_primary , { ows , "[" , ows , expression , ows , "]" } ;
 expr_unary = ( "+" | "-" | "~" | "!" ) , ows , expr_unary | expr_postfix ;
 expr_multiplicative = expr_unary , { ows , ( "*" | "/" | "%" ) , ows , expr_unary } ;
