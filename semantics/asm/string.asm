@@ -4,7 +4,7 @@ endl:
 
 .section .text
 
-# void puts(int s)
+# void puts(char* s)
 # prints string to stdout
 .global puts
 puts:
@@ -30,7 +30,7 @@ puts:
     pop %rbp                # return old stack frame
     ret
 
-# void puts_endl(int s)
+# void puts_endl(char* s)
 # prints string to stdout with trailing endl
 .global puts_endl
 puts_endl:
@@ -115,7 +115,7 @@ strlen:
     pop %rbp
     ret
 
-# int int_to_string(int x)
+# char* int_to_string(int x)
 # returns a pointer to the created string
 .global int_to_string
 int_to_string:

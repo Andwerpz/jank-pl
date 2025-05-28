@@ -1,4 +1,4 @@
-// Date Generated : 05-22-2025 19:42:58
+// Date Generated : 05-28-2025 18:09:20
 #include <vector>
 #include <string>
 #include <cassert>
@@ -157,19 +157,23 @@ namespace parser {
         std::string to_string();
     };
 
-    // literal_sizeof = "sizeof" , ows , "(" , type , ")" ;
+    // literal_sizeof = "sizeof" , ows , "(" , ows , type , ows , ")" ;
     struct literal_sizeof {
         std::string t0;
         ows *t1;
         std::string t2;
-        type *t3;
-        std::string t4;
-        literal_sizeof(std::string _t0, ows *_t1, std::string _t2, type *_t3, std::string _t4) {
+        ows *t3;
+        type *t4;
+        ows *t5;
+        std::string t6;
+        literal_sizeof(std::string _t0, ows *_t1, std::string _t2, ows *_t3, type *_t4, ows *_t5, std::string _t6) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
             t3 = _t3;
             t4 = _t4;
+            t5 = _t5;
+            t6 = _t6;
         }
         static literal_sizeof* parse();
         std::string to_string();
@@ -257,27 +261,27 @@ namespace parser {
         std::string to_string();
     };
 
-    // expr_primary = function_call | identifier | literal | "(" , ows , expression , ows , ")" ;
+    // expr_primary = literal | function_call | identifier | "(" , ows , expression , ows , ")" ;
     struct expr_primary {
         struct a0 {
-            function_call *t0;
-            a0(function_call *_t0) {
+            literal *t0;
+            a0(literal *_t0) {
                 t0 = _t0;
             }
             static a0* parse();
             std::string to_string();
         };
         struct a1 {
-            identifier *t0;
-            a1(identifier *_t0) {
+            function_call *t0;
+            a1(function_call *_t0) {
                 t0 = _t0;
             }
             static a1* parse();
             std::string to_string();
         };
         struct a2 {
-            literal *t0;
-            a2(literal *_t0) {
+            identifier *t0;
+            a2(identifier *_t0) {
                 t0 = _t0;
             }
             static a2* parse();
@@ -2947,12 +2951,16 @@ namespace parser {
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
         std::string _t2 = next_chars(1);
         if(_t2 != "(") {pop_stack(); return nullptr;}
-        type *_t3 = type::parse();
+        ows *_t3 = ows::parse();
         if(_t3 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t4 = next_chars(1);
-        if(_t4 != ")") {pop_stack(); return nullptr;}
+        type *_t4 = type::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t5 = ows::parse();
+        if(_t5 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t6 = next_chars(1);
+        if(_t6 != ")") {pop_stack(); return nullptr;}
         rm_stack();
-        return new literal_sizeof(_t0, _t1, _t2, _t3, _t4);
+        return new literal_sizeof(_t0, _t1, _t2, _t3, _t4, _t5, _t6);
     }
 
     std::string literal_sizeof::to_string() {
@@ -2961,7 +2969,9 @@ namespace parser {
         ans += t1->to_string();
         ans += t2;
         ans += t3->to_string();
-        ans += t4;
+        ans += t4->to_string();
+        ans += t5->to_string();
+        ans += t6;
         return ans;
     }
 
@@ -3098,7 +3108,7 @@ namespace parser {
 
     expr_primary::a0* expr_primary::a0::parse() {
         push_stack();
-        function_call *_t0 = function_call::parse();
+        literal *_t0 = literal::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new expr_primary::a0(_t0);
@@ -3112,7 +3122,7 @@ namespace parser {
 
     expr_primary::a1* expr_primary::a1::parse() {
         push_stack();
-        identifier *_t0 = identifier::parse();
+        function_call *_t0 = function_call::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new expr_primary::a1(_t0);
@@ -3126,7 +3136,7 @@ namespace parser {
 
     expr_primary::a2* expr_primary::a2::parse() {
         push_stack();
-        literal *_t0 = literal::parse();
+        identifier *_t0 = identifier::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new expr_primary::a2(_t0);

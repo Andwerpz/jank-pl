@@ -36,6 +36,7 @@ malloc_int:
 
 # void* malloc(int sz_bytes) 
 .global malloc
+malloc:
     push %rbp
     mov %rsp, %rbp
 

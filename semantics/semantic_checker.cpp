@@ -1024,7 +1024,7 @@ Literal* Literal::convert(parser::literal *l) {
     }
     else if(l->is_a1) { //sizeof literal
         parser::literal_sizeof *lit = l->t1->t0;
-        Type *t = Type::convert(lit->t3);
+        Type *t = Type::convert(lit->t4);
         return new SizeofLiteral(t);
     }
     else assert(false);    
@@ -1059,13 +1059,13 @@ PointerType* PointerType::convert(parser::pointer_type *t) {
 Expression::Primary* Expression::Primary::convert(parser::expr_primary *e) {
     Expression::Primary::val_t val;
     if(e->is_a0) {
-        val = FunctionCall::convert(e->t0->t0);
+        val = Literal::convert(e->t0->t0);
     }
     else if(e->is_a1) {
-        val = Identifier::convert(e->t1->t0);
+        val = FunctionCall::convert(e->t1->t0);
     }
     else if(e->is_a2) {
-        val = Literal::convert(e->t2->t0);
+        val = Identifier::convert(e->t2->t0);
     }
     else if(e->is_a3) {
         val = Expression::convert(e->t3->t2);
@@ -2327,12 +2327,12 @@ bool Program::is_well_formed() {
         label_counter = 0;
 
         // - sys functions
-        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts"), {new PointerType(new BaseType("char"))}));
-        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts_endl"), {new PointerType(new BaseType("char"))}));
-        declared_functions.push_back(new Function(new PointerType(new BaseType("char")), new Identifier("int_to_string"), {new BaseType("int")}));
         declared_functions.push_back(new Function(new PointerType(new BaseType("void")), new Identifier("malloc"), {new BaseType("int")}));
         declared_functions.push_back(new Function(new PointerType(new BaseType("char")), new Identifier("malloc_char"), {new BaseType("int")}));
         declared_functions.push_back(new Function(new PointerType(new BaseType("int")), new Identifier("malloc_int"), {new BaseType("int")}));
+        declared_functions.push_back(new Function(new PointerType(new BaseType("char")), new Identifier("int_to_string"), {new BaseType("int")}));
+        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts"), {new PointerType(new BaseType("char"))}));
+        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts_endl"), {new PointerType(new BaseType("char"))}));
         declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puti"), {new BaseType("int")}));
         declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puti_endl"), {new BaseType("int")}));
 
