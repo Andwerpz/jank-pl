@@ -65,6 +65,27 @@ value / pointer. When accessing / modifying the passed by reference variable, we
 As long as we're consistent with how we treat types that are of size <= and > 8, then passing by reference 
 shouldn't be an issue; it should affect all types the same. 
 
+maybe we should include void as an actual type, but apply some restrictions:
+ - variables cannot be of type void, Declaration has to check that the type isn't BaseType("void")
+ - arguments cannot be of type void, so Functions have to check that all of their parameters are not of type BaseType("void")
+Then, this allows void* to automatically be supported as a type. We can then add a type conversion dictionary that provides
+conversions between types without operators, and every pointer should be able to be converted into void* and void* should be able to 
+be converted into every pointer. These (pointer -> void*) and (void* -> pointer) conversions can be hardcoded as a special case 
+in the conversion finder for now. 
+
+To support pointer arithmetic, we should also hardcode some cases into the binary operator conversion finder. 
+ - when subtracting two pointers of same type T*, it returns BaseType("int") equal to the byte offset between the two pointers divided
+   by sizeof(T)
+ - when adding or subtracting an int I to a pointer T*, it returns type T* incremented or decremented by I * sizeof(T)
+
+just a note on type conversions. Suppose I have `A foo = expr`, where expr resolves to B. For now, I'll only look for direct conversions from
+B -> A. So for example if there exists a conversion from B -> C and C -> A, I won't use it for now. 
+
+ok, implemented casting to and from void* for declarations and assignments. Where else do we need this? How can we make it so that I don't
+have to consider every case? Maybe there aren't too many cases?
+ - when calling functions, arguments may have to be cast? what if it's ambiguous which function you're calling due to this?
+ - I'll force the user to be clear about which function they're calling by making them cast their arguments if it's ambiguous. 
+
 TODO
  - make sure that int main() is never called
  - make actual C++ style pass by copy and reference. 
@@ -704,24 +725,29 @@ struct TypeConversionKey {
     std::optional<Type*> left;
     std::string op;
     std::optional<Type*> right;
-    TypeConversionKey(Type *_left, std::string _op, Type *_right) {
+    TypeConversionKey(Type *_left, std::string _op, Type *_right) { //binary operator
         assert(_left != nullptr);
         assert(_right != nullptr);
         left = _left;
         op = _op;
         right = _right;
     }
-    TypeConversionKey(std::string _op, Type *_right) {
+    TypeConversionKey(std::string _op, Type *_right) {  //left unary operator
         assert(_right != nullptr);
         left = std::nullopt;
         op = _op;
         right = _right;
     }
-    TypeConversionKey(Type *_left, std::string _op) {
+    TypeConversionKey(Type *_left, std::string _op) {   //right unary operator
         assert(_left != nullptr);
         left = _left;
         op = _op;
         right = std::nullopt;
+    }
+    TypeConversionKey(Type *from, Type *to) {   //casting
+        left = from;
+        op = "cast";
+        right = to;
     }
 
     bool operator==(const TypeConversionKey& other) const {
@@ -754,8 +780,9 @@ namespace std {
 }
 
 //for binary operators, assumes left is in %rax and right is in %rbx
-//for prefix unary operators, assumes right is in %rax
-//for suffix unary operators, assumes left is in %rax. 
+//for left unary operators, assumes right is in %rax
+//for right unary operators, assumes left is in %rax
+//for casting, assumes left is in %rax
 //for the indexing operator specifically, '[]', the result of the expression is in %rbx
 //will place the answer into %rax
 struct TypeConversion {
@@ -787,18 +814,6 @@ Type* find_resulting_type(Type* left, std::string op, Type* right) {
     return conversion_map[key].res_type;
 }
 
-Type* find_resulting_type(std::string op, Type* right) {
-    if(right == nullptr) return nullptr;
-    assert(op.size() != 0);
-    if(dynamic_cast<PointerType*>(right)) right = new BaseType("int");
-    TypeConversionKey key = {op, right};
-    if(!conversion_map.count(key)) {
-        std::cout << "Invalid type conversion : " << op << " " << right->to_string() << "\n";
-        return nullptr;
-    }
-    return conversion_map[key].res_type;
-}
-
 TypeConversion* find_type_conversion(Type* left, std::string op, Type* right) {
     if(left == nullptr || right == nullptr) return nullptr;
     assert(op.size() != 0);
@@ -812,6 +827,18 @@ TypeConversion* find_type_conversion(Type* left, std::string op, Type* right) {
     return &(conversion_map[key]);
 }
 
+Type* find_resulting_type(std::string op, Type* right) {
+    if(right == nullptr) return nullptr;
+    assert(op.size() != 0);
+    if(dynamic_cast<PointerType*>(right)) right = new BaseType("int");
+    TypeConversionKey key = {op, right};
+    if(!conversion_map.count(key)) {
+        std::cout << "Invalid type conversion : " << op << " " << right->to_string() << "\n";
+        return nullptr;
+    }
+    return conversion_map[key].res_type;
+}
+
 TypeConversion* find_type_conversion(std::string op, Type* right) {
     if(right == nullptr) return nullptr;
     assert(op.size() != 0);
@@ -819,6 +846,60 @@ TypeConversion* find_type_conversion(std::string op, Type* right) {
     TypeConversionKey key = {op, right};
     if(!conversion_map.count(key)) {
         std::cout << "Invalid type conversion : " << op << " " << right->to_string() << "\n";
+        return nullptr;
+    }
+    return &(conversion_map[key]);
+}
+
+//TODO : haven't implemented type conversion lookup for right unary operators
+
+Type* find_resulting_type(Type* from, Type* to) {
+    if(from == nullptr || to == nullptr) return nullptr;
+
+    //special cases
+    // - from and to are the same type
+    if(*from == *to) {
+        return to;
+    }
+    Type* voidptr_t = new PointerType(new BaseType("void"));
+    // - from is a pointer, to is void*
+    if(dynamic_cast<PointerType*>(from) != nullptr && *to == *voidptr_t) {
+        return to;
+    }
+    // - from is void*, to is a pointer
+    if(*from == *voidptr_t && dynamic_cast<PointerType*>(to) != nullptr) {
+        return to;
+    }
+
+    TypeConversionKey key = {from, to};
+    if(!conversion_map.count(key)) {
+        std::cout << "Invalid type conversion : (" << to->to_string() << ") " << from->to_string() << "\n";
+        return nullptr;
+    }
+    return conversion_map[key].res_type;
+}
+
+TypeConversion* find_type_conversion(Type* from, Type* to) {
+    if(from == nullptr || to == nullptr) return nullptr;
+
+    //special cases
+    // - from and to are the same type
+    if(*from == *to) {
+        return new TypeConversion(to, {});    //do nothing
+    }
+    Type* voidptr_t = new PointerType(new BaseType("void"));
+    // - from is a pointer, to is void*
+    if(dynamic_cast<PointerType*>(from) != nullptr && *to == *voidptr_t) {
+        return new TypeConversion(to, {});    //do nothing
+    }
+    // - from is void*, to is a pointer
+    if(*from == *voidptr_t && dynamic_cast<PointerType*>(to) != nullptr) {
+        return new TypeConversion(to, {});    //do nothing
+    }
+    
+    TypeConversionKey key = {from, to};
+    if(!conversion_map.count(key)) {
+        std::cout << "Invalid type conversion : (" << to->to_string() << ") " << from->to_string() << "\n";
         return nullptr;
     }
     return &(conversion_map[key]);
@@ -936,9 +1017,17 @@ void pop_declaration_stack() {
 }
 
 // -- STRUCT FUNCTIONS --
-Literal* Literal::convert(parser::literal *n) {
-    //for now, only integer literals are supported by the grammar
-    return new IntegerLiteral(stoi(n->to_string()));
+Literal* Literal::convert(parser::literal *l) {
+    if(l->is_a0) {  //integer literal
+        parser::literal_integer *lit = l->t0->t0;
+        return new IntegerLiteral(stoi(lit->to_string()));
+    }
+    else if(l->is_a1) { //sizeof literal
+        parser::literal_sizeof *lit = l->t1->t0;
+        Type *t = Type::convert(lit->t3);
+        return new SizeofLiteral(t);
+    }
+    else assert(false);    
 }
 
 Identifier* Identifier::convert(parser::identifier *i) {
@@ -1273,20 +1362,30 @@ Type* IntegerLiteral::resolve_type() {
     return new BaseType("int");
 }
 
+Type* SizeofLiteral::resolve_type() {
+    std::cout << "SIZEOF LITERAL RESOLVE TYPE\n";
+    return new BaseType("int");
+}
+
 Type* Expression::Primary::resolve_type() {
+    std::cout << "PRIMARY RESOLVE TYPE\n";
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *f = std::get<FunctionCall*>(val);
+        std::cout << "FUNCTION CALL : " << f->id->name << "\n";
         return f->resolve_type();
     }
     else if(std::holds_alternative<Identifier*>(val)) {
+        std::cout << "IDENTIFIER\n";
         Identifier *id = std::get<Identifier*>(val);
         return find_variable_type(id);
     }
     else if(std::holds_alternative<Literal*>(val)) {
+        std::cout << "LITERAL\n";
         Literal *l = std::get<Literal*>(val);
         return l->resolve_type();
     }
     else if(std::holds_alternative<Expression*>(val)) {
+        std::cout << "EXPRESSION\n";
         Expression *e = std::get<Expression*>(val);
         return e->resolve_type();
     }
@@ -1476,6 +1575,11 @@ void TypeConversion::emit_asm() {
 
 void IntegerLiteral::emit_asm() {
     fout << indent() << "mov $" << val << ", %rax\n";
+}
+
+void SizeofLiteral::emit_asm() {
+    int sz = type->calc_size();
+    fout << indent() << "mov $" << sz << ", %rax\n";
 }
 
 void Expression::Primary::emit_asm() {
@@ -1712,9 +1816,22 @@ void Declaration::emit_asm() {
     assert(v != nullptr);
     v->stack_offset = local_var_stack_offset;
     local_var_stack_offset -= 8;
-    expr->emit_asm();
+
     if(asm_debug) fout << indent() << "# initialize local variable : " << type->to_string() << " " << id->name << "\n";
+
+    //evaluate expression
+    expr->emit_asm();
+
+    //cast expression type to variable type
+    Type *et = expr->resolve_type(), *vt = v->type;
+    TypeConversion *tc = find_type_conversion(et, vt);
+    assert(tc != nullptr);
+    tc->emit_asm();
+
+    //push variable to stack
     fout << indent() << "push %rax\n";
+
+    if(asm_debug) fout << indent() << "# done initialize local variable : " << type->to_string() << " " << id->name << "\n";
 }
 
 void Assignment::emit_asm() {
@@ -1725,6 +1842,17 @@ void Assignment::emit_asm() {
 
     //evaluate expression
     expr->emit_asm();
+    
+    //cast expression type to variable type
+    Type *et = expr->resolve_type(), *vt = v->type;
+    for(int i = 0; i < index_expr.size(); i++){
+        PointerType *pt = dynamic_cast<PointerType*>(vt);
+        assert(pt != nullptr);
+        vt = pt->type;
+    }
+    TypeConversion *tc = find_type_conversion(et, vt);
+    assert(tc != nullptr);
+    tc->emit_asm();
 
     if(index_expr.size() == 0){
         //store into stack
@@ -1767,15 +1895,20 @@ bool Declaration::is_well_formed() {
         std::cout << "Declaration using undeclared type : " << type->to_string() << "\n";
         return false;
     }
+    // - make sure type is not void
+    if(*type == BaseType("void")) {
+        std::cout << "Cannot declare variable with void type\n";
+        return false;
+    }
     // - does the expression resolve to a type?
     Type *expr_type = expr->resolve_type();
     if(expr_type == nullptr || !is_type_declared(expr_type)) {
         std::cout << "Declaration expression does not resolve to existing type\n";
         return false;
     }
-    // - does the type of the expression match with the type being used?
-    if(*expr_type != *type) {
-        std::cout << "Declaration and expression type mismatch\n";
+    // - can expr_type be casted to type?
+    if(find_type_conversion(expr_type, type) == nullptr) {
+        std::cout << "Declaration type mismatch: cannot cast type " << expr_type->to_string() << " to " << type->to_string() << "\n";
         return false;
     }
     // - is the identifier being used already taken?
@@ -1822,9 +1955,9 @@ bool Assignment::is_well_formed() {
         }
         vt = pt->type;
     }
-    // - does the type of the expression match the variable type?
-    if(*et != *vt) {
-        std::cout << "Assignment expression type and variable type mismatch\n";
+    // - can the expression type be casted to the variable type?
+    if(find_type_conversion(et, vt) == nullptr) {
+        std::cout << "Assignment type mismatch: cannot cast " << et->to_string() << " to " << vt->to_string() << "\n";
         return false;
     }
     return true;
@@ -2104,16 +2237,22 @@ bool Function::is_well_formed() {
     fout << indent() << "push %rbp\n";
     fout << indent() << "mov %rsp, %rbp\n";
 
-    // - do all parameters correspond to existing types?
+    
     for(int i = 0; i < parameters.size(); i++){
+        // - does parameter correspond to existing type?
         if(!is_type_declared(parameters[i]->type)) {
             std::cout << "Undeclared type : " << parameters[i]->type->to_string() << "\n";
             return false;
         }
+        // - is parameter type not void?
+        if(*(parameters[i]->type) == BaseType("void")) {
+            std::cout << "Parameter can't have type void\n";
+            return false;
+        }
     }
 
-    // - is return type of function existing or void?
-    if(!is_type_declared(type) && *type != BaseType("void")) {
+    // - is return type of function existing?
+    if(!is_type_declared(type)) {
         std::cout << "Function undeclared return type : " << type->to_string() << " " << id->name << "\n";
         return false;
     }
@@ -2191,6 +2330,7 @@ bool Program::is_well_formed() {
         declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts"), {new PointerType(new BaseType("char"))}));
         declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts_endl"), {new PointerType(new BaseType("char"))}));
         declared_functions.push_back(new Function(new PointerType(new BaseType("char")), new Identifier("int_to_string"), {new BaseType("int")}));
+        declared_functions.push_back(new Function(new PointerType(new BaseType("void")), new Identifier("malloc"), {new BaseType("int")}));
         declared_functions.push_back(new Function(new PointerType(new BaseType("char")), new Identifier("malloc_char"), {new BaseType("int")}));
         declared_functions.push_back(new Function(new PointerType(new BaseType("int")), new Identifier("malloc_int"), {new BaseType("int")}));
         declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puti"), {new BaseType("int")}));
@@ -2201,6 +2341,8 @@ bool Program::is_well_formed() {
         declared_types.push_back(p_int);
         Type *p_char = new BaseType("char");
         declared_types.push_back(p_char);
+        Type *p_void = new BaseType("void");
+        declared_types.push_back(p_void);
 
         // - populate conversion map
         conversion_map[{"+", p_int}] = {p_int, {}};

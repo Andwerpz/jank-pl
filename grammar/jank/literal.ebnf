@@ -2,7 +2,7 @@
 
 (* TODO support other types of literals like strings / floats / chars *)
 
-literal_sizeof = "sizeof" , ows , "(" , type , ")" ;
+literal_sizeof = "sizeof" , ows , "(" , type , ")" ;    (* TODO should add ows before and after 'type' *)
 literal_integer = < digit > ;
 literal_float = < digit > , "." , < digit > ;
 
