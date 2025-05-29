@@ -125,7 +125,7 @@ int_to_string:
     # allocate some space for the string
     mov $20, %rax
     push %rax
-    call malloc_char
+    call malloc
     add $8, %rsp              
     mov %rax, %rbx          # %rbx points to the start of the buffer
     mov 16(%rbp), %rax      # %rax now stores the integer

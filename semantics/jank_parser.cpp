@@ -1,4 +1,4 @@
-// Date Generated : 05-28-2025 18:09:20
+// Date Generated : 05-29-2025 10:01:23
 #include <vector>
 #include <string>
 #include <cassert>
@@ -58,6 +58,8 @@ namespace parser {
     struct literal_sizeof;
     struct literal_integer;
     struct literal_float;
+    struct literal_char;
+    struct literal_string;
     struct literal;
     struct expr_primary;
     struct expr_postfix;
@@ -75,6 +77,7 @@ namespace parser {
     struct alpha;
     struct digit;
     struct escape;
+    struct symbol;
     struct line_comment;
     struct multiline_comment;
     struct ws;
@@ -227,7 +230,183 @@ namespace parser {
         std::string to_string();
     };
 
-    // literal = literal_integer | literal_sizeof ;
+    // literal_char = "'" , ( alpha | digit | escape | symbol | " " ) , "'" ;
+    struct literal_char {
+        struct a0 {
+            struct b0 {
+                alpha *t0;
+                b0(alpha *_t0) {
+                    t0 = _t0;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            struct b1 {
+                digit *t0;
+                b1(digit *_t0) {
+                    t0 = _t0;
+                }
+                static b1* parse();
+                std::string to_string();
+            };
+            struct b2 {
+                escape *t0;
+                b2(escape *_t0) {
+                    t0 = _t0;
+                }
+                static b2* parse();
+                std::string to_string();
+            };
+            struct b3 {
+                symbol *t0;
+                b3(symbol *_t0) {
+                    t0 = _t0;
+                }
+                static b3* parse();
+                std::string to_string();
+            };
+            struct b4 {
+                std::string t0;
+                b4(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b4* parse();
+                std::string to_string();
+            };
+            bool is_b0 = false;
+            b0 *t0;
+            bool is_b1 = false;
+            b1 *t1;
+            bool is_b2 = false;
+            b2 *t2;
+            bool is_b3 = false;
+            b3 *t3;
+            bool is_b4 = false;
+            b4 *t4;
+            a0(b0 *_t0) {
+                is_b0 = true;
+                t0 = _t0;
+            }
+            a0(b1 *_t1) {
+                is_b1 = true;
+                t1 = _t1;
+            }
+            a0(b2 *_t2) {
+                is_b2 = true;
+                t2 = _t2;
+            }
+            a0(b3 *_t3) {
+                is_b3 = true;
+                t3 = _t3;
+            }
+            a0(b4 *_t4) {
+                is_b4 = true;
+                t4 = _t4;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        std::string t0;
+        a0 *t1;
+        std::string t2;
+        literal_char(std::string _t0, a0 *_t1, std::string _t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static literal_char* parse();
+        std::string to_string();
+    };
+
+    // literal_string = "\"" , ( alpha | digit | escape | symbol | " " ) , "\"" ;
+    struct literal_string {
+        struct a0 {
+            struct b0 {
+                alpha *t0;
+                b0(alpha *_t0) {
+                    t0 = _t0;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            struct b1 {
+                digit *t0;
+                b1(digit *_t0) {
+                    t0 = _t0;
+                }
+                static b1* parse();
+                std::string to_string();
+            };
+            struct b2 {
+                escape *t0;
+                b2(escape *_t0) {
+                    t0 = _t0;
+                }
+                static b2* parse();
+                std::string to_string();
+            };
+            struct b3 {
+                symbol *t0;
+                b3(symbol *_t0) {
+                    t0 = _t0;
+                }
+                static b3* parse();
+                std::string to_string();
+            };
+            struct b4 {
+                std::string t0;
+                b4(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b4* parse();
+                std::string to_string();
+            };
+            bool is_b0 = false;
+            b0 *t0;
+            bool is_b1 = false;
+            b1 *t1;
+            bool is_b2 = false;
+            b2 *t2;
+            bool is_b3 = false;
+            b3 *t3;
+            bool is_b4 = false;
+            b4 *t4;
+            a0(b0 *_t0) {
+                is_b0 = true;
+                t0 = _t0;
+            }
+            a0(b1 *_t1) {
+                is_b1 = true;
+                t1 = _t1;
+            }
+            a0(b2 *_t2) {
+                is_b2 = true;
+                t2 = _t2;
+            }
+            a0(b3 *_t3) {
+                is_b3 = true;
+                t3 = _t3;
+            }
+            a0(b4 *_t4) {
+                is_b4 = true;
+                t4 = _t4;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        std::string t0;
+        a0 *t1;
+        std::string t2;
+        literal_string(std::string _t0, a0 *_t1, std::string _t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static literal_string* parse();
+        std::string to_string();
+    };
+
+    // literal = literal_integer | literal_sizeof | literal_char ;
     struct literal {
         struct a0 {
             literal_integer *t0;
@@ -245,10 +424,20 @@ namespace parser {
             static a1* parse();
             std::string to_string();
         };
+        struct a2 {
+            literal_char *t0;
+            a2(literal_char *_t0) {
+                t0 = _t0;
+            }
+            static a2* parse();
+            std::string to_string();
+        };
         bool is_a0 = false;
         a0 *t0;
         bool is_a1 = false;
         a1 *t1;
+        bool is_a2 = false;
+        a2 *t2;
         literal(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
@@ -256,6 +445,10 @@ namespace parser {
         literal(a1 *_t1) {
             is_a1 = true;
             t1 = _t1;
+        }
+        literal(a2 *_t2) {
+            is_a2 = true;
+            t2 = _t2;
         }
         static literal* parse();
         std::string to_string();
@@ -1801,7 +1994,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // escape = "\\" , ( "n" | "t" | "r" | "f" | "b" | "\"" | "\\" ) ;
+    // escape = "\\" , ( "n" | "t" | "r" | "f" | "b" | "\"" | "\\" | "'" | "0" ) ;
     struct escape {
         struct a0 {
             struct b0 {
@@ -1860,6 +2053,22 @@ namespace parser {
                 static b6* parse();
                 std::string to_string();
             };
+            struct b7 {
+                std::string t0;
+                b7(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b7* parse();
+                std::string to_string();
+            };
+            struct b8 {
+                std::string t0;
+                b8(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b8* parse();
+                std::string to_string();
+            };
             bool is_b0 = false;
             b0 *t0;
             bool is_b1 = false;
@@ -1874,6 +2083,10 @@ namespace parser {
             b5 *t5;
             bool is_b6 = false;
             b6 *t6;
+            bool is_b7 = false;
+            b7 *t7;
+            bool is_b8 = false;
+            b8 *t8;
             a0(b0 *_t0) {
                 is_b0 = true;
                 t0 = _t0;
@@ -1902,6 +2115,14 @@ namespace parser {
                 is_b6 = true;
                 t6 = _t6;
             }
+            a0(b7 *_t7) {
+                is_b7 = true;
+                t7 = _t7;
+            }
+            a0(b8 *_t8) {
+                is_b8 = true;
+                t8 = _t8;
+            }
             static a0* parse();
             std::string to_string();
         };
@@ -1912,6 +2133,418 @@ namespace parser {
             t1 = _t1;
         }
         static escape* parse();
+        std::string to_string();
+    };
+
+    // symbol = "[" | "]" | "{" | "}" | "(" | ")" | "<" | ">" | "=" | "|" | "." | "," | ";" | "-" | "+" | "_" | "*" | "?" | ":" | "!" | "@" | "#" | "$" | "%" | "^" | "&" | "/" | "~" | "`" ;
+    struct symbol {
+        struct a0 {
+            std::string t0;
+            a0(std::string _t0) {
+                t0 = _t0;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        struct a1 {
+            std::string t0;
+            a1(std::string _t0) {
+                t0 = _t0;
+            }
+            static a1* parse();
+            std::string to_string();
+        };
+        struct a2 {
+            std::string t0;
+            a2(std::string _t0) {
+                t0 = _t0;
+            }
+            static a2* parse();
+            std::string to_string();
+        };
+        struct a3 {
+            std::string t0;
+            a3(std::string _t0) {
+                t0 = _t0;
+            }
+            static a3* parse();
+            std::string to_string();
+        };
+        struct a4 {
+            std::string t0;
+            a4(std::string _t0) {
+                t0 = _t0;
+            }
+            static a4* parse();
+            std::string to_string();
+        };
+        struct a5 {
+            std::string t0;
+            a5(std::string _t0) {
+                t0 = _t0;
+            }
+            static a5* parse();
+            std::string to_string();
+        };
+        struct a6 {
+            std::string t0;
+            a6(std::string _t0) {
+                t0 = _t0;
+            }
+            static a6* parse();
+            std::string to_string();
+        };
+        struct a7 {
+            std::string t0;
+            a7(std::string _t0) {
+                t0 = _t0;
+            }
+            static a7* parse();
+            std::string to_string();
+        };
+        struct a8 {
+            std::string t0;
+            a8(std::string _t0) {
+                t0 = _t0;
+            }
+            static a8* parse();
+            std::string to_string();
+        };
+        struct a9 {
+            std::string t0;
+            a9(std::string _t0) {
+                t0 = _t0;
+            }
+            static a9* parse();
+            std::string to_string();
+        };
+        struct a10 {
+            std::string t0;
+            a10(std::string _t0) {
+                t0 = _t0;
+            }
+            static a10* parse();
+            std::string to_string();
+        };
+        struct a11 {
+            std::string t0;
+            a11(std::string _t0) {
+                t0 = _t0;
+            }
+            static a11* parse();
+            std::string to_string();
+        };
+        struct a12 {
+            std::string t0;
+            a12(std::string _t0) {
+                t0 = _t0;
+            }
+            static a12* parse();
+            std::string to_string();
+        };
+        struct a13 {
+            std::string t0;
+            a13(std::string _t0) {
+                t0 = _t0;
+            }
+            static a13* parse();
+            std::string to_string();
+        };
+        struct a14 {
+            std::string t0;
+            a14(std::string _t0) {
+                t0 = _t0;
+            }
+            static a14* parse();
+            std::string to_string();
+        };
+        struct a15 {
+            std::string t0;
+            a15(std::string _t0) {
+                t0 = _t0;
+            }
+            static a15* parse();
+            std::string to_string();
+        };
+        struct a16 {
+            std::string t0;
+            a16(std::string _t0) {
+                t0 = _t0;
+            }
+            static a16* parse();
+            std::string to_string();
+        };
+        struct a17 {
+            std::string t0;
+            a17(std::string _t0) {
+                t0 = _t0;
+            }
+            static a17* parse();
+            std::string to_string();
+        };
+        struct a18 {
+            std::string t0;
+            a18(std::string _t0) {
+                t0 = _t0;
+            }
+            static a18* parse();
+            std::string to_string();
+        };
+        struct a19 {
+            std::string t0;
+            a19(std::string _t0) {
+                t0 = _t0;
+            }
+            static a19* parse();
+            std::string to_string();
+        };
+        struct a20 {
+            std::string t0;
+            a20(std::string _t0) {
+                t0 = _t0;
+            }
+            static a20* parse();
+            std::string to_string();
+        };
+        struct a21 {
+            std::string t0;
+            a21(std::string _t0) {
+                t0 = _t0;
+            }
+            static a21* parse();
+            std::string to_string();
+        };
+        struct a22 {
+            std::string t0;
+            a22(std::string _t0) {
+                t0 = _t0;
+            }
+            static a22* parse();
+            std::string to_string();
+        };
+        struct a23 {
+            std::string t0;
+            a23(std::string _t0) {
+                t0 = _t0;
+            }
+            static a23* parse();
+            std::string to_string();
+        };
+        struct a24 {
+            std::string t0;
+            a24(std::string _t0) {
+                t0 = _t0;
+            }
+            static a24* parse();
+            std::string to_string();
+        };
+        struct a25 {
+            std::string t0;
+            a25(std::string _t0) {
+                t0 = _t0;
+            }
+            static a25* parse();
+            std::string to_string();
+        };
+        struct a26 {
+            std::string t0;
+            a26(std::string _t0) {
+                t0 = _t0;
+            }
+            static a26* parse();
+            std::string to_string();
+        };
+        struct a27 {
+            std::string t0;
+            a27(std::string _t0) {
+                t0 = _t0;
+            }
+            static a27* parse();
+            std::string to_string();
+        };
+        struct a28 {
+            std::string t0;
+            a28(std::string _t0) {
+                t0 = _t0;
+            }
+            static a28* parse();
+            std::string to_string();
+        };
+        bool is_a0 = false;
+        a0 *t0;
+        bool is_a1 = false;
+        a1 *t1;
+        bool is_a2 = false;
+        a2 *t2;
+        bool is_a3 = false;
+        a3 *t3;
+        bool is_a4 = false;
+        a4 *t4;
+        bool is_a5 = false;
+        a5 *t5;
+        bool is_a6 = false;
+        a6 *t6;
+        bool is_a7 = false;
+        a7 *t7;
+        bool is_a8 = false;
+        a8 *t8;
+        bool is_a9 = false;
+        a9 *t9;
+        bool is_a10 = false;
+        a10 *t10;
+        bool is_a11 = false;
+        a11 *t11;
+        bool is_a12 = false;
+        a12 *t12;
+        bool is_a13 = false;
+        a13 *t13;
+        bool is_a14 = false;
+        a14 *t14;
+        bool is_a15 = false;
+        a15 *t15;
+        bool is_a16 = false;
+        a16 *t16;
+        bool is_a17 = false;
+        a17 *t17;
+        bool is_a18 = false;
+        a18 *t18;
+        bool is_a19 = false;
+        a19 *t19;
+        bool is_a20 = false;
+        a20 *t20;
+        bool is_a21 = false;
+        a21 *t21;
+        bool is_a22 = false;
+        a22 *t22;
+        bool is_a23 = false;
+        a23 *t23;
+        bool is_a24 = false;
+        a24 *t24;
+        bool is_a25 = false;
+        a25 *t25;
+        bool is_a26 = false;
+        a26 *t26;
+        bool is_a27 = false;
+        a27 *t27;
+        bool is_a28 = false;
+        a28 *t28;
+        symbol(a0 *_t0) {
+            is_a0 = true;
+            t0 = _t0;
+        }
+        symbol(a1 *_t1) {
+            is_a1 = true;
+            t1 = _t1;
+        }
+        symbol(a2 *_t2) {
+            is_a2 = true;
+            t2 = _t2;
+        }
+        symbol(a3 *_t3) {
+            is_a3 = true;
+            t3 = _t3;
+        }
+        symbol(a4 *_t4) {
+            is_a4 = true;
+            t4 = _t4;
+        }
+        symbol(a5 *_t5) {
+            is_a5 = true;
+            t5 = _t5;
+        }
+        symbol(a6 *_t6) {
+            is_a6 = true;
+            t6 = _t6;
+        }
+        symbol(a7 *_t7) {
+            is_a7 = true;
+            t7 = _t7;
+        }
+        symbol(a8 *_t8) {
+            is_a8 = true;
+            t8 = _t8;
+        }
+        symbol(a9 *_t9) {
+            is_a9 = true;
+            t9 = _t9;
+        }
+        symbol(a10 *_t10) {
+            is_a10 = true;
+            t10 = _t10;
+        }
+        symbol(a11 *_t11) {
+            is_a11 = true;
+            t11 = _t11;
+        }
+        symbol(a12 *_t12) {
+            is_a12 = true;
+            t12 = _t12;
+        }
+        symbol(a13 *_t13) {
+            is_a13 = true;
+            t13 = _t13;
+        }
+        symbol(a14 *_t14) {
+            is_a14 = true;
+            t14 = _t14;
+        }
+        symbol(a15 *_t15) {
+            is_a15 = true;
+            t15 = _t15;
+        }
+        symbol(a16 *_t16) {
+            is_a16 = true;
+            t16 = _t16;
+        }
+        symbol(a17 *_t17) {
+            is_a17 = true;
+            t17 = _t17;
+        }
+        symbol(a18 *_t18) {
+            is_a18 = true;
+            t18 = _t18;
+        }
+        symbol(a19 *_t19) {
+            is_a19 = true;
+            t19 = _t19;
+        }
+        symbol(a20 *_t20) {
+            is_a20 = true;
+            t20 = _t20;
+        }
+        symbol(a21 *_t21) {
+            is_a21 = true;
+            t21 = _t21;
+        }
+        symbol(a22 *_t22) {
+            is_a22 = true;
+            t22 = _t22;
+        }
+        symbol(a23 *_t23) {
+            is_a23 = true;
+            t23 = _t23;
+        }
+        symbol(a24 *_t24) {
+            is_a24 = true;
+            t24 = _t24;
+        }
+        symbol(a25 *_t25) {
+            is_a25 = true;
+            t25 = _t25;
+        }
+        symbol(a26 *_t26) {
+            is_a26 = true;
+            t26 = _t26;
+        }
+        symbol(a27 *_t27) {
+            is_a27 = true;
+            t27 = _t27;
+        }
+        symbol(a28 *_t28) {
+            is_a28 = true;
+            t28 = _t28;
+        }
+        static symbol* parse();
         std::string to_string();
     };
 
@@ -3066,6 +3699,222 @@ namespace parser {
         return ans;
     }
 
+    literal_char::a0::b0* literal_char::a0::b0::parse() {
+        push_stack();
+        alpha *_t0 = alpha::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_char::a0::b0(_t0);
+    }
+
+    std::string literal_char::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    literal_char::a0::b1* literal_char::a0::b1::parse() {
+        push_stack();
+        digit *_t0 = digit::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_char::a0::b1(_t0);
+    }
+
+    std::string literal_char::a0::b1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    literal_char::a0::b2* literal_char::a0::b2::parse() {
+        push_stack();
+        escape *_t0 = escape::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_char::a0::b2(_t0);
+    }
+
+    std::string literal_char::a0::b2::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    literal_char::a0::b3* literal_char::a0::b3::parse() {
+        push_stack();
+        symbol *_t0 = symbol::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_char::a0::b3(_t0);
+    }
+
+    std::string literal_char::a0::b3::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    literal_char::a0::b4* literal_char::a0::b4::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != " ") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_char::a0::b4(_t0);
+    }
+
+    std::string literal_char::a0::b4::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    literal_char::a0* literal_char::a0::parse() {
+        if(auto x = literal_char::a0::b0::parse()) return new literal_char::a0(x);
+        if(auto x = literal_char::a0::b1::parse()) return new literal_char::a0(x);
+        if(auto x = literal_char::a0::b2::parse()) return new literal_char::a0(x);
+        if(auto x = literal_char::a0::b3::parse()) return new literal_char::a0(x);
+        if(auto x = literal_char::a0::b4::parse()) return new literal_char::a0(x);
+        return nullptr;
+    }
+
+    std::string literal_char::a0::to_string() {
+        if(is_b0) return t0->to_string();
+        if(is_b1) return t1->to_string();
+        if(is_b2) return t2->to_string();
+        if(is_b3) return t3->to_string();
+        if(is_b4) return t4->to_string();
+        assert(false);
+    }
+
+    literal_char* literal_char::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "'") {pop_stack(); return nullptr;}
+        literal_char::a0 *_t1 = literal_char::a0::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(1);
+        if(_t2 != "'") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_char(_t0, _t1, _t2);
+    }
+
+    std::string literal_char::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2;
+        return ans;
+    }
+
+    literal_string::a0::b0* literal_string::a0::b0::parse() {
+        push_stack();
+        alpha *_t0 = alpha::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_string::a0::b0(_t0);
+    }
+
+    std::string literal_string::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    literal_string::a0::b1* literal_string::a0::b1::parse() {
+        push_stack();
+        digit *_t0 = digit::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_string::a0::b1(_t0);
+    }
+
+    std::string literal_string::a0::b1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    literal_string::a0::b2* literal_string::a0::b2::parse() {
+        push_stack();
+        escape *_t0 = escape::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_string::a0::b2(_t0);
+    }
+
+    std::string literal_string::a0::b2::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    literal_string::a0::b3* literal_string::a0::b3::parse() {
+        push_stack();
+        symbol *_t0 = symbol::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_string::a0::b3(_t0);
+    }
+
+    std::string literal_string::a0::b3::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    literal_string::a0::b4* literal_string::a0::b4::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != " ") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_string::a0::b4(_t0);
+    }
+
+    std::string literal_string::a0::b4::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    literal_string::a0* literal_string::a0::parse() {
+        if(auto x = literal_string::a0::b0::parse()) return new literal_string::a0(x);
+        if(auto x = literal_string::a0::b1::parse()) return new literal_string::a0(x);
+        if(auto x = literal_string::a0::b2::parse()) return new literal_string::a0(x);
+        if(auto x = literal_string::a0::b3::parse()) return new literal_string::a0(x);
+        if(auto x = literal_string::a0::b4::parse()) return new literal_string::a0(x);
+        return nullptr;
+    }
+
+    std::string literal_string::a0::to_string() {
+        if(is_b0) return t0->to_string();
+        if(is_b1) return t1->to_string();
+        if(is_b2) return t2->to_string();
+        if(is_b3) return t3->to_string();
+        if(is_b4) return t4->to_string();
+        assert(false);
+    }
+
+    literal_string* literal_string::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "\"") {pop_stack(); return nullptr;}
+        literal_string::a0 *_t1 = literal_string::a0::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(1);
+        if(_t2 != "\"") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_string(_t0, _t1, _t2);
+    }
+
+    std::string literal_string::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2;
+        return ans;
+    }
+
     literal::a0* literal::a0::parse() {
         push_stack();
         literal_integer *_t0 = literal_integer::parse();
@@ -3094,15 +3943,31 @@ namespace parser {
         return ans;
     }
 
+    literal::a2* literal::a2::parse() {
+        push_stack();
+        literal_char *_t0 = literal_char::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal::a2(_t0);
+    }
+
+    std::string literal::a2::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
     literal* literal::parse() {
         if(auto x = literal::a0::parse()) return new literal(x);
         if(auto x = literal::a1::parse()) return new literal(x);
+        if(auto x = literal::a2::parse()) return new literal(x);
         return nullptr;
     }
 
     std::string literal::to_string() {
         if(is_a0) return t0->to_string();
         if(is_a1) return t1->to_string();
+        if(is_a2) return t2->to_string();
         assert(false);
     }
 
@@ -5152,6 +6017,34 @@ namespace parser {
         return ans;
     }
 
+    escape::a0::b7* escape::a0::b7::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "'") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new escape::a0::b7(_t0);
+    }
+
+    std::string escape::a0::b7::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    escape::a0::b8* escape::a0::b8::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "0") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new escape::a0::b8(_t0);
+    }
+
+    std::string escape::a0::b8::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
     escape::a0* escape::a0::parse() {
         if(auto x = escape::a0::b0::parse()) return new escape::a0(x);
         if(auto x = escape::a0::b1::parse()) return new escape::a0(x);
@@ -5160,6 +6053,8 @@ namespace parser {
         if(auto x = escape::a0::b4::parse()) return new escape::a0(x);
         if(auto x = escape::a0::b5::parse()) return new escape::a0(x);
         if(auto x = escape::a0::b6::parse()) return new escape::a0(x);
+        if(auto x = escape::a0::b7::parse()) return new escape::a0(x);
+        if(auto x = escape::a0::b8::parse()) return new escape::a0(x);
         return nullptr;
     }
 
@@ -5171,6 +6066,8 @@ namespace parser {
         if(is_b4) return t4->to_string();
         if(is_b5) return t5->to_string();
         if(is_b6) return t6->to_string();
+        if(is_b7) return t7->to_string();
+        if(is_b8) return t8->to_string();
         assert(false);
     }
 
@@ -5189,6 +6086,478 @@ namespace parser {
         ans += t0;
         ans += t1->to_string();
         return ans;
+    }
+
+    symbol::a0* symbol::a0::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "[") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a0(_t0);
+    }
+
+    std::string symbol::a0::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a1* symbol::a1::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "]") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a1(_t0);
+    }
+
+    std::string symbol::a1::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a2* symbol::a2::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "{") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a2(_t0);
+    }
+
+    std::string symbol::a2::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a3* symbol::a3::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "}") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a3(_t0);
+    }
+
+    std::string symbol::a3::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a4* symbol::a4::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "(") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a4(_t0);
+    }
+
+    std::string symbol::a4::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a5* symbol::a5::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != ")") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a5(_t0);
+    }
+
+    std::string symbol::a5::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a6* symbol::a6::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "<") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a6(_t0);
+    }
+
+    std::string symbol::a6::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a7* symbol::a7::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != ">") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a7(_t0);
+    }
+
+    std::string symbol::a7::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a8* symbol::a8::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a8(_t0);
+    }
+
+    std::string symbol::a8::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a9* symbol::a9::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "|") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a9(_t0);
+    }
+
+    std::string symbol::a9::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a10* symbol::a10::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != ".") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a10(_t0);
+    }
+
+    std::string symbol::a10::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a11* symbol::a11::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != ",") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a11(_t0);
+    }
+
+    std::string symbol::a11::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a12* symbol::a12::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != ";") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a12(_t0);
+    }
+
+    std::string symbol::a12::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a13* symbol::a13::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "-") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a13(_t0);
+    }
+
+    std::string symbol::a13::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a14* symbol::a14::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "+") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a14(_t0);
+    }
+
+    std::string symbol::a14::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a15* symbol::a15::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "_") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a15(_t0);
+    }
+
+    std::string symbol::a15::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a16* symbol::a16::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "*") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a16(_t0);
+    }
+
+    std::string symbol::a16::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a17* symbol::a17::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "?") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a17(_t0);
+    }
+
+    std::string symbol::a17::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a18* symbol::a18::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != ":") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a18(_t0);
+    }
+
+    std::string symbol::a18::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a19* symbol::a19::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "!") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a19(_t0);
+    }
+
+    std::string symbol::a19::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a20* symbol::a20::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "@") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a20(_t0);
+    }
+
+    std::string symbol::a20::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a21* symbol::a21::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "#") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a21(_t0);
+    }
+
+    std::string symbol::a21::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a22* symbol::a22::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "$") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a22(_t0);
+    }
+
+    std::string symbol::a22::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a23* symbol::a23::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "%") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a23(_t0);
+    }
+
+    std::string symbol::a23::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a24* symbol::a24::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "^") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a24(_t0);
+    }
+
+    std::string symbol::a24::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a25* symbol::a25::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "&") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a25(_t0);
+    }
+
+    std::string symbol::a25::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a26* symbol::a26::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "/") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a26(_t0);
+    }
+
+    std::string symbol::a26::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a27* symbol::a27::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "~") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a27(_t0);
+    }
+
+    std::string symbol::a27::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol::a28* symbol::a28::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "`") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new symbol::a28(_t0);
+    }
+
+    std::string symbol::a28::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    symbol* symbol::parse() {
+        if(auto x = symbol::a0::parse()) return new symbol(x);
+        if(auto x = symbol::a1::parse()) return new symbol(x);
+        if(auto x = symbol::a2::parse()) return new symbol(x);
+        if(auto x = symbol::a3::parse()) return new symbol(x);
+        if(auto x = symbol::a4::parse()) return new symbol(x);
+        if(auto x = symbol::a5::parse()) return new symbol(x);
+        if(auto x = symbol::a6::parse()) return new symbol(x);
+        if(auto x = symbol::a7::parse()) return new symbol(x);
+        if(auto x = symbol::a8::parse()) return new symbol(x);
+        if(auto x = symbol::a9::parse()) return new symbol(x);
+        if(auto x = symbol::a10::parse()) return new symbol(x);
+        if(auto x = symbol::a11::parse()) return new symbol(x);
+        if(auto x = symbol::a12::parse()) return new symbol(x);
+        if(auto x = symbol::a13::parse()) return new symbol(x);
+        if(auto x = symbol::a14::parse()) return new symbol(x);
+        if(auto x = symbol::a15::parse()) return new symbol(x);
+        if(auto x = symbol::a16::parse()) return new symbol(x);
+        if(auto x = symbol::a17::parse()) return new symbol(x);
+        if(auto x = symbol::a18::parse()) return new symbol(x);
+        if(auto x = symbol::a19::parse()) return new symbol(x);
+        if(auto x = symbol::a20::parse()) return new symbol(x);
+        if(auto x = symbol::a21::parse()) return new symbol(x);
+        if(auto x = symbol::a22::parse()) return new symbol(x);
+        if(auto x = symbol::a23::parse()) return new symbol(x);
+        if(auto x = symbol::a24::parse()) return new symbol(x);
+        if(auto x = symbol::a25::parse()) return new symbol(x);
+        if(auto x = symbol::a26::parse()) return new symbol(x);
+        if(auto x = symbol::a27::parse()) return new symbol(x);
+        if(auto x = symbol::a28::parse()) return new symbol(x);
+        return nullptr;
+    }
+
+    std::string symbol::to_string() {
+        if(is_a0) return t0->to_string();
+        if(is_a1) return t1->to_string();
+        if(is_a2) return t2->to_string();
+        if(is_a3) return t3->to_string();
+        if(is_a4) return t4->to_string();
+        if(is_a5) return t5->to_string();
+        if(is_a6) return t6->to_string();
+        if(is_a7) return t7->to_string();
+        if(is_a8) return t8->to_string();
+        if(is_a9) return t9->to_string();
+        if(is_a10) return t10->to_string();
+        if(is_a11) return t11->to_string();
+        if(is_a12) return t12->to_string();
+        if(is_a13) return t13->to_string();
+        if(is_a14) return t14->to_string();
+        if(is_a15) return t15->to_string();
+        if(is_a16) return t16->to_string();
+        if(is_a17) return t17->to_string();
+        if(is_a18) return t18->to_string();
+        if(is_a19) return t19->to_string();
+        if(is_a20) return t20->to_string();
+        if(is_a21) return t21->to_string();
+        if(is_a22) return t22->to_string();
+        if(is_a23) return t23->to_string();
+        if(is_a24) return t24->to_string();
+        if(is_a25) return t25->to_string();
+        if(is_a26) return t26->to_string();
+        if(is_a27) return t27->to_string();
+        if(is_a28) return t28->to_string();
+        assert(false);
     }
 
     line_comment::a0::b0* line_comment::a0::b0::parse() {

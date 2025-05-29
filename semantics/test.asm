@@ -3,13 +3,197 @@
 _start:
     push %rbp
     mov %rsp, %rbp
+    # initialize local variable : char* hello_str
+    # calling function : malloc
+    mov $6, %rax
+    push %rax
+    mov $1, %rax
+    mov %rax, %rbx
+    pop %rax
+    imul %rbx, %rax
+    push %rax
+    call malloc
+    add $8, %rsp
+    push %rax
+    # done initialize local variable : char* hello_str
+    # assignment start
+    movb $104, %al
+    push %rax
+    lea -8(%rbp), %rax
+    push %rax
+    mov $0, %rax
+    mov %rax, %rbx
+    pop %rax
+    mov (%rax), %rax
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rbx
+    pop %rax
+    movb %al, (%rbx)
+    # assignment end
+    # assignment start
+    movb $101, %al
+    push %rax
+    lea -8(%rbp), %rax
+    push %rax
+    mov $1, %rax
+    mov %rax, %rbx
+    pop %rax
+    mov (%rax), %rax
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rbx
+    pop %rax
+    movb %al, (%rbx)
+    # assignment end
+    # assignment start
+    movb $108, %al
+    push %rax
+    lea -8(%rbp), %rax
+    push %rax
+    mov $2, %rax
+    mov %rax, %rbx
+    pop %rax
+    mov (%rax), %rax
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rbx
+    pop %rax
+    movb %al, (%rbx)
+    # assignment end
+    # assignment start
+    movb $108, %al
+    push %rax
+    lea -8(%rbp), %rax
+    push %rax
+    mov $3, %rax
+    mov %rax, %rbx
+    pop %rax
+    mov (%rax), %rax
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rbx
+    pop %rax
+    movb %al, (%rbx)
+    # assignment end
+    # assignment start
+    movb $111, %al
+    push %rax
+    lea -8(%rbp), %rax
+    push %rax
+    mov $4, %rax
+    mov %rax, %rbx
+    pop %rax
+    mov (%rax), %rax
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rbx
+    pop %rax
+    movb %al, (%rbx)
+    # assignment end
+    # assignment start
+    movb $0, %al
+    push %rax
+    lea -8(%rbp), %rax
+    push %rax
+    mov $5, %rax
+    mov %rax, %rbx
+    pop %rax
+    mov (%rax), %rax
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rbx
+    pop %rax
+    movb %al, (%rbx)
+    # assignment end
+    # initialize local variable : char* space_str
+    # calling function : malloc
+    mov $2, %rax
+    push %rax
+    mov $1, %rax
+    mov %rax, %rbx
+    pop %rax
+    imul %rbx, %rax
+    push %rax
+    call malloc
+    add $8, %rsp
+    push %rax
+    # done initialize local variable : char* space_str
+    # assignment start
+    movb $32, %al
+    push %rax
+    lea -16(%rbp), %rax
+    push %rax
+    mov $0, %rax
+    mov %rax, %rbx
+    pop %rax
+    mov (%rax), %rax
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rbx
+    pop %rax
+    movb %al, (%rbx)
+    # assignment end
+    # assignment start
+    movb $0, %al
+    push %rax
+    lea -16(%rbp), %rax
+    push %rax
+    mov $1, %rax
+    mov %rax, %rbx
+    pop %rax
+    mov (%rax), %rax
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rbx
+    pop %rax
+    movb %al, (%rbx)
+    # assignment end
+    # initialize local variable : char* endl_str
+    # calling function : malloc
+    mov $2, %rax
+    push %rax
+    mov $1, %rax
+    mov %rax, %rbx
+    pop %rax
+    imul %rbx, %rax
+    push %rax
+    call malloc
+    add $8, %rsp
+    push %rax
+    # done initialize local variable : char* endl_str
+    # assignment start
+    movb $10, %al
+    push %rax
+    lea -24(%rbp), %rax
+    push %rax
+    mov $0, %rax
+    mov %rax, %rbx
+    pop %rax
+    mov (%rax), %rax
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rbx
+    pop %rax
+    movb %al, (%rbx)
+    # assignment end
+    # assignment start
+    movb $0, %al
+    push %rax
+    lea -24(%rbp), %rax
+    push %rax
+    mov $1, %rax
+    mov %rax, %rbx
+    pop %rax
+    mov (%rax), %rax
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rbx
+    pop %rax
+    movb %al, (%rbx)
+    # assignment end
+    # calling function : puts_endl
+    mov -8(%rbp), %rax
+    push %rax
+    call puts_endl
+    add $8, %rsp
     # initialize local variable : int N
     mov $10, %rax
     push %rax
     # done initialize local variable : int N
     # initialize local variable : int** dp
     # calling function : malloc
-    mov -8(%rbp), %rax
+    mov -32(%rbp), %rax
     push %rax
     mov $8, %rax
     mov %rax, %rbx
@@ -26,9 +210,9 @@ _start:
     # done initialize local variable : int i
     # for loop start
 L0:
-    mov -24(%rbp), %rax
+    mov -48(%rbp), %rax
     push %rax
-    mov -8(%rbp), %rax
+    mov -32(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     cmp %rbx, %rax
@@ -38,7 +222,7 @@ L0:
     je L1
     # assignment start
     # calling function : malloc
-    mov -8(%rbp), %rax
+    mov -32(%rbp), %rax
     push %rax
     mov $8, %rax
     mov %rax, %rbx
@@ -48,9 +232,9 @@ L0:
     call malloc
     add $8, %rsp
     push %rax
-    lea -16(%rbp), %rax
+    lea -40(%rbp), %rax
     push %rax
-    mov -24(%rbp), %rax
+    mov -48(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     mov (%rax), %rax
@@ -60,13 +244,13 @@ L0:
     movq %rax, (%rbx)
     # assignment end
     # assignment start
-    mov -24(%rbp), %rax
+    mov -48(%rbp), %rax
     push %rax
     mov $1, %rax
     mov %rax, %rbx
     pop %rax
     add %rbx, %rax
-    mov %rax, -24(%rbp)
+    mov %rax, -48(%rbp)
     # assignment end
     jmp L0
 L1:
@@ -75,7 +259,7 @@ L1:
     # assignment start
     mov $1, %rax
     push %rax
-    lea -16(%rbp), %rax
+    lea -40(%rbp), %rax
     push %rax
     mov $0, %rax
     mov %rax, %rbx
@@ -98,9 +282,9 @@ L1:
     # done initialize local variable : int i
     # for loop start
 L2:
-    mov -24(%rbp), %rax
+    mov -48(%rbp), %rax
     push %rax
-    mov -8(%rbp), %rax
+    mov -32(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     cmp %rbx, %rax
@@ -114,9 +298,9 @@ L2:
     # done initialize local variable : int j
     # for loop start
 L4:
-    mov -32(%rbp), %rax
+    mov -56(%rbp), %rax
     push %rax
-    mov -8(%rbp), %rax
+    mov -32(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     cmp %rbx, %rax
@@ -125,7 +309,7 @@ L4:
     cmp $0, %rax
     je L5
     # if statement start
-    mov -24(%rbp), %rax
+    mov -48(%rbp), %rax
     push %rax
     mov $0, %rax
     mov %rax, %rbx
@@ -138,21 +322,21 @@ L4:
     jmp L7
 L6:
     # assignment start
-    mov -16(%rbp), %rax
+    mov -40(%rbp), %rax
     push %rax
-    mov -24(%rbp), %rax
+    mov -48(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     movq (%rax, %rbx, 8), %rax
     push %rax
-    mov -32(%rbp), %rax
+    mov -56(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     movq (%rax, %rbx, 8), %rax
     push %rax
-    mov -16(%rbp), %rax
+    mov -40(%rbp), %rax
     push %rax
-    mov -24(%rbp), %rax
+    mov -48(%rbp), %rax
     push %rax
     mov $1, %rax
     mov %rax, %rbx
@@ -162,7 +346,7 @@ L6:
     pop %rax
     movq (%rax, %rbx, 8), %rax
     push %rax
-    mov -32(%rbp), %rax
+    mov -56(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     movq (%rax, %rbx, 8), %rax
@@ -170,15 +354,15 @@ L6:
     pop %rax
     add %rbx, %rax
     push %rax
-    lea -16(%rbp), %rax
+    lea -40(%rbp), %rax
     push %rax
-    mov -24(%rbp), %rax
+    mov -48(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     mov (%rax), %rax
     lea (%rax, %rbx, 8), %rax
     push %rax
-    mov -32(%rbp), %rax
+    mov -56(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     mov (%rax), %rax
@@ -191,7 +375,7 @@ L6:
 L7:
     # if statement end
     # if statement start
-    mov -32(%rbp), %rax
+    mov -56(%rbp), %rax
     push %rax
     mov $0, %rax
     mov %rax, %rbx
@@ -204,26 +388,26 @@ L7:
     jmp L9
 L8:
     # assignment start
-    mov -16(%rbp), %rax
+    mov -40(%rbp), %rax
     push %rax
-    mov -24(%rbp), %rax
+    mov -48(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     movq (%rax, %rbx, 8), %rax
     push %rax
-    mov -32(%rbp), %rax
+    mov -56(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     movq (%rax, %rbx, 8), %rax
     push %rax
-    mov -16(%rbp), %rax
+    mov -40(%rbp), %rax
     push %rax
-    mov -24(%rbp), %rax
+    mov -48(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     movq (%rax, %rbx, 8), %rax
     push %rax
-    mov -32(%rbp), %rax
+    mov -56(%rbp), %rax
     push %rax
     mov $1, %rax
     mov %rax, %rbx
@@ -236,15 +420,15 @@ L8:
     pop %rax
     add %rbx, %rax
     push %rax
-    lea -16(%rbp), %rax
+    lea -40(%rbp), %rax
     push %rax
-    mov -24(%rbp), %rax
+    mov -48(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     mov (%rax), %rax
     lea (%rax, %rbx, 8), %rax
     push %rax
-    mov -32(%rbp), %rax
+    mov -56(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     mov (%rax), %rax
@@ -257,26 +441,26 @@ L8:
 L9:
     # if statement end
     # assignment start
-    mov -32(%rbp), %rax
+    mov -56(%rbp), %rax
     push %rax
     mov $1, %rax
     mov %rax, %rbx
     pop %rax
     add %rbx, %rax
-    mov %rax, -32(%rbp)
+    mov %rax, -56(%rbp)
     # assignment end
     jmp L4
 L5:
     add $8, %rsp
     # for loop end
     # assignment start
-    mov -24(%rbp), %rax
+    mov -48(%rbp), %rax
     push %rax
     mov $1, %rax
     mov %rax, %rbx
     pop %rax
     add %rbx, %rax
-    mov %rax, -24(%rbp)
+    mov %rax, -48(%rbp)
     # assignment end
     jmp L2
 L3:
@@ -288,9 +472,9 @@ L3:
     # done initialize local variable : int i
     # for loop start
 L10:
-    mov -24(%rbp), %rax
+    mov -48(%rbp), %rax
     push %rax
-    mov -8(%rbp), %rax
+    mov -32(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     cmp %rbx, %rax
@@ -304,9 +488,9 @@ L10:
     # done initialize local variable : int j
     # for loop start
 L12:
-    mov -32(%rbp), %rax
+    mov -56(%rbp), %rax
     push %rax
-    mov -8(%rbp), %rax
+    mov -32(%rbp), %rax
     mov %rax, %rbx
     pop %rax
     cmp %rbx, %rax
@@ -315,59 +499,59 @@ L12:
     cmp $0, %rax
     je L13
     # calling function : puti
+    mov -40(%rbp), %rax
+    push %rax
+    mov -48(%rbp), %rax
+    mov %rax, %rbx
+    pop %rax
+    movq (%rax, %rbx, 8), %rax
+    push %rax
+    mov -56(%rbp), %rax
+    mov %rax, %rbx
+    pop %rax
+    movq (%rax, %rbx, 8), %rax
+    push %rax
+    call puti
+    add $8, %rsp
+    # calling function : puts
     mov -16(%rbp), %rax
     push %rax
-    mov -24(%rbp), %rax
-    mov %rax, %rbx
-    pop %rax
-    movq (%rax, %rbx, 8), %rax
-    push %rax
-    mov -32(%rbp), %rax
-    mov %rax, %rbx
-    pop %rax
-    movq (%rax, %rbx, 8), %rax
-    push %rax
-    call puti
-    add $8, %rsp
-    # calling function : puti
-    mov $0, %rax
-    push %rax
-    call puti
+    call puts
     add $8, %rsp
     # assignment start
-    mov -32(%rbp), %rax
+    mov -56(%rbp), %rax
     push %rax
     mov $1, %rax
     mov %rax, %rbx
     pop %rax
     add %rbx, %rax
-    mov %rax, -32(%rbp)
+    mov %rax, -56(%rbp)
     # assignment end
     jmp L12
 L13:
     add $8, %rsp
     # for loop end
-    # calling function : puti_endl
-    mov $0, %rax
+    # calling function : puts
+    mov -24(%rbp), %rax
     push %rax
-    call puti_endl
+    call puts
     add $8, %rsp
     # assignment start
-    mov -24(%rbp), %rax
+    mov -48(%rbp), %rax
     push %rax
     mov $1, %rax
     mov %rax, %rbx
     pop %rax
     add %rbx, %rax
-    mov %rax, -24(%rbp)
+    mov %rax, -48(%rbp)
     # assignment end
     jmp L10
 L11:
     add $8, %rsp
     # for loop end
     mov $0, %rax
-    add $16, %rsp
+    add $40, %rsp
     push %rax
     call sys_exit
-    add $16, %rsp
+    add $40, %rsp
 

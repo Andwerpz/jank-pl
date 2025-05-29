@@ -177,6 +177,15 @@ struct SizeofLiteral : public Literal {
     void emit_asm() override;
 };
 
+struct CharLiteral : public Literal {
+    char val;
+    CharLiteral(char _val) {
+        val = _val;
+    }
+    Type* resolve_type() override;
+    void emit_asm() override;
+};
+
 struct Identifier {
     std::string name;
     Identifier(std::string _name) {
@@ -213,7 +222,7 @@ struct BaseType : public Type {
     int calc_size() override {
         if(name == "int") return 8;
         else if(name == "char") return 1;
-        assert(false);
+        assert(false);  
     }
 
     bool equals(const Type *other) const override {
@@ -1027,6 +1036,29 @@ Literal* Literal::convert(parser::literal *l) {
         Type *t = Type::convert(lit->t4);
         return new SizeofLiteral(t);
     }
+    else if(l->is_a2) { //char literal
+        char val;
+        parser::literal_char *lit = l->t2->t0;
+        if(lit->t1->is_b2) {    //escape
+            //"n" | "t" | "r" | "f" | "b" | "\"" | "\\" | "'" | "0"
+            parser::escape *e = lit->t1->t2->t0;  
+            char eid = e->to_string()[1];
+            if(eid == 'n') val = '\n';
+            else if(eid == 't') val = '\t';
+            else if(eid == 'r') val = '\r';
+            else if(eid == 'f') val = '\f';
+            else if(eid == 'b') val = '\b';
+            else if(eid == '\"') val = '\"';
+            else if(eid == '\\') val = '\\';
+            else if(eid == '\'') val = '\'';
+            else if(eid == '0') val = '\0';
+            else assert(false);
+        }
+        else {  //not escape
+            val = lit->to_string()[1];
+        }
+        return new CharLiteral(val);
+    }
     else assert(false);    
 }
 
@@ -1363,29 +1395,27 @@ Type* IntegerLiteral::resolve_type() {
 }
 
 Type* SizeofLiteral::resolve_type() {
-    std::cout << "SIZEOF LITERAL RESOLVE TYPE\n";
     return new BaseType("int");
 }
 
+Type* CharLiteral::resolve_type() {
+    return new BaseType("char");
+}
+
 Type* Expression::Primary::resolve_type() {
-    std::cout << "PRIMARY RESOLVE TYPE\n";
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *f = std::get<FunctionCall*>(val);
-        std::cout << "FUNCTION CALL : " << f->id->name << "\n";
         return f->resolve_type();
     }
     else if(std::holds_alternative<Identifier*>(val)) {
-        std::cout << "IDENTIFIER\n";
         Identifier *id = std::get<Identifier*>(val);
         return find_variable_type(id);
     }
     else if(std::holds_alternative<Literal*>(val)) {
-        std::cout << "LITERAL\n";
         Literal *l = std::get<Literal*>(val);
         return l->resolve_type();
     }
     else if(std::holds_alternative<Expression*>(val)) {
-        std::cout << "EXPRESSION\n";
         Expression *e = std::get<Expression*>(val);
         return e->resolve_type();
     }
@@ -1580,6 +1610,10 @@ void IntegerLiteral::emit_asm() {
 void SizeofLiteral::emit_asm() {
     int sz = type->calc_size();
     fout << indent() << "mov $" << sz << ", %rax\n";
+}
+
+void CharLiteral::emit_asm() {
+    fout << indent() << "movb $" << (int) val << ", %al\n";
 }
 
 void Expression::Primary::emit_asm() {
@@ -2328,8 +2362,6 @@ bool Program::is_well_formed() {
 
         // - sys functions
         declared_functions.push_back(new Function(new PointerType(new BaseType("void")), new Identifier("malloc"), {new BaseType("int")}));
-        declared_functions.push_back(new Function(new PointerType(new BaseType("char")), new Identifier("malloc_char"), {new BaseType("int")}));
-        declared_functions.push_back(new Function(new PointerType(new BaseType("int")), new Identifier("malloc_int"), {new BaseType("int")}));
         declared_functions.push_back(new Function(new PointerType(new BaseType("char")), new Identifier("int_to_string"), {new BaseType("int")}));
         declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts"), {new PointerType(new BaseType("char"))}));
         declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts_endl"), {new PointerType(new BaseType("char"))}));

@@ -5,6 +5,7 @@
 literal_sizeof = "sizeof" , ows , "(" , ows , type , ows , ")" ;
 literal_integer = < digit > ;
 literal_float = < digit > , "." , < digit > ;
-literal_char = "'" , ( letter | digit | " " ) , "'" ;
+literal_char = "'" , ( alpha | digit | escape | symbol | " " ) , "'" ;
+literal_string = "\"" , ( alpha | digit | escape | symbol | " " ) , "\"" ;
 
-literal = literal_integer | literal_sizeof ;
+literal = literal_integer | literal_sizeof | literal_char ;
