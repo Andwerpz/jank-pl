@@ -1,4 +1,4 @@
-// Date Generated : 05-29-2025 10:01:23
+// Date Generated : 05-29-2025 11:40:33
 #include <vector>
 #include <string>
 #include <cassert>
@@ -318,7 +318,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // literal_string = "\"" , ( alpha | digit | escape | symbol | " " ) , "\"" ;
+    // literal_string = "\"" , { alpha | digit | escape | symbol | " " } , "\"" ;
     struct literal_string {
         struct a0 {
             struct b0 {
@@ -395,9 +395,9 @@ namespace parser {
             std::string to_string();
         };
         std::string t0;
-        a0 *t1;
+        std::vector<a0*> t1;
         std::string t2;
-        literal_string(std::string _t0, a0 *_t1, std::string _t2) {
+        literal_string(std::string _t0, std::vector<a0*> _t1, std::string _t2) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -406,7 +406,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // literal = literal_integer | literal_sizeof | literal_char ;
+    // literal = literal_integer | literal_sizeof | literal_char | literal_string ;
     struct literal {
         struct a0 {
             literal_integer *t0;
@@ -432,12 +432,22 @@ namespace parser {
             static a2* parse();
             std::string to_string();
         };
+        struct a3 {
+            literal_string *t0;
+            a3(literal_string *_t0) {
+                t0 = _t0;
+            }
+            static a3* parse();
+            std::string to_string();
+        };
         bool is_a0 = false;
         a0 *t0;
         bool is_a1 = false;
         a1 *t1;
         bool is_a2 = false;
         a2 *t2;
+        bool is_a3 = false;
+        a3 *t3;
         literal(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
@@ -449,6 +459,10 @@ namespace parser {
         literal(a2 *_t2) {
             is_a2 = true;
             t2 = _t2;
+        }
+        literal(a3 *_t3) {
+            is_a3 = true;
+            t3 = _t3;
         }
         static literal* parse();
         std::string to_string();
@@ -3899,8 +3913,12 @@ namespace parser {
         push_stack();
         std::string _t0 = next_chars(1);
         if(_t0 != "\"") {pop_stack(); return nullptr;}
-        literal_string::a0 *_t1 = literal_string::a0::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::vector<literal_string::a0*> _t1;
+        while(true) {
+            literal_string::a0 *tmp = literal_string::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
         std::string _t2 = next_chars(1);
         if(_t2 != "\"") {pop_stack(); return nullptr;}
         rm_stack();
@@ -3910,7 +3928,7 @@ namespace parser {
     std::string literal_string::to_string() {
         std::string ans = "";
         ans += t0;
-        ans += t1->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
         ans += t2;
         return ans;
     }
@@ -3957,10 +3975,25 @@ namespace parser {
         return ans;
     }
 
+    literal::a3* literal::a3::parse() {
+        push_stack();
+        literal_string *_t0 = literal_string::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal::a3(_t0);
+    }
+
+    std::string literal::a3::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
     literal* literal::parse() {
         if(auto x = literal::a0::parse()) return new literal(x);
         if(auto x = literal::a1::parse()) return new literal(x);
         if(auto x = literal::a2::parse()) return new literal(x);
+        if(auto x = literal::a3::parse()) return new literal(x);
         return nullptr;
     }
 
@@ -3968,6 +4001,7 @@ namespace parser {
         if(is_a0) return t0->to_string();
         if(is_a1) return t1->to_string();
         if(is_a2) return t2->to_string();
+        if(is_a3) return t3->to_string();
         assert(false);
     }
 

@@ -1,24 +1,5 @@
 
 int main() {
-
-    char* hello_str = malloc(6 * sizeof(char));
-    hello_str[0] = 'h';
-    hello_str[1] = 'e';
-    hello_str[2] = 'l';
-    hello_str[3] = 'l';
-    hello_str[4] = 'o';
-    hello_str[5] = '\0';
-
-    char* space_str = malloc(2 * sizeof(char));
-    space_str[0] = ' ';
-    space_str[1] = '\0';
-
-    char* endl_str = malloc(2 * sizeof(char));
-    endl_str[0] = '\n';
-    endl_str[1] = '\0';
-
-    puts_endl(hello_str);
-
     int N = 10;
     int** dp = malloc(N * sizeof(int*));
     for(int i = 0; i < N; i = i + 1) dp[i] = malloc(N * sizeof(int));
@@ -32,10 +13,9 @@ int main() {
     for(int i = 0; i < N; i = i + 1) {
         for(int j = 0; j < N; j = j + 1) {
             puti(dp[i][j]);
-            puts(space_str);
+            puts(" ");
         }
-        puts(endl_str);
+        puts("\n");
     }
-
     return 0;
 }

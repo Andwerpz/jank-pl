@@ -128,6 +128,8 @@ CODE GENERATION
 struct Literal;
 struct IntegerLiteral;
 struct SizeofLiteral;
+struct CharLiteral;
+struct StringLiteral;
 struct Identifier;
 struct Type;
 struct BaseType;
@@ -180,6 +182,15 @@ struct SizeofLiteral : public Literal {
 struct CharLiteral : public Literal {
     char val;
     CharLiteral(char _val) {
+        val = _val;
+    }
+    Type* resolve_type() override;
+    void emit_asm() override;
+};
+
+struct StringLiteral : public Literal {
+    std::string val;
+    StringLiteral(std::string _val) {
         val = _val;
     }
     Type* resolve_type() override;
@@ -1025,6 +1036,23 @@ void pop_declaration_stack() {
     }
 }
 
+//"n" | "t" | "r" | "f" | "b" | "\"" | "\\" | "'" | "0"
+char escape_to_char(parser::escape *e) {
+    char val;
+    char eid = e->to_string()[1];
+    if(eid == 'n') val = '\n';
+    else if(eid == 't') val = '\t';
+    else if(eid == 'r') val = '\r';
+    else if(eid == 'f') val = '\f';
+    else if(eid == 'b') val = '\b';
+    else if(eid == '\"') val = '\"';
+    else if(eid == '\\') val = '\\';
+    else if(eid == '\'') val = '\'';
+    else if(eid == '0') val = '\0';
+    else assert(false);
+    return val;
+}
+
 // -- STRUCT FUNCTIONS --
 Literal* Literal::convert(parser::literal *l) {
     if(l->is_a0) {  //integer literal
@@ -1039,26 +1067,34 @@ Literal* Literal::convert(parser::literal *l) {
     else if(l->is_a2) { //char literal
         char val;
         parser::literal_char *lit = l->t2->t0;
-        if(lit->t1->is_b2) {    //escape
-            //"n" | "t" | "r" | "f" | "b" | "\"" | "\\" | "'" | "0"
-            parser::escape *e = lit->t1->t2->t0;  
-            char eid = e->to_string()[1];
-            if(eid == 'n') val = '\n';
-            else if(eid == 't') val = '\t';
-            else if(eid == 'r') val = '\r';
-            else if(eid == 'f') val = '\f';
-            else if(eid == 'b') val = '\b';
-            else if(eid == '\"') val = '\"';
-            else if(eid == '\\') val = '\\';
-            else if(eid == '\'') val = '\'';
-            else if(eid == '0') val = '\0';
-            else assert(false);
+        parser::literal_char::a0 *c = lit->t1;
+        if(c->is_b2) {    //escape
+            parser::escape *e = c->t2->t0;  
+            val = escape_to_char(e);
         }
         else {  //not escape
-            val = lit->to_string()[1];
+            val = c->to_string()[0];
         }
         return new CharLiteral(val);
     }
+    else if(l->is_a3) { //string literal    
+        parser::literal_string *lit = l->t3->t0;
+        std::vector<parser::literal_string::a0*> chars = lit->t1;
+        std::string val(chars.size(), ' ');
+        for(int i = 0; i < chars.size(); i++){
+            parser::literal_string::a0* c = chars[i];
+            char cchar;
+            if(c->is_b2) {  //escape
+                parser::escape *e = c->t2->t0;
+                cchar = escape_to_char(e);
+            }
+            else {
+                cchar = c->to_string()[0];
+            }
+            val[i] = cchar;
+        }
+        return new StringLiteral(val);
+    }   
     else assert(false);    
 }
 
@@ -1402,6 +1438,10 @@ Type* CharLiteral::resolve_type() {
     return new BaseType("char");
 }
 
+Type* StringLiteral::resolve_type() {
+    return new PointerType(new BaseType("char"));
+}
+
 Type* Expression::Primary::resolve_type() {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *f = std::get<FunctionCall*>(val);
@@ -1614,6 +1654,32 @@ void SizeofLiteral::emit_asm() {
 
 void CharLiteral::emit_asm() {
     fout << indent() << "movb $" << (int) val << ", %al\n";
+}
+
+void StringLiteral::emit_asm() {
+    //allocate memory
+    fout << indent() << "mov $" << val.size() + 1 << ", %rax\n";
+    fout << indent() << "push %rax\n";
+    fout << indent() << "call malloc\n";
+    fout << indent() << "add $8, %rsp\n";
+
+    //save start of string
+    fout << indent() << "push %rax\n";
+
+    //string index pointer to %rbx
+    fout << indent() << "mov %rax, %rbx\n";
+
+    //populate memory
+    for(int i = 0; i < val.size(); i++){
+        fout << indent() << "movb $" << (int) val[i] << ", %al\n";
+        emit_mem_store(1);
+        fout << indent() << "inc %rbx\n";
+    }
+    fout << indent() << "movb $0, %al\n";
+    emit_mem_store(1);
+
+    //retrieve start of string
+    fout << indent() << "pop %rax\n";
 }
 
 void Expression::Primary::emit_asm() {
