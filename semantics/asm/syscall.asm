@@ -9,8 +9,10 @@ sys_exit:
     mov 16(%rbp), %rdi      
     syscall
 
-# ssize_t write(int fd, const void buf, size_t count)
+# int write(int fd, void* buf, int count)
 # writes 'count' bytes from 'buf' to 'fd'
+# on success, returns the number of bytes written
+# on failure, returns -1
 .global sys_write
 sys_write:
     push %rbp
@@ -18,6 +20,21 @@ sys_write:
     mov $1, %rax            
     mov 32(%rbp), %rdi      
     mov 24(%rbp), %rsi      
+    mov 16(%rbp), %rdx
+    syscall
+    pop %rbp
+    ret
+
+# int read(int fd, void* buf, int count)
+# tries to read 'count' bytes from 'fd' to 'buf'. 
+# returns the actual amount of bytes read and increments the file pointer
+.global sys_read
+sys_read:
+    push %rbp
+    mov %rsp, %rbp
+    mov $0, %rax
+    mov 32(%rbp), %rdi
+    mov 24(%rbp), %rsi
     mov 16(%rbp), %rdx
     syscall
     pop %rbp

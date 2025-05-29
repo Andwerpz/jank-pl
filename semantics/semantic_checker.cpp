@@ -86,6 +86,57 @@ have to consider every case? Maybe there aren't too many cases?
  - when calling functions, arguments may have to be cast? what if it's ambiguous which function you're calling due to this?
  - I'll force the user to be clear about which function they're calling by making them cast their arguments if it's ambiguous. 
 
+ - STRUCTS
+okokok, onto implementing user defined types. Every user defined type will be a struct. The struct definition will be very 
+C++ like, except there is no public/private keyword. Just declaring struct member variables and functions. 
+Immediately, we can derive the memory layout from the order of struct member variables. Then, we can figure out the offset
+of any member variable within the struct by taking the sum of sizes of members before it. 
+
+I'll need a better way of storing stuff and keeping track of where everything is on the stack. For every type, should have 
+a method of initializing it to an arbitrary memory location. Then, if we happen to want to place it on the stack, we can simply
+increment the stack pointer. Where should this method be stored? In Type? Maybe I'll store it like I store type conversions. 
+It'll be like a constructor. 
+
+constructor should take in whatever arguments are needed to initialize the struct + memory address of where the struct should
+start. Result should be initialized struct at the specified memory location. constructors should be generated as a function
+that you can call. 'primitive' types should not get constructors as functions, instead they are caught as special cases. 
+for now, 'primitive' types are int, char, and any PointerType. 
+
+all constructors should return the thing they're constructing.
+
+right now, only 
+A foo = A();
+would make sense. However, this requires both a constructor and copy constructor to be implemented. Perhaps for now, 
+just require that both are implemented. We can do more shorthand and special case checking later. 
+
+struct A {
+    int a;
+    int b;
+    A A(int _a, int _b) {
+        a = _a;
+        b = _b;
+    }
+    A A(A other) {
+        a = other.a;
+        b = other.b;
+    }
+}
+
+so a struct is a collection of declarations and functions. Specific functions are marked as special (constructor, 
+copy constructor, default constructor) depending on their function signature. In all struct functions, all of the struct
+member variables are passed in as arguments to the function. 
+
+might also have to rework Expression. Currently, they all leave their result in %rax, which is fine for primitive types
+but doesn't work for larger types. If we store a pointer to the actual values, it could work, but it could also introduce
+more bugs and be less consistent as I'd need to specially check for each type whether or not it's on the stack or heap. 
+
+orrr, could make this much easier and say that non-primitive structs are pointers that point to the actual memory location. 
+so the struct IS the pointer and its destination. So before doing anything, will first need to check if the variable we're
+dealing with is primitive or not. Also, when passing structs into functions, will only need to pass the pointer portion around.
+
+note that pointers to structs will need to point to the pointer portion. This shouldn't be an issue as after the compiler 
+does its magic, we should be able to essentially treat the pointer portion as the actual value. 
+
 TODO
  - make sure that int main() is never called
  - make actual C++ style pass by copy and reference. 
