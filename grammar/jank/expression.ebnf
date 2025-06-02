@@ -2,8 +2,6 @@
 #include "function.ebnf" ;
 #include "literal.ebnf" ;
 
-(* math expressions *)
-(* for now, the result should always be an int *)
 (* TODO handle casting. This should be an unary operator, like "(" , type , ")" *)
 
 (* in order of precedence *)
@@ -20,8 +18,13 @@
 (* && *)
 (* || *)
 
+(* ok, going to treat functions calls as a case in expressions rather than its own thing. *)
+(* later, should also have assignment and all that stuff in expression *)
+(* either need to figure out the distinction between l-values and r-values, or just make everything an l-value *)
+(* currently, everything is treated like an r-value *)
+
 expr_primary = literal | function_call | identifier | "(" , ows , expression , ows , ")" ;
-expr_postfix = expr_primary , { ows , "[" , ows , expression , ows , "]" } ;
+expr_postfix = expr_primary , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , function_call | "->" , ows , function_call | "." , ows , identifier | "->" , ows , identifier ) } ;
 expr_unary = ( "+" | "-" | "~" | "!" ) , ows , expr_unary | expr_postfix ;
 expr_multiplicative = expr_unary , { ows , ( "*" | "/" | "%" ) , ows , expr_unary } ;
 expr_additive = expr_multiplicative , { ows , ( "+" | "-" ) , ows , expr_multiplicative } ;

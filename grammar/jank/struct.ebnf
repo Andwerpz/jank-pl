@@ -1,0 +1,4 @@
+#include "jank.ebnf" ;
+
+member_variable_declaration = type , rws , identifier , ";" ;
+struct_definition = "struct" , ows , base_type , ows , "{" , ows , { ( member_variable_declaration | function ) , ows } , "}" ;

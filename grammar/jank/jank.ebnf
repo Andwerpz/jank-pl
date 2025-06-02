@@ -1,5 +1,6 @@
 #include "expression.ebnf" ;
 #include "function.ebnf" ;
+#include "struct.ebnf" ;
 
 (* I loooove dylan janky *)
 (*
@@ -22,7 +23,7 @@ symbol = "[" | "]" | "{" | "}" | "(" | ")" | "<" | ">"                  (* any s
        | "*" | "?" | ":" | "!" | "@" | "#" | "$" | "%"
        | "^" | "&" | "/" | "~" | "`" ;
 
-line_comment = "//" , { alpha | digit | " " } , "\n" ;
+line_comment = "//" , { alpha | digit | symbol | "\"" | "'" | " " } , "\n" ;
 multiline_comment = "/*" , { alpha | digit | " " | "\n" } , "*/" ;
 
 (* 
@@ -39,12 +40,12 @@ type = pointer_type | base_type ;
 pointer_type = base_type , < "*" > ;
 base_type = alpha , { alpha | digit | "_" } ;
 
-identifier = alpha , { alpha | digit | "_" } ;
+identifier = ( alpha | "_" ) , { alpha | digit | "_" } ;
 
 (* int a = b *)
 declaration = type , rws , identifier , ows , "=" , ows , expression ;
 (* a = b *)
-assignment = identifier , { ows , "[" , ows , expression , ows , "]" } , ows , "=" , ows , expression ;
+assignment = identifier , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , identifier | "->" , ows , identifier ) } , ows , "=" , ows , expression ;
 
 (* int foo *)
 parameter = type , rws , identifier ;
@@ -54,14 +55,14 @@ argument_list = [ expression , { ows , "," , ows , expression } ] ;
 statement = simple_statement
           | control_statement
           | compound_statement ;
-simple_statement = declaration , ows , ";" 
-                 | function_call , ows , ";" 
-                 | "return" , [ rws , expression ] , ows , ";" 
-                 | assignment , ows , ";" ;
+simple_statement = "return" , [ rws , expression ] , ows , ";"
+                 | declaration , ows , ";" 
+                 | assignment , ows , ";" 
+                 | expression , ows , ";" ;
 control_statement = "if" , ows , "(" , ows ,  expression , ows , ")" , ows , statement , [ rws , "else" , rws , statement ]
                   | "while" , ows , "(" , ows , expression , ows , ")" , ows , statement 
                   | "for" , ows , "(" , ows , [ declaration ] , ows , ";" , ows , [ expression ] , ows , ";" , ows , [ assignment ] , ows , ")" , ows , statement ;
 compound_statement = "{" , ows , { statement , ows } , "}" ;
 
-program = { ows , function } , ows ;
+program = { ows , ( function | struct_definition ) } , ows ;
 

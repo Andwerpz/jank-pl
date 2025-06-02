@@ -1,0 +1,61 @@
+
+
+struct vec2 {
+    int x;
+    int y;
+
+    vec2 vec2() {
+        this.x = 0;
+        this.y = 0;
+    }
+    vec2 vec2(int _x, int _y) {
+        this.x = _x;
+        this.y = _y;
+    }
+    vec2 vec2(vec2 other) {
+        this.x = other.x;
+        this.y = other.y;
+    }
+
+    vec2 add(vec2 other) {
+        return vec2(this).addi(other);
+    }
+    vec2 addi(vec2 other) {
+        this.x = this.x + other.x;
+        this.y = this.y + other.y;
+        return this;
+    }
+
+    void print() {
+        puts("vec2 : ");
+        puti(this.x);
+        puts(" ");
+        puti(this.y);
+        puts("\n");
+    }
+}
+
+void test1() {
+    vec2* a = malloc(sizeof(vec2) * 1);
+    a[0] = vec2(10, 20);
+    a->print();
+}
+
+void test2() {
+    vec2 a = vec2(1, 2);
+    vec2 b = vec2(3, 4);
+    vec2 c = a.add(b);
+    vec2 d = vec2(1, 1).addi(b).addi(c);
+    a.print();
+    b.print();
+    c.print();
+    d.print();
+}
+
+int main() {
+    
+    test1();
+    test2();
+
+    return 0;
+}

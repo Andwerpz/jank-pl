@@ -10,6 +10,8 @@
 #include <optional>
 #include <map>
 #include <unordered_map>
+#include <unordered_set>
+#include <queue>
 #include "jank_parser.cpp"
 
 /*
@@ -137,6 +139,16 @@ dealing with is primitive or not. Also, when passing structs into functions, wil
 note that pointers to structs will need to point to the pointer portion. This shouldn't be an issue as after the compiler 
 does its magic, we should be able to essentially treat the pointer portion as the actual value. 
 
+
+ok, structs are mostly done, just have to implement some other features
+ - make it prohibited to assign to 'this' within a member function
+ - when assigning stuff, always use the copy constructor. Right now, I'm just copying over the reference
+
+
+what's the next feature? operator overloading for structs? I/O? templating? 
+should probably work on incorporating assignments into the expression structure. This means figuring out l-values and r-values. 
+
+
 TODO
  - make sure that int main() is never called
  - make actual C++ style pass by copy and reference. 
@@ -175,6 +187,10 @@ CODE GENERATION
  - the callee is responsible for setting up and returning the base pointer
 */
 
+static void hash_combine(size_t& seed, size_t value) {
+    seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+}
+
 // -- STRUCT DEFS --
 struct Literal;
 struct IntegerLiteral;
@@ -191,7 +207,7 @@ struct Assignment;
 struct Statement;
 struct SimpleStatement;
 struct DeclarationStatement;
-struct FunctionCallStatement;
+struct ExpressionStatement;
 struct ReturnStatement;
 struct AssignmentStatement;
 struct ControlStatement;
@@ -202,6 +218,7 @@ struct CompoundStatement;
 struct Function;
 struct FunctionSignature;
 struct FunctionCall;
+struct StructDefinition;
 struct Program;
 
 struct Variable;
@@ -255,10 +272,13 @@ struct Identifier {
     }
     static Identifier* convert(parser::identifier *i);
 
-    bool operator==(const Identifier& other) {
+    size_t hash() const {
+        return std::hash<std::string>()(name);
+    }
+    bool operator==(const Identifier& other) const {
         return name == other.name;
     }
-    bool operator!=(const Identifier& other) {
+    bool operator!=(const Identifier& other) const {
         return !(*this == other);
     }
 };
@@ -284,7 +304,7 @@ struct BaseType : public Type {
     int calc_size() override {
         if(name == "int") return 8;
         else if(name == "char") return 1;
-        assert(false);  
+        else return 8;
     }
 
     bool equals(const Type *other) const override {
@@ -304,6 +324,7 @@ struct BaseType : public Type {
 struct PointerType : public Type {
     Type *type;
     PointerType(Type *_type) {
+        assert(_type != nullptr);
         type = _type;
     }
     static PointerType* convert(parser::pointer_type *t);
@@ -339,7 +360,7 @@ struct Expression {
     };
 
     struct Postfix {
-        using val_op = std::variant<Expression*>;
+        using val_op = std::variant<Expression*, std::pair<std::string, FunctionCall*>, std::pair<std::string, Identifier*>>;
         Primary* term;
         std::vector<val_op> ops;
         Postfix(Primary *_term, std::vector<val_op> _ops) { 
@@ -502,10 +523,11 @@ struct Declaration {
 };
 
 struct Assignment {
+    using val_op = std::variant<Expression*, std::pair<std::string, Identifier*>>;
     Identifier *id;
-    std::vector<Expression*> index_expr;
+    std::vector<val_op> index_expr;
     Expression *expr;
-    Assignment(Identifier *_id, std::vector<Expression*> _index_expr, Expression *_expr) {
+    Assignment(Identifier *_id, std::vector<val_op> _index_expr, Expression *_expr) {
         id = _id;
         index_expr = _index_expr;
         expr = _expr;
@@ -536,10 +558,10 @@ struct DeclarationStatement : public SimpleStatement {
     bool is_always_returning() override;
 };
 
-struct FunctionCallStatement : public SimpleStatement {
-    FunctionCall *function_call;
-    FunctionCallStatement(FunctionCall *_function_call) {
-        function_call = _function_call;
+struct ExpressionStatement : public SimpleStatement {
+    Expression *expr;
+    ExpressionStatement(Expression *_expr) {
+        expr = _expr;
     }
     bool is_well_formed() override;
     bool is_always_returning() override;
@@ -625,16 +647,41 @@ struct CompoundStatement : public Statement {
     bool is_always_returning();
 };
 
-//name and input types. Does not include return type
+//enclosing type, name, and input types. Does not include return type
 struct FunctionSignature {
+    std::optional<Type*> enclosing_type;
     Identifier *id;
     std::vector<Type*> input_types;
-    FunctionSignature(Identifier *_id, std::vector<Type*> _input_types) {
+
+    //global functions
+    FunctionSignature(Identifier *_id, std::vector<Type*> _input_types) {   
+        enclosing_type = std::nullopt;
         id = _id;
         input_types = _input_types;
     }
+
+    //struct member functions
+    FunctionSignature(Type *_enclosing_type, Identifier *_id, std::vector<Type*> _input_types) {    
+        assert(_enclosing_type != nullptr);
+        enclosing_type = _enclosing_type;
+        id = _id;
+        input_types = _input_types;
+    }
+
+    size_t hash() const {
+        size_t h = 0;
+        if(enclosing_type.has_value()) hash_combine(h, enclosing_type.value()->hash());
+        else hash_combine(h, 0);
+        hash_combine(h, std::hash<std::string>()(id->name));
+        for(int i = 0; i < input_types.size(); i++) {
+            hash_combine(h, input_types[i]->hash());
+        }
+        return h;
+    }
     
-    bool operator==(FunctionSignature& other) {
+    bool operator==(const FunctionSignature& other) const {
+        if(enclosing_type.has_value() != other.enclosing_type.has_value()) return false;
+        if(enclosing_type.has_value() && *(enclosing_type.value()) != *(other.enclosing_type.value())) return false;
         if(*id != *(other.id)) return false;
         if(input_types.size() != other.input_types.size()) return false;
         for(int i = 0; i < input_types.size(); i++){
@@ -642,12 +689,13 @@ struct FunctionSignature {
         }
         return true;
     }
-    bool operator!=(FunctionSignature& other) {
+    bool operator!=(const FunctionSignature& other) const {
         return !(*this == other);
     }
 
     std::string to_string() {
         std::string ans = "";
+        if(enclosing_type.has_value()) ans += enclosing_type.value()->to_string() + "::";
         ans += id->name;
         ans += "(";
         for(int i = 0; i < input_types.size(); i++) {
@@ -669,45 +717,70 @@ struct Function {
         }
         static Parameter* convert(parser::parameter *p);
     };
-
-    Identifier *id;
+    
+    std::optional<Type*> enclosing_type;
     Type *type;
-    FunctionSignature *fs;
+    Identifier *id;
     std::vector<Parameter*> parameters;
     CompoundStatement *body;
+
+    //global functions
     Function(Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
-        std::vector<Type*> input_types;
-        for(int i = 0; i < _parameters.size(); i++) input_types.push_back(_parameters[i]->type);
-        fs = new FunctionSignature(_id, input_types);
+        enclosing_type = std::nullopt;
         id = _id;
         type = _type;
         parameters = _parameters;
         body = _body;
+
+        assert(body != nullptr);
     }   
+
+    //struct member functions
+    Function(Type *_enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
+        enclosing_type = _enclosing_type;
+        id = _id;
+        type = _type;
+        parameters = _parameters;
+        body = _body;
+
+        assert(body != nullptr);
+    }
 
     //use when inputting pre-defined asm functions
     Function(Type *_type, Identifier *_id, std::vector<Type*> input_types) {
-        fs = new FunctionSignature(_id, input_types);
+        enclosing_type = std::nullopt;
         id = _id;
         type = _type;
+        for(int i = 0; i < input_types.size(); i++){
+            parameters.push_back(new Parameter(input_types[i], new Identifier("v" + std::to_string(i))));
+        }
+        body = nullptr;
     }
 
     static Function* convert(parser::function *f);
     bool is_well_formed();
+    FunctionSignature* resolve_function_signature() const;
 
     //just checks if the function signature matches
-    bool operator==(Function& other) {
-        return *fs == *(other.fs);
+    bool operator==(const Function& other) const {
+        return *(resolve_function_signature()) == *(other.resolve_function_signature());
     }
-    bool operator!=(Function& other) {
+    bool operator!=(const Function& other) const {
         return !(*this == other);
     }
 };
 
 struct FunctionCall {
+    std::optional<Type*> target_type;
     Identifier *id;
     std::vector<Expression*> argument_list;
     FunctionCall(Identifier *_id, std::vector<Expression*> _argument_list) {
+        target_type = std::nullopt;
+        id = _id;
+        argument_list = _argument_list;
+    }
+    FunctionCall(Type *_target_type, Identifier *_id, std::vector<Expression*> _argument_list) {
+        target_type = _target_type;
         id = _id;
         argument_list = _argument_list;
     }
@@ -717,11 +790,34 @@ struct FunctionCall {
     void emit_asm();
 };
 
-//right now, a program is just a collection of functions. 
-//Later, we'll introduce user defined types (structs)
-struct Program {
+struct StructDefinition {
+    struct MemberVariable {
+        Type *type;
+        Identifier *id;
+        MemberVariable(Type *_type, Identifier *_id) {
+            type = _type;
+            id = _id;
+        }
+        static MemberVariable* convert(parser::member_variable_declaration *mvd);
+    };
+
+    Type *type;
+    std::vector<MemberVariable*> member_variables;
     std::vector<Function*> functions;
-    Program(std::vector<Function*> _functions) {
+    StructDefinition(Type *_type, std::vector<MemberVariable*> _member_variables, std::vector<Function*> _functions) {
+        type = _type;
+        member_variables = _member_variables;
+        functions = _functions;
+    }
+    static StructDefinition* convert(parser::struct_definition *s);
+    bool is_well_formed();
+};
+
+struct Program {
+    std::vector<StructDefinition*> structs;
+    std::vector<Function*> functions;
+    Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions) {
+        structs = _structs;
         functions = _functions;
     }
     static Program* convert(parser::program *p);
@@ -729,68 +825,57 @@ struct Program {
 };
 
 // -- SEMANTIC ANALYSIS + CODE GENERATION CONTROLLER --
-std::string indent() {
-    return "    ";  //4 spaces
-}
+struct Variable;
+struct TypeConversionKey;
+struct TypeConversion;
+struct StructLayout;
+
+std::string indent();
+char escape_to_char(parser::escape *e);
+std::string create_new_label();
+void emit_retrieve_array(int sz);
+void emit_write_array(int sz);
+void emit_mem_retrieve(int sz);
+void emit_mem_store(int sz);
+Type* find_resulting_type(Type *left, std::string op, Type *right); //binary operators
+TypeConversion* find_type_conversion(Type *left, std::string op, Type *right);
+Type* find_resulting_type(std::string op, Type* right); //left unary operators
+TypeConversion* find_type_conversion(std::string op, Type* right);
+Type* find_resulting_type(Type* from, Type* to);    //casting
+TypeConversion* find_type_conversion(Type* from, Type* to); 
+Type* find_variable_type(Identifier *id);
+Type* find_function_type(FunctionSignature *fs);
+bool is_function_constructor(const Function *f);
+bool is_type_declared(Type *t);
+bool is_type_primitive(Type *t);
+bool is_function_declared(FunctionSignature *fs);
+bool is_variable_declared(Identifier *id);
+Function* get_function(FunctionSignature *fs);
+std::string get_function_label(FunctionSignature *fs);
+Variable* get_variable(Identifier *id);
+bool is_identifier_used(Identifier *id);
+bool add_type(Type *t);
+bool add_primitive_type(Type *t);
+bool add_function(Function *f);
+bool add_sys_function(Function *f);
+Variable* add_variable(Type *t, Identifier *id);
+void remove_variable(Identifier *id);
+void push_declaration_stack();
+void pop_declaration_stack();
+StructLayout* get_struct_layout(Type *t);
+bool add_struct_layout(Type *t, StructLayout *sl);
+void emit_initialize_primitive(Type *t);
+void emit_initialize_struct(Type *t);
 
 struct Variable {
     Type *type;
     Identifier *id;
-    int stack_offset;
+    int stack_offset;  
     Variable(Type *_type, Identifier *_id) {
         id = _id;
         type = _type;
     }
 };
-
-std::ofstream fout("test.asm");
-
-Function* enclosing_function;
-std::vector<Type*> declared_types;
-std::vector<Function*> declared_functions;
-std::vector<Variable*> declared_variables;
-std::stack<std::vector<Variable*>> declaration_stack;
-
-int local_var_stack_offset;
-int label_counter;
-
-//adds some helpful (?) comments in the generated asm. 
-bool asm_debug = true;
-
-std::string create_new_label() {
-    std::string ans = "L" + std::to_string(label_counter++);
-    return ans;
-}
-
-//expects %rax = array start, %rbx = array index
-//will put return value into %rax
-void emit_retrieve_array(int sz) {
-    if(sz == 1) fout << indent() << "movb (%rax, %rbx, 1), %al\n";
-    else if(sz == 2) fout << indent() << "movw (%rax, %rbx, 2), %ax\n";
-    else if(sz == 4) fout << indent() << "movl (%rax, %rbx, 4), %eax\n";
-    else if(sz == 8) fout << indent() << "movq (%rax, %rbx, 8), %rax\n";
-    else assert(false);  //TODO : figure out what happens when struct size is > 8 bytes. 
-}
-
-//expects %rax = array start, %rbx = array index, %rcx = value
-//writes %rcx (or whatever portion of %rcx) into array
-void emit_write_array(int sz) {
-    if(sz == 1) fout << indent() << "movb %cl, (%rax, %rbx, 1)\n";
-    else if(sz == 2) fout << indent() << "movw %cx, (%rax, %rbx, 2)\n";
-    else if(sz == 4) fout << indent() << "movl %ecx, (%rax, %rbx, 4)\n";
-    else if(sz == 8) fout << indent() << "movq %rcx, (%rax, %rbx, 8)\n";
-    else assert(false);
-}
-
-//expects %rax = value, %rbx = mem address
-//stores %rax into (%rbx)
-void emit_mem_store(int sz) {
-    if(sz == 1) fout << indent() << "movb %al, (%rbx)\n";
-    else if(sz == 2) fout << indent() << "movw %ax, (%rbx)\n";
-    else if(sz == 4) fout << indent() << "movl %eax, (%rbx)\n";
-    else if(sz == 8) fout << indent() << "movq %rax, (%rbx)\n";
-    else assert(false);
-}
 
 struct TypeConversionKey {
     std::optional<Type*> left;
@@ -842,10 +927,50 @@ namespace std {
             hash_combine(seed, std::hash<std::string>()(key.op));
             return seed;
         }
-    private:
-        // Helper function to combine hashes
-        static void hash_combine(size_t& seed, size_t value) {
-            seed ^= value + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    };
+
+    template<>
+    struct hash<Type*> {
+        size_t operator()(const Type *type) const {
+            if(type == nullptr) return 0;
+            return type->hash();
+        }
+    };
+    template<>
+    struct equal_to<Type*> {
+        bool operator()(const Type* lhs, const Type* rhs) const {
+            if (lhs == nullptr || rhs == nullptr) return lhs == rhs;
+            return lhs->equals(rhs);
+        }
+    };
+
+    template<>
+    struct hash<FunctionSignature*> {
+        size_t operator()(const FunctionSignature *fs) const {
+            if(fs == nullptr) return 0;
+            return fs->hash();
+        }
+    };
+    template<> 
+    struct equal_to<FunctionSignature*> {
+        bool operator()(const FunctionSignature *lhs, const FunctionSignature *rhs) const { 
+            if(lhs == nullptr || rhs == nullptr) return lhs == rhs;
+            return *lhs == *rhs;
+        }
+    };
+
+    template<>
+    struct hash<Identifier*> {
+        size_t operator()(const Identifier *id) const {
+            if(id == nullptr) return 0;
+            return id->hash();
+        }
+    };
+    template<>
+    struct equal_to<Identifier*> {
+        bool operator()(const Identifier *lhs, const Identifier *rhs) const {
+            if(lhs == nullptr || rhs == nullptr) return lhs == rhs;
+            return *lhs == *rhs;
         }
     };
 }
@@ -870,7 +995,254 @@ struct TypeConversion {
     void emit_asm();
 };
 
+//holds information on where all the stuff is supposed to go within the heap portion of the struct
+// - for every identifier, stores the relative offset within the struct
+// - also holds the total size of the heap portion in bytes
+struct StructLayout {
+    std::vector<StructDefinition::MemberVariable*> member_variables;
+    std::unordered_map<Identifier*, int> offset_map;
+    int size;
+    StructLayout(std::vector<StructDefinition::MemberVariable*> _member_variables, std::unordered_map<Identifier*, int> _offset_map, int _size) {
+        member_variables = _member_variables;
+        offset_map = _offset_map;
+        size = _size;
+        assert(member_variables.size() == offset_map.size());
+    }
+
+    int get_offset(Identifier *id) {
+        std::cout << "TRY GET OFFSET : " << id->name << std::endl;
+        assert(offset_map.count(id));
+        return offset_map[id];
+    }
+
+    Type* get_type(Identifier *id) {
+        for(int i = 0; i < member_variables.size(); i++){
+            if(*id == *(member_variables[i]->id)) {
+                return member_variables[i]->type;
+            }
+        }
+        return nullptr;
+    }
+
+    //total size of 'main data' portion of heap struct
+    int get_size() {
+        return size;
+    }
+
+    //offset from start of heap struct to pointer on heap
+    int get_ptr_offset() {
+        return size;
+    }
+};
+
+std::ofstream fout("test.asm");
+
+Function* enclosing_function;
+std::vector<Type*> declared_types;
+std::unordered_set<Type*> primitive_base_types;
+std::unordered_map<Type*, StructLayout*> struct_layout_map;
+std::vector<Function*> declared_functions;
+std::unordered_map<FunctionSignature*, std::string> function_label_map;
+std::vector<Variable*> declared_variables;
+std::stack<std::vector<Variable*>> declaration_stack;
 std::unordered_map<TypeConversionKey, TypeConversion> conversion_map;
+
+int local_var_stack_offset;
+int label_counter;
+
+//adds some helpful (?) comments in the generated asm. 
+bool asm_debug = true;
+
+void reset_controller() {
+    // - reset semantic controller
+    enclosing_function = nullptr;
+    declared_types.clear();
+    primitive_base_types.clear();
+    struct_layout_map.clear();
+
+    declared_functions.clear();
+    function_label_map.clear();
+    
+    declared_variables.clear();
+    while(declaration_stack.size()) declaration_stack.pop();
+    conversion_map.clear();
+
+    local_var_stack_offset = 0;
+    label_counter = 0;
+
+    // - sys functions
+    add_sys_function(new Function(new PointerType(new BaseType("void")), new Identifier("malloc"), {new BaseType("int")}));
+    add_sys_function(new Function(new PointerType(new BaseType("char")), new Identifier("int_to_string"), {new BaseType("int")}));
+    add_sys_function(new Function(new BaseType("void"), new Identifier("puts"), {new PointerType(new BaseType("char"))}));
+    add_sys_function(new Function(new BaseType("void"), new Identifier("puts_endl"), {new PointerType(new BaseType("char"))}));
+    add_sys_function(new Function(new BaseType("void"), new Identifier("puti"), {new BaseType("int")}));
+    add_sys_function(new Function(new BaseType("void"), new Identifier("puti_endl"), {new BaseType("int")}));
+
+    // - primitive types
+    Type *p_int = new BaseType("int");
+    Type *p_char = new BaseType("char");
+    Type *p_void = new BaseType("void");
+    add_primitive_type(p_int);
+    add_primitive_type(p_char);
+    add_primitive_type(p_void);
+
+    // - populate conversion map
+    conversion_map[{"+", p_int}] = {p_int, {}};
+    conversion_map[{"-", p_int}] = {p_int, {"neg %rax"}};
+    conversion_map[{"~", p_int}] = {p_int, {"not %rax"}};
+    conversion_map[{"!", p_int}] = {p_int, {
+        "test %rax, %rax",
+        "sete %al",
+        "movzx %al, %rax",
+    }};
+    conversion_map[{p_int, "+", p_int}] = {p_int, {"add %rbx, %rax"}};
+    conversion_map[{p_int, "-", p_int}] = {p_int, {"sub %rbx, %rax"}};
+    conversion_map[{p_int, "*", p_int}] = {p_int, {"imul %rbx, %rax"}};
+    conversion_map[{p_int, "/", p_int}] = {p_int, {
+        "cqo",
+        "idiv %rbx",
+    }};
+    conversion_map[{p_int, "%", p_int}] = {p_int, {
+        "cqo",
+        "idiv %rbx",
+        "mov %rdx, %rax",
+    }};
+    conversion_map[{p_int, "&", p_int}] = {p_int, {"and %rbx, %rax"}};
+    conversion_map[{p_int, "^", p_int}] = {p_int, {"xor %rbx, %rax"}};
+    conversion_map[{p_int, "|", p_int}] = {p_int, {"or %rbx, %rax"}};
+    conversion_map[{p_int, "&&", p_int}] = {p_int, {
+        "test %rax, %rax\n",
+        "setne %al\n",
+        "movzx %al, %rax\n",
+        "test %rbx, %rbx\n",
+        "setne %bl\n",
+        "movzx %bl, %rbx\n",
+        "and %rbx, %rax\n",
+    }};
+    conversion_map[{p_int, "||", p_int}] = {p_int, {
+        "test %rax, %rax\n",
+        "setne %al\n",
+        "movzx %al, %rax\n",
+        "test %rbx, %rbx\n",
+        "setne %bl\n",
+        "movzx %bl, %rbx\n",
+        "or %rbx, %rax\n",
+    }};
+    conversion_map[{p_int, "==", p_int}] = {p_int, {
+        "cmp %rbx, %rax",
+        "sete %al",
+        "movzx %al, %rax",
+    }};
+    conversion_map[{p_int, "!=", p_int}] = {p_int, {
+        "cmp %rbx, %rax",
+        "setne %al",
+        "movzx %al, %rax",
+    }};
+    conversion_map[{p_int, "<", p_int}] = {p_int, {
+        "cmp %rbx, %rax",
+        "setl %al",
+        "movzx %al, %rax",
+    }};
+    conversion_map[{p_int, ">", p_int}] = {p_int, {
+        "cmp %rbx, %rax",
+        "setg %al",
+        "movzx %al, %rax",
+    }};
+    conversion_map[{p_int, "<=", p_int}] = {p_int, {
+        "cmp %rbx, %rax",
+        "setle %al",
+        "movzx %al, %rax",
+    }};
+    conversion_map[{p_int, ">=", p_int}] = {p_int, {
+        "cmp %rbx, %rax",
+        "setge %al",
+        "movzx %al, %rax",
+    }};
+    conversion_map[{p_int, "<<", p_int}] = {p_int, {
+        "push %rcx",
+        "mov %rbx, %rcx",
+        "sal %cl, %rax",
+        "pop %rcx",
+    }};
+    conversion_map[{p_int, ">>", p_int}] = {p_int, {
+        "push %rcx",
+        "mov %rbx, %rcx",
+        "sar %cl, %rax",
+        "pop %rcx",
+    }};
+}
+
+std::string indent() {
+    return "    ";  //4 spaces
+}
+
+std::string create_new_label() {
+    std::string ans = "L" + std::to_string(label_counter++);
+    return ans;
+}
+
+//"n" | "t" | "r" | "f" | "b" | "\"" | "\\" | "'" | "0"
+char escape_to_char(parser::escape *e) {
+    char val;
+    char eid = e->to_string()[1];
+    if(eid == 'n') val = '\n';
+    else if(eid == 't') val = '\t';
+    else if(eid == 'r') val = '\r';
+    else if(eid == 'f') val = '\f';
+    else if(eid == 'b') val = '\b';
+    else if(eid == '\"') val = '\"';
+    else if(eid == '\\') val = '\\';
+    else if(eid == '\'') val = '\'';
+    else if(eid == '0') val = '\0';
+    else assert(false);
+    return val;
+}
+
+bool is_type_primitive(Type *t) {
+    if(primitive_base_types.count(t)) return true; //is it explicitly mentioned?
+    if(dynamic_cast<PointerType*>(t)) return true; //is it a pointer?
+    return false;
+}
+
+//expects %rax = array start, %rbx = array index
+//will put return value into %rax
+void emit_retrieve_array(int sz) {
+    if(sz == 1) fout << indent() << "movb (%rax, %rbx, 1), %al\n";
+    else if(sz == 2) fout << indent() << "movw (%rax, %rbx, 2), %ax\n";
+    else if(sz == 4) fout << indent() << "movl (%rax, %rbx, 4), %eax\n";
+    else if(sz == 8) fout << indent() << "movq (%rax, %rbx, 8), %rax\n";
+    else assert(false);
+}
+
+//expects %rax = array start, %rbx = array index, %rcx = value
+//writes %rcx (or whatever portion of %rcx) into array
+void emit_write_array(int sz) {
+    if(sz == 1) fout << indent() << "movb %cl, (%rax, %rbx, 1)\n";
+    else if(sz == 2) fout << indent() << "movw %cx, (%rax, %rbx, 2)\n";
+    else if(sz == 4) fout << indent() << "movl %ecx, (%rax, %rbx, 4)\n";
+    else if(sz == 8) fout << indent() << "movq %rcx, (%rax, %rbx, 8)\n";
+    else assert(false);
+}
+
+//expects %rax = address
+//will put return value into %rax
+void emit_mem_retrieve(int sz) {
+    if(sz == 1) fout << indent() << "movb (%rax), %al\n";
+    else if(sz == 2) fout << indent() << "movw (%rax), %ax\n";
+    else if(sz == 4) fout << indent() << "movl (%rax), %eax\n";
+    else if(sz == 8) fout << indent() << "movq (%rax), %rax\n";
+    else assert(false);
+}
+
+//expects %rax = value, %rbx = mem address
+//stores %rax into (%rbx)
+void emit_mem_store(int sz) {
+    if(sz == 1) fout << indent() << "movb %al, (%rbx)\n";
+    else if(sz == 2) fout << indent() << "movw %ax, (%rbx)\n";
+    else if(sz == 4) fout << indent() << "movl %eax, (%rbx)\n";
+    else if(sz == 8) fout << indent() << "movq %rax, (%rbx)\n";
+    else assert(false);
+}
 
 Type* find_resulting_type(Type* left, std::string op, Type* right) {
     if(left == nullptr || right == nullptr) return nullptr;
@@ -986,9 +1358,17 @@ Type* find_variable_type(Identifier *id) {
 
 Type* find_function_type(FunctionSignature *fs) {
     for(int i = 0; i < declared_functions.size(); i++){
-        if(*(declared_functions[i]->fs) == *fs) return declared_functions[i]->type;
+        if(*(declared_functions[i]->resolve_function_signature()) == *fs) return declared_functions[i]->type;
     }
     return nullptr;
+}
+
+// - has enclosing type
+// - return type equals the enclosing type
+// - name of function equals type name
+bool is_function_constructor(const Function *f) {
+    // FunctionSignature *fs = f->resolve_function_signature();
+    return f->enclosing_type.has_value() && *(f->type) == *(f->enclosing_type.value()) && f->id->name == f->type->to_string();
 }
 
 bool is_type_declared(Type *t) {
@@ -1001,7 +1381,7 @@ bool is_type_declared(Type *t) {
 
 bool is_function_declared(FunctionSignature *fs) {
     for(int i = 0; i < declared_functions.size(); i++){
-        if(*fs == *(declared_functions[i]->fs)) {
+        if(*fs == *(declared_functions[i]->resolve_function_signature())) {
             return true;
         }
     }
@@ -1020,11 +1400,16 @@ bool is_variable_declared(Identifier *id) {
 Function* get_function(FunctionSignature *fs) {
     std::cout << "GET FUNCTION : " << fs->to_string() << "\n";
     for(int i = 0; i < declared_functions.size(); i++){
-        if(*fs == *(declared_functions[i]->fs)) {
+        if(*fs == *(declared_functions[i]->resolve_function_signature())) {
             return declared_functions[i];
         }
     }
     return nullptr;
+}
+
+std::string get_function_label(FunctionSignature *fs) {
+    assert(function_label_map.count(fs));
+    return function_label_map[fs];
 }
 
 Variable* get_variable(Identifier *id) {
@@ -1048,10 +1433,45 @@ bool is_identifier_used(Identifier *id) {
     return false;
 }
 
+bool add_type(Type *t) {
+    assert(t != nullptr);
+    if(is_type_declared(t)) return false;
+    declared_types.push_back(t);
+    std::cout << "ADD TYPE : " << t->to_string() << "\n";
+    return true;
+}
+
+bool add_primitive_type(Type *t) {
+    assert(t != nullptr);
+    if(is_type_declared(t)) return false;
+    declared_types.push_back(t);
+    primitive_base_types.insert(t);
+    return true;
+}
+
+bool add_function(Function *f){
+    assert(f != nullptr);
+    FunctionSignature *fs = f->resolve_function_signature();
+    if(is_function_declared(fs)) return false;
+    declared_functions.push_back(f);
+    function_label_map.insert({fs, create_new_label()});
+    std::cout << "ADD FUNCTION : "<< fs->to_string() << std::endl;
+    return true;
+}
+
+bool add_sys_function(Function *f) {
+    assert(f != nullptr);
+    FunctionSignature *fs = f->resolve_function_signature();
+    if(is_function_declared(fs)) assert(false);
+    declared_functions.push_back(f);
+    function_label_map.insert({fs, f->id->name});
+    return true;
+}
+
 Variable* add_variable(Type *t, Identifier *id) {
     assert(t != nullptr && id != nullptr);
     assert(declaration_stack.size() != 0);
-    std::cout << "ADDING VARIABLE : " << id->name << std::endl;
+    std::cout << "ADDING VARIABLE : " << t->to_string() << " " << id->name << std::endl;
     if(is_identifier_used(id)) return nullptr;
     Variable *v = new Variable(t, id);
     declared_variables.push_back(v);
@@ -1087,21 +1507,95 @@ void pop_declaration_stack() {
     }
 }
 
-//"n" | "t" | "r" | "f" | "b" | "\"" | "\\" | "'" | "0"
-char escape_to_char(parser::escape *e) {
-    char val;
-    char eid = e->to_string()[1];
-    if(eid == 'n') val = '\n';
-    else if(eid == 't') val = '\t';
-    else if(eid == 'r') val = '\r';
-    else if(eid == 'f') val = '\f';
-    else if(eid == 'b') val = '\b';
-    else if(eid == '\"') val = '\"';
-    else if(eid == '\\') val = '\\';
-    else if(eid == '\'') val = '\'';
-    else if(eid == '0') val = '\0';
-    else assert(false);
-    return val;
+StructLayout* get_struct_layout(Type *t) {
+    assert(t != nullptr);
+    assert(struct_layout_map.count(t));
+    return struct_layout_map[t];
+}
+
+bool add_struct_layout(Type *t, StructLayout *sl) {
+    assert(t != nullptr);
+    assert(sl != nullptr);
+    assert(!struct_layout_map.count(t));
+    struct_layout_map.insert({t, sl});
+    return true;
+}
+
+//allocates sz_bytes memory by calling malloc. Resulting address is in %rax
+void emit_malloc(int sz_bytes) {
+    fout << indent() << "mov $" << sz_bytes << ", %rax\n";
+    fout << indent() << "push %rax\n";
+    fout << indent() << "call malloc\n";
+    fout << indent() << "add $8, %rsp\n";
+}
+
+//expects memory address in %rax, places primitive into address, returns with memory address in %rax
+//expects memory to already have been allocated
+void emit_initialize_primitive(Type *t) {
+    if(*t == BaseType("int")) {
+        fout << indent() << "movq $0, (%rax)\n";
+    }
+    else if(*t == BaseType("char")) {
+        fout << indent() << "movb $0, (%rax)\n";
+    }
+    else if(dynamic_cast<PointerType*>(t) != nullptr) {
+        fout << indent() << "movq $0, (%rax)\n";
+    }
+    else {
+        std::cout << "Tried to initialize unrecognized primitive type : " << t->to_string() << std::endl;
+        assert(false);
+    }
+}
+
+//allocates new memory on the heap then places the specified struct there
+//resulting heap pointer address is in %rax, actual struct address is in %rbx
+//just default initializes all member variables
+void emit_initialize_struct(Type *t) {
+    assert(t != nullptr);
+    assert(!is_type_primitive(t));
+    StructLayout *sl = get_struct_layout(t);
+
+    if(asm_debug) fout << indent() << "# initialize struct memory " << t->to_string() << "\n";
+
+    //allocate the memory, +8 for the pointer on heap
+    emit_malloc(sl->get_size() + 8);
+
+    //save actual struct loc for later
+    //%rax is the pointer for the current location in the struct
+    fout << indent() << "push %rax\n";
+
+    //initialize member variables
+    for(int i = 0; i < sl->member_variables.size(); i++){
+        //initialize member variable
+        StructDefinition::MemberVariable *mv = sl->member_variables[i];
+        int size = mv->type->calc_size();
+        if(is_type_primitive(mv->type)) {   //primitive
+            emit_initialize_primitive(mv->type);
+        }
+        else {  //struct
+            //invoke default constructor
+            fout << indent() << "push %rax\n";
+            FunctionCall *fc = new FunctionCall(new Identifier(t->to_string()), {});
+            fc->emit_asm();
+
+            //save reference to struct
+            fout << indent() << "mov %rax, %rbx\n";
+            fout << indent() << "pop %rax\n";
+            fout << indent() << "movq %rbx, (%rax)\n";
+        }
+
+        //increment pointer
+        fout << indent() << "add $" << size << ", %rax\n";
+    }
+
+    //initialize struct heap ptr
+    emit_initialize_primitive(new PointerType(t));
+    fout << indent() << "pop %rbx\n";
+    fout << indent() << "movq %rbx, (%rax)\n";
+
+    if(asm_debug) fout << indent() << "# done initialize struct memory " << t->to_string() << "\n";
+
+    //now, %rax should hold location of heap ptr, %rbx holds location of actual struct start
 }
 
 // -- STRUCT FUNCTIONS --
@@ -1197,9 +1691,31 @@ Expression::Postfix* Expression::Postfix::convert(parser::expr_postfix *e) {
     Expression::Primary *term = Expression::Primary::convert(e->t0);
     std::vector<val_op> ops;
     for(int i = 0; i < e->t1.size(); i++){
-        std::string op = "[]";
-        Expression* expr = Expression::convert(e->t1[i]->t3);
-        ops.push_back(expr);
+        if(e->t1[i]->t1->is_c0) {       //indexing
+            Expression *expr = Expression::convert(e->t1[i]->t1->t0->t2);
+            ops.push_back(expr);
+        }
+        else if(e->t1[i]->t1->is_c1) {  //call member function
+            std::string op = ".";
+            FunctionCall *fc = FunctionCall::convert(e->t1[i]->t1->t1->t2);
+            ops.push_back(std::make_pair(op, fc));
+        }
+        else if(e->t1[i]->t1->is_c2) {  //dereference, call member function
+            std::string op = "->";
+            FunctionCall *fc = FunctionCall::convert(e->t1[i]->t1->t2->t2);
+            ops.push_back(std::make_pair(op, fc));
+        }
+        else if(e->t1[i]->t1->is_c3) {  //access member variable
+            std::string op = ".";
+            Identifier *id = Identifier::convert(e->t1[i]->t1->t3->t2);
+            ops.push_back(std::make_pair(op, id));
+        }
+        else if(e->t1[i]->t1->is_c4) {  //dereference, access member variable
+            std::string op = "->";
+            Identifier *id = Identifier::convert(e->t1[i]->t1->t4->t2);
+            ops.push_back(std::make_pair(op, id));
+        }
+        else assert(false);
     }
     return new Expression::Postfix(term, ops);
 }
@@ -1336,9 +1852,22 @@ Declaration* Declaration::convert(parser::declaration *d) {
 
 Assignment* Assignment::convert(parser::assignment *a) {
     Identifier *id = Identifier::convert(a->t0);
-    std::vector<Expression*> index_expr;
+    std::vector<val_op> index_expr;
     for(int i = 0; i < a->t1.size(); i++){
-        index_expr.push_back(Expression::convert(a->t1[i]->t3));
+        if(a->t1[i]->t1->is_c0) {   //indexing
+            index_expr.push_back(Expression::convert(a->t1[i]->t1->t0->t2));
+        }
+        else if(a->t1[i]->t1->is_c1) {  //member variable access
+            std::string op = ".";
+            Identifier *id = Identifier::convert(a->t1[i]->t1->t1->t2);
+            index_expr.push_back(std::make_pair(op, id));
+        }
+        else if(a->t1[i]->t1->is_c2) {  //dereference, member variable access
+            std::string op = "->";
+            Identifier *id = Identifier::convert(a->t1[i]->t1->t2->t2);
+            index_expr.push_back(std::make_pair(op, id));
+        }
+        else assert(false);
     }
     Expression *expr = Expression::convert(a->t5);
     return new Assignment(id, index_expr, expr);
@@ -1358,25 +1887,25 @@ Statement* Statement::convert(parser::statement *s) {
 }
 
 SimpleStatement* SimpleStatement::convert(parser::simple_statement *s) {
-    if(s->is_a0) {  //declaration
-        Declaration *declaration = Declaration::convert(s->t0->t0);
-        return new DeclarationStatement(declaration);
-    }
-    else if(s->is_a1) { //function call
-        FunctionCall *function_call = FunctionCall::convert(s->t1->t0);
-        return new FunctionCallStatement(function_call);
-    }
-    else if(s->is_a2) { //return 
+    if(s->is_a0) { //return 
         Expression *expr = nullptr;
-        if(s->t2->t1 != nullptr) {
+        if(s->t0->t1 != nullptr) {
             //non-void return
-            expr = Expression::convert(s->t2->t1->t1);
+            expr = Expression::convert(s->t0->t1->t1);
         }
         return new ReturnStatement(expr);
     }
-    else if(s->is_a3) { //assignment
-        Assignment *assignment = Assignment::convert(s->t3->t0);
+    else if(s->is_a1) {  //declaration
+        Declaration *declaration = Declaration::convert(s->t1->t0);
+        return new DeclarationStatement(declaration);
+    }
+    else if(s->is_a2) { //assignment
+        Assignment *assignment = Assignment::convert(s->t2->t0);
         return new AssignmentStatement(assignment);
+    }
+    else if(s->is_a3) { //expression
+        Expression *expr = Expression::convert(s->t3->t0);
+        return new ExpressionStatement(expr);
     }
     else assert(false);
 }
@@ -1469,12 +1998,45 @@ FunctionCall* FunctionCall::convert(parser::function_call *f) {
     return new FunctionCall(fname, argument_list);
 }
 
+StructDefinition::MemberVariable* StructDefinition::MemberVariable::convert(parser::member_variable_declaration *mvd) {
+    Type *type = Type::convert(mvd->t0);
+    Identifier *id = Identifier::convert(mvd->t2);
+    return new StructDefinition::MemberVariable(type, id);
+}
+
+StructDefinition* StructDefinition::convert(parser::struct_definition *s) {
+    Type *type = BaseType::convert(s->t2);
+    std::vector<StructDefinition::MemberVariable*> member_variables;
+    std::vector<Function*> functions;
+    for(int i = 0; i < s->t6.size(); i++){
+        if(s->t6[i]->t0->is_c0) {   //member variable declaration
+            member_variables.push_back(StructDefinition::MemberVariable::convert(s->t6[i]->t0->t0->t0));
+        }
+        else if(s->t6[i]->t0->is_c1) {  //function
+            std::cout << "CONVERT STRUCT FUNCTION : \n" << s->t6[i]->t0->t1->t0->to_string() << std::endl;
+            Function *f = Function::convert(s->t6[i]->t0->t1->t0);
+            f = new Function(type, f->type, f->id, f->parameters, f->body);
+            functions.push_back(f);
+            std::cout << "RES : " << f->resolve_function_signature()->to_string() << std::endl;
+        }
+        else assert(false);
+    }
+    return new StructDefinition(type, member_variables, functions);
+}
+
 Program* Program::convert(parser::program *p) {
+    std::vector<StructDefinition*> structs;
     std::vector<Function*> functions;
     for(int i = 0; i < p->t0.size(); i++){
-        functions.push_back(Function::convert(p->t0[i]->t1));
+        if(p->t0[i]->t1->is_c0) {   //function
+            functions.push_back(Function::convert(p->t0[i]->t1->t0->t0));
+        }
+        else if(p->t0[i]->t1->is_c1) {  //struct definition
+            structs.push_back(StructDefinition::convert(p->t0[i]->t1->t1->t0));
+        }
+        else assert(false);
     }
-    return new Program(functions);
+    return new Program(structs, functions);
 }
 
 Type* IntegerLiteral::resolve_type() {
@@ -1521,11 +2083,72 @@ Type* Expression::Postfix::resolve_type() {
             Expression *expr = std::get<Expression*>(op);
             Type *et = expr->resolve_type();
             if(et == nullptr) return nullptr;
-            if(*et != BaseType("int")) return nullptr;  //can't index without int
+            if(*et != BaseType("int")) {
+                std::cout << "Indexing expression must resolve to int\n";
+                return nullptr;
+            }
             if(auto x = dynamic_cast<PointerType*>(t)) {
                 t = x->type;
             }
-            else return nullptr;    //can't index into non-pointer
+            else {
+                std::cout << "Can't index into non-pointer type " << t->to_string();
+                return nullptr;
+            } 
+        }
+        else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {
+            std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
+            FunctionCall *fc = p.second;
+            if(p.first == ".") {    //function call
+                fc = new FunctionCall(t, fc->id, fc->argument_list);
+                t = fc->resolve_type();
+            }
+            else if(p.first == "->") {  //dereference function call
+                //dereference type
+                if(dynamic_cast<PointerType*>(t) == nullptr) {
+                    std::cout << "Trying to dereference non-pointer type " << t->to_string() << "\n";
+                    return nullptr;
+                }
+                t = dynamic_cast<PointerType*>(t)->type;
+                fc = new FunctionCall(t, fc->id, fc->argument_list);
+                t = fc->resolve_type();
+            }
+            else assert(false);
+        }
+        else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
+            std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
+            Identifier *id = p.second;
+            if(p.first == ".") {    //member variable access
+                StructLayout *sl = get_struct_layout(t);
+                if(sl == nullptr) {
+                    std::cout << "Unable to find StructLayout for " << t->to_string() << "\n";
+                    return nullptr;
+                }
+                if(sl->get_type(id) == nullptr) {
+                    std::cout << "Unknown member variable identifier \"" << id->name << "\" for type " << t->to_string() << "\n";
+                    return nullptr;
+                }
+                t = sl->get_type(id);
+            }
+            else if(p.first == "->") { //dereference, member variable access
+                //dereference
+                if(dynamic_cast<PointerType*>(t) == nullptr) {
+                    std::cout << "Trying to dereference non-pointer type " << t->to_string() << "\n";
+                    return nullptr;
+                }
+                t = dynamic_cast<PointerType*>(t)->type;
+
+                StructLayout *sl = get_struct_layout(t);
+                if(sl == nullptr) {
+                    std::cout << "Unable to find StructLayout for " << t->to_string() << "\n";
+                    return nullptr;
+                }
+                if(sl->get_type(id) == nullptr) {
+                    std::cout << "Unknown member variable identifier \"" << id->name << "\" for type " << t->to_string() << "\n";
+                    return nullptr;
+                }
+                t = sl->get_type(id);
+            }
+            else assert(false);
         }
         else assert(false);
     }
@@ -1626,14 +2249,20 @@ Type* Expression::resolve_type() {
 
 Type* FunctionCall::resolve_type() {
     FunctionSignature *fs = resolve_function_signature();
-    if(fs == nullptr) {
-        return nullptr;
-    }
+    assert(fs != nullptr);
     Function *f = get_function(fs);
     if(f == nullptr) {
+        std::cout << "Unknown function : " << fs->to_string() << "\n";
         return nullptr;
     }
     return f->type;
+}
+
+FunctionSignature* Function::resolve_function_signature() const {
+    std::vector<Type*> input_types;
+    for(int i = 0; i < parameters.size(); i++) input_types.push_back(parameters[i]->type);
+    if(enclosing_type.has_value() && !is_function_constructor(this)) return new FunctionSignature(enclosing_type.value(), id, input_types);
+    return new FunctionSignature(id, input_types);
 }
 
 FunctionSignature* FunctionCall::resolve_function_signature() {
@@ -1644,6 +2273,7 @@ FunctionSignature* FunctionCall::resolve_function_signature() {
         if(t == nullptr) return nullptr;
         types.push_back(t);
     }
+    if(target_type.has_value()) return new FunctionSignature(target_type.value(), id, types);
     return new FunctionSignature(id, types);
 }
 
@@ -1651,7 +2281,7 @@ bool DeclarationStatement::is_always_returning() {
     return false;
 }
 
-bool FunctionCallStatement::is_always_returning() {
+bool ExpressionStatement::is_always_returning() {
     return false;
 }
 
@@ -1709,10 +2339,7 @@ void CharLiteral::emit_asm() {
 
 void StringLiteral::emit_asm() {
     //allocate memory
-    fout << indent() << "mov $" << val.size() + 1 << ", %rax\n";
-    fout << indent() << "push %rax\n";
-    fout << indent() << "call malloc\n";
-    fout << indent() << "add $8, %rsp\n";
+    emit_malloc(val.size() + 1);
 
     //save start of string
     fout << indent() << "push %rax\n";
@@ -1784,6 +2411,75 @@ void Expression::Postfix::emit_asm() {
 
             //move data
             emit_retrieve_array(sz);
+        }
+        else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {
+            std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
+            FunctionCall *fc = p.second;
+            if(p.first == ".") {    //function call
+                fc = new FunctionCall(t, fc->id, fc->argument_list);
+                Function *f = get_function(fc->resolve_function_signature());
+                assert(f != nullptr);
+
+                //reference to type should already be in %rax
+                //emit function call
+                fc->emit_asm();
+
+                t = f->type;
+            }
+            else if(p.first == "->") {  //dereference function call
+                //dereference type, just grab whatever is at the mem location
+                fout << indent() << "movq (%rax), %rax\n";
+                assert(dynamic_cast<PointerType*>(t) != nullptr);
+                t = dynamic_cast<PointerType*>(t)->type;
+                assert(t != nullptr);
+
+                fc = new FunctionCall(t, fc->id, fc->argument_list);
+                Function *f = get_function(fc->resolve_function_signature());
+                assert(f != nullptr);
+                
+                //reference to type is in %rax
+                //emit function call
+                fc->emit_asm();
+
+                t = f->type;
+            }
+            else assert(false);
+        }
+        else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
+            std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
+            Identifier *id = p.second;
+            if(p.first == ".") {    //member variable access
+                StructLayout *sl = get_struct_layout(t);
+                assert(sl != nullptr);
+                assert(sl->get_type(id) != nullptr);
+
+                int offset = sl->get_offset(id);
+                int sz = t->calc_size();
+                fout << indent() << "lea " << offset << "(%rax), %rax\n";
+                emit_mem_retrieve(sz);
+
+                t = sl->get_type(id);
+            }
+            else if(p.first == "->") { //dereference, member variable access
+                //dereference type, just grab whatever is at the mem location
+                fout << indent() << "movq (%rax), %rax\n";
+                assert(dynamic_cast<PointerType*>(t) != nullptr);
+                t = dynamic_cast<PointerType*>(t)->type;
+                assert(t != nullptr);
+
+                //grab value
+                StructLayout *sl = get_struct_layout(t);
+                assert(sl != nullptr);
+                assert(sl->get_type(id) != nullptr);
+
+                int offset = sl->get_offset(id);
+                int sz = t->calc_size();
+                fout << indent() << "lea " << offset << "(%rax), %rax\n";
+                emit_mem_retrieve(sz);
+
+                t = sl->get_type(id);
+            }
+            else assert(false);
         }
         else assert(false);
     }
@@ -1947,19 +2643,53 @@ void Expression::emit_asm() {   //logical or
 
 void FunctionCall::emit_asm() {
     if(asm_debug) fout << indent() << "# calling function : " << id->name << "\n";
+    
+    //find original function
+    FunctionSignature *fs = resolve_function_signature();
+    Function *f = get_function(fs);
+    assert(f != nullptr);
+    bool is_constructor = is_function_constructor(f);
+
+    //if it is a constructor, create a new instance of the object
+    if(is_constructor) {  
+        Type *t = f->type;
+        emit_initialize_struct(t);
+
+        //save reference to type as return value
+        fout << indent() << "push %rbx\n";
+
+        //put reference into %rax
+        fout << indent() << "mov %rbx, %rax\n";
+    }
+
+    int argc = 0;
+
+    //pass reference to struct in as if it was a member function
+    if(target_type.has_value() || is_constructor) {  //member function
+        //expects a reference to the target struct to be in %rax
+        fout << indent() << "push %rax\n";
+        argc ++;
+    }
 
     //gather arguments and push them to the stack. 
     for(int i = 0; i < argument_list.size(); i++){
         Expression *e = argument_list[i];
         e->emit_asm();
         fout << indent() << "push %rax\n";
+        argc ++;
     }
 
     //call function
-    fout << indent() << "call " << id->name << "\n";
+    std::string label = get_function_label(resolve_function_signature());
+    fout << indent() << "call " << label << "\n";
 
     //clean up arguments
-    fout << indent() << "add $" << 8 * argument_list.size() << ", %rsp\n";
+    fout << indent() << "add $" << 8 * argc << ", %rsp\n";
+
+    //if is a constructor, should return reference to type
+    if(is_constructor) {
+        fout << indent() << "pop %rax\n";
+    }
 }
 
 void Declaration::emit_asm() {
@@ -1979,7 +2709,7 @@ void Declaration::emit_asm() {
     assert(tc != nullptr);
     tc->emit_asm();
 
-    //push variable to stack
+    //push it to stack
     fout << indent() << "push %rax\n";
 
     if(asm_debug) fout << indent() << "# done initialize local variable : " << type->to_string() << " " << id->name << "\n";
@@ -1991,51 +2721,87 @@ void Assignment::emit_asm() {
 
     if(asm_debug) fout << indent() << "# assignment start\n";
 
-    //evaluate expression
-    expr->emit_asm();
-    
-    //cast expression type to variable type
-    Type *et = expr->resolve_type(), *vt = v->type;
+    //load local variable address into %rax
+    fout << indent() << "lea " << v->stack_offset << "(%rbp), %rax\n";  //%rax points at the stack
+
+    //find index to place value into
+    Type *vt = v->type;
     for(int i = 0; i < index_expr.size(); i++){
-        PointerType *pt = dynamic_cast<PointerType*>(vt);
-        assert(pt != nullptr);
-        vt = pt->type;
-    }
-    TypeConversion *tc = find_type_conversion(et, vt);
-    assert(tc != nullptr);
-    tc->emit_asm();
-
-    if(index_expr.size() == 0){
-        //store into stack
-        fout << indent() << "mov %rax, " << v->stack_offset << "(%rbp)\n";
-    }
-    else {
-        //push expression value onto stack
-        fout << indent() << "push %rax\n";
-
-        //find index to place value into
-        fout << indent() << "lea " << v->stack_offset << "(%rbp), %rax\n";  //%rax points at the stack
-        Type *t = v->type;
-        for(int i = 0; i < index_expr.size(); i++){
+        val_op op = index_expr[i];
+        if(std::holds_alternative<Expression*>(op)) {
             //compute index
+            Expression *idx_expr = std::get<Expression*>(op);
             fout << indent() << "push %rax\n";
-            index_expr[i]->emit_asm();
+            idx_expr->emit_asm();
             fout << indent() << "mov %rax, %rbx\n";
             fout << indent() << "pop %rax\n";
 
-            PointerType *pt = dynamic_cast<PointerType*>(t);
+            //update mem address
+            PointerType *pt = dynamic_cast<PointerType*>(vt);
             assert(pt != nullptr);
             int sz = pt->type->calc_size();
             fout << indent() << "mov (%rax), %rax\n";   //%rax now points at the beginning of the array
             fout << indent() << "lea (%rax, %rbx, " << sz << "), %rax\n";
-            t = pt->type;
-        }
-        fout << indent() << "mov %rax, %rbx\n";
 
-        //store value
-        fout << indent() << "pop %rax\n";   //expression value
-        emit_mem_store(t->calc_size());
+            vt = pt->type;
+        }
+        else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
+            std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
+            Identifier *cid = p.second;
+            if(p.first == ".") {
+                //now, %rax is reference to type
+                fout << indent() << "movq (%rax), %rax\n";
+
+                StructLayout *sl = get_struct_layout(vt);
+                assert(sl != nullptr);
+                assert(sl->get_type(cid) != nullptr);
+
+                int offset = sl->get_offset(cid);
+                fout << indent() << "lea " << offset << "(%rax), %rax\n";
+
+                vt = sl->get_type(cid);
+            }
+            else if(p.first == "->") {
+                //now, %rax is pointer to type
+                fout << indent() << "movq (%rax), %rax\n";
+
+                //dereference, %rax is now reference to type
+                fout << indent() << "movq (%rax), %rax\n";
+                assert(dynamic_cast<PointerType*>(vt) != nullptr);
+                vt = dynamic_cast<PointerType*>(vt)->type;
+                assert(vt != nullptr);
+
+                //get member variable address
+                StructLayout *sl = get_struct_layout(vt);
+                assert(sl != nullptr);
+                assert(sl->get_type(cid) != nullptr);
+
+                int offset = sl->get_offset(cid);
+                fout << indent() << "lea " << offset << "(%rax), %rax\n";
+
+                vt = sl->get_type(cid);
+            }
+            else assert(false);
+        }
+        else assert(false);
     }
+
+    //push index onto stack
+    fout << indent() << "push %rax\n";
+
+    //evaluate expression
+    expr->emit_asm();
+    
+    //cast expression type to variable type
+    Type *et = expr->resolve_type();
+    assert(et != nullptr);
+    TypeConversion *tc = find_type_conversion(et, vt);
+    assert(tc != nullptr);
+    tc->emit_asm();
+
+    //store expression value into index
+    fout << indent() << "pop %rbx\n";   //mem index
+    emit_mem_store(vt->calc_size());
 
     if(asm_debug) fout << indent() << "# assignment end\n";
 }
@@ -2053,8 +2819,13 @@ bool Declaration::is_well_formed() {
     }
     // - does the expression resolve to a type?
     Type *expr_type = expr->resolve_type();
-    if(expr_type == nullptr || !is_type_declared(expr_type)) {
-        std::cout << "Declaration expression does not resolve to existing type\n";
+    if(expr_type == nullptr) {
+        std::cout << "Declaration expression does not resolve to a type\n";
+        return false;
+    }
+    // - does the expression resolve to an existing type?
+    if(!is_type_declared(expr_type)) {
+        std::cout << "Declaration expression does not resolve to existing type : " << expr_type->to_string() << "\n";
         return false;
     }
     // - can expr_type be casted to type?
@@ -2068,10 +2839,13 @@ bool Declaration::is_well_formed() {
         std::cout << "Unable to add variable : " << type->to_string() << " " << id->name << "\n";
         return false;
     }
+
     return true;
 }
 
 bool Assignment::is_well_formed() {
+    std::cout << "CHECK ASSIGNMENT WELL FORMED" << std::endl;
+
     // - does the expression resolve to a type?
     Type *et = expr->resolve_type();
     if(et == nullptr) {
@@ -2089,28 +2863,76 @@ bool Assignment::is_well_formed() {
         std::cout << "Assignment variable does not exist : " << id->name << "\n";
         return false;
     }
-    // - do all of the indexing expressions resolve to int?
-    for(int i = 0; i < index_expr.size(); i++){
-        if(*(index_expr[i]->resolve_type()) != BaseType("int")) {
-            std::cout << "Indexing expression must resolve to int\n";
-            return false;
-        }
-    }
-    // - can we actually index into this variable?
+    // - do all the indexing operations make sense?
     Type *vt = v->type;
     for(int i = 0; i < index_expr.size(); i++){
-        PointerType *pt = dynamic_cast<PointerType*>(vt);
-        if(pt == nullptr) {
-            std::cout << "Can't index into non-pointer\n";
-            return false;
+        val_op op = index_expr[i];
+        if(std::holds_alternative<Expression*>(op)) {
+            // - is the current type a pointer type?
+            PointerType *pt = dynamic_cast<PointerType*>(vt);
+            if(pt == nullptr) {
+                std::cout << "Trying to index into non-pointer type : " << vt->to_string() << "\n";
+                return false;
+            }
+            vt = pt->type;
+
+            // - does the indexing expression resolve to an int?
+            Expression *idx_expr = std::get<Expression*>(op);
+            Type *iet = idx_expr->resolve_type();
+            if(iet == nullptr) {
+                std::cout << "Indexing expression does not resolve to type\n";
+                return false;
+            }
+            if(*iet != BaseType("int")) {
+                std::cout << "Indexing expression must resolve to int\n";
+                return false;
+            }
         }
-        vt = pt->type;
+        else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
+            std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
+            Identifier *cid = p.second;
+            if(p.first == ".") {
+                StructLayout *sl = get_struct_layout(vt);
+                if(sl == nullptr) {
+                    std::cout << "Unable to find StructLayout for " << vt->to_string() << "\n";
+                    return false;
+                }
+                if(sl->get_type(cid) == nullptr) {
+                    std::cout << "Unknown member variable identifier \"" << cid->name << "\" for type " << vt->to_string() << "\n";
+                    return false;
+                }
+                vt = sl->get_type(cid);
+            }
+            else if(p.first == "->") {
+                //dereference
+                if(dynamic_cast<PointerType*>(vt) == nullptr) {
+                    std::cout << "Trying to dereference non-pointer type " << vt->to_string() << "\n";
+                    return false;
+                }
+                vt = dynamic_cast<PointerType*>(vt)->type;
+
+                StructLayout *sl = get_struct_layout(vt);
+                if(sl == nullptr) {
+                    std::cout << "Unable to find StructLayout for " << vt->to_string() << "\n";
+                    return false;
+                }
+                if(sl->get_type(cid) == nullptr) {
+                    std::cout << "Unknown member variable identifier \"" << cid->name << "\" for type " << vt->to_string() << "\n";
+                    return false;
+                }
+                vt = sl->get_type(cid);
+            }
+            else assert(false);
+        }
+        else assert(false);
     }
     // - can the expression type be casted to the variable type?
     if(find_type_conversion(et, vt) == nullptr) {
         std::cout << "Assignment type mismatch: cannot cast " << et->to_string() << " to " << vt->to_string() << "\n";
         return false;
     }
+
+    std::cout << "DONE CHECK ASSIGNMENT WELL FORMED" << std::endl;
     return true;
 }
 
@@ -2126,20 +2948,21 @@ bool DeclarationStatement::is_well_formed() {
     return true;
 }
 
-bool FunctionCallStatement::is_well_formed() {
-    // - does the function call resolve properly to a type?
-    FunctionSignature *fs = function_call->resolve_function_signature();
-    if(fs == nullptr) {
-        std::cout << "Unable to resolve function signature\n";
-        return false;
-    }
-    // - is the function we're referencing actually declared?
-    if(!is_function_declared(fs)) {
-        std::cout << "Reference to undeclared function : " << fs->id << "\n";
+bool ExpressionStatement::is_well_formed() {
+    // - does the expression resolve to a type?
+    Type *t = expr->resolve_type();
+    if(t == nullptr) {
+        std::cout << "Expression does not resolve to type\n";
         return false;
     }
 
-    function_call->emit_asm();
+    // - does the type actually exist?
+    if(!is_type_declared(t)) {
+        std::cout << "Type " << t->to_string() << " does not exist\n";
+        return false;
+    }
+
+    expr->emit_asm();
 
     return true;
 }
@@ -2173,7 +2996,7 @@ bool ReturnStatement::is_well_formed() {
         fout << indent() << "add $" << declaration_stack.top().size() * 8 << ", %rsp\n";
     }
 
-    if(FunctionSignature(new Identifier("main"), {}) == *(enclosing_function->fs)) {
+    if(FunctionSignature(new Identifier("main"), {}) == *(enclosing_function->resolve_function_signature())) {
         //function is main, use exit syscall instead
         fout << indent() << "push %rax\n";
         fout << indent() << "call sys_exit\n";
@@ -2369,25 +3192,42 @@ bool CompoundStatement::is_well_formed() {
 }
 
 bool Function::is_well_formed() {
+    FunctionSignature *fs = resolve_function_signature();
+
+    if(body == nullptr) {
+        std::cout << "SKIPPING SYS FUNCTION : " << fs->to_string() << std::endl;
+        return true;
+    }
+    std::cout << "CHECKING FUNCTION : " << fs->to_string() << std::endl;
+
     push_declaration_stack();
 
-    bool is_main = FunctionSignature(new Identifier("main"), {}) == *fs;
+    bool is_main = FunctionSignature(new Identifier("main"), {}) == *(fs);
+    bool is_constructor = is_function_constructor(this);
+
+    // - if this function name is exactly equal to a type, make sure that it's a constructor
+    if(is_type_declared(new BaseType(id->name)) && !is_function_constructor(this)) {
+        std::cout << "Invalid function name : " << id->name << "\n";
+        return false;
+    }
 
     //print function label
     //if function signature is main(), substitute main for _start
+    if(asm_debug) {
+        fout << "# " << fs->to_string() << "\n";
+    }
     if(is_main) {
         fout << ".global _start\n";
         fout << "_start:\n";
     }
     else {
-        fout << ".global " << id->name << "\n";
-        fout << id->name << ":\n";
+        std::string label = get_function_label(fs);
+        fout << label << ":\n";
     }
 
     //setup function stack frame
     fout << indent() << "push %rbp\n";
     fout << indent() << "mov %rsp, %rbp\n";
-
     
     for(int i = 0; i < parameters.size(); i++){
         // - does parameter correspond to existing type?
@@ -2407,9 +3247,24 @@ bool Function::is_well_formed() {
         std::cout << "Function undeclared return type : " << type->to_string() << " " << id->name << "\n";
         return false;
     }
-
-    //register parameters as variables
+    
+    //if has enclosing type, register self as variable (Type* this)
     local_var_stack_offset = 8 + 8 * parameters.size();
+    if(enclosing_type.has_value()) {
+        //adjust stack offset 
+        local_var_stack_offset += 8;
+
+        //register self as variable (Type this)
+        Type *vt = enclosing_type.value();
+        Identifier *vid = new Identifier("this");
+        Variable* v = add_variable(vt, vid);
+        if(v == nullptr) {
+            std::cout << "Unable to add variable : " << vt << " " << vid << "\n";
+            return false;
+        }
+        v->stack_offset = local_var_stack_offset;
+        local_var_stack_offset -= 8;
+    }
     for(int i = 0; i < parameters.size(); i++){
         Variable* v = add_variable(parameters[i]->type, parameters[i]->id);
         if(v == nullptr) {
@@ -2419,7 +3274,9 @@ bool Function::is_well_formed() {
         v->stack_offset = local_var_stack_offset;
         local_var_stack_offset -= 8;
     }
-    local_var_stack_offset = -8;
+
+    //set stack offset to first local variable position
+    local_var_stack_offset = -8;   
 
     // - make sure body is well formed
     if(!body->is_well_formed()) {
@@ -2428,7 +3285,8 @@ bool Function::is_well_formed() {
     }
     
     // - if type is not void, check for existence of return statement as last reachable statement
-    if(*type != BaseType("void")) {
+    // - constructors also don't have to have return statements, they're treated as void functions
+    if(*type != BaseType("void") && !is_constructor) {
         // from any point of runnable code, we expect that it should be able to reach a return statement. 
         // this effectively means that the last statement should always be a return statement, regardless of 
         // the rest of the code, as the statement right before it needs to be able to return. 
@@ -2466,138 +3324,139 @@ bool Function::is_well_formed() {
     return true;
 }
 
+bool StructDefinition::is_well_formed() {
+    // - do all member variable types exist?
+    for(int i = 0; i < member_variables.size(); i++){
+        Type *vt = member_variables[i]->type;
+        if(!is_type_declared(vt)) {
+            std::cout << "Member variable type does not exist : " << vt->to_string() << "\n";
+            return false;
+        }
+    }
+    // - are there any duplicate member variable identifiers?
+    for(int i = 0; i < member_variables.size(); i++){
+        Identifier *id = member_variables[i]->id;
+        for(int j = i + 1; j < member_variables.size(); j++){
+            if(*id == *(member_variables[j]->id)) {
+                std::cout << "Duplicate member variable identifier : " << id->name << "\n";
+                return false;
+            }
+        }
+    }
+    // - are there any duplicate function definitions?
+    //add all functions to global list to check later
+    for(int i = 0; i < functions.size(); i++){
+        Function *f = functions[i];
+        if(!add_function(f)) {
+            std::cout << "Failed to add struct member function : " << f->resolve_function_signature()->to_string() << "\n";
+            return false;
+        } 
+    }
+    // - is there a default constructor?
+    {
+        FunctionSignature *fid = new FunctionSignature(new Identifier(type->to_string()), {});
+        if(!is_function_declared(fid)) {
+            std::cout << "Default constructor for " << type->to_string() << " not defined\n";
+            return false;
+        }
+    }
+
+    //construct StructLayout
+    std::unordered_map<Identifier*, int> offset_map;
+    int size = 0;
+    for(int i = 0; i < member_variables.size(); i++){
+        MemberVariable *mv = member_variables[i];
+        offset_map.insert({mv->id, size});
+        size += mv->type->calc_size();
+    }
+
+    // - make sure we can actually add StructLayout into the controller
+    StructLayout *sl = new StructLayout(member_variables, offset_map, size);
+    if(!add_struct_layout(type, sl)) {
+        std::cout << "Failed to add StructLayout for " << type->to_string() << "\n";
+        return false;
+    }
+
+    return true;
+}
+
 bool Program::is_well_formed() {
     // - set up semantic checker controller
-    {
-        conversion_map.clear();
-        enclosing_function = nullptr;
-        declared_functions.clear();
-        declared_types.clear();
-        declared_variables.clear();
-        while(declaration_stack.size()) declaration_stack.pop();
-        label_counter = 0;
-
-        // - sys functions
-        declared_functions.push_back(new Function(new PointerType(new BaseType("void")), new Identifier("malloc"), {new BaseType("int")}));
-        declared_functions.push_back(new Function(new PointerType(new BaseType("char")), new Identifier("int_to_string"), {new BaseType("int")}));
-        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts"), {new PointerType(new BaseType("char"))}));
-        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puts_endl"), {new PointerType(new BaseType("char"))}));
-        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puti"), {new BaseType("int")}));
-        declared_functions.push_back(new Function(new BaseType("void"), new Identifier("puti_endl"), {new BaseType("int")}));
-
-        // - primitive types
-        Type *p_int = new BaseType("int");
-        declared_types.push_back(p_int);
-        Type *p_char = new BaseType("char");
-        declared_types.push_back(p_char);
-        Type *p_void = new BaseType("void");
-        declared_types.push_back(p_void);
-
-        // - populate conversion map
-        conversion_map[{"+", p_int}] = {p_int, {}};
-        conversion_map[{"-", p_int}] = {p_int, {"neg %rax"}};
-        conversion_map[{"~", p_int}] = {p_int, {"not %rax"}};
-        conversion_map[{"!", p_int}] = {p_int, {
-            "test %rax, %rax",
-            "sete %al",
-            "movzx %al, %rax",
-        }};
-        conversion_map[{p_int, "+", p_int}] = {p_int, {"add %rbx, %rax"}};
-        conversion_map[{p_int, "-", p_int}] = {p_int, {"sub %rbx, %rax"}};
-        conversion_map[{p_int, "*", p_int}] = {p_int, {"imul %rbx, %rax"}};
-        conversion_map[{p_int, "/", p_int}] = {p_int, {
-            "cqo",
-            "idiv %rbx",
-        }};
-        conversion_map[{p_int, "%", p_int}] = {p_int, {
-            "cqo",
-            "idiv %rbx",
-            "mov %rdx, %rax",
-        }};
-        conversion_map[{p_int, "&", p_int}] = {p_int, {"and %rbx, %rax"}};
-        conversion_map[{p_int, "^", p_int}] = {p_int, {"xor %rbx, %rax"}};
-        conversion_map[{p_int, "|", p_int}] = {p_int, {"or %rbx, %rax"}};
-        conversion_map[{p_int, "&&", p_int}] = {p_int, {
-            "test %rax, %rax\n",
-            "setne %al\n",
-            "movzx %al, %rax\n",
-            "test %rbx, %rbx\n",
-            "setne %bl\n",
-            "movzx %bl, %rbx\n",
-            "and %rbx, %rax\n",
-        }};
-        conversion_map[{p_int, "||", p_int}] = {p_int, {
-            "test %rax, %rax\n",
-            "setne %al\n",
-            "movzx %al, %rax\n",
-            "test %rbx, %rbx\n",
-            "setne %bl\n",
-            "movzx %bl, %rbx\n",
-            "or %rbx, %rax\n",
-        }};
-        conversion_map[{p_int, "==", p_int}] = {p_int, {
-            "cmp %rbx, %rax",
-            "sete %al",
-            "movzx %al, %rax",
-        }};
-        conversion_map[{p_int, "!=", p_int}] = {p_int, {
-            "cmp %rbx, %rax",
-            "setne %al",
-            "movzx %al, %rax",
-        }};
-        conversion_map[{p_int, "<", p_int}] = {p_int, {
-            "cmp %rbx, %rax",
-            "setl %al",
-            "movzx %al, %rax",
-        }};
-        conversion_map[{p_int, ">", p_int}] = {p_int, {
-            "cmp %rbx, %rax",
-            "setg %al",
-            "movzx %al, %rax",
-        }};
-        conversion_map[{p_int, "<=", p_int}] = {p_int, {
-            "cmp %rbx, %rax",
-            "setle %al",
-            "movzx %al, %rax",
-        }};
-        conversion_map[{p_int, ">=", p_int}] = {p_int, {
-            "cmp %rbx, %rax",
-            "setge %al",
-            "movzx %al, %rax",
-        }};
-        conversion_map[{p_int, "<<", p_int}] = {p_int, {
-            "push %rcx",
-            "mov %rbx, %rcx",
-            "sal %cl, %rax",
-            "pop %rcx",
-        }};
-        conversion_map[{p_int, ">>", p_int}] = {p_int, {
-            "push %rcx",
-            "mov %rbx, %rcx",
-            "sar %cl, %rax",
-            "pop %rcx",
-        }};
-    }
-    
+    reset_controller();
+    std::cout << "DONE INIT CONTROLLER" << std::endl;
 
     push_declaration_stack();
 
     fout << ".section .text\n";
 
-    // - are there any duplicate function definitions?
-    for(int i = 0; i < functions.size(); i++){
-        for(int j = i + 1; j < functions.size(); j++) {
-            if(*(functions[i]) == *(functions[j])) {
-                std::cout << "Duplicate function definitions : " << functions[i]->id->name << "\n";
-                return false;
+    //for all structs, register them as types
+    for(int i = 0; i < structs.size(); i++) {
+        if(!add_type(structs[i]->type)) {
+            std::cout << "Failed to add type : " << structs[i]->type->to_string() << "\n";
+            return false;
+        }
+    }
+    std::cout << "DONE REGISTER STRUCTS AS TYPES" << std::endl;
+
+    // - are there circular dependencies in the struct member variables?
+    //build struct graph, do topological sort on the graph.
+    std::vector<int> top_ord(0);
+    {
+        int n = structs.size();
+        std::unordered_map<Type*, int> indmp;
+        for(int i = 0; i < n; i++) indmp[structs[i]->type] = i;
+        std::vector<std::vector<int>> c(n);
+        std::vector<int> indeg(n, 0);
+        for(int i = 0; i < n; i++){
+            StructDefinition *sd = structs[i];
+            for(int j = 0; j < n; j++){
+                Type *vt = sd->member_variables[j]->type;
+                if(indmp.count(vt)) {
+                    int x = indmp[vt];
+                    c[i].push_back(x);
+                    indeg[x] ++;
+                }
+            }
+        }
+        std::queue<int> q;
+        for(int i = 0; i < n; i++){
+            if(indeg[i] == 0) q.push(i);
+        }
+        while(q.size() != 0){
+            int cur = q.front();
+            q.pop();
+            top_ord.push_back(cur);
+            for(int x : c[cur]) {
+                indeg[x] --;
+                if(indeg[x] == 0) q.push(x);
             }
         }
     }
-    for(int i = 0; i < functions.size(); i++) {
-        declared_functions.push_back(functions[i]);
+    if(top_ord.size() != structs.size()) {
+        std::cout << "There exists a circular dependency in the struct graph\n";
+        return false;
+    }
+    std::cout << "DONE CHECK CIRCULAR DEPENDENCIES" << std::endl;
+
+    // - are all structs well formed?
+    //do this in topological order
+    for(int i = 0; i < structs.size(); i++){
+        StructDefinition *s = structs[top_ord[i]];
+        if(!s->is_well_formed()) {
+            std::cout << "Struct not well formed : " << s->type->to_string() << "\n";
+            return false;
+        }
     }
 
-    // - there must be a function with function signature 'int main()'
+    // - are there any duplicate global function definitions?
+    for(int i = 0; i < functions.size(); i++) {
+        if(!add_function(functions[i])) {
+            std::cout << "Failed to add global function : " << functions[i]->id->name << "\n";
+            return false;
+        }
+    }
+
+    // - there must be a global function with function signature 'int main()'
     {
         FunctionSignature *main_fs = new FunctionSignature(new Identifier("main"), {});
         Function *f = get_function(main_fs);
@@ -2612,10 +3471,11 @@ bool Program::is_well_formed() {
     }
 
     // - make sure every function is well formed
-    for(int i = 0; i < functions.size(); i++){
-        enclosing_function = functions[i];
-        if(!functions[i]->is_well_formed()) {
-            std::cout << "Function not well formed : " << functions[i]->id->name << "\n";
+    for(int i = 0; i < declared_functions.size(); i++){
+        enclosing_function = declared_functions[i];
+
+        if(!declared_functions[i]->is_well_formed()) {
+            std::cout << "Function not well formed : " << declared_functions[i]->resolve_function_signature()->to_string() << "\n";
             return false;
         }
     }
@@ -2672,8 +3532,24 @@ int main(int argc, char* argv[]) {
         std::cout << "CONVERTING ..." << std::endl;
         program = Program::convert(p);
     }
+
+    std::cout << "--- STRUCT DEFINITIONS ---" << std::endl;
+    for(int i = 0; i < program->structs.size(); i++){
+        StructDefinition *sd = program->structs[i];
+        std::cout << "NAME : " << sd->type->to_string() << std::endl;
+        std::cout << "MEMBER VARIABLES : \n";
+        for(int j = 0; j < sd->member_variables.size(); j++) {
+            StructDefinition::MemberVariable *mv = sd->member_variables[j];
+            std::cout << mv->type->to_string() << " " << mv->id->name << "\n";
+        }
+        // std::cout << "MEMBER FUNCTIONS : \n";
+        // for(int j = 0; j < sd->functions.size(); j++){
+
+        // }
+        std::cout << "\n";
+    }
    
-    std::cout << "FUNCTION DEFINITIONS : " << std::endl;
+    std::cout << "--- GLOBAL FUNCTION DEFINITIONS ---" << std::endl;
     for(int i = 0; i < program->functions.size(); i++){
         std::cout << "NAME : " << program->functions[i]->id->name << ", TYPE : " << program->functions[i]->type->to_string() << ", PARAMS :\n";
         for(int j = 0; j < program->functions[i]->parameters.size(); j++){
@@ -2681,8 +3557,10 @@ int main(int argc, char* argv[]) {
             std::cout << param->type->to_string() << " " << param->id->name << "\n";
         }
         std::cout << "NR STATEMENTS : " << program->functions[i]->body->statements.size() << std::endl;
+        std::cout << "\n";
     }
 
+    std::cout << "CHECK PROGRAM SEMANTICS" << std::endl;
     if(!program->is_well_formed()) {
         std::cout << "Program not well formed\n";
         return 1;
