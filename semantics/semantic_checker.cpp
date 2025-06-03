@@ -143,6 +143,8 @@ does its magic, we should be able to essentially treat the pointer portion as th
 ok, structs are mostly done, just have to implement some other features
  - make it prohibited to assign to 'this' within a member function
  - when assigning stuff, always use the copy constructor. Right now, I'm just copying over the reference
+ - enforce that a copy constructor must exist
+ - if you make a struct without any member functions, this segfaults while compiling. 
 
 
 what's the next feature? operator overloading for structs? I/O? templating? 
@@ -203,13 +205,11 @@ struct BaseType;
 struct PointerType;
 struct Expression;
 struct Declaration;
-struct Assignment;
 struct Statement;
 struct SimpleStatement;
 struct DeclarationStatement;
 struct ExpressionStatement;
 struct ReturnStatement;
-struct AssignmentStatement;
 struct ControlStatement;
 struct IfStatement;
 struct WhileStatement;
@@ -347,6 +347,17 @@ struct PointerType : public Type {
     }
 };
 
+struct ExprReturnType {
+    Type *type;
+    bool is_lvalue;
+
+    ExprReturnType(Type *_type, bool _is_lvalue) {
+        assert(_type != nullptr);
+        type = _type;
+        is_lvalue = _is_lvalue;
+    }
+};
+
 struct Expression {
     struct Primary {
         using val_t = std::variant<FunctionCall*, Identifier*, Literal*, Expression*>;
@@ -355,7 +366,7 @@ struct Expression {
             val = _val;
         }
         static Primary* convert(parser::expr_primary *e); 
-        Type* resolve_type();
+        ExprReturnType* resolve_type();
         void emit_asm();
     };
 
@@ -368,7 +379,7 @@ struct Expression {
             ops = _ops;
         }
         static Postfix* convert(parser::expr_postfix *e);
-        Type* resolve_type();
+        ExprReturnType* resolve_type();
         void emit_asm();
     };
 
@@ -385,7 +396,7 @@ struct Expression {
             val = _val;
         }
         static Unary* convert(parser::expr_unary *e);
-        Type* resolve_type();
+        ExprReturnType* resolve_type();
         void emit_asm();
     };
 
@@ -397,7 +408,7 @@ struct Expression {
             terms = _terms;
         }
         static Multiplicative* convert(parser::expr_multiplicative *e);
-        Type* resolve_type();
+        ExprReturnType* resolve_type();
         void emit_asm();
     };
 
@@ -409,7 +420,7 @@ struct Expression {
             terms = _terms;
         }
         static Additive* convert(parser::expr_additive *e);
-        Type* resolve_type();
+        ExprReturnType* resolve_type();
         void emit_asm();
     };
 
@@ -421,7 +432,7 @@ struct Expression {
             terms = _terms;
         }
         static Shift* convert(parser::expr_shift *e);
-        Type* resolve_type();
+        ExprReturnType* resolve_type();
         void emit_asm();
     };
 
@@ -433,7 +444,7 @@ struct Expression {
             terms = _terms;
         }
         static Relational* convert(parser::expr_relational *e);
-        Type* resolve_type();
+        ExprReturnType* resolve_type();
         void emit_asm();
     };
 
@@ -445,7 +456,7 @@ struct Expression {
             terms = _terms;
         }
         static Equality* convert(parser::expr_equality *e);
-        Type* resolve_type();
+        ExprReturnType* resolve_type();
         void emit_asm();
     };
 
@@ -457,7 +468,7 @@ struct Expression {
             terms = _terms;
         }
         static BitAnd* convert(parser::expr_bit_and *e);
-        Type* resolve_type();
+        ExprReturnType* resolve_type();
         void emit_asm();
     };
 
@@ -469,7 +480,7 @@ struct Expression {
             terms = _terms;
         }
         static BitXor* convert(parser::expr_bit_xor *e);
-        Type* resolve_type();
+        ExprReturnType* resolve_type();
         void emit_asm();
     };
 
@@ -481,7 +492,7 @@ struct Expression {
             terms = _terms;
         }
         static BitOr* convert(parser::expr_bit_or *e);
-        Type* resolve_type();
+        ExprReturnType* resolve_type();
         void emit_asm();
     };
 
@@ -493,13 +504,37 @@ struct Expression {
             terms = _terms;
         }
         static LogicalAnd* convert(parser::expr_logical_and* e);
-        Type* resolve_type();
+        ExprReturnType* resolve_type();
+        void emit_asm();
+    };
+
+    struct LogicalOr {
+        std::vector<std::string> ops;
+        std::vector<LogicalAnd*> terms;
+        LogicalOr(std::vector<std::string> _ops, std::vector<LogicalAnd*> _terms) {
+            ops = _ops;
+            terms = _terms;
+        }
+        static LogicalOr* convert(parser::expr_logical_or* e);
+        ExprReturnType* resolve_type();
+        void emit_asm();
+    };
+
+    struct Assignment {
+        std::vector<std::string> ops;
+        std::vector<LogicalOr*> terms;
+        Assignment(std::vector<std::string> _ops, std::vector<LogicalOr*> _terms) {
+            ops = _ops;
+            terms = _terms;
+        }
+        static Assignment* convert(parser::expr_assignment* e);
+        ExprReturnType* resolve_type();
         void emit_asm();
     };
 
     std::vector<std::string> ops;
-    std::vector<LogicalAnd*> terms;
-    Expression(std::vector<std::string> _ops, std::vector<LogicalAnd*> _terms) {
+    std::vector<Assignment*> terms;
+    Expression(std::vector<std::string> _ops, std::vector<Assignment*> _terms) {
         ops = _ops;
         terms = _terms;
     }
@@ -518,21 +553,6 @@ struct Declaration {
         expr = _expr;
     }
     static Declaration* convert(parser::declaration *d);
-    bool is_well_formed();
-    void emit_asm();
-};
-
-struct Assignment {
-    using val_op = std::variant<Expression*, std::pair<std::string, Identifier*>>;
-    Identifier *id;
-    std::vector<val_op> index_expr;
-    Expression *expr;
-    Assignment(Identifier *_id, std::vector<val_op> _index_expr, Expression *_expr) {
-        id = _id;
-        index_expr = _index_expr;
-        expr = _expr;
-    }
-    static Assignment* convert(parser::assignment *a);
     bool is_well_formed();
     void emit_asm();
 };
@@ -577,15 +597,6 @@ struct ReturnStatement : public SimpleStatement {
     bool is_always_returning() override;
 };
 
-struct AssignmentStatement : public SimpleStatement {
-    Assignment *assignment;
-    AssignmentStatement(Assignment *a) {
-        assignment = a;
-    }
-    bool is_well_formed() override;
-    bool is_always_returning() override;
-};
-
 struct ControlStatement : public Statement {
     static ControlStatement* convert(parser::control_statement *s);
     virtual bool is_well_formed() = 0;
@@ -621,16 +632,16 @@ struct WhileStatement : public ControlStatement {
 
 struct ForStatement : public ControlStatement {
     std::optional<Declaration*> declaration;
-    std::optional<Expression*> expr;
-    std::optional<Assignment*> assignment;
+    std::optional<Expression*> expr1;
+    std::optional<Expression*> expr2;
     Statement *statement;
-    ForStatement(Declaration *_declaration, Expression *_expr, Assignment *_assignment, Statement *_statement) {
+    ForStatement(Declaration *_declaration, Expression *_expr1, Expression *_expr2, Statement *_statement) {
         if(_declaration == nullptr) declaration = std::nullopt;
         else declaration = _declaration;
-        if(_expr == nullptr) expr = std::nullopt;
-        else expr = _expr;
-        if(_assignment == nullptr) assignment = std::nullopt;
-        else assignment = _assignment;
+        if(_expr1 == nullptr) expr1 = std::nullopt;
+        else expr1 = _expr1;
+        if(_expr2 == nullptr) expr2 = std::nullopt;
+        else expr2 = _expr2;
         statement = _statement;
     }
     bool is_well_formed() override;
@@ -834,6 +845,7 @@ std::string indent();
 char escape_to_char(parser::escape *e);
 std::string create_new_label();
 void emit_retrieve_array(int sz);
+void emit_address_array(int sz);
 void emit_write_array(int sz);
 void emit_mem_retrieve(int sz);
 void emit_mem_store(int sz);
@@ -978,7 +990,7 @@ namespace std {
 //for binary operators, assumes left is in %rax and right is in %rbx
 //for left unary operators, assumes right is in %rax
 //for right unary operators, assumes left is in %rax
-//for casting, assumes left is in %rax
+//for casting, assumes the input is in %rax
 //for the indexing operator specifically, '[]', the result of the expression is in %rbx
 //will place the answer into %rax
 struct TypeConversion {
@@ -1211,6 +1223,16 @@ void emit_retrieve_array(int sz) {
     else if(sz == 2) fout << indent() << "movw (%rax, %rbx, 2), %ax\n";
     else if(sz == 4) fout << indent() << "movl (%rax, %rbx, 4), %eax\n";
     else if(sz == 8) fout << indent() << "movq (%rax, %rbx, 8), %rax\n";
+    else assert(false);
+}
+
+//expects %rax = array start, %rbx = array index
+//will put address of element into %rax
+void emit_address_array(int sz) {
+    if(sz == 1) fout << indent() << "lea (%rax, %rbx, 1), %rax\n";
+    else if(sz == 2) fout << indent() << "lea (%rax, %rbx, 2), %rax\n";
+    else if(sz == 4) fout << indent() << "lea (%rax, %rbx, 4), %rax\n";
+    else if(sz == 8) fout << indent() << "lea (%rax, %rbx, 8), %rax\n";
     else assert(false);
 }
 
@@ -1832,7 +1854,7 @@ Expression::LogicalAnd* Expression::LogicalAnd::convert(parser::expr_logical_and
     return new Expression::LogicalAnd(ops, terms);
 }
 
-Expression* Expression::convert(parser::expression *e) {
+Expression::LogicalOr* Expression::LogicalOr::convert(parser::expr_logical_or *e) {
     std::vector<std::string> ops;
     std::vector<Expression::LogicalAnd*> terms;
     terms.push_back(Expression::LogicalAnd::convert(e->t0));
@@ -1840,6 +1862,28 @@ Expression* Expression::convert(parser::expression *e) {
         ops.push_back(e->t1[i]->t1);
         terms.push_back(Expression::LogicalAnd::convert(e->t1[i]->t3));
     }
+    return new Expression::LogicalOr(ops, terms);
+}
+
+Expression::Assignment* Expression::Assignment::convert(parser::expr_assignment *e) {
+    std::vector<std::string> ops;
+    std::vector<Expression::LogicalOr*> terms;
+    terms.push_back(Expression::LogicalOr::convert(e->t0));
+    for(int i = 0; i < e->t1.size(); i++){
+        ops.push_back(e->t1[i]->t1);
+        terms.push_back(Expression::LogicalOr::convert(e->t1[i]->t3));
+    }
+    return new Expression::Assignment(ops, terms);
+}
+
+Expression* Expression::convert(parser::expression *e) {
+    std::vector<std::string> ops;
+    std::vector<Expression::Assignment*> terms;
+    terms.push_back(Expression::Assignment::convert(e->t0));
+    // for(int i = 0; i < e->t1.size(); i++){
+    //     ops.push_back(e->t1[i]->t1);
+    //     terms.push_back(Expression::Assignment::convert(e->t1[i]->t3));
+    // }
     return new Expression(ops, terms);
 }
 
@@ -1848,29 +1892,6 @@ Declaration* Declaration::convert(parser::declaration *d) {
     Identifier *name = Identifier::convert(d->t2);
     Expression *expr = Expression::convert(d->t6);
     return new Declaration(type, name, expr);
-}
-
-Assignment* Assignment::convert(parser::assignment *a) {
-    Identifier *id = Identifier::convert(a->t0);
-    std::vector<val_op> index_expr;
-    for(int i = 0; i < a->t1.size(); i++){
-        if(a->t1[i]->t1->is_c0) {   //indexing
-            index_expr.push_back(Expression::convert(a->t1[i]->t1->t0->t2));
-        }
-        else if(a->t1[i]->t1->is_c1) {  //member variable access
-            std::string op = ".";
-            Identifier *id = Identifier::convert(a->t1[i]->t1->t1->t2);
-            index_expr.push_back(std::make_pair(op, id));
-        }
-        else if(a->t1[i]->t1->is_c2) {  //dereference, member variable access
-            std::string op = "->";
-            Identifier *id = Identifier::convert(a->t1[i]->t1->t2->t2);
-            index_expr.push_back(std::make_pair(op, id));
-        }
-        else assert(false);
-    }
-    Expression *expr = Expression::convert(a->t5);
-    return new Assignment(id, index_expr, expr);
 }
 
 Statement* Statement::convert(parser::statement *s) {
@@ -1899,12 +1920,8 @@ SimpleStatement* SimpleStatement::convert(parser::simple_statement *s) {
         Declaration *declaration = Declaration::convert(s->t1->t0);
         return new DeclarationStatement(declaration);
     }
-    else if(s->is_a2) { //assignment
-        Assignment *assignment = Assignment::convert(s->t2->t0);
-        return new AssignmentStatement(assignment);
-    }
-    else if(s->is_a3) { //expression
-        Expression *expr = Expression::convert(s->t3->t0);
+    else if(s->is_a2) { //expression
+        Expression *expr = Expression::convert(s->t2->t0);
         return new ExpressionStatement(expr);
     }
     else assert(false);
@@ -1943,12 +1960,12 @@ ControlStatement* ControlStatement::convert(parser::control_statement *s) {
     else if(s->is_a2) { //for statement
         Declaration *declaration = nullptr;
         if(s->t2->t4 != nullptr) declaration = Declaration::convert(s->t2->t4->t0);
-        Expression *expr = nullptr;
-        if(s->t2->t8 != nullptr) expr = Expression::convert(s->t2->t8->t0);
-        Assignment *assignment = nullptr;
-        if(s->t2->t12 != nullptr) assignment = Assignment::convert(s->t2->t12->t0);
+        Expression *expr1 = nullptr;
+        if(s->t2->t8 != nullptr) expr1 = Expression::convert(s->t2->t8->t0);
+        Expression *expr2 = nullptr;
+        if(s->t2->t12 != nullptr) expr2 = Expression::convert(s->t2->t12->t0);
         Statement *statement = Statement::convert(s->t2->t16);
-        return new ForStatement(declaration, expr, assignment, statement);
+        return new ForStatement(declaration, expr1, expr2, statement);
     }
     else assert(false);
 }
@@ -2055,28 +2072,37 @@ Type* StringLiteral::resolve_type() {
     return new PointerType(new BaseType("char"));
 }
 
-Type* Expression::Primary::resolve_type() {
+ExprReturnType* Expression::Primary::resolve_type() {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *f = std::get<FunctionCall*>(val);
-        return f->resolve_type();
+        Type *t = f->resolve_type();
+        if(t == nullptr) return nullptr;
+        return new ExprReturnType(t, 0);
     }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
-        return find_variable_type(id);
+        Type *t = find_variable_type(id);
+        if(t == nullptr) return nullptr;
+        return new ExprReturnType(t, 1);
     }
     else if(std::holds_alternative<Literal*>(val)) {
         Literal *l = std::get<Literal*>(val);
-        return l->resolve_type();
+        Type *t = l->resolve_type();
+        if(t == nullptr) return nullptr;
+        return new ExprReturnType(t, 0);
     }
     else if(std::holds_alternative<Expression*>(val)) {
         Expression *e = std::get<Expression*>(val);
-        return e->resolve_type();
+        Type *t = e->resolve_type();
+        if(t == nullptr) return nullptr;
+        return new ExprReturnType(t, 0);
     }
     else assert(false);
 }
 
-Type* Expression::Postfix::resolve_type() {
-    Type *t = term->resolve_type();
+ExprReturnType* Expression::Postfix::resolve_type() {
+    ExprReturnType *ert = term->resolve_type();
+    if(ert == nullptr) return nullptr;
     for(int i = 0; i < ops.size(); i++){
         val_op op = ops[i];
         if(std::holds_alternative<Expression*>(op)) {   //indexing
@@ -2087,164 +2113,286 @@ Type* Expression::Postfix::resolve_type() {
                 std::cout << "Indexing expression must resolve to int\n";
                 return nullptr;
             }
-            if(auto x = dynamic_cast<PointerType*>(t)) {
-                t = x->type;
-            }
-            else {
-                std::cout << "Can't index into non-pointer type " << t->to_string();
+            if(dynamic_cast<PointerType*>(ert->type) == nullptr) {
+                std::cout << "Can't index into non-pointer type " << ert->type->to_string() << "\n";
                 return nullptr;
-            } 
+            }
+            Type *nt = dynamic_cast<PointerType*>(ert->type)->type;
+            ert = new ExprReturnType(nt, ert->is_lvalue);
         }
         else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {
             std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
             FunctionCall *fc = p.second;
-            if(p.first == ".") {    //function call
-                fc = new FunctionCall(t, fc->id, fc->argument_list);
-                t = fc->resolve_type();
-            }
-            else if(p.first == "->") {  //dereference function call
-                //dereference type
+            Type *t = ert->type;    
+
+            //dereference
+            if(p.first == "->") {
                 if(dynamic_cast<PointerType*>(t) == nullptr) {
                     std::cout << "Trying to dereference non-pointer type " << t->to_string() << "\n";
                     return nullptr;
                 }
                 t = dynamic_cast<PointerType*>(t)->type;
-                fc = new FunctionCall(t, fc->id, fc->argument_list);
-                t = fc->resolve_type();
             }
-            else assert(false);
+
+            //member function call
+            fc = new FunctionCall(t, fc->id, fc->argument_list);
+            Type *nt = fc->resolve_type();
+            if(fc->resolve_type() == nullptr) {
+                std::cout << "Failed to resolve type of function call\n";
+                return nullptr;
+            }
+            ert = new ExprReturnType(nt, 0);
         }
         else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
             std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
             Identifier *id = p.second;
-            if(p.first == ".") {    //member variable access
-                StructLayout *sl = get_struct_layout(t);
-                if(sl == nullptr) {
-                    std::cout << "Unable to find StructLayout for " << t->to_string() << "\n";
-                    return nullptr;
-                }
-                if(sl->get_type(id) == nullptr) {
-                    std::cout << "Unknown member variable identifier \"" << id->name << "\" for type " << t->to_string() << "\n";
-                    return nullptr;
-                }
-                t = sl->get_type(id);
-            }
-            else if(p.first == "->") { //dereference, member variable access
-                //dereference
+            Type *t = ert->type;
+            
+            //dereference
+            if(p.first == "->") {
                 if(dynamic_cast<PointerType*>(t) == nullptr) {
                     std::cout << "Trying to dereference non-pointer type " << t->to_string() << "\n";
                     return nullptr;
                 }
                 t = dynamic_cast<PointerType*>(t)->type;
-
-                StructLayout *sl = get_struct_layout(t);
-                if(sl == nullptr) {
-                    std::cout << "Unable to find StructLayout for " << t->to_string() << "\n";
-                    return nullptr;
-                }
-                if(sl->get_type(id) == nullptr) {
-                    std::cout << "Unknown member variable identifier \"" << id->name << "\" for type " << t->to_string() << "\n";
-                    return nullptr;
-                }
-                t = sl->get_type(id);
             }
-            else assert(false);
+
+            //member variable access
+            StructLayout *sl = get_struct_layout(t);
+            if(sl == nullptr) {
+                std::cout << "Unable to find StructLayout for " << t->to_string() << "\n";
+                return nullptr;
+            }
+            if(sl->get_type(id) == nullptr) {
+                std::cout << "Unknown member variable identifier \"" << id->name << "\" for type " << t->to_string() << "\n";
+                return nullptr;
+            }
+            Type *nt = sl->get_type(id);
+            ert = new ExprReturnType(nt, ert->is_lvalue);
         }
         else assert(false);
     }
-    return t;
+    return ert;
 }
 
-Type* Expression::Unary::resolve_type() {
+ExprReturnType* Expression::Unary::resolve_type() {
     if(std::holds_alternative<Postfix*>(val)) {
         Expression::Postfix *p = std::get<Expression::Postfix*>(val);
         return p->resolve_type();
     }
     else if(std::holds_alternative<Unary*>(val)) {
         Expression::Unary *u = std::get<Expression::Unary*>(val);
-        return find_resulting_type(op, u->resolve_type());
+        ExprReturnType *right = u->resolve_type();
+        if(right == nullptr) return nullptr;
+        Type *res = find_resulting_type(op, right->type);
+        if(res == nullptr) {
+            std::cout << "Left unary operator does not exist : " << op << right->type->to_string() << "\n";
+            return nullptr;
+        }
+        return new ExprReturnType(res, 0);
     }
     else assert(false);
 }
 
-Type* Expression::Multiplicative::resolve_type() {
-    Type *left = terms[0]->resolve_type();
+ExprReturnType* Expression::Multiplicative::resolve_type() {
+    ExprReturnType *left = terms[0]->resolve_type();
+    if(left == nullptr) return nullptr;
     for(int i = 1; i < terms.size(); i++){
-        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+        ExprReturnType *right = terms[i]->resolve_type();
+        if(right == nullptr) return nullptr;
+        Type *lt = left->type, *rt = right->type;
+        Type *res = find_resulting_type(lt, ops[i - 1], rt);
+        if(res == nullptr) {
+            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
+            return nullptr;
+        }
+        left = new ExprReturnType(res, 0);
     }
     return left;
 }
 
-Type* Expression::Additive::resolve_type() {
-    Type *left = terms[0]->resolve_type();
+ExprReturnType* Expression::Additive::resolve_type() {
+    ExprReturnType *left = terms[0]->resolve_type();
+    if(left == nullptr) return nullptr;
     for(int i = 1; i < terms.size(); i++){
-        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+        ExprReturnType *right = terms[i]->resolve_type();
+        if(right == nullptr) return nullptr;
+        Type *lt = left->type, *rt = right->type;
+        Type *res = find_resulting_type(lt, ops[i - 1], rt);
+        if(res == nullptr) {
+            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
+            return nullptr;
+        }
+        left = new ExprReturnType(res, 0);
     }
     return left;
 }
 
-Type* Expression::Shift::resolve_type() {
-    Type *left = terms[0]->resolve_type();
+ExprReturnType* Expression::Shift::resolve_type() {
+    ExprReturnType *left = terms[0]->resolve_type();
+    if(left == nullptr) return nullptr;
     for(int i = 1; i < terms.size(); i++){
-        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+        ExprReturnType *right = terms[i]->resolve_type();
+        if(right == nullptr) return nullptr;
+        Type *lt = left->type, *rt = right->type;
+        Type *res = find_resulting_type(lt, ops[i - 1], rt);
+        if(res == nullptr) {
+            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
+            return nullptr;
+        }
+        left = new ExprReturnType(res, 0);
     }
     return left;
 }
 
-Type* Expression::Relational::resolve_type() {
-    Type *left = terms[0]->resolve_type();
+ExprReturnType* Expression::Relational::resolve_type() {
+    ExprReturnType *left = terms[0]->resolve_type();
+    if(left == nullptr) return nullptr;
     for(int i = 1; i < terms.size(); i++){
-        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+        ExprReturnType *right = terms[i]->resolve_type();
+        if(right == nullptr) return nullptr;
+        Type *lt = left->type, *rt = right->type;
+        Type *res = find_resulting_type(lt, ops[i - 1], rt);
+        if(res == nullptr) {
+            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
+            return nullptr;
+        }
+        left = new ExprReturnType(res, 0);
     }
     return left;
 }
 
-Type* Expression::Equality::resolve_type() {
-    Type *left = terms[0]->resolve_type();
+ExprReturnType* Expression::Equality::resolve_type() {
+    ExprReturnType *left = terms[0]->resolve_type();
+    if(left == nullptr) return nullptr;
     for(int i = 1; i < terms.size(); i++){
-        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+        ExprReturnType *right = terms[i]->resolve_type();
+        if(right == nullptr) return nullptr;
+        Type *lt = left->type, *rt = right->type;
+        Type *res = find_resulting_type(lt, ops[i - 1], rt);
+        if(res == nullptr) {
+            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
+            return nullptr;
+        }
+        left = new ExprReturnType(res, 0);
     }
     return left;
 }
 
-Type* Expression::BitAnd::resolve_type() {
-    Type *left = terms[0]->resolve_type();
+ExprReturnType* Expression::BitAnd::resolve_type() {
+    ExprReturnType *left = terms[0]->resolve_type();
+    if(left == nullptr) return nullptr;
     for(int i = 1; i < terms.size(); i++){
-        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+        ExprReturnType *right = terms[i]->resolve_type();
+        if(right == nullptr) return nullptr;
+        Type *lt = left->type, *rt = right->type;
+        Type *res = find_resulting_type(lt, ops[i - 1], rt);
+        if(res == nullptr) {
+            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
+            return nullptr;
+        }
+        left = new ExprReturnType(res, 0);
     }
     return left;
 }
 
-Type* Expression::BitXor::resolve_type() {
-    Type *left = terms[0]->resolve_type();
+ExprReturnType* Expression::BitXor::resolve_type() {
+    ExprReturnType *left = terms[0]->resolve_type();
+    if(left == nullptr) return nullptr;
     for(int i = 1; i < terms.size(); i++){
-        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+        ExprReturnType *right = terms[i]->resolve_type();
+        if(right == nullptr) return nullptr;
+        Type *lt = left->type, *rt = right->type;
+        Type *res = find_resulting_type(lt, ops[i - 1], rt);
+        if(res == nullptr) {
+            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
+            return nullptr;
+        }
+        left = new ExprReturnType(res, 0);
     }
     return left;
 }
 
-Type* Expression::BitOr::resolve_type() {
-    Type *left = terms[0]->resolve_type();
+ExprReturnType* Expression::BitOr::resolve_type() {
+    ExprReturnType *left = terms[0]->resolve_type();
+    if(left == nullptr) return nullptr;
     for(int i = 1; i < terms.size(); i++){
-        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+        ExprReturnType *right = terms[i]->resolve_type();
+        if(right == nullptr) return nullptr;
+        Type *lt = left->type, *rt = right->type;
+        Type *res = find_resulting_type(lt, ops[i - 1], rt);
+        if(res == nullptr) {
+            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
+            return nullptr;
+        }
+        left = new ExprReturnType(res, 0);
     }
     return left;
 }
 
-Type* Expression::LogicalAnd::resolve_type() {
-    Type *left = terms[0]->resolve_type();
+ExprReturnType* Expression::LogicalAnd::resolve_type() {
+    ExprReturnType *left = terms[0]->resolve_type();
+    if(left == nullptr) return nullptr;
     for(int i = 1; i < terms.size(); i++){
-        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+        ExprReturnType *right = terms[i]->resolve_type();
+        if(right == nullptr) return nullptr;
+        Type *lt = left->type, *rt = right->type;
+        Type *res = find_resulting_type(lt, ops[i - 1], rt);
+        if(res == nullptr) {
+            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
+            return nullptr;
+        }
+        left = new ExprReturnType(res, 0);
     }
     return left;
+}
+
+ExprReturnType* Expression::LogicalOr::resolve_type() {
+    ExprReturnType *left = terms[0]->resolve_type();
+    if(left == nullptr) return nullptr;
+    for(int i = 1; i < terms.size(); i++){
+        ExprReturnType *right = terms[i]->resolve_type();
+        if(right == nullptr) return nullptr;
+        Type *lt = left->type, *rt = right->type;
+        Type *res = find_resulting_type(lt, ops[i - 1], rt);
+        if(res == nullptr) {
+            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
+            return nullptr;
+        }
+        left = new ExprReturnType(res, 0);
+    }
+    return left;
+}
+
+ExprReturnType* Expression::Assignment::resolve_type() {
+    ExprReturnType* right = terms[terms.size() - 1]->resolve_type();
+    if(right == nullptr) return nullptr;
+    for(int i = (int) terms.size() - 2; i >= 0; i--){
+        ExprReturnType* left = terms[i]->resolve_type();
+        if(left == nullptr) return nullptr;
+        Type *rt = right->type, *lt = left->type;
+        //left must be an l-value
+        if(!left->is_lvalue) {
+            std::cout << "Expression Assignment : left term must be l-value\n";
+            return nullptr;
+        }
+        //can rt be casted into lt?
+        if(find_resulting_type(rt, lt) == nullptr) {
+            std::cout << "Expression Assignment : cannot cast " << rt->to_string() << " into " << lt->to_string() << "\n";
+            return nullptr;
+        }
+        right = new ExprReturnType(lt, 0);
+    }
+    return right;
 }
 
 Type* Expression::resolve_type() {
-    Type *left = terms[0]->resolve_type();
-    for(int i = 1; i < terms.size(); i++){
-        left = find_resulting_type(left, ops[i - 1], terms[i]->resolve_type());
+    ExprReturnType *left = nullptr;
+    for(int i = 0; i < terms.size(); i++){
+        left = terms[i]->resolve_type();
+        if(left == nullptr) return nullptr;
     }
-    return left;
+    return left->type;
 }
 
 Type* FunctionCall::resolve_type() {
@@ -2287,10 +2435,6 @@ bool ExpressionStatement::is_always_returning() {
 
 bool ReturnStatement::is_always_returning() {
     return true;
-}
-
-bool AssignmentStatement::is_always_returning() {
-    return false;
 }
 
 bool IfStatement::is_always_returning() {
@@ -2369,7 +2513,8 @@ void Expression::Primary::emit_asm() {
         Identifier *id = std::get<Identifier*>(val);
         Variable *v = get_variable(id);
         assert(v != nullptr);
-        fout << indent() << "mov " << v->stack_offset << "(%rbp), %rax\n";
+        fout << indent() << "mov " << v->stack_offset << "(%rbp), %rax\n";  //value
+        fout << indent() << "lea " << v->stack_offset << "(%rbp), %rcx\n";  //address
     }
     else if(std::holds_alternative<Literal*>(val)) {
         Literal *l = std::get<Literal*>(val);
@@ -2383,7 +2528,7 @@ void Expression::Primary::emit_asm() {
 }
 
 void Expression::Postfix::emit_asm() {
-    Type *t = term->resolve_type();
+    Type *t = term->resolve_type()->type;
     term->emit_asm();   
     for(int i = 0; i < ops.size(); i++){
         val_op op = ops[i];
@@ -2392,94 +2537,89 @@ void Expression::Postfix::emit_asm() {
             assert(dynamic_cast<PointerType*>(t) != nullptr);
             t = (dynamic_cast<PointerType*>(t))->type;
 
-            //save %rax to stack
+            //save %rax, %rcx to stack
             fout << indent() << "push %rax\n";
+            fout << indent() << "push %rcx\n";
 
             //evaluate expression
             Expression *expr = std::get<Expression*>(op);
             assert(expr != nullptr);
             expr->emit_asm();
 
-            //move expression result to %rbx
+            //move expression value to %rbx
             fout << indent() << "mov %rax, %rbx\n";
 
-            //return old %rax
+            //return old %rax, %rcx
+            fout << indent() << "pop %rcx\n";
             fout << indent() << "pop %rax\n";
+
+            //save array start
+            fout << indent() << "push %rax\n";
 
             //find sizeof struct
             int sz = t->calc_size();
 
-            //move data
+            //compute array element addr
+            emit_address_array(sz);
+            fout << indent() << "mov %rax, %rcx\n";
+
+            //return array start
+            fout << indent() << "pop %rax\n";
+
+            //retrieve array element data
             emit_retrieve_array(sz);
         }
         else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {
             std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
             FunctionCall *fc = p.second;
-            if(p.first == ".") {    //function call
-                fc = new FunctionCall(t, fc->id, fc->argument_list);
-                Function *f = get_function(fc->resolve_function_signature());
-                assert(f != nullptr);
 
-                //reference to type should already be in %rax
-                //emit function call
-                fc->emit_asm();
-
-                t = f->type;
-            }
-            else if(p.first == "->") {  //dereference function call
-                //dereference type, just grab whatever is at the mem location
+            //dereference
+            if(p.first == "->") {
+                fout << indent() << "mov %rax, %rcx\n";
                 fout << indent() << "movq (%rax), %rax\n";
+
                 assert(dynamic_cast<PointerType*>(t) != nullptr);
                 t = dynamic_cast<PointerType*>(t)->type;
                 assert(t != nullptr);
-
-                fc = new FunctionCall(t, fc->id, fc->argument_list);
-                Function *f = get_function(fc->resolve_function_signature());
-                assert(f != nullptr);
-                
-                //reference to type is in %rax
-                //emit function call
-                fc->emit_asm();
-
-                t = f->type;
             }
-            else assert(false);
+
+            //member function call
+            fc = new FunctionCall(t, fc->id, fc->argument_list);
+            Function *f = get_function(fc->resolve_function_signature());
+            assert(f != nullptr);
+
+            //this is no longer l-value, so don't have to maintain %rcx
+            //reference to type is in %rax, so emit function call
+            fc->emit_asm();
+
+            t = f->type;
         }
         else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
             std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
             Identifier *id = p.second;
-            if(p.first == ".") {    //member variable access
-                StructLayout *sl = get_struct_layout(t);
-                assert(sl != nullptr);
-                assert(sl->get_type(id) != nullptr);
 
-                int offset = sl->get_offset(id);
-                int sz = t->calc_size();
-                fout << indent() << "lea " << offset << "(%rax), %rax\n";
-                emit_mem_retrieve(sz);
-
-                t = sl->get_type(id);
-            }
-            else if(p.first == "->") { //dereference, member variable access
-                //dereference type, just grab whatever is at the mem location
+            //dereference
+            if(p.first == "->") {
+                fout << indent() << "mov %rax, %rcx\n";
                 fout << indent() << "movq (%rax), %rax\n";
+
                 assert(dynamic_cast<PointerType*>(t) != nullptr);
                 t = dynamic_cast<PointerType*>(t)->type;
                 assert(t != nullptr);
-
-                //grab value
-                StructLayout *sl = get_struct_layout(t);
-                assert(sl != nullptr);
-                assert(sl->get_type(id) != nullptr);
-
-                int offset = sl->get_offset(id);
-                int sz = t->calc_size();
-                fout << indent() << "lea " << offset << "(%rax), %rax\n";
-                emit_mem_retrieve(sz);
-
-                t = sl->get_type(id);
             }
-            else assert(false);
+
+            //member variable access
+            StructLayout *sl = get_struct_layout(t);
+            assert(sl != nullptr);
+            assert(sl->get_type(id) != nullptr);
+
+            int offset = sl->get_offset(id);
+            int sz = t->calc_size();
+            fout << indent() << "lea " << offset << "(%rax), %rcx\n";
+            fout << indent() << "lea " << offset << "(%rax), %rax\n";
+            emit_mem_retrieve(sz);  //now, %rax = member variable, %rcx = address of member variable
+
+            t = sl->get_type(id);
         }
         else assert(false);
     }
@@ -2493,7 +2633,7 @@ void Expression::Unary::emit_asm() {
     else if(std::holds_alternative<Unary*>(val)) {
         Expression::Unary *u = std::get<Expression::Unary*>(val);
         u->emit_asm();
-        TypeConversion *tc = find_type_conversion(op, u->resolve_type());
+        TypeConversion *tc = find_type_conversion(op, u->resolve_type()->type);
         tc->emit_asm();
     }
     else assert(false);
@@ -2507,7 +2647,7 @@ void Expression::Multiplicative::emit_asm() {
         fout << indent() << "mov %rax, %rbx\n";
         fout << indent() << "pop %rax\n";
         
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
         tc->emit_asm();
     }
 }
@@ -2520,7 +2660,7 @@ void Expression::Additive::emit_asm() {
         fout << indent() << "mov %rax, %rbx\n";
         fout << indent() << "pop %rax\n";
         
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
         tc->emit_asm();
     }
 }
@@ -2533,7 +2673,7 @@ void Expression::Shift::emit_asm() {
         fout << indent() << "mov %rax, %rbx\n";
         fout << indent() << "pop %rax\n";
         
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
         tc->emit_asm();
     }
 }
@@ -2546,7 +2686,7 @@ void Expression::Relational::emit_asm() {
         fout << indent() << "mov %rax, %rbx\n";
         fout << indent() << "pop %rax\n";
         
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
         tc->emit_asm();
     }
 }
@@ -2559,7 +2699,7 @@ void Expression::Equality::emit_asm() {
         fout << indent() << "mov %rax, %rbx\n";
         fout << indent() << "pop %rax\n";
         
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
         tc->emit_asm();
     }
 }
@@ -2572,7 +2712,7 @@ void Expression::BitAnd::emit_asm() {
         fout << indent() << "mov %rax, %rbx\n";
         fout << indent() << "pop %rax\n";
         
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
         tc->emit_asm();
     }
 }
@@ -2585,7 +2725,7 @@ void Expression::BitXor::emit_asm() {
         fout << indent() << "mov %rax, %rbx\n";
         fout << indent() << "pop %rax\n";
         
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
         tc->emit_asm();
     }
 }
@@ -2598,7 +2738,7 @@ void Expression::BitOr::emit_asm() {
         fout << indent() << "mov %rax, %rbx\n";
         fout << indent() << "pop %rax\n";
         
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
         tc->emit_asm();
     }
 }
@@ -2616,13 +2756,13 @@ void Expression::LogicalAnd::emit_asm() {
         fout << indent() << "mov %rax, %rbx\n";
         fout << indent() << "pop %rax\n";
 
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
         tc->emit_asm();
     }
     if(terms.size() > 1) fout << label << ":\n";
 }
 
-void Expression::emit_asm() {   //logical or
+void Expression::LogicalOr::emit_asm() {
     terms[0]->emit_asm();
     std::string label = "no-label";
     if(terms.size() > 1) label = create_new_label();
@@ -2635,10 +2775,42 @@ void Expression::emit_asm() {   //logical or
         fout << indent() << "mov %rax, %rbx\n";
         fout << indent() << "pop %rax\n";
 
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type(), ops[i - 1], terms[i]->resolve_type());
+        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
         tc->emit_asm();
     }
     if(terms.size() > 1) fout << label << ":\n";
+}
+
+void Expression::Assignment::emit_asm() {
+    terms[terms.size() - 1]->emit_asm();
+    Type *right = terms[terms.size() - 1]->resolve_type()->type;
+    for(int i = (int) terms.size() - 2; i >= 0; i--){
+        Type *left = terms[i]->resolve_type()->type;
+
+        //cast right into left
+        TypeConversion *tc = find_type_conversion(right, left);
+        tc->emit_asm();
+
+        //save value
+        fout << indent() << "push %rax\n";
+
+        //evaluate left l-value
+        terms[i]->emit_asm();
+
+        //store value into mem location
+        int sz = left->calc_size();
+        fout << indent() << "mov %rcx, %rbx\n";
+        fout << indent() << "pop %rax\n";
+        emit_mem_store(sz);
+
+        right = left;
+    }
+}
+
+void Expression::emit_asm() {
+    for(int i = 0; i < terms.size(); i++){
+        terms[i]->emit_asm();
+    }
 }
 
 void FunctionCall::emit_asm() {
@@ -2715,97 +2887,6 @@ void Declaration::emit_asm() {
     if(asm_debug) fout << indent() << "# done initialize local variable : " << type->to_string() << " " << id->name << "\n";
 }
 
-void Assignment::emit_asm() {
-    Variable *v = get_variable(id);
-    assert(v != nullptr);
-
-    if(asm_debug) fout << indent() << "# assignment start\n";
-
-    //load local variable address into %rax
-    fout << indent() << "lea " << v->stack_offset << "(%rbp), %rax\n";  //%rax points at the stack
-
-    //find index to place value into
-    Type *vt = v->type;
-    for(int i = 0; i < index_expr.size(); i++){
-        val_op op = index_expr[i];
-        if(std::holds_alternative<Expression*>(op)) {
-            //compute index
-            Expression *idx_expr = std::get<Expression*>(op);
-            fout << indent() << "push %rax\n";
-            idx_expr->emit_asm();
-            fout << indent() << "mov %rax, %rbx\n";
-            fout << indent() << "pop %rax\n";
-
-            //update mem address
-            PointerType *pt = dynamic_cast<PointerType*>(vt);
-            assert(pt != nullptr);
-            int sz = pt->type->calc_size();
-            fout << indent() << "mov (%rax), %rax\n";   //%rax now points at the beginning of the array
-            fout << indent() << "lea (%rax, %rbx, " << sz << "), %rax\n";
-
-            vt = pt->type;
-        }
-        else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
-            std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
-            Identifier *cid = p.second;
-            if(p.first == ".") {
-                //now, %rax is reference to type
-                fout << indent() << "movq (%rax), %rax\n";
-
-                StructLayout *sl = get_struct_layout(vt);
-                assert(sl != nullptr);
-                assert(sl->get_type(cid) != nullptr);
-
-                int offset = sl->get_offset(cid);
-                fout << indent() << "lea " << offset << "(%rax), %rax\n";
-
-                vt = sl->get_type(cid);
-            }
-            else if(p.first == "->") {
-                //now, %rax is pointer to type
-                fout << indent() << "movq (%rax), %rax\n";
-
-                //dereference, %rax is now reference to type
-                fout << indent() << "movq (%rax), %rax\n";
-                assert(dynamic_cast<PointerType*>(vt) != nullptr);
-                vt = dynamic_cast<PointerType*>(vt)->type;
-                assert(vt != nullptr);
-
-                //get member variable address
-                StructLayout *sl = get_struct_layout(vt);
-                assert(sl != nullptr);
-                assert(sl->get_type(cid) != nullptr);
-
-                int offset = sl->get_offset(cid);
-                fout << indent() << "lea " << offset << "(%rax), %rax\n";
-
-                vt = sl->get_type(cid);
-            }
-            else assert(false);
-        }
-        else assert(false);
-    }
-
-    //push index onto stack
-    fout << indent() << "push %rax\n";
-
-    //evaluate expression
-    expr->emit_asm();
-    
-    //cast expression type to variable type
-    Type *et = expr->resolve_type();
-    assert(et != nullptr);
-    TypeConversion *tc = find_type_conversion(et, vt);
-    assert(tc != nullptr);
-    tc->emit_asm();
-
-    //store expression value into index
-    fout << indent() << "pop %rbx\n";   //mem index
-    emit_mem_store(vt->calc_size());
-
-    if(asm_debug) fout << indent() << "# assignment end\n";
-}
-
 bool Declaration::is_well_formed() {
     // - is the type being used declared?
     if(!is_type_declared(type)) {
@@ -2840,99 +2921,6 @@ bool Declaration::is_well_formed() {
         return false;
     }
 
-    return true;
-}
-
-bool Assignment::is_well_formed() {
-    std::cout << "CHECK ASSIGNMENT WELL FORMED" << std::endl;
-
-    // - does the expression resolve to a type?
-    Type *et = expr->resolve_type();
-    if(et == nullptr) {
-        std::cout << "Assignment expression does not resolve to type\n";
-        return false;
-    }
-    // - does the type the expression resolves to exist?
-    if(!is_type_declared(et)) {
-        std::cout << "Assignment expression does not resolve to existing type\n";
-        return false;
-    }
-    // - does the variable exist?
-    Variable *v = get_variable(id);
-    if(v == nullptr) {
-        std::cout << "Assignment variable does not exist : " << id->name << "\n";
-        return false;
-    }
-    // - do all the indexing operations make sense?
-    Type *vt = v->type;
-    for(int i = 0; i < index_expr.size(); i++){
-        val_op op = index_expr[i];
-        if(std::holds_alternative<Expression*>(op)) {
-            // - is the current type a pointer type?
-            PointerType *pt = dynamic_cast<PointerType*>(vt);
-            if(pt == nullptr) {
-                std::cout << "Trying to index into non-pointer type : " << vt->to_string() << "\n";
-                return false;
-            }
-            vt = pt->type;
-
-            // - does the indexing expression resolve to an int?
-            Expression *idx_expr = std::get<Expression*>(op);
-            Type *iet = idx_expr->resolve_type();
-            if(iet == nullptr) {
-                std::cout << "Indexing expression does not resolve to type\n";
-                return false;
-            }
-            if(*iet != BaseType("int")) {
-                std::cout << "Indexing expression must resolve to int\n";
-                return false;
-            }
-        }
-        else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
-            std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
-            Identifier *cid = p.second;
-            if(p.first == ".") {
-                StructLayout *sl = get_struct_layout(vt);
-                if(sl == nullptr) {
-                    std::cout << "Unable to find StructLayout for " << vt->to_string() << "\n";
-                    return false;
-                }
-                if(sl->get_type(cid) == nullptr) {
-                    std::cout << "Unknown member variable identifier \"" << cid->name << "\" for type " << vt->to_string() << "\n";
-                    return false;
-                }
-                vt = sl->get_type(cid);
-            }
-            else if(p.first == "->") {
-                //dereference
-                if(dynamic_cast<PointerType*>(vt) == nullptr) {
-                    std::cout << "Trying to dereference non-pointer type " << vt->to_string() << "\n";
-                    return false;
-                }
-                vt = dynamic_cast<PointerType*>(vt)->type;
-
-                StructLayout *sl = get_struct_layout(vt);
-                if(sl == nullptr) {
-                    std::cout << "Unable to find StructLayout for " << vt->to_string() << "\n";
-                    return false;
-                }
-                if(sl->get_type(cid) == nullptr) {
-                    std::cout << "Unknown member variable identifier \"" << cid->name << "\" for type " << vt->to_string() << "\n";
-                    return false;
-                }
-                vt = sl->get_type(cid);
-            }
-            else assert(false);
-        }
-        else assert(false);
-    }
-    // - can the expression type be casted to the variable type?
-    if(find_type_conversion(et, vt) == nullptr) {
-        std::cout << "Assignment type mismatch: cannot cast " << et->to_string() << " to " << vt->to_string() << "\n";
-        return false;
-    }
-
-    std::cout << "DONE CHECK ASSIGNMENT WELL FORMED" << std::endl;
     return true;
 }
 
@@ -3006,18 +2994,6 @@ bool ReturnStatement::is_well_formed() {
         fout << indent() << "pop %rbp\n";
         fout << indent() << "ret\n";
     }
-
-    return true;
-}
-
-bool AssignmentStatement::is_well_formed() {
-    // - is the assignment well formed?
-    if(!assignment->is_well_formed()) {
-        std::cout << "Assignment not well formed\n";
-        return false;
-    }
-
-    assignment->emit_asm();
 
     return true;
 }
@@ -3116,16 +3092,18 @@ bool ForStatement::is_well_formed() {
             return false;
         }
     }
-    // - does the expression resolve to type 'int'?
-    if(expr.has_value()) {
-        Type *t = expr.value()->resolve_type();
+    // - does the conditional expression resolve to type 'int'?
+    if(expr1.has_value()) {
+        Type *t = expr1.value()->resolve_type();
         if(t == nullptr || *t != BaseType("int")) {
+            std::cout << "For loop conditional expression must resolve to type int\n";
             return false;
         }
     }
-    // - is the assignment well formed?
-    if(assignment.has_value()) {
-        if(!assignment.value()->is_well_formed()) {
+    // - is the assignment expression well formed?
+    if(expr2.has_value()) {
+        if(expr2.value()->resolve_type() == nullptr) {
+            std::cout << "For loop assignment expression not well formed\n";
             return false;
         }
     }
@@ -3141,8 +3119,8 @@ bool ForStatement::is_well_formed() {
     fout << loop_start_label << ":\n";
 
     //check loop condition
-    if(expr.has_value()) {
-        expr.value()->emit_asm();
+    if(expr1.has_value()) {
+        expr1.value()->emit_asm();
         fout << indent() << "cmp $0, %rax\n";
         fout << indent() << "je " << loop_end_label << "\n";
     }
@@ -3153,7 +3131,7 @@ bool ForStatement::is_well_formed() {
     }
 
     //loop variable assignment
-    if(assignment.has_value()) assignment.value()->emit_asm();
+    if(expr2.has_value()) expr2.value()->emit_asm();
 
     //jump to start of loop
     fout << indent() << "jmp " << loop_start_label << "\n";

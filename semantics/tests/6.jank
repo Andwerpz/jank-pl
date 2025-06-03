@@ -1,61 +1,73 @@
 
+//assignment update, sum query segment tree
+struct segtree {
+    int n;
+    int* a;
 
-struct vec2 {
-    int x;
-    int y;
+    segtree segtree() {}
+    segtree segtree(int n) {
 
-    vec2 vec2() {
-        this.x = 0;
-        this.y = 0;
-    }
-    vec2 vec2(int _x, int _y) {
-        this.x = _x;
-        this.y = _y;
-    }
-    vec2 vec2(vec2 other) {
-        this.x = other.x;
-        this.y = other.y;
     }
 
-    vec2 add(vec2 other) {
-        return vec2(this).addi(other);
-    }
-    vec2 addi(vec2 other) {
-        this.x = this.x + other.x;
-        this.y = this.y + other.y;
-        return this;
+}
+
+//just a vector<int>
+struct vector {
+    int sz;
+    int cap;
+    int* a;
+
+    vector vector() {
+        this.sz = 0;
+        this.cap = 1;
+        this.a = malloc(sizeof(int) * 1);
     }
 
-    void print() {
-        puts("vec2 : ");
-        puti(this.x);
-        puts(" ");
-        puti(this.y);
-        puts("\n");
+    vector vector(int n) {
+        this.sz = n;
+        this.cap = n;
+        this.a = malloc(sizeof(int) * n);
+        for(int i = 0; i < n; i = i + 1) this.a[i] = 0;
+    }
+
+    void pop_back() {
+        if(this.sz == 0) return;
+        this.sz = this.sz - 1;
+    }
+
+    void push_back(int x) {
+        if(this.sz == this.cap) this.grow();
+        this.a[this.sz] = x;
+        this.sz = this.sz + 1;
+    }
+
+    void grow() {
+        this.cap = this.cap * 2;
+        int* na = malloc(sizeof(int) * this.cap);
+        for(int i = 0; i < this.sz; i = i + 1) {
+            na[i] = this.a[i];
+        }
+        this.a = na;
+
+        puts("grow : ");
+        puti_endl(this.cap);
+    }
+
+    int at(int ind) {
+        return this.a[ind];
     }
 }
 
-void test1() {
-    vec2* a = malloc(sizeof(vec2) * 1);
-    a[0] = vec2(10, 20);
-    a->print();
-}
-
-void test2() {
-    vec2 a = vec2(1, 2);
-    vec2 b = vec2(3, 4);
-    vec2 c = a.add(b);
-    vec2 d = vec2(1, 1).addi(b).addi(c);
-    a.print();
-    b.print();
-    c.print();
-    d.print();
+void vector_test() {
+    vector a = vector();
+    for(int i = 0; i < 1000000; i = i + 1) {
+        a.push_back(i);
+    }
 }
 
 int main() {
-    
-    test1();
-    test2();
+
+    vector_test();
 
     return 0;
 }

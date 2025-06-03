@@ -6,7 +6,7 @@ struct segtree {
 
     segtree segtree() {}
     segtree segtree(int n) {
-        
+
     }
 
 }
@@ -26,24 +26,50 @@ struct vector {
     vector vector(int n) {
         this.sz = n;
         this.cap = n;
-        this.a = malloc(sizeof(int) * 1);
+        this.a = malloc(sizeof(int) * n);
         for(int i = 0; i < n; i = i + 1) this.a[i] = 0;
     }
 
-    void pop_back(int x) {
-
+    void pop_back() {
+        if(this.sz == 0) return;
+        this.sz = this.sz - 1;
     }
 
     void push_back(int x) {
+        if(this.sz == this.cap) this.grow();
+        this.a[this.sz] = x;
+        this.sz = this.sz + 1;
+    }
 
+    void grow() {
+        this.cap = this.cap * 2;
+        int* na = malloc(sizeof(int) * this.cap);
+        for(int i = 0; i < this.sz; i = i + 1) {
+            na[i] = this.a[i];
+        }
+        this.a = na;
+
+        puts("grow : ");
+        puti_endl(this.cap);
+    }
+
+    int at(int ind) {
+        return this.a[ind];
+    }
+}
+
+
+
+void vector_test() {
+    vector a = vector();
+    for(int i = 0; i < 1000000; i = i + 1) {
+        a.push_back(i);
     }
 }
 
 int main() {
-    
-    int n = 1000;
-    vector a = vector(n);
-    segtree segt = segtree(n);
+
+    vector_test();
 
     return 0;
 }

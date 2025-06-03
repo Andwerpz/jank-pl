@@ -1,4 +1,4 @@
-// Date Generated : 06-01-2025 14:46:45
+// Date Generated : 06-02-2025 22:52:07
 #include <vector>
 #include <string>
 #include <cassert>
@@ -73,6 +73,8 @@ namespace parser {
     struct expr_bit_xor;
     struct expr_bit_or;
     struct expr_logical_and;
+    struct expr_logical_or;
+    struct expr_assignment;
     struct expression;
     struct member_variable_declaration;
     struct struct_definition;
@@ -90,7 +92,6 @@ namespace parser {
     struct base_type;
     struct identifier;
     struct declaration;
-    struct assignment;
     struct parameter;
     struct parameter_list;
     struct argument_list;
@@ -1194,8 +1195,8 @@ namespace parser {
         std::string to_string();
     };
 
-    // expression = expr_logical_and , { ows , "||" , ows , expr_logical_and } ;
-    struct expression {
+    // expr_logical_or = expr_logical_and , { ows , "||" , ows , expr_logical_and } ;
+    struct expr_logical_or {
         struct a0 {
             ows *t0;
             std::string t1;
@@ -1212,9 +1213,45 @@ namespace parser {
         };
         expr_logical_and *t0;
         std::vector<a0*> t1;
-        expression(expr_logical_and *_t0, std::vector<a0*> _t1) {
+        expr_logical_or(expr_logical_and *_t0, std::vector<a0*> _t1) {
             t0 = _t0;
             t1 = _t1;
+        }
+        static expr_logical_or* parse();
+        std::string to_string();
+    };
+
+    // expr_assignment = expr_logical_or , { ows , "=" , ows , expr_logical_or } ;
+    struct expr_assignment {
+        struct a0 {
+            ows *t0;
+            std::string t1;
+            ows *t2;
+            expr_logical_or *t3;
+            a0(ows *_t0, std::string _t1, ows *_t2, expr_logical_or *_t3) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        expr_logical_or *t0;
+        std::vector<a0*> t1;
+        expr_assignment(expr_logical_or *_t0, std::vector<a0*> _t1) {
+            t0 = _t0;
+            t1 = _t1;
+        }
+        static expr_assignment* parse();
+        std::string to_string();
+    };
+
+    // expression = expr_assignment ;
+    struct expression {
+        expr_assignment *t0;
+        expression(expr_assignment *_t0) {
+            t0 = _t0;
         }
         static expression* parse();
         std::string to_string();
@@ -3290,98 +3327,6 @@ namespace parser {
         std::string to_string();
     };
 
-    // assignment = identifier , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , identifier | "->" , ows , identifier ) } , ows , "=" , ows , expression ;
-    struct assignment {
-        struct a0 {
-            struct b0 {
-                struct c0 {
-                    std::string t0;
-                    ows *t1;
-                    expression *t2;
-                    ows *t3;
-                    std::string t4;
-                    c0(std::string _t0, ows *_t1, expression *_t2, ows *_t3, std::string _t4) {
-                        t0 = _t0;
-                        t1 = _t1;
-                        t2 = _t2;
-                        t3 = _t3;
-                        t4 = _t4;
-                    }
-                    static c0* parse();
-                    std::string to_string();
-                };
-                struct c1 {
-                    std::string t0;
-                    ows *t1;
-                    identifier *t2;
-                    c1(std::string _t0, ows *_t1, identifier *_t2) {
-                        t0 = _t0;
-                        t1 = _t1;
-                        t2 = _t2;
-                    }
-                    static c1* parse();
-                    std::string to_string();
-                };
-                struct c2 {
-                    std::string t0;
-                    ows *t1;
-                    identifier *t2;
-                    c2(std::string _t0, ows *_t1, identifier *_t2) {
-                        t0 = _t0;
-                        t1 = _t1;
-                        t2 = _t2;
-                    }
-                    static c2* parse();
-                    std::string to_string();
-                };
-                bool is_c0 = false;
-                c0 *t0;
-                bool is_c1 = false;
-                c1 *t1;
-                bool is_c2 = false;
-                c2 *t2;
-                b0(c0 *_t0) {
-                    is_c0 = true;
-                    t0 = _t0;
-                }
-                b0(c1 *_t1) {
-                    is_c1 = true;
-                    t1 = _t1;
-                }
-                b0(c2 *_t2) {
-                    is_c2 = true;
-                    t2 = _t2;
-                }
-                static b0* parse();
-                std::string to_string();
-            };
-            ows *t0;
-            b0 *t1;
-            a0(ows *_t0, b0 *_t1) {
-                t0 = _t0;
-                t1 = _t1;
-            }
-            static a0* parse();
-            std::string to_string();
-        };
-        identifier *t0;
-        std::vector<a0*> t1;
-        ows *t2;
-        std::string t3;
-        ows *t4;
-        expression *t5;
-        assignment(identifier *_t0, std::vector<a0*> _t1, ows *_t2, std::string _t3, ows *_t4, expression *_t5) {
-            t0 = _t0;
-            t1 = _t1;
-            t2 = _t2;
-            t3 = _t3;
-            t4 = _t4;
-            t5 = _t5;
-        }
-        static assignment* parse();
-        std::string to_string();
-    };
-
     // parameter = type , rws , identifier ;
     struct parameter {
         type *t0;
@@ -3512,7 +3457,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // simple_statement = "return" , [ rws , expression ] , ows , ";" | declaration , ows , ";" | assignment , ows , ";" | expression , ows , ";" ;
+    // simple_statement = "return" , [ rws , expression ] , ows , ";" | declaration , ows , ";" | expression , ows , ";" ;
     struct simple_statement {
         struct a0 {
             struct b0 {
@@ -3551,27 +3496,15 @@ namespace parser {
             std::string to_string();
         };
         struct a2 {
-            assignment *t0;
+            expression *t0;
             ows *t1;
             std::string t2;
-            a2(assignment *_t0, ows *_t1, std::string _t2) {
+            a2(expression *_t0, ows *_t1, std::string _t2) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
             }
             static a2* parse();
-            std::string to_string();
-        };
-        struct a3 {
-            expression *t0;
-            ows *t1;
-            std::string t2;
-            a3(expression *_t0, ows *_t1, std::string _t2) {
-                t0 = _t0;
-                t1 = _t1;
-                t2 = _t2;
-            }
-            static a3* parse();
             std::string to_string();
         };
         bool is_a0 = false;
@@ -3580,8 +3513,6 @@ namespace parser {
         a1 *t1;
         bool is_a2 = false;
         a2 *t2;
-        bool is_a3 = false;
-        a3 *t3;
         simple_statement(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
@@ -3594,15 +3525,11 @@ namespace parser {
             is_a2 = true;
             t2 = _t2;
         }
-        simple_statement(a3 *_t3) {
-            is_a3 = true;
-            t3 = _t3;
-        }
         static simple_statement* parse();
         std::string to_string();
     };
 
-    // control_statement = "if" , ows , "(" , ows , expression , ows , ")" , ows , statement , [ rws , "else" , rws , statement ] | "while" , ows , "(" , ows , expression , ows , ")" , ows , statement | "for" , ows , "(" , ows , [ declaration ] , ows , ";" , ows , [ expression ] , ows , ";" , ows , [ assignment ] , ows , ")" , ows , statement ;
+    // control_statement = "if" , ows , "(" , ows , expression , ows , ")" , ows , statement , [ rws , "else" , rws , statement ] | "while" , ows , "(" , ows , expression , ows , ")" , ows , statement | "for" , ows , "(" , ows , [ declaration ] , ows , ";" , ows , [ expression ] , ows , ";" , ows , [ expression ] , ows , ")" , ows , statement ;
     struct control_statement {
         struct a0 {
             struct b0 {
@@ -3686,8 +3613,8 @@ namespace parser {
                 std::string to_string();
             };
             struct b2 {
-                assignment *t0;
-                b2(assignment *_t0) {
+                expression *t0;
+                b2(expression *_t0) {
                     t0 = _t0;
                 }
                 static b2* parse();
@@ -5347,7 +5274,7 @@ namespace parser {
         return ans;
     }
 
-    expression::a0* expression::a0::parse() {
+    expr_logical_or::a0* expr_logical_or::a0::parse() {
         push_stack();
         ows *_t0 = ows::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
@@ -5358,10 +5285,10 @@ namespace parser {
         expr_logical_and *_t3 = expr_logical_and::parse();
         if(_t3 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        return new expression::a0(_t0, _t1, _t2, _t3);
+        return new expr_logical_or::a0(_t0, _t1, _t2, _t3);
     }
 
-    std::string expression::a0::to_string() {
+    std::string expr_logical_or::a0::to_string() {
         std::string ans = "";
         ans += t0->to_string();
         ans += t1;
@@ -5370,24 +5297,82 @@ namespace parser {
         return ans;
     }
 
-    expression* expression::parse() {
+    expr_logical_or* expr_logical_or::parse() {
         push_stack();
         expr_logical_and *_t0 = expr_logical_and::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        std::vector<expression::a0*> _t1;
+        std::vector<expr_logical_or::a0*> _t1;
         while(true) {
-            expression::a0 *tmp = expression::a0::parse();
+            expr_logical_or::a0 *tmp = expr_logical_or::a0::parse();
             if(tmp == nullptr) break;
             _t1.push_back(tmp);
         }
         rm_stack();
-        return new expression(_t0, _t1);
+        return new expr_logical_or(_t0, _t1);
+    }
+
+    std::string expr_logical_or::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
+    }
+
+    expr_assignment::a0* expr_assignment::a0::parse() {
+        push_stack();
+        ows *_t0 = ows::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t1 = next_chars(1);
+        if(_t1 != "=") {pop_stack(); return nullptr;}
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        expr_logical_or *_t3 = expr_logical_or::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_assignment::a0(_t0, _t1, _t2, _t3);
+    }
+
+    std::string expr_assignment::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1;
+        ans += t2->to_string();
+        ans += t3->to_string();
+        return ans;
+    }
+
+    expr_assignment* expr_assignment::parse() {
+        push_stack();
+        expr_logical_or *_t0 = expr_logical_or::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::vector<expr_assignment::a0*> _t1;
+        while(true) {
+            expr_assignment::a0 *tmp = expr_assignment::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        rm_stack();
+        return new expr_assignment(_t0, _t1);
+    }
+
+    std::string expr_assignment::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
+    }
+
+    expression* expression::parse() {
+        push_stack();
+        expr_assignment *_t0 = expr_assignment::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expression(_t0);
     }
 
     std::string expression::to_string() {
         std::string ans = "";
         ans += t0->to_string();
-        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
         return ans;
     }
 
@@ -7886,136 +7871,6 @@ namespace parser {
         return ans;
     }
 
-    assignment::a0::b0::c0* assignment::a0::b0::c0::parse() {
-        push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "[") {pop_stack(); return nullptr;}
-        ows *_t1 = ows::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        expression *_t2 = expression::parse();
-        if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t3 = ows::parse();
-        if(_t3 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t4 = next_chars(1);
-        if(_t4 != "]") {pop_stack(); return nullptr;}
-        rm_stack();
-        return new assignment::a0::b0::c0(_t0, _t1, _t2, _t3, _t4);
-    }
-
-    std::string assignment::a0::b0::c0::to_string() {
-        std::string ans = "";
-        ans += t0;
-        ans += t1->to_string();
-        ans += t2->to_string();
-        ans += t3->to_string();
-        ans += t4;
-        return ans;
-    }
-
-    assignment::a0::b0::c1* assignment::a0::b0::c1::parse() {
-        push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != ".") {pop_stack(); return nullptr;}
-        ows *_t1 = ows::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        identifier *_t2 = identifier::parse();
-        if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        rm_stack();
-        return new assignment::a0::b0::c1(_t0, _t1, _t2);
-    }
-
-    std::string assignment::a0::b0::c1::to_string() {
-        std::string ans = "";
-        ans += t0;
-        ans += t1->to_string();
-        ans += t2->to_string();
-        return ans;
-    }
-
-    assignment::a0::b0::c2* assignment::a0::b0::c2::parse() {
-        push_stack();
-        std::string _t0 = next_chars(2);
-        if(_t0 != "->") {pop_stack(); return nullptr;}
-        ows *_t1 = ows::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        identifier *_t2 = identifier::parse();
-        if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        rm_stack();
-        return new assignment::a0::b0::c2(_t0, _t1, _t2);
-    }
-
-    std::string assignment::a0::b0::c2::to_string() {
-        std::string ans = "";
-        ans += t0;
-        ans += t1->to_string();
-        ans += t2->to_string();
-        return ans;
-    }
-
-    assignment::a0::b0* assignment::a0::b0::parse() {
-        if(auto x = assignment::a0::b0::c0::parse()) return new assignment::a0::b0(x);
-        if(auto x = assignment::a0::b0::c1::parse()) return new assignment::a0::b0(x);
-        if(auto x = assignment::a0::b0::c2::parse()) return new assignment::a0::b0(x);
-        return nullptr;
-    }
-
-    std::string assignment::a0::b0::to_string() {
-        if(is_c0) return t0->to_string();
-        if(is_c1) return t1->to_string();
-        if(is_c2) return t2->to_string();
-        assert(false);
-    }
-
-    assignment::a0* assignment::a0::parse() {
-        push_stack();
-        ows *_t0 = ows::parse();
-        if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        assignment::a0::b0 *_t1 = assignment::a0::b0::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        rm_stack();
-        return new assignment::a0(_t0, _t1);
-    }
-
-    std::string assignment::a0::to_string() {
-        std::string ans = "";
-        ans += t0->to_string();
-        ans += t1->to_string();
-        return ans;
-    }
-
-    assignment* assignment::parse() {
-        push_stack();
-        identifier *_t0 = identifier::parse();
-        if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        std::vector<assignment::a0*> _t1;
-        while(true) {
-            assignment::a0 *tmp = assignment::a0::parse();
-            if(tmp == nullptr) break;
-            _t1.push_back(tmp);
-        }
-        ows *_t2 = ows::parse();
-        if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t3 = next_chars(1);
-        if(_t3 != "=") {pop_stack(); return nullptr;}
-        ows *_t4 = ows::parse();
-        if(_t4 == nullptr) {pop_stack(); return nullptr;}
-        expression *_t5 = expression::parse();
-        if(_t5 == nullptr) {pop_stack(); return nullptr;}
-        rm_stack();
-        return new assignment(_t0, _t1, _t2, _t3, _t4, _t5);
-    }
-
-    std::string assignment::to_string() {
-        std::string ans = "";
-        ans += t0->to_string();
-        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
-        ans += t2->to_string();
-        ans += t3;
-        ans += t4->to_string();
-        ans += t5->to_string();
-        return ans;
-    }
-
     parameter* parameter::parse() {
         push_stack();
         type *_t0 = type::parse();
@@ -8267,7 +8122,7 @@ namespace parser {
 
     simple_statement::a2* simple_statement::a2::parse() {
         push_stack();
-        assignment *_t0 = assignment::parse();
+        expression *_t0 = expression::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         ows *_t1 = ows::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
@@ -8285,31 +8140,10 @@ namespace parser {
         return ans;
     }
 
-    simple_statement::a3* simple_statement::a3::parse() {
-        push_stack();
-        expression *_t0 = expression::parse();
-        if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t1 = ows::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t2 = next_chars(1);
-        if(_t2 != ";") {pop_stack(); return nullptr;}
-        rm_stack();
-        return new simple_statement::a3(_t0, _t1, _t2);
-    }
-
-    std::string simple_statement::a3::to_string() {
-        std::string ans = "";
-        ans += t0->to_string();
-        ans += t1->to_string();
-        ans += t2;
-        return ans;
-    }
-
     simple_statement* simple_statement::parse() {
         if(auto x = simple_statement::a0::parse()) return new simple_statement(x);
         if(auto x = simple_statement::a1::parse()) return new simple_statement(x);
         if(auto x = simple_statement::a2::parse()) return new simple_statement(x);
-        if(auto x = simple_statement::a3::parse()) return new simple_statement(x);
         return nullptr;
     }
 
@@ -8317,7 +8151,6 @@ namespace parser {
         if(is_a0) return t0->to_string();
         if(is_a1) return t1->to_string();
         if(is_a2) return t2->to_string();
-        if(is_a3) return t3->to_string();
         assert(false);
     }
 
@@ -8452,7 +8285,7 @@ namespace parser {
 
     control_statement::a2::b2* control_statement::a2::b2::parse() {
         push_stack();
-        assignment *_t0 = assignment::parse();
+        expression *_t0 = expression::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new control_statement::a2::b2(_t0);
