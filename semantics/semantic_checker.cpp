@@ -144,12 +144,25 @@ ok, structs are mostly done, just have to implement some other features
  - make it prohibited to assign to 'this' within a member function
  - when assigning stuff, always use the copy constructor. Right now, I'm just copying over the reference
  - enforce that a copy constructor must exist
- - if you make a struct without any member functions, this segfaults while compiling. 
 
 
 what's the next feature? operator overloading for structs? I/O? templating? 
 should probably work on incorporating assignments into the expression structure. This means figuring out l-values and r-values. 
 
+ok, assignments are in the expression structure, however I've ran into an issue enforcing that copy
+constructors must be used on user defined struct assignment. The issue is invoking the function call, I don't want to have to 
+rewrite all the constructor logic, so my idea is to encode the function call explicitly into the expression tree structure.
+I'll call this step the 'elaboration' step for now. This should happen sometime after type resolution, but before code generation. 
+
+one issue is deciding how exactly we're going to implement this elaboration step. Ideally, I want to avoid another full scan of the
+program tree, but that means combining it with either the type resolution or code generation stage. If we do it during the type resolution 
+stage, it isn't really enforced that it has to be done, or it could potentially be done multiple times. If it gets done during code generation, 
+at least it's enforced that it should be done exactly once, however I feel rather uncomfortable changing up the expression tree structure right
+as we're generating asm. 
+
+We can also apply this elaboration step to auto casting when assigning. (also should figure out how exactly casts are going to work 
+for user defined structs. I'm assuming they're going to be struct member functions that I call, so maybe can just turn all non-primitive
+casts into function invocations.)
 
 TODO
  - make sure that int main() is never called
@@ -359,18 +372,23 @@ struct ExprReturnType {
 };
 
 struct Expression {
-    struct Primary {
+    struct ExprNode {
+        virtual ExprReturnType* resolve_type() = 0;
+        virtual void emit_asm() = 0;
+    };
+
+    struct Primary : ExprNode {
         using val_t = std::variant<FunctionCall*, Identifier*, Literal*, Expression*>;
         val_t val;
         Primary(val_t _val) {
             val = _val;
         }
         static Primary* convert(parser::expr_primary *e); 
-        ExprReturnType* resolve_type();
-        void emit_asm();
+        ExprReturnType* resolve_type() override;
+        void emit_asm() override;
     };
 
-    struct Postfix {
+    struct Postfix : ExprNode {
         using val_op = std::variant<Expression*, std::pair<std::string, FunctionCall*>, std::pair<std::string, Identifier*>>;
         Primary* term;
         std::vector<val_op> ops;
@@ -379,11 +397,11 @@ struct Expression {
             ops = _ops;
         }
         static Postfix* convert(parser::expr_postfix *e);
-        ExprReturnType* resolve_type();
-        void emit_asm();
+        ExprReturnType* resolve_type() override;
+        void emit_asm() override;
     };
 
-    struct Unary {
+    struct Unary : ExprNode {
         std::string op;
         std::variant<Postfix*, Unary*> val;
         Unary(std::string _op, Unary *_val) {
@@ -396,11 +414,11 @@ struct Expression {
             val = _val;
         }
         static Unary* convert(parser::expr_unary *e);
-        ExprReturnType* resolve_type();
-        void emit_asm();
+        ExprReturnType* resolve_type() override;
+        void emit_asm() override;
     };
 
-    struct Multiplicative {
+    struct Multiplicative : ExprNode {
         std::vector<std::string> ops;
         std::vector<Unary*> terms;
         Multiplicative(std::vector<std::string> _ops, std::vector<Unary*> _terms) {
@@ -408,11 +426,11 @@ struct Expression {
             terms = _terms;
         }
         static Multiplicative* convert(parser::expr_multiplicative *e);
-        ExprReturnType* resolve_type();
-        void emit_asm();
+        ExprReturnType* resolve_type() override;
+        void emit_asm() override;
     };
 
-    struct Additive {
+    struct Additive : ExprNode {
         std::vector<std::string> ops;
         std::vector<Multiplicative*> terms;
         Additive(std::vector<std::string> _ops, std::vector<Multiplicative*> _terms) {
@@ -420,11 +438,11 @@ struct Expression {
             terms = _terms;
         }
         static Additive* convert(parser::expr_additive *e);
-        ExprReturnType* resolve_type();
-        void emit_asm();
+        ExprReturnType* resolve_type() override;
+        void emit_asm() override;
     };
 
-    struct Shift {
+    struct Shift : ExprNode {
         std::vector<std::string> ops;
         std::vector<Additive*> terms;
         Shift(std::vector<std::string> _ops, std::vector<Additive*> _terms) {
@@ -432,11 +450,11 @@ struct Expression {
             terms = _terms;
         }
         static Shift* convert(parser::expr_shift *e);
-        ExprReturnType* resolve_type();
-        void emit_asm();
+        ExprReturnType* resolve_type() override;
+        void emit_asm() override;
     };
 
-    struct Relational {
+    struct Relational : ExprNode {
         std::vector<std::string> ops;
         std::vector<Shift*> terms;
         Relational(std::vector<std::string> _ops, std::vector<Shift*> _terms) {
@@ -444,11 +462,11 @@ struct Expression {
             terms = _terms;
         }
         static Relational* convert(parser::expr_relational *e);
-        ExprReturnType* resolve_type();
-        void emit_asm();
+        ExprReturnType* resolve_type() override;
+        void emit_asm() override;
     };
 
-    struct Equality {
+    struct Equality : ExprNode {
         std::vector<std::string> ops;
         std::vector<Relational*> terms;
         Equality(std::vector<std::string> _ops, std::vector<Relational*> _terms) {
@@ -456,11 +474,11 @@ struct Expression {
             terms = _terms;
         }
         static Equality* convert(parser::expr_equality *e);
-        ExprReturnType* resolve_type();
-        void emit_asm();
+        ExprReturnType* resolve_type() override;
+        void emit_asm() override;
     };
 
-    struct BitAnd {
+    struct BitAnd : ExprNode {
         std::vector<std::string> ops;
         std::vector<Equality*> terms;
         BitAnd(std::vector<std::string> _ops, std::vector<Equality*> _terms) {
@@ -468,11 +486,11 @@ struct Expression {
             terms = _terms;
         }
         static BitAnd* convert(parser::expr_bit_and *e);
-        ExprReturnType* resolve_type();
-        void emit_asm();
+        ExprReturnType* resolve_type() override;
+        void emit_asm() override;
     };
 
-    struct BitXor {
+    struct BitXor : ExprNode {
         std::vector<std::string> ops;
         std::vector<BitAnd*> terms;
         BitXor(std::vector<std::string> _ops, std::vector<BitAnd*> _terms) {
@@ -480,11 +498,11 @@ struct Expression {
             terms = _terms;
         }
         static BitXor* convert(parser::expr_bit_xor *e);
-        ExprReturnType* resolve_type();
-        void emit_asm();
+        ExprReturnType* resolve_type() override;
+        void emit_asm() override;
     };
 
-    struct BitOr {
+    struct BitOr : ExprNode {
         std::vector<std::string> ops;
         std::vector<BitXor*> terms;
         BitOr(std::vector<std::string> _ops, std::vector<BitXor*> _terms) {
@@ -492,11 +510,11 @@ struct Expression {
             terms = _terms;
         }
         static BitOr* convert(parser::expr_bit_or *e);
-        ExprReturnType* resolve_type();
-        void emit_asm();
+        ExprReturnType* resolve_type() override;
+        void emit_asm() override;
     };
 
-    struct LogicalAnd {
+    struct LogicalAnd : ExprNode {
         std::vector<std::string> ops;
         std::vector<BitOr*> terms;
         LogicalAnd(std::vector<std::string> _ops, std::vector<BitOr*> _terms) {
@@ -504,11 +522,11 @@ struct Expression {
             terms = _terms;
         }
         static LogicalAnd* convert(parser::expr_logical_and* e);
-        ExprReturnType* resolve_type();
-        void emit_asm();
+        ExprReturnType* resolve_type() override;
+        void emit_asm() override;
     };
 
-    struct LogicalOr {
+    struct LogicalOr : ExprNode {
         std::vector<std::string> ops;
         std::vector<LogicalAnd*> terms;
         LogicalOr(std::vector<std::string> _ops, std::vector<LogicalAnd*> _terms) {
@@ -516,11 +534,11 @@ struct Expression {
             terms = _terms;
         }
         static LogicalOr* convert(parser::expr_logical_or* e);
-        ExprReturnType* resolve_type();
-        void emit_asm();
+        ExprReturnType* resolve_type() override;
+        void emit_asm() override;
     };
 
-    struct Assignment {
+    struct Assignment : ExprNode {
         std::vector<std::string> ops;
         std::vector<LogicalOr*> terms;
         Assignment(std::vector<std::string> _ops, std::vector<LogicalOr*> _terms) {
@@ -528,15 +546,13 @@ struct Expression {
             terms = _terms;
         }
         static Assignment* convert(parser::expr_assignment* e);
-        ExprReturnType* resolve_type();
-        void emit_asm();
+        ExprReturnType* resolve_type() override;
+        void emit_asm() override;
     };
 
-    std::vector<std::string> ops;
-    std::vector<Assignment*> terms;
-    Expression(std::vector<std::string> _ops, std::vector<Assignment*> _terms) {
-        ops = _ops;
-        terms = _terms;
+    ExprNode *expr_node;
+    Expression(ExprNode *_expr_node) {
+        expr_node = _expr_node;
     }
     static Expression* convert(parser::expression *e);
     Type* resolve_type();
@@ -1877,14 +1893,8 @@ Expression::Assignment* Expression::Assignment::convert(parser::expr_assignment 
 }
 
 Expression* Expression::convert(parser::expression *e) {
-    std::vector<std::string> ops;
-    std::vector<Expression::Assignment*> terms;
-    terms.push_back(Expression::Assignment::convert(e->t0));
-    // for(int i = 0; i < e->t1.size(); i++){
-    //     ops.push_back(e->t1[i]->t1);
-    //     terms.push_back(Expression::Assignment::convert(e->t1[i]->t3));
-    // }
-    return new Expression(ops, terms);
+    Expression::ExprNode *expr_node = Expression::Assignment::convert(e->t0);
+    return new Expression(expr_node);
 }
 
 Declaration* Declaration::convert(parser::declaration *d) {
@@ -2387,12 +2397,9 @@ ExprReturnType* Expression::Assignment::resolve_type() {
 }
 
 Type* Expression::resolve_type() {
-    ExprReturnType *left = nullptr;
-    for(int i = 0; i < terms.size(); i++){
-        left = terms[i]->resolve_type();
-        if(left == nullptr) return nullptr;
-    }
-    return left->type;
+    ExprReturnType *ert = expr_node->resolve_type();
+    if(ert == nullptr) return nullptr;
+    return ert->type;
 }
 
 Type* FunctionCall::resolve_type() {
@@ -2797,7 +2804,7 @@ void Expression::Assignment::emit_asm() {
         //evaluate left l-value
         terms[i]->emit_asm();
 
-        //store value into mem location
+        //move value into mem location
         int sz = left->calc_size();
         fout << indent() << "mov %rcx, %rbx\n";
         fout << indent() << "pop %rax\n";
@@ -2808,9 +2815,7 @@ void Expression::Assignment::emit_asm() {
 }
 
 void Expression::emit_asm() {
-    for(int i = 0; i < terms.size(); i++){
-        terms[i]->emit_asm();
-    }
+    expr_node->emit_asm();
 }
 
 void FunctionCall::emit_asm() {
@@ -3338,6 +3343,14 @@ bool StructDefinition::is_well_formed() {
             return false;
         }
     }
+    // - is there a copy constructor?
+    {
+        FunctionSignature *fid = new FunctionSignature(new Identifier(type->to_string()), {type});
+        if(!is_function_declared(fid)) {
+            std::cout << "Copy constructor for " << type->to_string() << " not defined\n";
+            return false;
+        }
+    }
 
     //construct StructLayout
     std::unordered_map<Identifier*, int> offset_map;
@@ -3387,7 +3400,7 @@ bool Program::is_well_formed() {
         std::vector<int> indeg(n, 0);
         for(int i = 0; i < n; i++){
             StructDefinition *sd = structs[i];
-            for(int j = 0; j < n; j++){
+            for(int j = 0; j < sd->member_variables.size(); j++){
                 Type *vt = sd->member_variables[j]->type;
                 if(indmp.count(vt)) {
                     int x = indmp[vt];
