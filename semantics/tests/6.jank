@@ -9,6 +9,9 @@ struct segtree {
         this.n = 2 * n;
         this.a = malloc(sizeof(int) * 2 * n);
     }
+    segtree segtree(segtree other) {
+        //TODO
+    }
 
     //query sum of range [l, r)
     int query(int l, int r) {
@@ -61,6 +64,13 @@ struct vector {
         for(int i = 0; i < n; i = i + 1) this.a[i] = 0;
     }
 
+    vector vector(vector other) {
+        this.sz = other.sz;
+        this.cap = other.cap;
+        this.a = malloc(sizeof(int) * this.cap);
+        for(int i = 0; i < this.cap; i = i + 1) this.a[i] = other.a[i];
+    }
+
     void pop_back() {
         if(this.sz == 0) return;
         this.sz = this.sz - 1;
@@ -96,11 +106,13 @@ struct vector {
 struct A {
     B foo;
     A A() {}
+    A A(A other) {}
 }
 
 struct B {
     A* foo;
     B B() {}
+    B B(B other) {}
 }
 
 //pseudorandom array
@@ -118,10 +130,12 @@ int* gen_arr(int n) {
 }
 
 int vector_test() {
+    int n = 100000;
     vector a = vector();
-    for(int i = 0; i < 1000000; i = i + 1) {
+    for(int i = 0; i < n; i = i + 1) {
         a.push_back(i);
     }
+    vector b = a;
     return 1;
 }
 
@@ -152,7 +166,6 @@ int segt_test() {
         }
     }
     return 1;
-    puts_endl("segt test pass");
 }
 
 int main() {

@@ -5,18 +5,12 @@ struct segtree {
     int* a;
 
     segtree segtree() {}
-
     segtree segtree(int n) {
         this.n = 2 * n;
         this.a = malloc(sizeof(int) * 2 * n);
     }
-
     segtree segtree(segtree other) {
-        this.n = other.n;
-        this.a = malloc(sizeof(int) * 2 * other.n);
-        for(int i = 0; i < 2 * other.n; i = i + 1) {
-            this.a[i] = other.a[i];
-        }
+        //TODO
     }
 
     //query sum of range [l, r)
@@ -109,6 +103,18 @@ struct vector {
     }
 }
 
+struct A {
+    B foo;
+    A A() {}
+    A A(A other) {}
+}
+
+struct B {
+    A* foo;
+    B B() {}
+    B B(B other) {}
+}
+
 //pseudorandom array
 int* gen_arr(int n) {
     int* a = malloc(sizeof(int) * n);
@@ -124,10 +130,12 @@ int* gen_arr(int n) {
 }
 
 int vector_test() {
+    int n = 100000;
     vector a = vector();
-    for(int i = 0; i < 1000000; i = i + 1) {
+    for(int i = 0; i < n; i = i + 1) {
         a.push_back(i);
     }
+    vector b = a;
     return 1;
 }
 
@@ -158,7 +166,6 @@ int segt_test() {
         }
     }
     return 1;
-    puts_endl("segt test pass");
 }
 
 int main() {

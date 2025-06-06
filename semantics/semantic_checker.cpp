@@ -216,6 +216,11 @@ struct Identifier;
 struct Type;
 struct BaseType;
 struct PointerType;
+struct ExprNode;
+struct ExprPrimary;
+struct ExprBinary;
+struct ExprPrefix;
+struct ExprPostfix;
 struct Expression;
 struct Declaration;
 struct Statement;
@@ -360,202 +365,97 @@ struct PointerType : public Type {
     }
 };
 
-struct ExprReturnType {
-    Type *type;
-    bool is_lvalue;
+struct ExprNode {
+    static ExprNode* convert(parser::expr_primary *e);
+    static ExprNode* convert(parser::expr_postfix *e);
+    static ExprNode* convert(parser::expr_unary *e);
+    static ExprNode* convert(parser::expr_multiplicative *e);
+    static ExprNode* convert(parser::expr_additive *e);
+    static ExprNode* convert(parser::expr_shift *e);
+    static ExprNode* convert(parser::expr_relational *e);
+    static ExprNode* convert(parser::expr_equality *e);
+    static ExprNode* convert(parser::expr_bit_and *e);
+    static ExprNode* convert(parser::expr_bit_xor *e);
+    static ExprNode* convert(parser::expr_bit_or *e);
+    static ExprNode* convert(parser::expr_logical_and *e);
+    static ExprNode* convert(parser::expr_logical_or *e);
+    static ExprNode* convert(parser::expr_assignment *e);
 
-    ExprReturnType(Type *_type, bool _is_lvalue) {
-        assert(_type != nullptr);
-        type = _type;
-        is_lvalue = _is_lvalue;
+    virtual Type* resolve_type() = 0;
+    virtual bool is_lvalue() = 0;
+    virtual void elaborate() = 0;
+    virtual void emit_asm() = 0;
+};
+
+struct ExprPrimary : ExprNode {
+    using val_t = std::variant<FunctionCall*, Identifier*, Literal*, Expression*>;
+    val_t val;
+    ExprPrimary(val_t _val) {
+        val = _val;
     }
+    Type* resolve_type() override;
+    bool is_lvalue() override;
+    void elaborate() override;
+    void emit_asm() override;
+};
+
+struct ExprBinary : ExprNode {
+    using op_t = std::variant<std::string>;
+    ExprNode *left;
+    op_t op;
+    ExprNode *right;
+    ExprBinary(ExprNode *_left, op_t _op, ExprNode *_right) {
+        left = _left;
+        op = _op;
+        right = _right;
+        assert(left != nullptr);
+        assert(right != nullptr);
+    }
+    Type* resolve_type() override;
+    bool is_lvalue() override;
+    void elaborate() override;
+    void emit_asm() override;
+};
+
+struct ExprPrefix : ExprNode {
+    using op_t = std::variant<std::string>;
+    op_t op;
+    ExprNode *right;
+    ExprPrefix(op_t _op, ExprNode *_right) {
+        op = _op;
+        right = _right;
+        assert(right != nullptr);
+    }
+    Type* resolve_type() override;
+    bool is_lvalue() override;
+    void elaborate() override;
+    void emit_asm() override;
+};
+
+struct ExprPostfix : ExprNode {
+    using op_t = std::variant<Expression*, std::pair<std::string, FunctionCall*>, std::pair<std::string, Identifier*>>;
+    ExprNode *left;
+    op_t op;
+    ExprPostfix(ExprNode *_left, op_t _op) {
+        left = _left;
+        op = _op;
+        assert(left != nullptr);
+    }
+    Type* resolve_type() override;
+    bool is_lvalue() override;
+    void elaborate() override;
+    void emit_asm() override;
 };
 
 struct Expression {
-    struct ExprNode {
-        virtual ExprReturnType* resolve_type() = 0;
-        virtual void emit_asm() = 0;
-    };
-
-    struct Primary : ExprNode {
-        using val_t = std::variant<FunctionCall*, Identifier*, Literal*, Expression*>;
-        val_t val;
-        Primary(val_t _val) {
-            val = _val;
-        }
-        static Primary* convert(parser::expr_primary *e); 
-        ExprReturnType* resolve_type() override;
-        void emit_asm() override;
-    };
-
-    struct Postfix : ExprNode {
-        using val_op = std::variant<Expression*, std::pair<std::string, FunctionCall*>, std::pair<std::string, Identifier*>>;
-        Primary* term;
-        std::vector<val_op> ops;
-        Postfix(Primary *_term, std::vector<val_op> _ops) { 
-            term = _term;
-            ops = _ops;
-        }
-        static Postfix* convert(parser::expr_postfix *e);
-        ExprReturnType* resolve_type() override;
-        void emit_asm() override;
-    };
-
-    struct Unary : ExprNode {
-        std::string op;
-        std::variant<Postfix*, Unary*> val;
-        Unary(std::string _op, Unary *_val) {
-            assert(_val != nullptr);
-            op = _op;
-            val = _val;
-        }
-        Unary(Postfix *_val) {
-            assert(_val != nullptr);
-            val = _val;
-        }
-        static Unary* convert(parser::expr_unary *e);
-        ExprReturnType* resolve_type() override;
-        void emit_asm() override;
-    };
-
-    struct Multiplicative : ExprNode {
-        std::vector<std::string> ops;
-        std::vector<Unary*> terms;
-        Multiplicative(std::vector<std::string> _ops, std::vector<Unary*> _terms) {
-            ops = _ops;
-            terms = _terms;
-        }
-        static Multiplicative* convert(parser::expr_multiplicative *e);
-        ExprReturnType* resolve_type() override;
-        void emit_asm() override;
-    };
-
-    struct Additive : ExprNode {
-        std::vector<std::string> ops;
-        std::vector<Multiplicative*> terms;
-        Additive(std::vector<std::string> _ops, std::vector<Multiplicative*> _terms) {
-            ops = _ops;
-            terms = _terms;
-        }
-        static Additive* convert(parser::expr_additive *e);
-        ExprReturnType* resolve_type() override;
-        void emit_asm() override;
-    };
-
-    struct Shift : ExprNode {
-        std::vector<std::string> ops;
-        std::vector<Additive*> terms;
-        Shift(std::vector<std::string> _ops, std::vector<Additive*> _terms) {
-            ops = _ops;
-            terms = _terms;
-        }
-        static Shift* convert(parser::expr_shift *e);
-        ExprReturnType* resolve_type() override;
-        void emit_asm() override;
-    };
-
-    struct Relational : ExprNode {
-        std::vector<std::string> ops;
-        std::vector<Shift*> terms;
-        Relational(std::vector<std::string> _ops, std::vector<Shift*> _terms) {
-            ops = _ops;
-            terms = _terms;
-        }
-        static Relational* convert(parser::expr_relational *e);
-        ExprReturnType* resolve_type() override;
-        void emit_asm() override;
-    };
-
-    struct Equality : ExprNode {
-        std::vector<std::string> ops;
-        std::vector<Relational*> terms;
-        Equality(std::vector<std::string> _ops, std::vector<Relational*> _terms) {
-            ops = _ops;
-            terms = _terms;
-        }
-        static Equality* convert(parser::expr_equality *e);
-        ExprReturnType* resolve_type() override;
-        void emit_asm() override;
-    };
-
-    struct BitAnd : ExprNode {
-        std::vector<std::string> ops;
-        std::vector<Equality*> terms;
-        BitAnd(std::vector<std::string> _ops, std::vector<Equality*> _terms) {
-            ops = _ops;
-            terms = _terms;
-        }
-        static BitAnd* convert(parser::expr_bit_and *e);
-        ExprReturnType* resolve_type() override;
-        void emit_asm() override;
-    };
-
-    struct BitXor : ExprNode {
-        std::vector<std::string> ops;
-        std::vector<BitAnd*> terms;
-        BitXor(std::vector<std::string> _ops, std::vector<BitAnd*> _terms) {
-            ops = _ops;
-            terms = _terms;
-        }
-        static BitXor* convert(parser::expr_bit_xor *e);
-        ExprReturnType* resolve_type() override;
-        void emit_asm() override;
-    };
-
-    struct BitOr : ExprNode {
-        std::vector<std::string> ops;
-        std::vector<BitXor*> terms;
-        BitOr(std::vector<std::string> _ops, std::vector<BitXor*> _terms) {
-            ops = _ops;
-            terms = _terms;
-        }
-        static BitOr* convert(parser::expr_bit_or *e);
-        ExprReturnType* resolve_type() override;
-        void emit_asm() override;
-    };
-
-    struct LogicalAnd : ExprNode {
-        std::vector<std::string> ops;
-        std::vector<BitOr*> terms;
-        LogicalAnd(std::vector<std::string> _ops, std::vector<BitOr*> _terms) {
-            ops = _ops;
-            terms = _terms;
-        }
-        static LogicalAnd* convert(parser::expr_logical_and* e);
-        ExprReturnType* resolve_type() override;
-        void emit_asm() override;
-    };
-
-    struct LogicalOr : ExprNode {
-        std::vector<std::string> ops;
-        std::vector<LogicalAnd*> terms;
-        LogicalOr(std::vector<std::string> _ops, std::vector<LogicalAnd*> _terms) {
-            ops = _ops;
-            terms = _terms;
-        }
-        static LogicalOr* convert(parser::expr_logical_or* e);
-        ExprReturnType* resolve_type() override;
-        void emit_asm() override;
-    };
-
-    struct Assignment : ExprNode {
-        std::vector<std::string> ops;
-        std::vector<LogicalOr*> terms;
-        Assignment(std::vector<std::string> _ops, std::vector<LogicalOr*> _terms) {
-            ops = _ops;
-            terms = _terms;
-        }
-        static Assignment* convert(parser::expr_assignment* e);
-        ExprReturnType* resolve_type() override;
-        void emit_asm() override;
-    };
-
     ExprNode *expr_node;
     Expression(ExprNode *_expr_node) {
         expr_node = _expr_node;
     }
     static Expression* convert(parser::expression *e);
     Type* resolve_type();
+    bool is_lvalue();
+    void elaborate();
     void emit_asm();
 };
 
@@ -1707,8 +1607,8 @@ PointerType* PointerType::convert(parser::pointer_type *t) {
     return new PointerType(type);
 }
 
-Expression::Primary* Expression::Primary::convert(parser::expr_primary *e) {
-    Expression::Primary::val_t val;
+ExprNode* ExprNode::convert(parser::expr_primary *e) {
+    ExprPrimary::val_t val;
     if(e->is_a0) {
         val = Literal::convert(e->t0->t0);
     }
@@ -1722,178 +1622,168 @@ Expression::Primary* Expression::Primary::convert(parser::expr_primary *e) {
         val = Expression::convert(e->t3->t2);
     }
     else assert(false);
-    return new Expression::Primary(val);
+    return new ExprPrimary(val);
 }
 
-Expression::Postfix* Expression::Postfix::convert(parser::expr_postfix *e) {
-    Expression::Primary *term = Expression::Primary::convert(e->t0);
-    std::vector<val_op> ops;
+ExprNode* ExprNode::convert(parser::expr_postfix *e) {
+    ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
         if(e->t1[i]->t1->is_c0) {       //indexing
             Expression *expr = Expression::convert(e->t1[i]->t1->t0->t2);
-            ops.push_back(expr);
+            left = new ExprPostfix(left, expr);
         }
         else if(e->t1[i]->t1->is_c1) {  //call member function
             std::string op = ".";
             FunctionCall *fc = FunctionCall::convert(e->t1[i]->t1->t1->t2);
-            ops.push_back(std::make_pair(op, fc));
+            left = new ExprPostfix(left, std::make_pair(op, fc));
         }
         else if(e->t1[i]->t1->is_c2) {  //dereference, call member function
             std::string op = "->";
             FunctionCall *fc = FunctionCall::convert(e->t1[i]->t1->t2->t2);
-            ops.push_back(std::make_pair(op, fc));
+            left = new ExprPostfix(left, std::make_pair(op, fc));
         }
         else if(e->t1[i]->t1->is_c3) {  //access member variable
             std::string op = ".";
             Identifier *id = Identifier::convert(e->t1[i]->t1->t3->t2);
-            ops.push_back(std::make_pair(op, id));
+            left = new ExprPostfix(left, std::make_pair(op, id));
         }
         else if(e->t1[i]->t1->is_c4) {  //dereference, access member variable
             std::string op = "->";
             Identifier *id = Identifier::convert(e->t1[i]->t1->t4->t2);
-            ops.push_back(std::make_pair(op, id));
+            left = new ExprPostfix(left, std::make_pair(op, id));
         }
         else assert(false);
     }
-    return new Expression::Postfix(term, ops);
+    return left;
 }
 
-Expression::Unary* Expression::Unary::convert(parser::expr_unary *e) {
+ExprNode* ExprNode::convert(parser::expr_unary *e) {
     if(e->is_a0) {  //unary operator + unary expression
         std::string op = e->t0->t0->to_string();
-        Expression::Unary *u = Expression::Unary::convert(e->t0->t2);
-        return new Expression::Unary(op, u);
+        ExprNode *right = ExprNode::convert(e->t0->t2);
+        return new ExprPrefix(op, right);
     }
     else if(e->is_a1) { //postfix expression
-        Expression::Postfix *p = Expression::Postfix::convert(e->t1->t0);
-        return new Expression::Unary(p);
+        return ExprNode::convert(e->t1->t0);
     }
     else assert(false);
 }
 
-Expression::Multiplicative* Expression::Multiplicative::convert(parser::expr_multiplicative *e) {
-    std::vector<std::string> ops;
-    std::vector<Expression::Unary*> terms;
-    terms.push_back(Expression::Unary::convert(e->t0));
+ExprNode* ExprNode::convert(parser::expr_multiplicative *e) {
+    ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
-        ops.push_back(e->t1[i]->t1->to_string());
-        terms.push_back(Expression::Unary::convert(e->t1[i]->t3));
+        std::string op = e->t1[i]->t1->to_string();
+        ExprNode *right = ExprNode::convert(e->t1[i]->t3);
+        left = new ExprBinary(left, op, right);
     }
-    return new Expression::Multiplicative(ops, terms);
+    return left;
 }
 
-Expression::Additive* Expression::Additive::convert(parser::expr_additive *e) {
-    std::vector<std::string> ops;
-    std::vector<Expression::Multiplicative*> terms;
-    terms.push_back(Expression::Multiplicative::convert(e->t0));
+ExprNode* ExprNode::convert(parser::expr_additive *e) {
+    ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
-        ops.push_back(e->t1[i]->t1->to_string());
-        terms.push_back(Expression::Multiplicative::convert(e->t1[i]->t3));
+        std::string op = e->t1[i]->t1->to_string();
+        ExprNode *right = ExprNode::convert(e->t1[i]->t3);
+        left = new ExprBinary(left, op, right);
     }
-    return new Expression::Additive(ops, terms);
+    return left;
 }
 
-Expression::Shift* Expression::Shift::convert(parser::expr_shift *e) {
-    std::vector<std::string> ops;
-    std::vector<Expression::Additive*> terms;
-    terms.push_back(Expression::Additive::convert(e->t0));
+ExprNode* ExprNode::convert(parser::expr_shift *e) {
+    ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
-        ops.push_back(e->t1[i]->t1->to_string());
-        terms.push_back(Expression::Additive::convert(e->t1[i]->t3));
+        std::string op = e->t1[i]->t1->to_string();
+        ExprNode *right = ExprNode::convert(e->t1[i]->t3);
+        left = new ExprBinary(left, op, right);
     }
-    return new Expression::Shift(ops, terms);
+    return left;
 }
 
-Expression::Relational* Expression::Relational::convert(parser::expr_relational *e) {
-    std::vector<std::string> ops;
-    std::vector<Expression::Shift*> terms;
-    terms.push_back(Expression::Shift::convert(e->t0));
+ExprNode* ExprNode::convert(parser::expr_relational *e) {
+    ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
-        ops.push_back(e->t1[i]->t1->to_string());
-        terms.push_back(Expression::Shift::convert(e->t1[i]->t3));
+        std::string op = e->t1[i]->t1->to_string();
+        ExprNode *right = ExprNode::convert(e->t1[i]->t3);
+        left = new ExprBinary(left, op, right);
     }
-    return new Expression::Relational(ops, terms);
+    return left;
 }
 
-Expression::Equality* Expression::Equality::convert(parser::expr_equality *e) {
-    std::vector<std::string> ops;
-    std::vector<Expression::Relational*> terms;
-    terms.push_back(Expression::Relational::convert(e->t0));
+ExprNode* ExprNode::convert(parser::expr_equality *e) {
+    ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
-        ops.push_back(e->t1[i]->t1->to_string());
-        terms.push_back(Expression::Relational::convert(e->t1[i]->t3));
+        std::string op = e->t1[i]->t1->to_string();
+        ExprNode *right = ExprNode::convert(e->t1[i]->t3);
+        left = new ExprBinary(left, op, right);
     }
-    return new Expression::Equality(ops, terms);
+    return left;
 }
 
-Expression::BitAnd* Expression::BitAnd::convert(parser::expr_bit_and *e) {
-    std::vector<std::string> ops;
-    std::vector<Expression::Equality*> terms;
-    terms.push_back(Expression::Equality::convert(e->t0));
+ExprNode* ExprNode::convert(parser::expr_bit_and *e) {
+    ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
-        ops.push_back(e->t1[i]->t1);
-        terms.push_back(Expression::Equality::convert(e->t1[i]->t3));
+        std::string op = e->t1[i]->t1;
+        ExprNode *right = ExprNode::convert(e->t1[i]->t3);
+        left = new ExprBinary(left, op, right);
     }
-    return new Expression::BitAnd(ops, terms);
+    return left;
 }
 
-Expression::BitXor* Expression::BitXor::convert(parser::expr_bit_xor *e) {
-    std::vector<std::string> ops;
-    std::vector<Expression::BitAnd*> terms;
-    terms.push_back(Expression::BitAnd::convert(e->t0));
+ExprNode* ExprNode::convert(parser::expr_bit_xor *e) {
+    ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
-        ops.push_back(e->t1[i]->t1);
-        terms.push_back(Expression::BitAnd::convert(e->t1[i]->t3));
+        std::string op = e->t1[i]->t1;
+        ExprNode *right = ExprNode::convert(e->t1[i]->t3);
+        left = new ExprBinary(left, op, right);
     }
-    return new Expression::BitXor(ops, terms);
+    return left;
 }
 
-Expression::BitOr* Expression::BitOr::convert(parser::expr_bit_or *e) {
-    std::vector<std::string> ops;
-    std::vector<Expression::BitXor*> terms;
-    terms.push_back(Expression::BitXor::convert(e->t0));
+ExprNode* ExprNode::convert(parser::expr_bit_or *e) {
+    ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
-        ops.push_back(e->t1[i]->t1);
-        terms.push_back(Expression::BitXor::convert(e->t1[i]->t3));
+        std::string op = e->t1[i]->t1;
+        ExprNode *right = ExprNode::convert(e->t1[i]->t3);
+        left = new ExprBinary(left, op, right);
     }
-    return new Expression::BitOr(ops, terms);
+    return left;
 }
 
-Expression::LogicalAnd* Expression::LogicalAnd::convert(parser::expr_logical_and *e) {
-    std::vector<std::string> ops;
-    std::vector<Expression::BitOr*> terms;
-    terms.push_back(Expression::BitOr::convert(e->t0));
+ExprNode* ExprNode::convert(parser::expr_logical_and *e) {
+    ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
-        ops.push_back(e->t1[i]->t1);
-        terms.push_back(Expression::BitOr::convert(e->t1[i]->t3));
+        std::string op = e->t1[i]->t1;
+        ExprNode *right = ExprNode::convert(e->t1[i]->t3);
+        left = new ExprBinary(left, op, right);
     }
-    return new Expression::LogicalAnd(ops, terms);
+    return left;
+}   
+
+ExprNode* ExprNode::convert(parser::expr_logical_or *e) {
+    ExprNode *left = ExprNode::convert(e->t0);
+    for(int i = 0; i < e->t1.size(); i++){
+        std::string op = e->t1[i]->t1;
+        ExprNode *right = ExprNode::convert(e->t1[i]->t3);
+        left = new ExprBinary(left, op, right);
+    }
+    return left;
 }
 
-Expression::LogicalOr* Expression::LogicalOr::convert(parser::expr_logical_or *e) {
-    std::vector<std::string> ops;
-    std::vector<Expression::LogicalAnd*> terms;
-    terms.push_back(Expression::LogicalAnd::convert(e->t0));
-    for(int i = 0; i < e->t1.size(); i++){
-        ops.push_back(e->t1[i]->t1);
-        terms.push_back(Expression::LogicalAnd::convert(e->t1[i]->t3));
-    }
-    return new Expression::LogicalOr(ops, terms);
-}
+ExprNode* ExprNode::convert(parser::expr_assignment *e) {
+    std::vector<ExprNode*> nodes;
+    nodes.push_back(ExprNode::convert(e->t0));
+    for(int i = 0; i < e->t1.size(); i++) nodes.push_back(ExprNode::convert(e->t1[i]->t3));
 
-Expression::Assignment* Expression::Assignment::convert(parser::expr_assignment *e) {
-    std::vector<std::string> ops;
-    std::vector<Expression::LogicalOr*> terms;
-    terms.push_back(Expression::LogicalOr::convert(e->t0));
-    for(int i = 0; i < e->t1.size(); i++){
-        ops.push_back(e->t1[i]->t1);
-        terms.push_back(Expression::LogicalOr::convert(e->t1[i]->t3));
+    ExprNode *right = nodes[nodes.size() - 1];
+    for(int i = (int) nodes.size() - 2; i >= 0; i--){
+        std::string op = e->t1[i]->t1;
+        right = new ExprBinary(nodes[i], op, right);
     }
-    return new Expression::Assignment(ops, terms);
+    return right;
 }
 
 Expression* Expression::convert(parser::expression *e) {
-    Expression::ExprNode *expr_node = Expression::Assignment::convert(e->t0);
+    ExprNode *expr_node = ExprNode::convert(e->t0);
     return new Expression(expr_node);
 }
 
@@ -2082,324 +1972,176 @@ Type* StringLiteral::resolve_type() {
     return new PointerType(new BaseType("char"));
 }
 
-ExprReturnType* Expression::Primary::resolve_type() {
+bool ExprPrimary::is_lvalue() {
     if(std::holds_alternative<FunctionCall*>(val)) {
-        FunctionCall *f = std::get<FunctionCall*>(val);
-        Type *t = f->resolve_type();
-        if(t == nullptr) return nullptr;
-        return new ExprReturnType(t, 0);
+        return false;
     }
     else if(std::holds_alternative<Identifier*>(val)) {
-        Identifier *id = std::get<Identifier*>(val);
-        Type *t = find_variable_type(id);
-        if(t == nullptr) return nullptr;
-        return new ExprReturnType(t, 1);
+        return true;
     }
     else if(std::holds_alternative<Literal*>(val)) {
-        Literal *l = std::get<Literal*>(val);
-        Type *t = l->resolve_type();
-        if(t == nullptr) return nullptr;
-        return new ExprReturnType(t, 0);
+        return false;
     }
     else if(std::holds_alternative<Expression*>(val)) {
         Expression *e = std::get<Expression*>(val);
-        Type *t = e->resolve_type();
-        if(t == nullptr) return nullptr;
-        return new ExprReturnType(t, 0);
+        return e->is_lvalue();
     }
     else assert(false);
 }
 
-ExprReturnType* Expression::Postfix::resolve_type() {
-    ExprReturnType *ert = term->resolve_type();
-    if(ert == nullptr) return nullptr;
-    for(int i = 0; i < ops.size(); i++){
-        val_op op = ops[i];
-        if(std::holds_alternative<Expression*>(op)) {   //indexing
-            Expression *expr = std::get<Expression*>(op);
-            Type *et = expr->resolve_type();
-            if(et == nullptr) return nullptr;
-            if(*et != BaseType("int")) {
-                std::cout << "Indexing expression must resolve to int\n";
-                return nullptr;
-            }
-            if(dynamic_cast<PointerType*>(ert->type) == nullptr) {
-                std::cout << "Can't index into non-pointer type " << ert->type->to_string() << "\n";
-                return nullptr;
-            }
-            Type *nt = dynamic_cast<PointerType*>(ert->type)->type;
-            ert = new ExprReturnType(nt, ert->is_lvalue);
-        }
-        else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {
-            std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
-            FunctionCall *fc = p.second;
-            Type *t = ert->type;    
-
-            //dereference
-            if(p.first == "->") {
-                if(dynamic_cast<PointerType*>(t) == nullptr) {
-                    std::cout << "Trying to dereference non-pointer type " << t->to_string() << "\n";
-                    return nullptr;
-                }
-                t = dynamic_cast<PointerType*>(t)->type;
-            }
-
-            //member function call
-            fc = new FunctionCall(t, fc->id, fc->argument_list);
-            Type *nt = fc->resolve_type();
-            if(fc->resolve_type() == nullptr) {
-                std::cout << "Failed to resolve type of function call\n";
-                return nullptr;
-            }
-            ert = new ExprReturnType(nt, 0);
-        }
-        else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
-            std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
-            Identifier *id = p.second;
-            Type *t = ert->type;
-            
-            //dereference
-            if(p.first == "->") {
-                if(dynamic_cast<PointerType*>(t) == nullptr) {
-                    std::cout << "Trying to dereference non-pointer type " << t->to_string() << "\n";
-                    return nullptr;
-                }
-                t = dynamic_cast<PointerType*>(t)->type;
-            }
-
-            //member variable access
-            StructLayout *sl = get_struct_layout(t);
-            if(sl == nullptr) {
-                std::cout << "Unable to find StructLayout for " << t->to_string() << "\n";
-                return nullptr;
-            }
-            if(sl->get_type(id) == nullptr) {
-                std::cout << "Unknown member variable identifier \"" << id->name << "\" for type " << t->to_string() << "\n";
-                return nullptr;
-            }
-            Type *nt = sl->get_type(id);
-            ert = new ExprReturnType(nt, ert->is_lvalue);
-        }
-        else assert(false);
-    }
-    return ert;
+bool ExprBinary::is_lvalue() {
+    return false;
 }
 
-ExprReturnType* Expression::Unary::resolve_type() {
-    if(std::holds_alternative<Postfix*>(val)) {
-        Expression::Postfix *p = std::get<Expression::Postfix*>(val);
-        return p->resolve_type();
+bool ExprPrefix::is_lvalue() {
+    return false;   //if you ever implement the dereferencing operator, that should result in an l-value
+}
+
+bool ExprPostfix::is_lvalue() {
+    if(std::holds_alternative<Expression*>(op)) {   //indexing
+        return true;
     }
-    else if(std::holds_alternative<Unary*>(val)) {
-        Expression::Unary *u = std::get<Expression::Unary*>(val);
-        ExprReturnType *right = u->resolve_type();
-        if(right == nullptr) return nullptr;
-        Type *res = find_resulting_type(op, right->type);
-        if(res == nullptr) {
-            std::cout << "Left unary operator does not exist : " << op << right->type->to_string() << "\n";
-            return nullptr;
-        }
-        return new ExprReturnType(res, 0);
+    else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {    //function call
+        return false;
+    }
+    else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {    //member variable access
+        return true;
     }
     else assert(false);
 }
 
-ExprReturnType* Expression::Multiplicative::resolve_type() {
-    ExprReturnType *left = terms[0]->resolve_type();
-    if(left == nullptr) return nullptr;
-    for(int i = 1; i < terms.size(); i++){
-        ExprReturnType *right = terms[i]->resolve_type();
-        if(right == nullptr) return nullptr;
-        Type *lt = left->type, *rt = right->type;
-        Type *res = find_resulting_type(lt, ops[i - 1], rt);
-        if(res == nullptr) {
-            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
-            return nullptr;
-        }
-        left = new ExprReturnType(res, 0);
-    }
-    return left;
+bool Expression::is_lvalue() {
+    return expr_node->is_lvalue();
 }
 
-ExprReturnType* Expression::Additive::resolve_type() {
-    ExprReturnType *left = terms[0]->resolve_type();
-    if(left == nullptr) return nullptr;
-    for(int i = 1; i < terms.size(); i++){
-        ExprReturnType *right = terms[i]->resolve_type();
-        if(right == nullptr) return nullptr;
-        Type *lt = left->type, *rt = right->type;
-        Type *res = find_resulting_type(lt, ops[i - 1], rt);
-        if(res == nullptr) {
-            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
-            return nullptr;
-        }
-        left = new ExprReturnType(res, 0);
+Type* ExprPrimary::resolve_type() {
+    if(std::holds_alternative<FunctionCall*>(val)) {
+        FunctionCall *f = std::get<FunctionCall*>(val);
+        return f->resolve_type();
     }
-    return left;
+    else if(std::holds_alternative<Identifier*>(val)) {
+        Identifier *id = std::get<Identifier*>(val);
+        return find_variable_type(id);
+    }
+    else if(std::holds_alternative<Literal*>(val)) {
+        Literal *l = std::get<Literal*>(val);
+        return l->resolve_type();
+    }
+    else if(std::holds_alternative<Expression*>(val)) {
+        Expression *e = std::get<Expression*>(val);
+        return e->resolve_type();
+    }
+    else assert(false);
 }
 
-ExprReturnType* Expression::Shift::resolve_type() {
-    ExprReturnType *left = terms[0]->resolve_type();
-    if(left == nullptr) return nullptr;
-    for(int i = 1; i < terms.size(); i++){
-        ExprReturnType *right = terms[i]->resolve_type();
-        if(right == nullptr) return nullptr;
-        Type *lt = left->type, *rt = right->type;
-        Type *res = find_resulting_type(lt, ops[i - 1], rt);
-        if(res == nullptr) {
-            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
-            return nullptr;
+Type* ExprBinary::resolve_type() {
+    Type *lt = left->resolve_type(), *rt = right->resolve_type();
+    if(std::holds_alternative<std::string>(op)) {
+        std::string str_op = std::get<std::string>(op);
+        if(str_op == "=") {
+            Type *res = find_resulting_type(rt, lt);
+            if(res == nullptr) {
+                std::cout << "No direct conversion from " << rt->to_string() << " to " << lt->to_string() << "\n";
+                return nullptr;
+            }
+            return res;
         }
-        left = new ExprReturnType(res, 0);
-    }
-    return left;
+        else {            
+            Type *res = find_resulting_type(lt, str_op, rt);
+            if(res == nullptr) {
+                std::cout << "Binary operator " << lt->to_string() << " " << str_op << " " << rt->to_string() << " does not exist\n";
+                return nullptr;
+            }
+            return res;
+        }
+    }   
+    else assert(false);
 }
 
-ExprReturnType* Expression::Relational::resolve_type() {
-    ExprReturnType *left = terms[0]->resolve_type();
-    if(left == nullptr) return nullptr;
-    for(int i = 1; i < terms.size(); i++){
-        ExprReturnType *right = terms[i]->resolve_type();
-        if(right == nullptr) return nullptr;
-        Type *lt = left->type, *rt = right->type;
-        Type *res = find_resulting_type(lt, ops[i - 1], rt);
+Type* ExprPrefix::resolve_type() {
+    if(std::holds_alternative<std::string>(op)) {
+        std::string str_op = std::get<std::string>(op);
+        Type *rt = right->resolve_type();
+        Type *res = find_resulting_type(str_op, rt);
         if(res == nullptr) {
-            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
+            std::cout << "Prefix operator " << str_op << " " << rt->to_string() << " does not exist\n";
             return nullptr;
         }
-        left = new ExprReturnType(res, 0);
+        return res;
     }
-    return left;
+    else assert(false);
 }
 
-ExprReturnType* Expression::Equality::resolve_type() {
-    ExprReturnType *left = terms[0]->resolve_type();
-    if(left == nullptr) return nullptr;
-    for(int i = 1; i < terms.size(); i++){
-        ExprReturnType *right = terms[i]->resolve_type();
-        if(right == nullptr) return nullptr;
-        Type *lt = left->type, *rt = right->type;
-        Type *res = find_resulting_type(lt, ops[i - 1], rt);
-        if(res == nullptr) {
-            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
+Type* ExprPostfix::resolve_type() {
+    Type *lt = left->resolve_type();
+    if(std::holds_alternative<Expression*>(op)) {   //indexing
+        Expression *expr = std::get<Expression*>(op);
+        Type *et = expr->resolve_type();
+        if(et == nullptr) return nullptr;
+        if(*et != BaseType("int")) {
+            std::cout << "Indexing expression must resolve to int\n";
             return nullptr;
         }
-        left = new ExprReturnType(res, 0);
+        if(dynamic_cast<PointerType*>(lt) == nullptr) {
+            std::cout << "Can't index into non-pointer type " << lt->to_string() << "\n";
+            return nullptr;
+        }
+        Type *nt = dynamic_cast<PointerType*>(lt)->type;
+        return nt;
     }
-    return left;
-}
+    else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {
+        std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
+        FunctionCall *fc = p.second;  
 
-ExprReturnType* Expression::BitAnd::resolve_type() {
-    ExprReturnType *left = terms[0]->resolve_type();
-    if(left == nullptr) return nullptr;
-    for(int i = 1; i < terms.size(); i++){
-        ExprReturnType *right = terms[i]->resolve_type();
-        if(right == nullptr) return nullptr;
-        Type *lt = left->type, *rt = right->type;
-        Type *res = find_resulting_type(lt, ops[i - 1], rt);
-        if(res == nullptr) {
-            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
-            return nullptr;
+        //dereference
+        if(p.first == "->") {
+            if(dynamic_cast<PointerType*>(lt) == nullptr) {
+                std::cout << "Trying to dereference non-pointer type " << lt->to_string() << "\n";
+                return nullptr;
+            }
+            lt = dynamic_cast<PointerType*>(lt)->type;
         }
-        left = new ExprReturnType(res, 0);
-    }
-    return left;
-}
 
-ExprReturnType* Expression::BitXor::resolve_type() {
-    ExprReturnType *left = terms[0]->resolve_type();
-    if(left == nullptr) return nullptr;
-    for(int i = 1; i < terms.size(); i++){
-        ExprReturnType *right = terms[i]->resolve_type();
-        if(right == nullptr) return nullptr;
-        Type *lt = left->type, *rt = right->type;
-        Type *res = find_resulting_type(lt, ops[i - 1], rt);
-        if(res == nullptr) {
-            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
+        //member function call
+        fc = new FunctionCall(lt, fc->id, fc->argument_list);
+        Type *nt = fc->resolve_type();
+        if(fc->resolve_type() == nullptr) {
+            std::cout << "Failed to resolve type of function call\n";
             return nullptr;
         }
-        left = new ExprReturnType(res, 0);
+        return nt;
     }
-    return left;
-}
+    else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
+        std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
+        Identifier *id = p.second;
+        
+        //dereference
+        if(p.first == "->") {
+            if(dynamic_cast<PointerType*>(lt) == nullptr) {
+                std::cout << "Trying to dereference non-pointer type " << lt->to_string() << "\n";
+                return nullptr;
+            }
+            lt = dynamic_cast<PointerType*>(lt)->type;
+        }
 
-ExprReturnType* Expression::BitOr::resolve_type() {
-    ExprReturnType *left = terms[0]->resolve_type();
-    if(left == nullptr) return nullptr;
-    for(int i = 1; i < terms.size(); i++){
-        ExprReturnType *right = terms[i]->resolve_type();
-        if(right == nullptr) return nullptr;
-        Type *lt = left->type, *rt = right->type;
-        Type *res = find_resulting_type(lt, ops[i - 1], rt);
-        if(res == nullptr) {
-            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
+        //member variable access
+        StructLayout *sl = get_struct_layout(lt);
+        if(sl == nullptr) {
+            std::cout << "Unable to find StructLayout for " << lt->to_string() << "\n";
             return nullptr;
         }
-        left = new ExprReturnType(res, 0);
+        if(sl->get_type(id) == nullptr) {
+            std::cout << "Unknown member variable identifier \"" << id->name << "\" for type " << lt->to_string() << "\n";
+            return nullptr;
+        }
+        Type *nt = sl->get_type(id);
+        return nt;
     }
-    return left;
-}
-
-ExprReturnType* Expression::LogicalAnd::resolve_type() {
-    ExprReturnType *left = terms[0]->resolve_type();
-    if(left == nullptr) return nullptr;
-    for(int i = 1; i < terms.size(); i++){
-        ExprReturnType *right = terms[i]->resolve_type();
-        if(right == nullptr) return nullptr;
-        Type *lt = left->type, *rt = right->type;
-        Type *res = find_resulting_type(lt, ops[i - 1], rt);
-        if(res == nullptr) {
-            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
-            return nullptr;
-        }
-        left = new ExprReturnType(res, 0);
-    }
-    return left;
-}
-
-ExprReturnType* Expression::LogicalOr::resolve_type() {
-    ExprReturnType *left = terms[0]->resolve_type();
-    if(left == nullptr) return nullptr;
-    for(int i = 1; i < terms.size(); i++){
-        ExprReturnType *right = terms[i]->resolve_type();
-        if(right == nullptr) return nullptr;
-        Type *lt = left->type, *rt = right->type;
-        Type *res = find_resulting_type(lt, ops[i - 1], rt);
-        if(res == nullptr) {
-            std::cout << "Operator " << lt->to_string() << " " << ops[i - 1] << " " << rt->to_string() << " does not exist\n";
-            return nullptr;
-        }
-        left = new ExprReturnType(res, 0);
-    }
-    return left;
-}
-
-ExprReturnType* Expression::Assignment::resolve_type() {
-    ExprReturnType* right = terms[terms.size() - 1]->resolve_type();
-    if(right == nullptr) return nullptr;
-    for(int i = (int) terms.size() - 2; i >= 0; i--){
-        ExprReturnType* left = terms[i]->resolve_type();
-        if(left == nullptr) return nullptr;
-        Type *rt = right->type, *lt = left->type;
-        //left must be an l-value
-        if(!left->is_lvalue) {
-            std::cout << "Expression Assignment : left term must be l-value\n";
-            return nullptr;
-        }
-        //can rt be casted into lt?
-        if(find_resulting_type(rt, lt) == nullptr) {
-            std::cout << "Expression Assignment : cannot cast " << rt->to_string() << " into " << lt->to_string() << "\n";
-            return nullptr;
-        }
-        right = new ExprReturnType(lt, 0);
-    }
-    return right;
+    else assert(false);
 }
 
 Type* Expression::resolve_type() {
-    ExprReturnType *ert = expr_node->resolve_type();
-    if(ert == nullptr) return nullptr;
-    return ert->type;
+    return expr_node->resolve_type();
 }
 
 Type* FunctionCall::resolve_type() {
@@ -2511,7 +2253,55 @@ void StringLiteral::emit_asm() {
     fout << indent() << "pop %rax\n";
 }
 
-void Expression::Primary::emit_asm() {
+void ExprPrimary::elaborate() {
+    if(std::holds_alternative<FunctionCall*>(val)) {
+        //do nothing
+    }
+    else if(std::holds_alternative<Identifier*>(val)) {
+        //do nothing
+    }
+    else if(std::holds_alternative<Literal*>(val)) {
+        //do nothing
+    }
+    else if(std::holds_alternative<Expression*>(val)) {
+        Expression *expr = std::get<Expression*>(val);
+        expr->elaborate();
+    }
+    else assert(false);
+}
+
+void ExprBinary::elaborate() {
+    left->elaborate();
+    right->elaborate();
+
+    if(std::holds_alternative<std::string>(op)) {
+        std::string str_op = std::get<std::string>(op);
+        if(str_op == "=") {
+            Type *rt = right->resolve_type();
+
+            //if the right is a non-primitive l-value, wrap it in a copy constructor call
+            if(!is_type_primitive(rt) && right->is_lvalue()) {
+                FunctionCall *copy = new FunctionCall(new Identifier(rt->to_string()), {new Expression(right)});
+                right = new ExprPrimary(copy);
+            }
+        }
+    }
+}
+
+void ExprPrefix::elaborate() {
+    //when I implement casting, should turn casts into function calls
+    right->elaborate();
+}
+
+void ExprPostfix::elaborate() { 
+    left->elaborate();
+}
+
+void Expression::elaborate() {
+    expr_node->elaborate();
+}
+
+void ExprPrimary::emit_asm() {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *f = std::get<FunctionCall*>(val);
         f->emit_asm();
@@ -2534,287 +2324,193 @@ void Expression::Primary::emit_asm() {
     else assert(false);
 }
 
-void Expression::Postfix::emit_asm() {
-    Type *t = term->resolve_type()->type;
-    term->emit_asm();   
-    for(int i = 0; i < ops.size(); i++){
-        val_op op = ops[i];
-        if(std::holds_alternative<Expression*>(op)) {   //indexing
-            //t must be PointerType
-            assert(dynamic_cast<PointerType*>(t) != nullptr);
-            t = (dynamic_cast<PointerType*>(t))->type;
+void ExprBinary::emit_asm() {
+    Type *lt = left->resolve_type(), *rt = right->resolve_type();
+    if(std::holds_alternative<std::string>(op)) {
+        std::string str_op = std::get<std::string>(op);
+        if(str_op == "||") {    //logical or
+            std::string label = create_new_label();
+            left->emit_asm();
 
-            //save %rax, %rcx to stack
+            //see if we should short circuit
+            fout << indent() << "cmp $0, %rax\n";
+            fout << indent() << "jne " << label << "\n";
+
+            //if we don't short circuit, evaluate right branch and merge
+            {
+                fout << indent() << "push %rax\n";
+                right->emit_asm();
+                fout << indent() << "mov %rax, %rbx\n";
+                fout << indent() << "pop %rax\n";
+
+                TypeConversion *tc = find_type_conversion(lt, str_op, rt);
+                tc->emit_asm();
+            }
+
+            fout << label << ":\n";
+        }
+        else if(str_op == "&&") {   //logical and
+            std::string label = create_new_label();
+            left->emit_asm();
+
+            //see if we should short circuit
+            fout << indent() << "cmp $0, %rax\n";
+            fout << indent() << "je " << label << "\n";
+
+            //if we don't short circuit, evaluate right branch and merge
+            {
+                fout << indent() << "push %rax\n";
+                right->emit_asm();
+                fout << indent() << "mov %rax, %rbx\n";
+                fout << indent() << "pop %rax\n";
+
+                TypeConversion *tc = find_type_conversion(lt, str_op, rt);
+                tc->emit_asm();
+            }
+
+            fout << label << ":\n";
+        }
+        else if(str_op == "=") {
+            //eval right r-value
+            right->emit_asm();
+
+            //cast right into left
+            TypeConversion *tc = find_type_conversion(rt, lt);
+            tc->emit_asm();
+
+            //save value
             fout << indent() << "push %rax\n";
-            fout << indent() << "push %rcx\n";
 
-            //evaluate expression
-            Expression *expr = std::get<Expression*>(op);
-            assert(expr != nullptr);
-            expr->emit_asm();
+            //evaluate left l-value
+            left->emit_asm();
 
-            //move expression value to %rbx
+            //move value into mem location
+            int sz = lt->calc_size();
+            fout << indent() << "mov %rcx, %rbx\n";
+            fout << indent() << "pop %rax\n";
+            emit_mem_store(sz);
+        }
+        else {
+            left->emit_asm();
+            fout << indent() << "push %rax\n";
+            right->emit_asm();
             fout << indent() << "mov %rax, %rbx\n";
-
-            //return old %rax, %rcx
-            fout << indent() << "pop %rcx\n";
             fout << indent() << "pop %rax\n";
-
-            //save array start
-            fout << indent() << "push %rax\n";
-
-            //find sizeof struct
-            int sz = t->calc_size();
-
-            //compute array element addr
-            emit_address_array(sz);
-            fout << indent() << "mov %rax, %rcx\n";
-
-            //return array start
-            fout << indent() << "pop %rax\n";
-
-            //retrieve array element data
-            emit_retrieve_array(sz);
+            
+            TypeConversion *tc = find_type_conversion(lt, str_op, rt);
+            tc->emit_asm();
         }
-        else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {
-            std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
-            FunctionCall *fc = p.second;
-
-            //dereference
-            if(p.first == "->") {
-                fout << indent() << "mov %rax, %rcx\n";
-                fout << indent() << "movq (%rax), %rax\n";
-
-                assert(dynamic_cast<PointerType*>(t) != nullptr);
-                t = dynamic_cast<PointerType*>(t)->type;
-                assert(t != nullptr);
-            }
-
-            //member function call
-            fc = new FunctionCall(t, fc->id, fc->argument_list);
-            Function *f = get_function(fc->resolve_function_signature());
-            assert(f != nullptr);
-
-            //this is no longer l-value, so don't have to maintain %rcx
-            //reference to type is in %rax, so emit function call
-            fc->emit_asm();
-
-            t = f->type;
-        }
-        else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
-            std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
-            Identifier *id = p.second;
-
-            //dereference
-            if(p.first == "->") {
-                fout << indent() << "mov %rax, %rcx\n";
-                fout << indent() << "movq (%rax), %rax\n";
-
-                assert(dynamic_cast<PointerType*>(t) != nullptr);
-                t = dynamic_cast<PointerType*>(t)->type;
-                assert(t != nullptr);
-            }
-
-            //member variable access
-            StructLayout *sl = get_struct_layout(t);
-            assert(sl != nullptr);
-            assert(sl->get_type(id) != nullptr);
-
-            int offset = sl->get_offset(id);
-            int sz = t->calc_size();
-            fout << indent() << "lea " << offset << "(%rax), %rcx\n";
-            fout << indent() << "lea " << offset << "(%rax), %rax\n";
-            emit_mem_retrieve(sz);  //now, %rax = member variable, %rcx = address of member variable
-
-            t = sl->get_type(id);
-        }
-        else assert(false);
     }
+    else assert(false);
 }
 
-void Expression::Unary::emit_asm() {
-    if(std::holds_alternative<Postfix*>(val)) {
-        Expression::Postfix *p = std::get<Expression::Postfix*>(val);
-        p->emit_asm();
-    }
-    else if(std::holds_alternative<Unary*>(val)) {
-        Expression::Unary *u = std::get<Expression::Unary*>(val);
-        u->emit_asm();
-        TypeConversion *tc = find_type_conversion(op, u->resolve_type()->type);
+void ExprPrefix::emit_asm() {
+    Type *rt = right->resolve_type();
+    if(std::holds_alternative<std::string>(op)) {
+        std::string str_op = std::get<std::string>(op);
+        right->emit_asm();
+        TypeConversion *tc = find_type_conversion(str_op, rt);
         tc->emit_asm();
     }
     else assert(false);
 }
 
-void Expression::Multiplicative::emit_asm() {
-    terms[0]->emit_asm();
-    for(int i = 1; i < terms.size(); i++){
+void ExprPostfix::emit_asm() {
+    Type *lt = left->resolve_type();
+    
+    //evaluate left expr
+    left->emit_asm();
+
+    if(std::holds_alternative<Expression*>(op)) {   //indexing
+        //t must be PointerType
+        assert(dynamic_cast<PointerType*>(lt) != nullptr);
+        lt = (dynamic_cast<PointerType*>(lt))->type;
+
+        //save %rax, %rcx to stack
         fout << indent() << "push %rax\n";
-        terms[i]->emit_asm();
+        fout << indent() << "push %rcx\n";
+
+        //evaluate expression
+        Expression *expr = std::get<Expression*>(op);
+        assert(expr != nullptr);
+        expr->emit_asm();
+
+        //move expression value to %rbx
         fout << indent() << "mov %rax, %rbx\n";
-        fout << indent() << "pop %rax\n";
-        
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
-        tc->emit_asm();
-    }
-}
 
-void Expression::Additive::emit_asm() {
-    terms[0]->emit_asm();
-    for(int i = 1; i < terms.size(); i++){
-        fout << indent() << "push %rax\n";
-        terms[i]->emit_asm();
-        fout << indent() << "mov %rax, %rbx\n";
-        fout << indent() << "pop %rax\n";
-        
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
-        tc->emit_asm();
-    }
-}
-
-void Expression::Shift::emit_asm() {
-    terms[0]->emit_asm();
-    for(int i = 1; i < terms.size(); i++){
-        fout << indent() << "push %rax\n";
-        terms[i]->emit_asm();
-        fout << indent() << "mov %rax, %rbx\n";
-        fout << indent() << "pop %rax\n";
-        
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
-        tc->emit_asm();
-    }
-}
-
-void Expression::Relational::emit_asm() {
-    terms[0]->emit_asm();
-    for(int i = 1; i < terms.size(); i++){
-        fout << indent() << "push %rax\n";
-        terms[i]->emit_asm();
-        fout << indent() << "mov %rax, %rbx\n";
-        fout << indent() << "pop %rax\n";
-        
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
-        tc->emit_asm();
-    }
-}
-
-void Expression::Equality::emit_asm() {
-    terms[0]->emit_asm();
-    for(int i = 1; i < terms.size(); i++){
-        fout << indent() << "push %rax\n";
-        terms[i]->emit_asm();
-        fout << indent() << "mov %rax, %rbx\n";
-        fout << indent() << "pop %rax\n";
-        
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
-        tc->emit_asm();
-    }
-}
-
-void Expression::BitAnd::emit_asm() {
-    terms[0]->emit_asm();
-    for(int i = 1; i < terms.size(); i++){
-        fout << indent() << "push %rax\n";
-        terms[i]->emit_asm();
-        fout << indent() << "mov %rax, %rbx\n";
-        fout << indent() << "pop %rax\n";
-        
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
-        tc->emit_asm();
-    }
-}
-
-void Expression::BitXor::emit_asm() {
-    terms[0]->emit_asm();
-    for(int i = 1; i < terms.size(); i++){
-        fout << indent() << "push %rax\n";
-        terms[i]->emit_asm();
-        fout << indent() << "mov %rax, %rbx\n";
-        fout << indent() << "pop %rax\n";
-        
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
-        tc->emit_asm();
-    }
-}
-
-void Expression::BitOr::emit_asm() {
-    terms[0]->emit_asm();
-    for(int i = 1; i < terms.size(); i++){
-        fout << indent() << "push %rax\n";
-        terms[i]->emit_asm();
-        fout << indent() << "mov %rax, %rbx\n";
-        fout << indent() << "pop %rax\n";
-        
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
-        tc->emit_asm();
-    }
-}
-
-void Expression::LogicalAnd::emit_asm() {
-    terms[0]->emit_asm();
-    std::string label = "no-label";
-    if(terms.size() > 1) label = create_new_label();
-    for(int i = 1; i < terms.size(); i++){
-        fout << indent() << "cmp $0, %rax\n";
-        fout << indent() << "je " << label << "\n";
-
-        fout << indent() << "push %rax\n";
-        terms[i]->emit_asm();
-        fout << indent() << "mov %rax, %rbx\n";
+        //return old %rax, %rcx
+        fout << indent() << "pop %rcx\n";
         fout << indent() << "pop %rax\n";
 
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
-        tc->emit_asm();
-    }
-    if(terms.size() > 1) fout << label << ":\n";
-}
-
-void Expression::LogicalOr::emit_asm() {
-    terms[0]->emit_asm();
-    std::string label = "no-label";
-    if(terms.size() > 1) label = create_new_label();
-    for(int i = 1; i < terms.size(); i++){
-        fout << indent() << "cmp $0, %rax\n";
-        fout << indent() << "jne " << label << "\n";
-
-        fout << indent() << "push %rax\n";
-        terms[i]->emit_asm();
-        fout << indent() << "mov %rax, %rbx\n";
-        fout << indent() << "pop %rax\n";
-
-        TypeConversion *tc = find_type_conversion(terms[i - 1]->resolve_type()->type, ops[i - 1], terms[i]->resolve_type()->type);
-        tc->emit_asm();
-    }
-    if(terms.size() > 1) fout << label << ":\n";
-}
-
-void Expression::Assignment::emit_asm() {
-    terms[terms.size() - 1]->emit_asm();
-    Type *right = terms[terms.size() - 1]->resolve_type()->type;
-    for(int i = (int) terms.size() - 2; i >= 0; i--){
-        Type *left = terms[i]->resolve_type()->type;
-
-        //cast right into left
-        TypeConversion *tc = find_type_conversion(right, left);
-        tc->emit_asm();
-
-        //save value
+        //save array start
         fout << indent() << "push %rax\n";
 
-        //evaluate left l-value
-        terms[i]->emit_asm();
+        //find sizeof struct
+        int sz = lt->calc_size();
 
-        //move value into mem location
-        int sz = left->calc_size();
-        fout << indent() << "mov %rcx, %rbx\n";
+        //compute array element addr
+        emit_address_array(sz);
+        fout << indent() << "mov %rax, %rcx\n";
+
+        //return array start
         fout << indent() << "pop %rax\n";
-        emit_mem_store(sz);
 
-        right = left;
+        //retrieve array element data
+        emit_retrieve_array(sz);
     }
+    else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {
+        std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
+        FunctionCall *fc = p.second;
+
+        //dereference
+        if(p.first == "->") {
+            fout << indent() << "mov %rax, %rcx\n";
+            fout << indent() << "movq (%rax), %rax\n";
+
+            assert(dynamic_cast<PointerType*>(lt) != nullptr);
+            lt = dynamic_cast<PointerType*>(lt)->type;
+            assert(lt != nullptr);
+        }
+
+        //member function call
+        fc = new FunctionCall(lt, fc->id, fc->argument_list);
+        Function *f = get_function(fc->resolve_function_signature());
+        assert(f != nullptr);
+
+        //this is no longer l-value, so don't have to maintain %rcx
+        //reference to type is in %rax, so emit function call
+        fc->emit_asm();
+    }
+    else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
+        std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
+        Identifier *id = p.second;
+
+        //dereference
+        if(p.first == "->") {
+            fout << indent() << "mov %rax, %rcx\n";
+            fout << indent() << "movq (%rax), %rax\n";
+
+            assert(dynamic_cast<PointerType*>(lt) != nullptr);
+            lt = dynamic_cast<PointerType*>(lt)->type;
+            assert(lt != nullptr);
+        }
+
+        //member variable access
+        StructLayout *sl = get_struct_layout(lt);
+        assert(sl != nullptr);
+        assert(sl->get_type(id) != nullptr);
+
+        int offset = sl->get_offset(id);
+        int sz = lt->calc_size();
+        fout << indent() << "lea " << offset << "(%rax), %rcx\n";
+        fout << indent() << "lea " << offset << "(%rax), %rax\n";
+        emit_mem_retrieve(sz);  //now, %rax = member variable, %rcx = address of member variable
+    }
+    else assert(false);
 }
 
 void Expression::emit_asm() {
+    expr_node->elaborate();
     expr_node->emit_asm();
 }
 
