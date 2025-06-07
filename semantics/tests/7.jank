@@ -1,0 +1,173 @@
+
+void assert(int x) {
+    if(!x) {
+        puts_endl("assert failed");
+        sys_exit(1);
+    }
+}
+
+void basic_tests() {
+    // +=
+    int a = 5;
+    a += 3;
+    assert(a == 8);
+
+    // -=
+    int b = 10;
+    b -= 4;
+    assert(b == 6);
+
+    // *=
+    int c = 2;
+    c *= 6;
+    assert(c == 12);
+
+    // /=
+    int d = 20;
+    d /= 5;
+    assert(d == 4);
+
+    // %=
+    int e = 17;
+    e %= 5;
+    assert(e == 2);
+
+    // <<=
+    int f = 1;
+    f <<= 3;
+    assert(f == 8);
+
+    // >>=
+    int g = 16;
+    g >>= 2;
+    assert(g == 4);
+
+    puts_endl("basic tests passed");
+}
+
+void complex_tests() {
+    int a = 5;
+    int b = 3;
+    int c = 2;
+
+    // Chain compound assignment: b += c; a = b;
+    a = b += c;  // b becomes 5, a becomes 5
+    assert(a == 5 && b == 5);
+
+    // Right-associativity of assignment
+    a = b = c = 7;  // All become 7
+    assert(a == 7 && b == 7 && c == 7);
+
+    // Compound assignment inside expression
+    a = 1; b = 2; c = 3;
+    int d = (a += b) * (c -= 1); // a = 3, c = 2, d = 3 * 2 = 6
+    assert(a == 3 && c == 2 && d == 6);
+
+    // Using value of compound assignment in a chain
+    int x = 10;
+    int y = 20;
+    int z = 0;
+    z = (x *= 2) + (y -= 5);  // x = 20, y = 15, z = 20 + 15 = 35
+    assert(x == 20 && y == 15 && z == 35);
+
+    // Nested compound assignment: a += (b += c)
+    a = 1; b = 2; c = 3;
+    a += (b += c);  // b = 5, a = 1 + 5 = 6
+    assert(a == 6 && b == 5 && c == 3);
+
+    // Mix of shifts and logic
+    a = 1; b = 3;
+    a <<= b;  // a = 8
+    a |= 5;  // a = 8 | 5 = 13
+    assert(a == 13);
+
+    puts_endl("complex tests passed");
+}
+
+void big_test() {
+    int a = 1;
+    int b = 2; 
+    int c = 3; 
+    int d = 4; 
+    int e = 5; 
+    int f = 6; 
+    int g = 7;
+
+    int result = (
+        (a += b) *           // a = 3
+        ((c <<= 1) +         // c = 6
+        (d -= 2)) -          // d = 2
+        ((e |= 1) /          // e = 5
+        (f %= 4)) +          // f = 2
+        (g &= 6)             // g = 6
+    );
+
+    assert(a == 3);
+    assert(b == 2);
+    assert(c == 6);
+    assert(d == 2);
+    assert(e == 5);
+    assert(f == 2);
+    assert(g == 6);
+    assert(result == 28);
+
+    puts_endl("big test passed");
+}
+
+void inc_tests() {
+    // Basic tests
+    {   
+        int a = 0;
+        a ++;
+        assert(a == 1);
+        assert(--a == 0);
+        assert(a == 0);
+        assert(a++ == 0);
+        assert(a == 1);
+    }
+
+    // More basic tests
+    {
+        int x = 5;
+        
+        // Postfix increment
+        int y = x++;
+        assert(x == 6 && y == 5);
+        
+        // Prefix increment
+        y = ++x;
+        assert(x == 7 && y == 7);
+        
+        // Postfix decrement
+        y = x--;
+        assert(x == 6 && y == 7);
+        
+        // Prefix decrement
+        y = --x;
+        assert(x == 5 && y == 5);
+    }
+
+    // Test return value categories
+    {
+        int a = 5;
+        
+        // Prefix returns lvalue
+        ++a = 10;
+        assert(a == 10);
+        
+        // Postfix returns rvalue (can't assign to it)
+        // a++ = 20; // This would fail to compile
+    }
+
+    puts_endl("inc tests passed");
+}
+
+int main() {
+
+    basic_tests();
+    complex_tests();
+    big_test();
+    inc_tests();
+
+    return 0;
+}

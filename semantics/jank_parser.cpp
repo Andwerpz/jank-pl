@@ -1,4 +1,4 @@
-// Date Generated : 06-05-2025 22:33:02
+// Date Generated : 06-06-2025 21:44:34
 #include <vector>
 #include <string>
 #include <cassert>
@@ -541,7 +541,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // expr_postfix = expr_primary , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , function_call | "->" , ows , function_call | "." , ows , identifier | "->" , ows , identifier ) } ;
+    // expr_postfix = expr_primary , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , function_call | "->" , ows , function_call | "." , ows , identifier | "->" , ows , identifier | "++" | "--" ) } ;
     struct expr_postfix {
         struct a0 {
             struct b0 {
@@ -609,6 +609,22 @@ namespace parser {
                     static c4* parse();
                     std::string to_string();
                 };
+                struct c5 {
+                    std::string t0;
+                    c5(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c5* parse();
+                    std::string to_string();
+                };
+                struct c6 {
+                    std::string t0;
+                    c6(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c6* parse();
+                    std::string to_string();
+                };
                 bool is_c0 = false;
                 c0 *t0;
                 bool is_c1 = false;
@@ -619,6 +635,10 @@ namespace parser {
                 c3 *t3;
                 bool is_c4 = false;
                 c4 *t4;
+                bool is_c5 = false;
+                c5 *t5;
+                bool is_c6 = false;
+                c6 *t6;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -638,6 +658,14 @@ namespace parser {
                 b0(c4 *_t4) {
                     is_c4 = true;
                     t4 = _t4;
+                }
+                b0(c5 *_t5) {
+                    is_c5 = true;
+                    t5 = _t5;
+                }
+                b0(c6 *_t6) {
+                    is_c6 = true;
+                    t6 = _t6;
                 }
                 static b0* parse();
                 std::string to_string();
@@ -661,7 +689,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // expr_unary = ( "+" | "-" | "~" | "!" ) , ows , expr_unary | expr_postfix ;
+    // expr_unary = ( "++" | "--" | "+" | "-" | "~" | "!" ) , ows , expr_unary | expr_postfix ;
     struct expr_unary {
         struct a0 {
             struct b0 {
@@ -697,6 +725,22 @@ namespace parser {
                     static c3* parse();
                     std::string to_string();
                 };
+                struct c4 {
+                    std::string t0;
+                    c4(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c4* parse();
+                    std::string to_string();
+                };
+                struct c5 {
+                    std::string t0;
+                    c5(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c5* parse();
+                    std::string to_string();
+                };
                 bool is_c0 = false;
                 c0 *t0;
                 bool is_c1 = false;
@@ -705,6 +749,10 @@ namespace parser {
                 c2 *t2;
                 bool is_c3 = false;
                 c3 *t3;
+                bool is_c4 = false;
+                c4 *t4;
+                bool is_c5 = false;
+                c5 *t5;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -720,6 +768,14 @@ namespace parser {
                 b0(c3 *_t3) {
                     is_c3 = true;
                     t3 = _t3;
+                }
+                b0(c4 *_t4) {
+                    is_c4 = true;
+                    t4 = _t4;
+                }
+                b0(c5 *_t5) {
+                    is_c5 = true;
+                    t5 = _t5;
                 }
                 static b0* parse();
                 std::string to_string();
@@ -1221,14 +1277,172 @@ namespace parser {
         std::string to_string();
     };
 
-    // expr_assignment = expr_logical_or , { ows , "=" , ows , expr_logical_or } ;
+    // expr_assignment = expr_logical_or , { ows , ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "^=" | "|=" ) , ows , expr_logical_or } ;
     struct expr_assignment {
         struct a0 {
+            struct b0 {
+                struct c0 {
+                    std::string t0;
+                    c0(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c0* parse();
+                    std::string to_string();
+                };
+                struct c1 {
+                    std::string t0;
+                    c1(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c1* parse();
+                    std::string to_string();
+                };
+                struct c2 {
+                    std::string t0;
+                    c2(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c2* parse();
+                    std::string to_string();
+                };
+                struct c3 {
+                    std::string t0;
+                    c3(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c3* parse();
+                    std::string to_string();
+                };
+                struct c4 {
+                    std::string t0;
+                    c4(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c4* parse();
+                    std::string to_string();
+                };
+                struct c5 {
+                    std::string t0;
+                    c5(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c5* parse();
+                    std::string to_string();
+                };
+                struct c6 {
+                    std::string t0;
+                    c6(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c6* parse();
+                    std::string to_string();
+                };
+                struct c7 {
+                    std::string t0;
+                    c7(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c7* parse();
+                    std::string to_string();
+                };
+                struct c8 {
+                    std::string t0;
+                    c8(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c8* parse();
+                    std::string to_string();
+                };
+                struct c9 {
+                    std::string t0;
+                    c9(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c9* parse();
+                    std::string to_string();
+                };
+                struct c10 {
+                    std::string t0;
+                    c10(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c10* parse();
+                    std::string to_string();
+                };
+                bool is_c0 = false;
+                c0 *t0;
+                bool is_c1 = false;
+                c1 *t1;
+                bool is_c2 = false;
+                c2 *t2;
+                bool is_c3 = false;
+                c3 *t3;
+                bool is_c4 = false;
+                c4 *t4;
+                bool is_c5 = false;
+                c5 *t5;
+                bool is_c6 = false;
+                c6 *t6;
+                bool is_c7 = false;
+                c7 *t7;
+                bool is_c8 = false;
+                c8 *t8;
+                bool is_c9 = false;
+                c9 *t9;
+                bool is_c10 = false;
+                c10 *t10;
+                b0(c0 *_t0) {
+                    is_c0 = true;
+                    t0 = _t0;
+                }
+                b0(c1 *_t1) {
+                    is_c1 = true;
+                    t1 = _t1;
+                }
+                b0(c2 *_t2) {
+                    is_c2 = true;
+                    t2 = _t2;
+                }
+                b0(c3 *_t3) {
+                    is_c3 = true;
+                    t3 = _t3;
+                }
+                b0(c4 *_t4) {
+                    is_c4 = true;
+                    t4 = _t4;
+                }
+                b0(c5 *_t5) {
+                    is_c5 = true;
+                    t5 = _t5;
+                }
+                b0(c6 *_t6) {
+                    is_c6 = true;
+                    t6 = _t6;
+                }
+                b0(c7 *_t7) {
+                    is_c7 = true;
+                    t7 = _t7;
+                }
+                b0(c8 *_t8) {
+                    is_c8 = true;
+                    t8 = _t8;
+                }
+                b0(c9 *_t9) {
+                    is_c9 = true;
+                    t9 = _t9;
+                }
+                b0(c10 *_t10) {
+                    is_c10 = true;
+                    t10 = _t10;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
             ows *t0;
-            std::string t1;
+            b0 *t1;
             ows *t2;
             expr_logical_or *t3;
-            a0(ows *_t0, std::string _t1, ows *_t2, expr_logical_or *_t3) {
+            a0(ows *_t0, b0 *_t1, ows *_t2, expr_logical_or *_t3) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -4456,12 +4670,42 @@ namespace parser {
         return ans;
     }
 
+    expr_postfix::a0::b0::c5* expr_postfix::a0::b0::c5::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "++") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_postfix::a0::b0::c5(_t0);
+    }
+
+    std::string expr_postfix::a0::b0::c5::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_postfix::a0::b0::c6* expr_postfix::a0::b0::c6::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "--") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_postfix::a0::b0::c6(_t0);
+    }
+
+    std::string expr_postfix::a0::b0::c6::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
     expr_postfix::a0::b0* expr_postfix::a0::b0::parse() {
         if(auto x = expr_postfix::a0::b0::c0::parse()) return new expr_postfix::a0::b0(x);
         if(auto x = expr_postfix::a0::b0::c1::parse()) return new expr_postfix::a0::b0(x);
         if(auto x = expr_postfix::a0::b0::c2::parse()) return new expr_postfix::a0::b0(x);
         if(auto x = expr_postfix::a0::b0::c3::parse()) return new expr_postfix::a0::b0(x);
         if(auto x = expr_postfix::a0::b0::c4::parse()) return new expr_postfix::a0::b0(x);
+        if(auto x = expr_postfix::a0::b0::c5::parse()) return new expr_postfix::a0::b0(x);
+        if(auto x = expr_postfix::a0::b0::c6::parse()) return new expr_postfix::a0::b0(x);
         return nullptr;
     }
 
@@ -4471,6 +4715,8 @@ namespace parser {
         if(is_c2) return t2->to_string();
         if(is_c3) return t3->to_string();
         if(is_c4) return t4->to_string();
+        if(is_c5) return t5->to_string();
+        if(is_c6) return t6->to_string();
         assert(false);
     }
 
@@ -4514,8 +4760,8 @@ namespace parser {
 
     expr_unary::a0::b0::c0* expr_unary::a0::b0::c0::parse() {
         push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "+") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(2);
+        if(_t0 != "++") {pop_stack(); return nullptr;}
         rm_stack();
         return new expr_unary::a0::b0::c0(_t0);
     }
@@ -4528,8 +4774,8 @@ namespace parser {
 
     expr_unary::a0::b0::c1* expr_unary::a0::b0::c1::parse() {
         push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "-") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(2);
+        if(_t0 != "--") {pop_stack(); return nullptr;}
         rm_stack();
         return new expr_unary::a0::b0::c1(_t0);
     }
@@ -4543,7 +4789,7 @@ namespace parser {
     expr_unary::a0::b0::c2* expr_unary::a0::b0::c2::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
-        if(_t0 != "~") {pop_stack(); return nullptr;}
+        if(_t0 != "+") {pop_stack(); return nullptr;}
         rm_stack();
         return new expr_unary::a0::b0::c2(_t0);
     }
@@ -4557,7 +4803,7 @@ namespace parser {
     expr_unary::a0::b0::c3* expr_unary::a0::b0::c3::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
-        if(_t0 != "!") {pop_stack(); return nullptr;}
+        if(_t0 != "-") {pop_stack(); return nullptr;}
         rm_stack();
         return new expr_unary::a0::b0::c3(_t0);
     }
@@ -4568,11 +4814,41 @@ namespace parser {
         return ans;
     }
 
+    expr_unary::a0::b0::c4* expr_unary::a0::b0::c4::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "~") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_unary::a0::b0::c4(_t0);
+    }
+
+    std::string expr_unary::a0::b0::c4::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_unary::a0::b0::c5* expr_unary::a0::b0::c5::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "!") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_unary::a0::b0::c5(_t0);
+    }
+
+    std::string expr_unary::a0::b0::c5::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
     expr_unary::a0::b0* expr_unary::a0::b0::parse() {
         if(auto x = expr_unary::a0::b0::c0::parse()) return new expr_unary::a0::b0(x);
         if(auto x = expr_unary::a0::b0::c1::parse()) return new expr_unary::a0::b0(x);
         if(auto x = expr_unary::a0::b0::c2::parse()) return new expr_unary::a0::b0(x);
         if(auto x = expr_unary::a0::b0::c3::parse()) return new expr_unary::a0::b0(x);
+        if(auto x = expr_unary::a0::b0::c4::parse()) return new expr_unary::a0::b0(x);
+        if(auto x = expr_unary::a0::b0::c5::parse()) return new expr_unary::a0::b0(x);
         return nullptr;
     }
 
@@ -4581,6 +4857,8 @@ namespace parser {
         if(is_c1) return t1->to_string();
         if(is_c2) return t2->to_string();
         if(is_c3) return t3->to_string();
+        if(is_c4) return t4->to_string();
+        if(is_c5) return t5->to_string();
         assert(false);
     }
 
@@ -5318,12 +5596,196 @@ namespace parser {
         return ans;
     }
 
+    expr_assignment::a0::b0::c0* expr_assignment::a0::b0::c0::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_assignment::a0::b0::c0(_t0);
+    }
+
+    std::string expr_assignment::a0::b0::c0::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_assignment::a0::b0::c1* expr_assignment::a0::b0::c1::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "+=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_assignment::a0::b0::c1(_t0);
+    }
+
+    std::string expr_assignment::a0::b0::c1::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_assignment::a0::b0::c2* expr_assignment::a0::b0::c2::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "-=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_assignment::a0::b0::c2(_t0);
+    }
+
+    std::string expr_assignment::a0::b0::c2::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_assignment::a0::b0::c3* expr_assignment::a0::b0::c3::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "*=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_assignment::a0::b0::c3(_t0);
+    }
+
+    std::string expr_assignment::a0::b0::c3::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_assignment::a0::b0::c4* expr_assignment::a0::b0::c4::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "/=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_assignment::a0::b0::c4(_t0);
+    }
+
+    std::string expr_assignment::a0::b0::c4::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_assignment::a0::b0::c5* expr_assignment::a0::b0::c5::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "%=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_assignment::a0::b0::c5(_t0);
+    }
+
+    std::string expr_assignment::a0::b0::c5::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_assignment::a0::b0::c6* expr_assignment::a0::b0::c6::parse() {
+        push_stack();
+        std::string _t0 = next_chars(3);
+        if(_t0 != "<<=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_assignment::a0::b0::c6(_t0);
+    }
+
+    std::string expr_assignment::a0::b0::c6::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_assignment::a0::b0::c7* expr_assignment::a0::b0::c7::parse() {
+        push_stack();
+        std::string _t0 = next_chars(3);
+        if(_t0 != ">>=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_assignment::a0::b0::c7(_t0);
+    }
+
+    std::string expr_assignment::a0::b0::c7::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_assignment::a0::b0::c8* expr_assignment::a0::b0::c8::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "&=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_assignment::a0::b0::c8(_t0);
+    }
+
+    std::string expr_assignment::a0::b0::c8::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_assignment::a0::b0::c9* expr_assignment::a0::b0::c9::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "^=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_assignment::a0::b0::c9(_t0);
+    }
+
+    std::string expr_assignment::a0::b0::c9::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_assignment::a0::b0::c10* expr_assignment::a0::b0::c10::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "|=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_assignment::a0::b0::c10(_t0);
+    }
+
+    std::string expr_assignment::a0::b0::c10::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_assignment::a0::b0* expr_assignment::a0::b0::parse() {
+        if(auto x = expr_assignment::a0::b0::c0::parse()) return new expr_assignment::a0::b0(x);
+        if(auto x = expr_assignment::a0::b0::c1::parse()) return new expr_assignment::a0::b0(x);
+        if(auto x = expr_assignment::a0::b0::c2::parse()) return new expr_assignment::a0::b0(x);
+        if(auto x = expr_assignment::a0::b0::c3::parse()) return new expr_assignment::a0::b0(x);
+        if(auto x = expr_assignment::a0::b0::c4::parse()) return new expr_assignment::a0::b0(x);
+        if(auto x = expr_assignment::a0::b0::c5::parse()) return new expr_assignment::a0::b0(x);
+        if(auto x = expr_assignment::a0::b0::c6::parse()) return new expr_assignment::a0::b0(x);
+        if(auto x = expr_assignment::a0::b0::c7::parse()) return new expr_assignment::a0::b0(x);
+        if(auto x = expr_assignment::a0::b0::c8::parse()) return new expr_assignment::a0::b0(x);
+        if(auto x = expr_assignment::a0::b0::c9::parse()) return new expr_assignment::a0::b0(x);
+        if(auto x = expr_assignment::a0::b0::c10::parse()) return new expr_assignment::a0::b0(x);
+        return nullptr;
+    }
+
+    std::string expr_assignment::a0::b0::to_string() {
+        if(is_c0) return t0->to_string();
+        if(is_c1) return t1->to_string();
+        if(is_c2) return t2->to_string();
+        if(is_c3) return t3->to_string();
+        if(is_c4) return t4->to_string();
+        if(is_c5) return t5->to_string();
+        if(is_c6) return t6->to_string();
+        if(is_c7) return t7->to_string();
+        if(is_c8) return t8->to_string();
+        if(is_c9) return t9->to_string();
+        if(is_c10) return t10->to_string();
+        assert(false);
+    }
+
     expr_assignment::a0* expr_assignment::a0::parse() {
         push_stack();
         ows *_t0 = ows::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t1 = next_chars(1);
-        if(_t1 != "=") {pop_stack(); return nullptr;}
+        expr_assignment::a0::b0 *_t1 = expr_assignment::a0::b0::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
         ows *_t2 = ows::parse();
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
         expr_logical_or *_t3 = expr_logical_or::parse();
@@ -5335,7 +5797,7 @@ namespace parser {
     std::string expr_assignment::a0::to_string() {
         std::string ans = "";
         ans += t0->to_string();
-        ans += t1;
+        ans += t1->to_string();
         ans += t2->to_string();
         ans += t3->to_string();
         return ans;

@@ -142,8 +142,6 @@ does its magic, we should be able to essentially treat the pointer portion as th
 
 ok, structs are mostly done, just have to implement some other features
  - make it prohibited to assign to 'this' within a member function
- - when assigning stuff, always use the copy constructor. Right now, I'm just copying over the reference
- - enforce that a copy constructor must exist
 
 
 what's the next feature? operator overloading for structs? I/O? templating? 
@@ -163,6 +161,14 @@ as we're generating asm.
 We can also apply this elaboration step to auto casting when assigning. (also should figure out how exactly casts are going to work 
 for user defined structs. I'm assuming they're going to be struct member functions that I call, so maybe can just turn all non-primitive
 casts into function invocations.)
+
+
+ok, elaboration step all done, also reworked expression syntax structure to make it easier, now each operation is one ExprNode, and
+instead of 15 types of ExprNode in order of precedence, I assume that precedence is taken care of by the parser and I only have 4 types. 
+This also makes elaboration really easy as I no longer have any restrictions on what ExprNodes can contain what other nodes. 
+
+maybe can work on operator overloading next. Will have to figure out references first tho...
+
 
 TODO
  - make sure that int main() is never called
@@ -433,7 +439,7 @@ struct ExprPrefix : ExprNode {
 };
 
 struct ExprPostfix : ExprNode {
-    using op_t = std::variant<Expression*, std::pair<std::string, FunctionCall*>, std::pair<std::string, Identifier*>>;
+    using op_t = std::variant<Expression*, std::pair<std::string, FunctionCall*>, std::pair<std::string, Identifier*>, std::string>;
     ExprNode *left;
     op_t op;
     ExprPostfix(ExprNode *_left, op_t _op) {
@@ -767,8 +773,10 @@ void emit_mem_retrieve(int sz);
 void emit_mem_store(int sz);
 Type* find_resulting_type(Type *left, std::string op, Type *right); //binary operators
 TypeConversion* find_type_conversion(Type *left, std::string op, Type *right);
-Type* find_resulting_type(std::string op, Type* right); //left unary operators
+Type* find_resulting_type(std::string op, Type* right); //prefix operators
 TypeConversion* find_type_conversion(std::string op, Type* right);
+Type* find_resulting_type(Type *left, std::string op); //postfix operators
+TypeConversion* find_type_conversion(Type *left, std::string op);
 Type* find_resulting_type(Type* from, Type* to);    //casting
 TypeConversion* find_type_conversion(Type* from, Type* to); 
 Type* find_variable_type(Identifier *id);
@@ -903,6 +911,7 @@ namespace std {
     };
 }
 
+//for non-binary l-value operations, %rcx is where the address is
 //for binary operators, assumes left is in %rax and right is in %rbx
 //for left unary operators, assumes right is in %rax
 //for right unary operators, assumes left is in %rax
@@ -998,14 +1007,6 @@ void reset_controller() {
     local_var_stack_offset = 0;
     label_counter = 0;
 
-    // - sys functions
-    add_sys_function(new Function(new PointerType(new BaseType("void")), new Identifier("malloc"), {new BaseType("int")}));
-    add_sys_function(new Function(new PointerType(new BaseType("char")), new Identifier("int_to_string"), {new BaseType("int")}));
-    add_sys_function(new Function(new BaseType("void"), new Identifier("puts"), {new PointerType(new BaseType("char"))}));
-    add_sys_function(new Function(new BaseType("void"), new Identifier("puts_endl"), {new PointerType(new BaseType("char"))}));
-    add_sys_function(new Function(new BaseType("void"), new Identifier("puti"), {new BaseType("int")}));
-    add_sys_function(new Function(new BaseType("void"), new Identifier("puti_endl"), {new BaseType("int")}));
-
     // - primitive types
     Type *p_int = new BaseType("int");
     Type *p_char = new BaseType("char");
@@ -1014,7 +1015,25 @@ void reset_controller() {
     add_primitive_type(p_char);
     add_primitive_type(p_void);
 
+    // - sys functions
+    add_sys_function(new Function(p_void, new Identifier("sys_exit"), {p_int}));
+
+    add_sys_function(new Function(new PointerType(p_void), new Identifier("malloc"), {p_int}));
+    add_sys_function(new Function(new PointerType(p_char), new Identifier("int_to_string"), {p_int}));
+    add_sys_function(new Function(p_void, new Identifier("puts"), {new PointerType(p_char)}));
+    add_sys_function(new Function(p_void, new Identifier("puts_endl"), {new PointerType(p_char)}));
+    add_sys_function(new Function(p_void, new Identifier("puti"), {p_int}));
+    add_sys_function(new Function(p_void, new Identifier("puti_endl"), {p_int}));
+
     // - populate conversion map
+    conversion_map[{"++", p_int}] = {p_int, {
+        "inc %rax",
+        "incq (%rcx)",
+    }};
+    conversion_map[{"--", p_int}] = {p_int, {
+        "dec %rax",
+        "decq (%rcx)",
+    }};
     conversion_map[{"+", p_int}] = {p_int, {}};
     conversion_map[{"-", p_int}] = {p_int, {"neg %rax"}};
     conversion_map[{"~", p_int}] = {p_int, {"not %rax"}};
@@ -1023,6 +1042,8 @@ void reset_controller() {
         "sete %al",
         "movzx %al, %rax",
     }};
+    conversion_map[{p_int, "++"}] = {p_int, {"incq (%rcx)"}};
+    conversion_map[{p_int, "--"}] = {p_int, {"decq (%rcx)"}};
     conversion_map[{p_int, "+", p_int}] = {p_int, {"add %rbx, %rax"}};
     conversion_map[{p_int, "-", p_int}] = {p_int, {"sub %rbx, %rax"}};
     conversion_map[{p_int, "*", p_int}] = {p_int, {"imul %rbx, %rax"}};
@@ -1185,8 +1206,6 @@ void emit_mem_store(int sz) {
 Type* find_resulting_type(Type* left, std::string op, Type* right) {
     if(left == nullptr || right == nullptr) return nullptr;
     assert(op.size() != 0);
-    if(dynamic_cast<PointerType*>(left)) left = new BaseType("int");
-    if(dynamic_cast<PointerType*>(right)) right = new BaseType("int");
     TypeConversionKey key = {left, op, right};
     if(!conversion_map.count(key)) {
         std::cout << "Invalid type conversion : " << left->to_string() << " " << op << " " << right->to_string() << "\n";
@@ -1198,8 +1217,6 @@ Type* find_resulting_type(Type* left, std::string op, Type* right) {
 TypeConversion* find_type_conversion(Type* left, std::string op, Type* right) {
     if(left == nullptr || right == nullptr) return nullptr;
     assert(op.size() != 0);
-    if(dynamic_cast<PointerType*>(left)) left = new BaseType("int");
-    if(dynamic_cast<PointerType*>(right)) right = new BaseType("int");
     TypeConversionKey key = {left, op, right};
     if(!conversion_map.count(key)) {
         std::cout << "Invalid type conversion : " << left->to_string() << " " << op << " " << right->to_string() << "\n";
@@ -1211,7 +1228,6 @@ TypeConversion* find_type_conversion(Type* left, std::string op, Type* right) {
 Type* find_resulting_type(std::string op, Type* right) {
     if(right == nullptr) return nullptr;
     assert(op.size() != 0);
-    if(dynamic_cast<PointerType*>(right)) right = new BaseType("int");
     TypeConversionKey key = {op, right};
     if(!conversion_map.count(key)) {
         std::cout << "Invalid type conversion : " << op << " " << right->to_string() << "\n";
@@ -1223,7 +1239,6 @@ Type* find_resulting_type(std::string op, Type* right) {
 TypeConversion* find_type_conversion(std::string op, Type* right) {
     if(right == nullptr) return nullptr;
     assert(op.size() != 0);
-    if(dynamic_cast<PointerType*>(right)) right = new BaseType("int");
     TypeConversionKey key = {op, right};
     if(!conversion_map.count(key)) {
         std::cout << "Invalid type conversion : " << op << " " << right->to_string() << "\n";
@@ -1232,7 +1247,27 @@ TypeConversion* find_type_conversion(std::string op, Type* right) {
     return &(conversion_map[key]);
 }
 
-//TODO : haven't implemented type conversion lookup for right unary operators
+Type* find_resulting_type(Type *left, std::string op) {
+    if(left == nullptr) return nullptr;
+    assert(op.size() != 0);
+    TypeConversionKey key = {left, op};
+    if(!conversion_map.count(key)) {
+        std::cout << "Invalid type conversion : " << left->to_string() << " " << op << "\n";
+        return nullptr;
+    }
+    return conversion_map[key].res_type;
+}
+
+TypeConversion* find_type_conversion(Type *left, std::string op) {
+    if(left == nullptr) return nullptr;
+    assert(op.size() != 0);
+    TypeConversionKey key = {left, op};
+    if(!conversion_map.count(key)) {
+        std::cout << "Invalid type conversion : " << left->to_string() << " " << op << "\n";
+        return nullptr;
+    }
+    return &(conversion_map[key]);
+}
 
 Type* find_resulting_type(Type* from, Type* to) {
     if(from == nullptr || to == nullptr) return nullptr;
@@ -1652,6 +1687,14 @@ ExprNode* ExprNode::convert(parser::expr_postfix *e) {
             Identifier *id = Identifier::convert(e->t1[i]->t1->t4->t2);
             left = new ExprPostfix(left, std::make_pair(op, id));
         }
+        else if(e->t1[i]->t1->is_c5) {  //postfix increment
+            std::string op = "++";
+            left = new ExprPostfix(left, op);
+        }
+        else if(e->t1[i]->t1->is_c6) {  //postfix decrement
+            std::string op = "--";
+            left = new ExprPostfix(left, op);
+        }
         else assert(false);
     }
     return left;
@@ -1776,7 +1819,12 @@ ExprNode* ExprNode::convert(parser::expr_assignment *e) {
 
     ExprNode *right = nodes[nodes.size() - 1];
     for(int i = (int) nodes.size() - 2; i >= 0; i--){
-        std::string op = e->t1[i]->t1;
+        std::string op = e->t1[i]->t1->to_string();
+        if(op.size() != 1) {    //handle update + assignment operators
+            std::string nop = op.substr(0, op.size() - 1);
+            right = new ExprBinary(nodes[i], nop, right);
+            op = "=";
+        }
         right = new ExprBinary(nodes[i], op, right);
     }
     return right;
@@ -1994,7 +2042,13 @@ bool ExprBinary::is_lvalue() {
 }
 
 bool ExprPrefix::is_lvalue() {
-    return false;   //if you ever implement the dereferencing operator, that should result in an l-value
+    if(std::holds_alternative<std::string>(op)) {
+        std::string str_op = std::get<std::string>(op);
+        if(str_op == "++" || str_op == "--") {
+            return true;
+        }
+    }
+    return false; 
 }
 
 bool ExprPostfix::is_lvalue() {
@@ -2006,6 +2060,9 @@ bool ExprPostfix::is_lvalue() {
     }
     else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {    //member variable access
         return true;
+    }
+    else if(std::holds_alternative<std::string>(op)) {  //postfix increment / decrement
+        return false;
     }
     else assert(false);
 }
@@ -2036,9 +2093,14 @@ Type* ExprPrimary::resolve_type() {
 
 Type* ExprBinary::resolve_type() {
     Type *lt = left->resolve_type(), *rt = right->resolve_type();
+    if(lt == nullptr || rt == nullptr) return nullptr;
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
         if(str_op == "=") {
+            if(!left->is_lvalue()) {
+                std::cout << "Cannot assign to r-value\n";
+                return nullptr;
+            }
             Type *res = find_resulting_type(rt, lt);
             if(res == nullptr) {
                 std::cout << "No direct conversion from " << rt->to_string() << " to " << lt->to_string() << "\n";
@@ -2059,9 +2121,10 @@ Type* ExprBinary::resolve_type() {
 }
 
 Type* ExprPrefix::resolve_type() {
+    Type *rt = right->resolve_type();
+    if(rt == nullptr) return nullptr;
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
-        Type *rt = right->resolve_type();
         Type *res = find_resulting_type(str_op, rt);
         if(res == nullptr) {
             std::cout << "Prefix operator " << str_op << " " << rt->to_string() << " does not exist\n";
@@ -2074,6 +2137,7 @@ Type* ExprPrefix::resolve_type() {
 
 Type* ExprPostfix::resolve_type() {
     Type *lt = left->resolve_type();
+    if(lt == nullptr) return nullptr;
     if(std::holds_alternative<Expression*>(op)) {   //indexing
         Expression *expr = std::get<Expression*>(op);
         Type *et = expr->resolve_type();
@@ -2136,6 +2200,15 @@ Type* ExprPostfix::resolve_type() {
         }
         Type *nt = sl->get_type(id);
         return nt;
+    }
+    else if(std::holds_alternative<std::string>(op)) {
+        std::string str_op = std::get<std::string>(op);
+        Type *res = find_resulting_type(lt, str_op);
+        if(res == nullptr) {
+            std::cout << "Postfix operator " << lt->to_string() << " " << str_op << " does not exist\n";
+            return nullptr;
+        }
+        return res;
     }
     else assert(false);
 }
@@ -2274,12 +2347,11 @@ void ExprBinary::elaborate() {
     left->elaborate();
     right->elaborate();
 
+    //wrap assignment of non-primitive l-values in copy constructor call
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
         if(str_op == "=") {
             Type *rt = right->resolve_type();
-
-            //if the right is a non-primitive l-value, wrap it in a copy constructor call
             if(!is_type_primitive(rt) && right->is_lvalue()) {
                 FunctionCall *copy = new FunctionCall(new Identifier(rt->to_string()), {new Expression(right)});
                 right = new ExprPrimary(copy);
@@ -2417,7 +2489,7 @@ void ExprPrefix::emit_asm() {
 
 void ExprPostfix::emit_asm() {
     Type *lt = left->resolve_type();
-    
+
     //evaluate left expr
     left->emit_asm();
 
@@ -2505,6 +2577,11 @@ void ExprPostfix::emit_asm() {
         fout << indent() << "lea " << offset << "(%rax), %rcx\n";
         fout << indent() << "lea " << offset << "(%rax), %rax\n";
         emit_mem_retrieve(sz);  //now, %rax = member variable, %rcx = address of member variable
+    }
+    else if(std::holds_alternative<std::string>(op)) {
+        std::string str_op = std::get<std::string>(op);
+        TypeConversion *tc = find_type_conversion(lt, str_op);
+        tc->emit_asm();
     }
     else assert(false);
 }
