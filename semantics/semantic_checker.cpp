@@ -142,6 +142,7 @@ does its magic, we should be able to essentially treat the pointer portion as th
 
 ok, structs are mostly done, just have to implement some other features
  - make it prohibited to assign to 'this' within a member function
+ - when passing in stuff as an argument, should make a copy. Unless it's a reference. 
 
 
 what's the next feature? operator overloading for structs? I/O? templating? 
@@ -168,7 +169,34 @@ instead of 15 types of ExprNode in order of precedence, I assume that precedence
 This also makes elaboration really easy as I no longer have any restrictions on what ExprNodes can contain what other nodes. 
 
 maybe can work on operator overloading next. Will have to figure out references first tho...
+ok, two options:
+ - treat reference as its own type, kind of like pointer
+ - treat reference as just shorthand for pointers, with automatic dereferencing. 
+I'm really leaning towards just treating it as a shorthand for pointers. 
 
+ok, references as syntactic sugar for pointers are implemented. When delcaring a reference, if you assign it an l-value, it 'becomes' that value. 
+otherwise if you assign it an r-value, a new instance of the referenced type is created, and the r-value value is assigned to it. 
+
+the only issue is getting function lookup to work with it. We need some way to look up functions of 'best match'. This function lookup should
+be triggered whenever we call get_function(FunctionSignature)
+
+also need to rewrite FunctionCall::emit_asm() to use the variable declaring logic instead of just copying over the values. 
+
+ok, so using the variable declaration in FunctionCall is problematic because function calls can happen inside of expressions, which violates
+the assumption of Declaration that the current offset from %rbp to %rsp is equal to local_var_offset. There are some fixes:
+ - copy over the assignment logic into FunctionCall, and don't initialize a new variable
+ - keep track of the current %rsp - %rbp offset and use that offset to declare variables. This is probably the more robust solution, as then I 
+   can declare temp variables whenever I want, so long as I make sure to remove them from the stack. 
+    - should probably have some helper functions to push/pop from the stack and add/sub from %rsp.
+
+maybe can also make a description of whatever is in which slot of the stack. 
+
+ok, now we're keeping track of the current local offset and we can declare temp variables whenever we like. We just need
+to make sure that one declaration_stack 'layer' of variables are all contiguous within stack memory. 
+perhaps should also add 'layer' descriptions? 
+
+some other features related to references that can be implemented:
+ - detecting dangling references (perhaps this should be left for the user to debug)
 
 TODO
  - make sure that int main() is never called
@@ -351,7 +379,6 @@ struct PointerType : public Type {
         assert(_type != nullptr);
         type = _type;
     }
-    static PointerType* convert(parser::pointer_type *t);
 
     int calc_size() override {
         return 8;
@@ -371,7 +398,34 @@ struct PointerType : public Type {
     }
 };
 
+struct ReferenceType : public Type {
+    Type *type;
+    ReferenceType(Type *_type) {
+        assert(_type != nullptr);
+        type = _type;
+    }
+
+    int calc_size() override {
+        return 8;
+    }
+
+    bool equals(const Type *other) const override {
+        if(auto x = dynamic_cast<const ReferenceType*>(other)) return *type == *(x->type);
+        return false;
+    }
+
+    size_t hash() const override {
+        return type->hash() ^ 0xdeadbeef;
+    }
+
+    std::string to_string() {
+        return type->to_string() + "&";
+    }
+};
+
 struct ExprNode {
+    static ExprNode* copy(ExprNode *other);
+
     static ExprNode* convert(parser::expr_primary *e);
     static ExprNode* convert(parser::expr_postfix *e);
     static ExprNode* convert(parser::expr_unary *e);
@@ -387,10 +441,11 @@ struct ExprNode {
     static ExprNode* convert(parser::expr_logical_or *e);
     static ExprNode* convert(parser::expr_assignment *e);
 
-    virtual Type* resolve_type() = 0;
-    virtual bool is_lvalue() = 0;
-    virtual void elaborate() = 0;
-    virtual void emit_asm() = 0;
+    virtual Type* resolve_type() = 0;   // - no modify
+    virtual bool is_lvalue() = 0;       // - no modify
+    virtual void elaborate() = 0;       // - can modify, but should not change return value of resolve_type(), is_lvalue()
+    virtual void emit_asm() = 0;        // - no modify
+    virtual std::string to_string() = 0;
 };
 
 struct ExprPrimary : ExprNode {
@@ -403,6 +458,7 @@ struct ExprPrimary : ExprNode {
     bool is_lvalue() override;
     void elaborate() override;
     void emit_asm() override;
+    std::string to_string() override;
 };
 
 struct ExprBinary : ExprNode {
@@ -421,6 +477,7 @@ struct ExprBinary : ExprNode {
     bool is_lvalue() override;
     void elaborate() override;
     void emit_asm() override;
+    std::string to_string() override;
 };
 
 struct ExprPrefix : ExprNode {
@@ -436,6 +493,7 @@ struct ExprPrefix : ExprNode {
     bool is_lvalue() override;
     void elaborate() override;
     void emit_asm() override;
+    std::string to_string() override;
 };
 
 struct ExprPostfix : ExprNode {
@@ -451,6 +509,7 @@ struct ExprPostfix : ExprNode {
     bool is_lvalue() override;
     void elaborate() override;
     void emit_asm() override;
+    std::string to_string() override;
 };
 
 struct Expression {
@@ -463,6 +522,7 @@ struct Expression {
     bool is_lvalue();
     void elaborate();
     void emit_asm();
+    std::string to_string();
 };
 
 struct Declaration {
@@ -476,7 +536,6 @@ struct Declaration {
     }
     static Declaration* convert(parser::declaration *d);
     bool is_well_formed();
-    void emit_asm();
 };
 
 struct Statement {
@@ -802,6 +861,12 @@ StructLayout* get_struct_layout(Type *t);
 bool add_struct_layout(Type *t, StructLayout *sl);
 void emit_initialize_primitive(Type *t);
 void emit_initialize_struct(Type *t);
+Variable* emit_initialize_variable(Type* vt, Identifier *id, Expression *expr);
+void emit_dereference(Type *t);
+void emit_push(std::string reg);
+void emit_pop(std::string reg);
+void emit_add_rsp(int amt);
+void emit_sub_rsp(int amt);
 
 struct Variable {
     Type *type;
@@ -947,7 +1012,6 @@ struct StructLayout {
     }
 
     int get_offset(Identifier *id) {
-        std::cout << "TRY GET OFFSET : " << id->name << std::endl;
         assert(offset_map.count(id));
         return offset_map[id];
     }
@@ -981,11 +1045,18 @@ std::unordered_map<Type*, StructLayout*> struct_layout_map;
 std::vector<Function*> declared_functions;
 std::unordered_map<FunctionSignature*, std::string> function_label_map;
 std::vector<Variable*> declared_variables;
-std::stack<std::vector<Variable*>> declaration_stack;
+std::stack<std::vector<Variable*>> declaration_stack;   //every 'layer' of the declaration stack should be contiguous on the stack
 std::unordered_map<TypeConversionKey, TypeConversion> conversion_map;
 
-int local_var_stack_offset;
+int local_offset;   //tracks the value %rsp - %rbp
+
+//descriptions of whatever is on the stack. 
+//to push anything, you need to provide a description
+//to pop anything, you need to provide a description, and it will only work if the descriptions match
+std::vector<std::string> stack_desc;    
+
 int label_counter;
+int tmp_variable_counter;
 
 //adds some helpful (?) comments in the generated asm. 
 bool asm_debug = true;
@@ -1004,8 +1075,11 @@ void reset_controller() {
     while(declaration_stack.size()) declaration_stack.pop();
     conversion_map.clear();
 
-    local_var_stack_offset = 0;
+    local_offset = 0;
+    stack_desc.clear();
+
     label_counter = 0;
+    tmp_variable_counter = 0;
 
     // - primitive types
     Type *p_int = new BaseType("int");
@@ -1060,22 +1134,22 @@ void reset_controller() {
     conversion_map[{p_int, "^", p_int}] = {p_int, {"xor %rbx, %rax"}};
     conversion_map[{p_int, "|", p_int}] = {p_int, {"or %rbx, %rax"}};
     conversion_map[{p_int, "&&", p_int}] = {p_int, {
-        "test %rax, %rax\n",
-        "setne %al\n",
-        "movzx %al, %rax\n",
-        "test %rbx, %rbx\n",
-        "setne %bl\n",
-        "movzx %bl, %rbx\n",
-        "and %rbx, %rax\n",
+        "test %rax, %rax",
+        "setne %al",
+        "movzx %al, %rax",
+        "test %rbx, %rbx",
+        "setne %bl",
+        "movzx %bl, %rbx",
+        "and %rbx, %rax",
     }};
     conversion_map[{p_int, "||", p_int}] = {p_int, {
-        "test %rax, %rax\n",
-        "setne %al\n",
-        "movzx %al, %rax\n",
-        "test %rbx, %rbx\n",
-        "setne %bl\n",
-        "movzx %bl, %rbx\n",
-        "or %rbx, %rax\n",
+        "test %rax, %rax",
+        "setne %al",
+        "movzx %al, %rax",
+        "test %rbx, %rbx",
+        "setne %bl",
+        "movzx %bl, %rbx",
+        "or %rbx, %rax",
     }};
     conversion_map[{p_int, "==", p_int}] = {p_int, {
         "cmp %rbx, %rax",
@@ -1130,6 +1204,11 @@ std::string create_new_label() {
     return ans;
 }
 
+std::string create_new_tmp_variable_name() {
+    std::string ans = "TMP:" + std::to_string(tmp_variable_counter ++);
+    return ans;
+}
+
 //"n" | "t" | "r" | "f" | "b" | "\"" | "\\" | "'" | "0"
 char escape_to_char(parser::escape *e) {
     char val;
@@ -1147,9 +1226,94 @@ char escape_to_char(parser::escape *e) {
     return val;
 }
 
+void dump_stack_desc() {
+    for(int i = 0; i < stack_desc.size(); i++){
+        std::cout << stack_desc[i] << std::endl;
+    }
+}
+
+void emit_push(std::string reg, std::string desc){
+    stack_desc.push_back(desc);
+    fout << indent() << "push " << reg << "\n";
+    local_offset -= 8;
+}
+
+void emit_pop(std::string reg, std::string desc){
+    if(stack_desc.size() == 0) {
+        std::cout << "Stack empty : " << desc << std::endl;
+        assert(false);
+    }
+    if(stack_desc[stack_desc.size() - 1] != desc) {
+        std::cout << "Stack desc doesn't match : " << desc << std::endl;
+        dump_stack_desc();
+        assert(false);
+    }
+    stack_desc.pop_back();
+
+    fout << indent() << "pop " << reg << "\n";
+    local_offset += 8;
+}
+
+void emit_add_rsp(int amt, std::string desc){
+    assert(amt % 8 == 0);
+    assert(amt >= 0);
+    for(int i = 0; i < amt / 8; i++) {
+        if(stack_desc.size() == 0) {
+            std::cout << "Stack empty : " << desc << std::endl;
+            assert(false);
+        }
+        if(stack_desc[stack_desc.size() - 1] != desc) {
+            std::cout << "Stack desc doesn't match : " << desc << std::endl;
+            dump_stack_desc();
+            assert(false);
+        }
+        stack_desc.pop_back();
+    }
+
+    fout << indent() << "add $" << amt << ", %rsp\n";
+    local_offset += amt;
+}
+
+void emit_add_rsp(int amt, std::vector<std::string> desc_list) {
+    assert(amt % 8 == 0);
+    assert(amt >= 0);
+    assert(amt / 8 == desc_list.size());
+
+    if(desc_list.size() > stack_desc.size()) {
+        std::cout << "Not enough elements in stack : multi emit add" << std::endl;
+        dump_stack_desc();
+        assert(false);
+    }
+
+    for(int i = 0; i < amt / 8; i++) {
+        if(stack_desc[stack_desc.size() - 1] != desc_list[desc_list.size() - 1]) {
+            std::cout << "Stack desc doesn't match : " << desc_list[desc_list.size() - 1] << std::endl;
+            dump_stack_desc();
+            assert(false);
+        }
+        stack_desc.pop_back();
+        desc_list.pop_back();
+    }
+
+    fout << indent() << "add $" << amt << ", %rsp\n";
+    local_offset += amt;
+}
+
+void emit_sub_rsp(int amt, std::string desc) {
+    assert(amt % 8 == 0);
+    assert(amt >= 0);
+    for(int i = 0; i < amt / 8; i++){
+        stack_desc.push_back(desc);
+    }
+
+    fout << indent() << "sub $" << amt << ", %rsp\n";
+    local_offset -= amt;
+}
+
 bool is_type_primitive(Type *t) {
-    if(primitive_base_types.count(t)) return true; //is it explicitly mentioned?
-    if(dynamic_cast<PointerType*>(t)) return true; //is it a pointer?
+    if(primitive_base_types.count(t)) return true;      //is it explicitly mentioned?
+    if(dynamic_cast<PointerType*>(t)) return true;      //is it a pointer?
+    if(dynamic_cast<ReferenceType*>(t)) return true;    //is it a reference?
     return false;
 }
 
@@ -1322,7 +1486,6 @@ TypeConversion* find_type_conversion(Type* from, Type* to) {
 }
 
 Type* find_variable_type(Identifier *id) {
-    std::cout << "FIND VARIABLE TYPE : " << id->name << std::endl;
     for(int i = 0; i < declared_variables.size(); i++){
         if(*(declared_variables[i]->id) == *id) return declared_variables[i]->type;
     }
@@ -1346,6 +1509,7 @@ bool is_function_constructor(const Function *f) {
 
 bool is_type_declared(Type *t) {
     if(auto x = dynamic_cast<PointerType*>(t)) return is_type_declared(x->type);
+    if(auto x = dynamic_cast<ReferenceType*>(t)) return is_type_declared(x->type);
     for(int i = 0; i < declared_types.size(); i++){
         if(*(declared_types[i]) == *t) return true;
     }
@@ -1353,12 +1517,7 @@ bool is_type_declared(Type *t) {
 }
 
 bool is_function_declared(FunctionSignature *fs) {
-    for(int i = 0; i < declared_functions.size(); i++){
-        if(*fs == *(declared_functions[i]->resolve_function_signature())) {
-            return true;
-        }
-    }
-    return false;
+    return get_function(fs) != nullptr;
 }
 
 bool is_variable_declared(Identifier *id) {
@@ -1370,8 +1529,66 @@ bool is_variable_declared(Identifier *id) {
     return false;
 }
 
+//finds all viable functions. 
+// - If there is exactly one, returns that one
+// - If there are multiple or zero, returns nullptr
 Function* get_function(FunctionSignature *fs) {
-    std::cout << "GET FUNCTION : " << fs->to_string() << "\n";
+    std::vector<Function*> viable;
+    for(int i = 0; i < declared_functions.size(); i++){
+        FunctionSignature *nfs = declared_functions[i]->resolve_function_signature();
+
+        // - do the identifiers match?
+        if(*(fs->id) != *(nfs->id)) {
+            continue;
+        }
+        // - do the argument counts match?
+        if(fs->input_types.size() != nfs->input_types.size()) {
+            continue;
+        }
+        // - does enclosing_type match? (must match exactly)
+        if(fs->enclosing_type.has_value() != nfs->enclosing_type.has_value()) {
+            continue;
+        }
+        if(fs->enclosing_type.has_value() && *(fs->enclosing_type.value()) != *(nfs->enclosing_type.value())) {
+            continue;
+        }
+
+        // - can all the arguments of fs be somehow converted into nfs?
+        bool is_viable = true;
+        for(int j = 0; j < fs->input_types.size(); j++) {
+            Type *t = fs->input_types[j], *nt = nfs->input_types[j];
+            //they are exactly equal
+            if(*t == *nt) { 
+                continue;
+            }
+            //nt is a reference of t
+            if(auto x = dynamic_cast<ReferenceType*>(nt)) {
+                if(*(x->type) != *nt) {
+                    continue;
+                }
+            }
+            //there exists a conversion from t to nt
+            if(find_type_conversion(t, nt) != nullptr) {
+                continue;
+            }
+            is_viable = false;
+            break;
+        }
+        if(!is_viable) continue;
+
+        viable.push_back(declared_functions[i]);
+    }
+
+    if(viable.size() == 0) {
+        std::cout << "No matching function for signature : " << fs->to_string() << "\n";
+        return nullptr;
+    }
+    else if(viable.size() > 1) {
+        std::cout << "Ambiguous function call : " << fs->to_string() << "\n";
+        return nullptr;
+    }
+    return viable[0];
+
     for(int i = 0; i < declared_functions.size(); i++){
         if(*fs == *(declared_functions[i]->resolve_function_signature())) {
             return declared_functions[i];
@@ -1386,7 +1603,6 @@ std::string get_function_label(FunctionSignature *fs) {
 }
 
 Variable* get_variable(Identifier *id) {
-    std::cout << "GET VARIABLE : " << id->name << "\n";
     for(int i = 0; i < declared_variables.size(); i++){
         if(*id == *(declared_variables[i]->id)) {
             return declared_variables[i];
@@ -1444,7 +1660,6 @@ bool add_sys_function(Function *f) {
 Variable* add_variable(Type *t, Identifier *id) {
     assert(t != nullptr && id != nullptr);
     assert(declaration_stack.size() != 0);
-    std::cout << "ADDING VARIABLE : " << t->to_string() << " " << id->name << std::endl;
     if(is_identifier_used(id)) return nullptr;
     Variable *v = new Variable(t, id);
     declared_variables.push_back(v);
@@ -1454,7 +1669,6 @@ Variable* add_variable(Type *t, Identifier *id) {
 
 void remove_variable(Identifier *id) {
     assert(id != nullptr);
-    std::cout << "REMOVING VARIABLE : " << id->name << std::endl;
     int ind = -1;
     for(int i = 0; i < declared_variables.size(); i++){
         if(*id == *(declared_variables[i]->id)) {
@@ -1472,9 +1686,18 @@ void push_declaration_stack() {
 
 void pop_declaration_stack() {
     assert(declaration_stack.size() != 0);
+
     std::vector<Variable*> top = declaration_stack.top();
-    local_var_stack_offset += top.size() * 8;
     declaration_stack.pop();
+    if(declaration_stack.size() > 0) {
+        //this is not the function parameter layer, adjust %rsp
+        std::vector<std::string> desc_list;
+        for(int i = 0; i < top.size(); i++){
+            desc_list.push_back(top[i]->id->name);
+        }
+        emit_add_rsp(top.size() * 8, desc_list);
+    }
+    
     for(int i = 0; i < top.size(); i++){
         remove_variable(top[i]->id);
     }
@@ -1497,9 +1720,9 @@ bool add_struct_layout(Type *t, StructLayout *sl) {
 //allocates sz_bytes memory by calling malloc. Resulting address is in %rax
 void emit_malloc(int sz_bytes) {
     fout << indent() << "mov $" << sz_bytes << ", %rax\n";
-    fout << indent() << "push %rax\n";
+    emit_push("%rax", "emit_malloc() : malloc arg");
     fout << indent() << "call malloc\n";
-    fout << indent() << "add $8, %rsp\n";
+    emit_add_rsp(8, "emit_malloc() : malloc arg");
 }
 
 //expects memory address in %rax, places primitive into address, returns with memory address in %rax
@@ -1513,6 +1736,37 @@ void emit_initialize_primitive(Type *t) {
     }
     else if(dynamic_cast<PointerType*>(t) != nullptr) {
         fout << indent() << "movq $0, (%rax)\n";
+    }
+    else if(dynamic_cast<ReferenceType*>(t) != nullptr) {
+        Type *rt = dynamic_cast<ReferenceType*>(t)->type;
+        if(is_type_primitive(rt)) {
+            //save address to reference 
+            emit_push("%rax", "emit_initialize_primitve() : addr to primitive ref");
+
+            //allocate some memory for the referenced type
+            int sz = rt->calc_size();
+            emit_malloc(sz);
+
+            //initialize primitive at address
+            emit_initialize_primitive(rt);
+
+            //write address into reference
+            fout << indent() << "mov %rax, %rbx\n";
+            emit_pop("%rax", "emit_initialize_primitve() : addr to primitive ref");
+            fout << indent() << "movq %rbx, (%rax)\n";
+        }
+        else {
+            //save address to reference 
+            emit_push("%rax", "emit_initialize_primitve() : addr to struct ref");
+
+            //initialize struct
+            emit_initialize_struct(rt);
+
+            //write heap pointer address into reference
+            fout << indent() << "mov %rax, %rbx\n";
+            emit_pop("%rax", "emit_initialize_primitve() : addr to struct ref");
+            fout << indent() << "movq %rbx, (%rax)\n";
+        }
     }
     else {
         std::cout << "Tried to initialize unrecognized primitive type : " << t->to_string() << std::endl;
@@ -1535,7 +1789,7 @@ void emit_initialize_struct(Type *t) {
 
     //save actual struct loc for later
     //%rax is the pointer for the current location in the struct
-    fout << indent() << "push %rax\n";
+    emit_push("%rax", "emit_initialize_struct() : struct base ptr");
 
     //initialize member variables
     for(int i = 0; i < sl->member_variables.size(); i++){
@@ -1547,13 +1801,13 @@ void emit_initialize_struct(Type *t) {
         }
         else {  //struct
             //invoke default constructor
-            fout << indent() << "push %rax\n";
+            emit_push("%rax", "emit_initialize_struct() : struct ptr");
             FunctionCall *fc = new FunctionCall(new Identifier(t->to_string()), {});
             fc->emit_asm();
 
             //save reference to struct
             fout << indent() << "mov %rax, %rbx\n";
-            fout << indent() << "pop %rax\n";
+            emit_pop("%rax", "emit_initialize_struct() : struct ptr");
             fout << indent() << "movq %rbx, (%rax)\n";
         }
 
@@ -1563,12 +1817,116 @@ void emit_initialize_struct(Type *t) {
 
     //initialize struct heap ptr
     emit_initialize_primitive(new PointerType(t));
-    fout << indent() << "pop %rbx\n";
+    emit_pop("%rbx", "emit_initialize_struct() : struct base ptr");
     fout << indent() << "movq %rbx, (%rax)\n";
 
     if(asm_debug) fout << indent() << "# done initialize struct memory " << t->to_string() << "\n";
 
     //now, %rax should hold location of heap ptr, %rbx holds location of actual struct start
+}
+
+//every variable declaration must use this except for registering parameters at the beginning of function calls
+//evaluates the expression and initializes the variable onto the top of the stack
+//if for some reason is unable to initialize the variable, returns nullptr
+Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr) { 
+    assert(vt != nullptr);
+    assert(id != nullptr);
+    assert(expr != nullptr);    //might want to later have a version that default declares types
+
+    std::cout << "Initialize variable : " << vt->to_string() << " " << id->name << std::endl;
+
+    // - make sure vt is not void
+    if(*vt == BaseType("void")) {
+        std::cout << "Cannot initialize a variable of type void\n";
+        return nullptr;
+    }
+    // - is the identifier available?
+    if(is_identifier_used(id)) {
+        std::cout << "Identifier already used : " << id->name << "\n";
+        return nullptr;
+    }
+    // - does the expression resolve to a type?
+    if(expr->resolve_type() == nullptr){
+        std::cout << "Expression does not resolve to type\n";
+        return nullptr;
+    }
+
+    Variable *v = add_variable(vt, id);
+    assert(v != nullptr);
+
+    //if type is a reference, and the right side is an l-value, we bind the l-value to the reference
+    //otherwise, just treat it like a normal declaration
+    if(dynamic_cast<ReferenceType*>(vt) && expr->is_lvalue()) {
+        // - does dereferenced type match expression type?
+        if(*(dynamic_cast<ReferenceType*>(vt)->type) != *(expr->resolve_type())) {
+            std::cout << "Cannot bind to non-matching reference type\n";
+            return nullptr;
+        }
+
+        //evaluate expr
+        //%rax = value, %rcx = addr
+        expr->emit_asm();
+
+        //we want addr
+        fout << indent() << "mov %rcx, %rax\n";
+
+        //push to stack
+        emit_push("%rax", id->name);
+
+        //set stack offset
+        v->stack_offset = local_offset;
+    }
+    else {
+        //split declaration into the 'declaration' and 'assignment'
+        //int a = b;
+        //will turn into
+        //int a;
+        //a = b;
+        //this is so that I don't have to rewrite all that assignment logic
+
+        //'declaration'
+        if(is_type_primitive(vt)) {
+            //claim next stack address
+            emit_sub_rsp(8, id->name);
+            fout << indent() << "lea (%rsp), %rax\n";
+
+            //this will initialize the primitive onto the stack
+            emit_initialize_primitive(vt);
+        }
+        else {
+            //initialize struct in memory
+            emit_initialize_struct(vt);
+
+            //push pointer to the stack
+            emit_push("%rbx", id->name);
+        }
+
+        //set stack offset
+        v->stack_offset = local_offset;
+
+        //'assignment'
+        //right now, expr = b. We want expr = (a = b)
+        Expression *a_expr = new Expression(new ExprBinary(new ExprPrimary(id), "=", expr->expr_node));
+        if(a_expr->resolve_type() == nullptr) {
+            std::cout << "Cannot cast expression type into variable type\n";
+            return nullptr;
+        }
+        a_expr->emit_asm();
+    }
+
+    return v;
+}
+
+//assumes reference address is in %rax
+//returns with value in %rax, address in %rcx
+void emit_dereference(Type *t) {
+    assert(t != nullptr);
+    assert(dynamic_cast<ReferenceType*>(t) != nullptr);
+
+    t = dynamic_cast<ReferenceType*>(t)->type;
+    int sz = t->calc_size();
+    fout << indent() << "mov %rax, %rcx\n";
+    emit_mem_retrieve(sz); 
 }
 
 // -- STRUCT FUNCTIONS --
@@ -1621,25 +1979,18 @@ Identifier* Identifier::convert(parser::identifier *i) {
 }
 
 Type* Type::convert(parser::type *t) {
-    if(t->is_a0) {
-        return PointerType::convert(t->t0->t0);
+    Type *res = BaseType::convert(t->t0);
+    for(int i = 0; i < t->t1.size(); i++){
+        std::string suf = t->t1[i]->to_string();
+        if(suf == "*") res = new PointerType(res);
+        else if(suf == "&") res = new ReferenceType(res);
+        else assert(false);
     }
-    else if(t->is_a1) {
-        return BaseType::convert(t->t1->t0);
-    }
-    else assert(false);
+    return res;
 }
 
 BaseType* BaseType::convert(parser::base_type *t) {
     return new BaseType(t->to_string());
-}
-
-PointerType* PointerType::convert(parser::pointer_type *t) {
-    Type *type = BaseType::convert(t->t0);
-    for(int i = 0; i < t->t1.size() - 1; i++){
-        type = new PointerType(type);
-    }
-    return new PointerType(type);
 }
 
 ExprNode* ExprNode::convert(parser::expr_primary *e) {
@@ -1822,7 +2173,7 @@ ExprNode* ExprNode::convert(parser::expr_assignment *e) {
         std::string op = e->t1[i]->t1->to_string();
         if(op.size() != 1) {    //handle update + assignment operators
             std::string nop = op.substr(0, op.size() - 1);
-            right = new ExprBinary(nodes[i], nop, right);
+            right = new ExprBinary(nodes[i], nop, ExprNode::copy(right));
             op = "=";
         }
         right = new ExprBinary(nodes[i], op, right);
@@ -1978,11 +2329,9 @@ StructDefinition* StructDefinition::convert(parser::struct_definition *s) {
             member_variables.push_back(StructDefinition::MemberVariable::convert(s->t6[i]->t0->t0->t0));
         }
         else if(s->t6[i]->t0->is_c1) {  //function
-            std::cout << "CONVERT STRUCT FUNCTION : \n" << s->t6[i]->t0->t1->t0->to_string() << std::endl;
             Function *f = Function::convert(s->t6[i]->t0->t1->t0);
             f = new Function(type, f->type, f->id, f->parameters, f->body);
             functions.push_back(f);
-            std::cout << "RES : " << f->resolve_function_signature()->to_string() << std::endl;
         }
         else assert(false);
     }
@@ -2020,8 +2369,73 @@ Type* StringLiteral::resolve_type() {
     return new PointerType(new BaseType("char"));
 }
 
+std::string ExprPrimary::to_string() {
+    if(std::holds_alternative<FunctionCall*>(val)) {
+        FunctionCall *fc = std::get<FunctionCall*>(val);
+        return fc->resolve_function_signature()->to_string();
+    }
+    else if(std::holds_alternative<Identifier*>(val)) {
+        Identifier *id = std::get<Identifier*>(val);
+        return id->name;
+    }
+    else if(std::holds_alternative<Literal*>(val)) {
+        Literal *l = std::get<Literal*>(val);
+        return "<lit>";
+    }
+    else if(std::holds_alternative<Expression*>(val)) {
+        Expression *e = std::get<Expression*>(val);
+        return "(" + e->to_string() + ")";
+    }
+    else assert(false);
+}
+
+std::string ExprBinary::to_string() {
+    if(std::holds_alternative<std::string>(op)) {
+        std::string str_op = std::get<std::string>(op);
+        return left->to_string() + " " + str_op + " " + right->to_string();
+    }
+    else assert(false);
+}
+
+std::string ExprPrefix::to_string() {
+    if(std::holds_alternative<std::string>(op)) {
+        std::string str_op = std::get<std::string>(op);
+        return str_op + right->to_string();
+    }
+    else assert(false);
+}
+
+std::string ExprPostfix::to_string() {
+    if(std::holds_alternative<Expression*>(op)) {   //indexing
+        Expression *expr = std::get<Expression*>(op);
+        return left->to_string() + "[" + expr->to_string() + "]";
+    }
+    else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {    //function call
+        std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
+        return left->to_string() + p.first + p.second->resolve_function_signature()->to_string();
+    }
+    else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {    //member variable access
+        std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
+        return left->to_string() + p.first + p.second->name;
+    }
+    else if(std::holds_alternative<std::string>(op)) {  //postfix increment / decrement
+        std::string str_op = std::get<std::string>(op);
+        return left->to_string() + str_op;
+    }
+    else assert(false);
+}
+
+std::string Expression::to_string() {
+    return expr_node->to_string();
+}
+
 bool ExprPrimary::is_lvalue() {
     if(std::holds_alternative<FunctionCall*>(val)) {
+        FunctionCall *fc = std::get<FunctionCall*>(val);
+        Type *t = fc->resolve_type();
+        if(t == nullptr) return false;
+        //if return type is a reference, it gets auto-dereferenced. 
+        if(dynamic_cast<ReferenceType*>(t) != nullptr) return true;
         return false;
     }
     else if(std::holds_alternative<Identifier*>(val)) {
@@ -2044,7 +2458,7 @@ bool ExprBinary::is_lvalue() {
 bool ExprPrefix::is_lvalue() {
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
-        if(str_op == "++" || str_op == "--") {
+        if(str_op == "++" || str_op == "--" || str_op == "*") {
             return true;
         }
     }
@@ -2052,13 +2466,35 @@ bool ExprPrefix::is_lvalue() {
 }
 
 bool ExprPostfix::is_lvalue() {
+    Type *lt = left->resolve_type();
+    if(lt == nullptr) return false;
     if(std::holds_alternative<Expression*>(op)) {   //indexing
         return true;
     }
     else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {    //function call
+        std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
+        FunctionCall *fc = p.second;  
+
+        //dereference
+        if(p.first == "->") {
+            if(dynamic_cast<PointerType*>(lt) == nullptr) {
+                return false;
+            }
+            lt = dynamic_cast<PointerType*>(lt)->type;
+        }
+
+        //member function call
+        fc = new FunctionCall(lt, fc->id, fc->argument_list);
+        Type *nt = fc->resolve_type();
+        if(fc->resolve_type() == nullptr) {
+            return false;
+        }
+
+        //if the resulting type is a reference, this is an l-value
+        if(dynamic_cast<ReferenceType*>(nt)) return true;
         return false;
     }
-    else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {    //member variable access
+    else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {    //member variable access
         return true;
     }
     else if(std::holds_alternative<std::string>(op)) {  //postfix increment / decrement
@@ -2074,11 +2510,31 @@ bool Expression::is_lvalue() {
 Type* ExprPrimary::resolve_type() {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *f = std::get<FunctionCall*>(val);
-        return f->resolve_type();
+        Type *res = f->resolve_type();
+        if(res == nullptr) {
+            std::cout << "Function call does not resolve to type : " << f->resolve_function_signature()->to_string() << "\n";
+            return nullptr;
+        }
+
+        //if this is a reference, automatically dereference it
+        if(dynamic_cast<ReferenceType*>(res)) {
+            res = dynamic_cast<ReferenceType*>(res)->type;
+        }
+        return res;
     }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
-        return find_variable_type(id);
+        Type *res = find_variable_type(id);
+        if(res == nullptr) {
+            std::cout << "Unable to find variable : " << id->name << "\n";
+            return nullptr;
+        }
+
+        //if this is a reference, automatically dereference it
+        if(dynamic_cast<ReferenceType*>(res)) {
+            res = dynamic_cast<ReferenceType*>(res)->type;
+        }
+        return res;
     }
     else if(std::holds_alternative<Literal*>(val)) {
         Literal *l = std::get<Literal*>(val);
@@ -2104,6 +2560,7 @@ Type* ExprBinary::resolve_type() {
             Type *res = find_resulting_type(rt, lt);
             if(res == nullptr) {
                 std::cout << "No direct conversion from " << rt->to_string() << " to " << lt->to_string() << "\n";
+                std::cout << to_string() << "\n";
                 return nullptr;
             }
             return res;
@@ -2125,12 +2582,24 @@ Type* ExprPrefix::resolve_type() {
     if(rt == nullptr) return nullptr;
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
-        Type *res = find_resulting_type(str_op, rt);
-        if(res == nullptr) {
-            std::cout << "Prefix operator " << str_op << " " << rt->to_string() << " does not exist\n";
-            return nullptr;
+        if(str_op == "*") {
+            Type *res;
+            if(dynamic_cast<PointerType*>(rt)) res = dynamic_cast<PointerType*>(rt)->type;
+            else if(dynamic_cast<ReferenceType*>(rt)) res = dynamic_cast<ReferenceType*>(rt)->type;
+            else {
+                std::cout << "Cannot dereference non-reference type " << rt->to_string() << "\n";
+                return nullptr;
+            }
+            return res;
         }
-        return res;
+        else {
+            Type *res = find_resulting_type(str_op, rt);
+            if(res == nullptr) {
+                std::cout << "Prefix operator " << str_op << " " << rt->to_string() << " does not exist\n";
+                return nullptr;
+            }
+            return res;
+        }
     }
     else assert(false);
 }
@@ -2173,6 +2642,12 @@ Type* ExprPostfix::resolve_type() {
             std::cout << "Failed to resolve type of function call\n";
             return nullptr;
         }
+
+        //if resulting type is a reference, should dereference
+        if(dynamic_cast<ReferenceType*>(nt)) {
+            nt = dynamic_cast<ReferenceType*>(nt)->type;
+        }
+
         return nt;
     }
     else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
@@ -2199,6 +2674,12 @@ Type* ExprPostfix::resolve_type() {
             return nullptr;
         }
         Type *nt = sl->get_type(id);
+
+        //if resulting type is a reference, should dereference
+        if(dynamic_cast<ReferenceType*>(nt)) {
+            nt = dynamic_cast<ReferenceType*>(nt)->type;
+        }
+
         return nt;
     }
     else if(std::holds_alternative<std::string>(op)) {
@@ -2308,7 +2789,7 @@ void StringLiteral::emit_asm() {
     emit_malloc(val.size() + 1);
 
     //save start of string
-    fout << indent() << "push %rax\n";
+    emit_push("%rax", "StringLiteral::emit_asm() : string start");
 
     //string index pointer to %rbx
     fout << indent() << "mov %rax, %rbx\n";
@@ -2323,7 +2804,23 @@ void StringLiteral::emit_asm() {
     emit_mem_store(1);
 
     //retrieve start of string
-    fout << indent() << "pop %rax\n";
+    emit_pop("%rax", "StringLiteral::emit_asm() : string start");
+}
+
+ExprNode* ExprNode::copy(ExprNode *other) {
+    if(auto e = dynamic_cast<ExprPrimary*>(other)) {
+        return new ExprPrimary(e->val);
+    }
+    else if(auto e = dynamic_cast<ExprBinary*>(other)) {
+        return new ExprBinary(ExprNode::copy(e->left), e->op, ExprNode::copy(e->right));
+    }
+    else if(auto e = dynamic_cast<ExprPrefix*>(other)) {
+        return new ExprPrefix(e->op, ExprNode::copy(e->right));
+    }
+    else if(auto e = dynamic_cast<ExprPostfix*>(other)) {
+        return new ExprPostfix(ExprNode::copy(e->left), e->op);
+    }
+    else assert(false);
 }
 
 void ExprPrimary::elaborate() {
@@ -2377,13 +2874,28 @@ void ExprPrimary::emit_asm() {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *f = std::get<FunctionCall*>(val);
         f->emit_asm();
+
+        Type *ft = f->resolve_type();
+        assert(ft != nullptr);
+        
+        //if this is a reference, dereference it
+        if(dynamic_cast<ReferenceType*>(ft)) {
+            emit_dereference(ft);
+        }
     }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
         Variable *v = get_variable(id);
         assert(v != nullptr);
+
         fout << indent() << "mov " << v->stack_offset << "(%rbp), %rax\n";  //value
         fout << indent() << "lea " << v->stack_offset << "(%rbp), %rcx\n";  //address
+
+        //if this is a reference, dereference it
+        Type *vt = v->type;
+        if(dynamic_cast<ReferenceType*>(vt)) {
+            emit_dereference(vt);
+        }
     }
     else if(std::holds_alternative<Literal*>(val)) {
         Literal *l = std::get<Literal*>(val);
@@ -2410,10 +2922,10 @@ void ExprBinary::emit_asm() {
 
             //if we don't short circuit, evaluate right branch and merge
             {
-                fout << indent() << "push %rax\n";
+                emit_push("%rax", "ExprBinary::emit_asm() : || save left");
                 right->emit_asm();
                 fout << indent() << "mov %rax, %rbx\n";
-                fout << indent() << "pop %rax\n";
+                emit_pop("%rax", "ExprBinary::emit_asm() : || save left");
 
                 TypeConversion *tc = find_type_conversion(lt, str_op, rt);
                 tc->emit_asm();
@@ -2431,10 +2943,10 @@ void ExprBinary::emit_asm() {
 
             //if we don't short circuit, evaluate right branch and merge
             {
-                fout << indent() << "push %rax\n";
+                emit_push("%rax", "ExprBinary::emit_asm() : && save left");
                 right->emit_asm();
                 fout << indent() << "mov %rax, %rbx\n";
-                fout << indent() << "pop %rax\n";
+                emit_pop("%rax", "ExprBinary::emit_asm() : && save left");
 
                 TypeConversion *tc = find_type_conversion(lt, str_op, rt);
                 tc->emit_asm();
@@ -2451,7 +2963,7 @@ void ExprBinary::emit_asm() {
             tc->emit_asm();
 
             //save value
-            fout << indent() << "push %rax\n";
+            emit_push("%rax", "ExprBinary::emit_asm() : = save left");
 
             //evaluate left l-value
             left->emit_asm();
@@ -2459,15 +2971,15 @@ void ExprBinary::emit_asm() {
             //move value into mem location
             int sz = lt->calc_size();
             fout << indent() << "mov %rcx, %rbx\n";
-            fout << indent() << "pop %rax\n";
+            emit_pop("%rax", "ExprBinary::emit_asm() : = save left");
             emit_mem_store(sz);
         }
         else {
             left->emit_asm();
-            fout << indent() << "push %rax\n";
+            emit_push("%rax", "ExprBinary::emit_asm() : save left");
             right->emit_asm();
             fout << indent() << "mov %rax, %rbx\n";
-            fout << indent() << "pop %rax\n";
+            emit_pop("%rax", "ExprBinary::emit_asm() : save left");
             
             TypeConversion *tc = find_type_conversion(lt, str_op, rt);
             tc->emit_asm();
@@ -2478,11 +2990,23 @@ void ExprBinary::emit_asm() {
 
 void ExprPrefix::emit_asm() {
     Type *rt = right->resolve_type();
+    right->emit_asm();
+
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
-        right->emit_asm();
-        TypeConversion *tc = find_type_conversion(str_op, rt);
-        tc->emit_asm();
+        if(str_op == "*"){ 
+            if(dynamic_cast<PointerType*>(rt)) rt = dynamic_cast<PointerType*>(rt)->type;
+            else if(dynamic_cast<ReferenceType*>(rt)) rt = dynamic_cast<ReferenceType*>(rt)->type;
+            else assert(false);
+            
+            int sz = rt->calc_size();
+            fout << indent() << "mov %rax, %rcx\n";
+            emit_mem_retrieve(sz); 
+        }
+        else {
+            TypeConversion *tc = find_type_conversion(str_op, rt);
+            tc->emit_asm();
+        }
     }
     else assert(false);
 }
@@ -2499,8 +3023,8 @@ void ExprPostfix::emit_asm() {
         lt = (dynamic_cast<PointerType*>(lt))->type;
 
         //save %rax, %rcx to stack
-        fout << indent() << "push %rax\n";
-        fout << indent() << "push %rcx\n";
+        emit_push("%rax", "ExprPostfix::emit_asm() : [] %rax 1");
+        emit_push("%rcx", "ExprPostfix::emit_asm() : [] %rcx 1");
 
         //evaluate expression
         Expression *expr = std::get<Expression*>(op);
@@ -2511,11 +3035,11 @@ void ExprPostfix::emit_asm() {
         fout << indent() << "mov %rax, %rbx\n";
 
         //return old %rax, %rcx
-        fout << indent() << "pop %rcx\n";
-        fout << indent() << "pop %rax\n";
+        emit_pop("%rcx", "ExprPostfix::emit_asm() : [] %rcx 1");
+        emit_pop("%rax", "ExprPostfix::emit_asm() : [] %rax 1");
 
         //save array start
-        fout << indent() << "push %rax\n";
+        emit_push("%rax", "ExprPostfix::emit_asm() : [] %rax 2");
 
         //find sizeof struct
         int sz = lt->calc_size();
@@ -2525,7 +3049,7 @@ void ExprPostfix::emit_asm() {
         fout << indent() << "mov %rax, %rcx\n";
 
         //return array start
-        fout << indent() << "pop %rax\n";
+        emit_pop("%rax", "ExprPostfix::emit_asm() : [] %rax 2");
 
         //retrieve array element data
         emit_retrieve_array(sz);
@@ -2552,6 +3076,12 @@ void ExprPostfix::emit_asm() {
         //this is no longer l-value, so don't have to maintain %rcx
         //reference to type is in %rax, so emit function call
         fc->emit_asm();
+
+        //if the return value is a reference, auto-dereference it
+        Type *ft = f->type;
+        if(dynamic_cast<ReferenceType*>(ft)) {
+            emit_dereference(ft);
+        }
     }
     else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
         std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
@@ -2577,6 +3107,12 @@ void ExprPostfix::emit_asm() {
         fout << indent() << "lea " << offset << "(%rax), %rcx\n";
         fout << indent() << "lea " << offset << "(%rax), %rax\n";
         emit_mem_retrieve(sz);  //now, %rax = member variable, %rcx = address of member variable
+
+        //if the return value is a reference, auto-dereference it
+        Type *vt = sl->get_type(id);
+        if(dynamic_cast<ReferenceType*>(vt)) {
+            emit_dereference(vt);
+        }
     }
     else if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
@@ -2606,96 +3142,52 @@ void FunctionCall::emit_asm() {
         emit_initialize_struct(t);
 
         //save reference to type as return value
-        fout << indent() << "push %rbx\n";
+        emit_push("%rbx", "FunctionCall::emit_asm() : constructor");
 
         //put reference into %rax
         fout << indent() << "mov %rbx, %rax\n";
     }
-
-    int argc = 0;
-
-    //pass reference to struct in as if it was a member function
+    
+    //if is member function, pass in target struct as an argument
+    //expects the target struct to be in %rax
     if(target_type.has_value() || is_constructor) {  //member function
-        //expects a reference to the target struct to be in %rax
-        fout << indent() << "push %rax\n";
-        argc ++;
+        emit_push("%rax", "FunctionCall::emit_asm() : target struct");
     }
 
-    //gather arguments and push them to the stack. 
+    //create temp variables for all arguments
+    push_declaration_stack();
+    assert(f->parameters.size() == argument_list.size());
     for(int i = 0; i < argument_list.size(); i++){
-        Expression *e = argument_list[i];
-        e->emit_asm();
-        fout << indent() << "push %rax\n";
-        argc ++;
+        //identifiers cannot begin with digits, so this shouldn't collide with anything else
+        Identifier *id = new Identifier(create_new_tmp_variable_name());
+        Variable *v = emit_initialize_variable(f->parameters[i]->type, id, argument_list[i]);
+        assert(v != nullptr);
     }
 
     //call function
-    std::string label = get_function_label(resolve_function_signature());
+    std::string label = get_function_label(f->resolve_function_signature());
     fout << indent() << "call " << label << "\n";
 
-    //clean up arguments
-    fout << indent() << "add $" << 8 * argc << ", %rsp\n";
+    //clean up argument temp variables
+    pop_declaration_stack();
+
+    //clean up target struct argument
+    if(target_type.has_value() || is_constructor) {
+        emit_add_rsp(8, "FunctionCall::emit_asm() : target struct");
+    }
 
     //if is a constructor, should return reference to type
     if(is_constructor) {
-        fout << indent() << "pop %rax\n";
+        emit_pop("%rax", "FunctionCall::emit_asm() : constructor");
     }
-}
-
-void Declaration::emit_asm() {
-    Variable *v = get_variable(id);
-    assert(v != nullptr);
-    v->stack_offset = local_var_stack_offset;
-    local_var_stack_offset -= 8;
-
-    if(asm_debug) fout << indent() << "# initialize local variable : " << type->to_string() << " " << id->name << "\n";
-
-    //evaluate expression
-    expr->emit_asm();
-
-    //cast expression type to variable type
-    Type *et = expr->resolve_type(), *vt = v->type;
-    TypeConversion *tc = find_type_conversion(et, vt);
-    assert(tc != nullptr);
-    tc->emit_asm();
-
-    //push it to stack
-    fout << indent() << "push %rax\n";
-
-    if(asm_debug) fout << indent() << "# done initialize local variable : " << type->to_string() << " " << id->name << "\n";
 }
 
 bool Declaration::is_well_formed() {
-    // - is the type being used declared?
-    if(!is_type_declared(type)) {
-        std::cout << "Declaration using undeclared type : " << type->to_string() << "\n";
-        return false;
-    }
-    // - make sure type is not void
-    if(*type == BaseType("void")) {
-        std::cout << "Cannot declare variable with void type\n";
-        return false;
-    }
-    // - does the expression resolve to a type?
-    Type *expr_type = expr->resolve_type();
-    if(expr_type == nullptr) {
-        std::cout << "Declaration expression does not resolve to a type\n";
-        return false;
-    }
-    // - does the expression resolve to an existing type?
-    if(!is_type_declared(expr_type)) {
-        std::cout << "Declaration expression does not resolve to existing type : " << expr_type->to_string() << "\n";
-        return false;
-    }
-    // - can expr_type be casted to type?
-    if(find_type_conversion(expr_type, type) == nullptr) {
-        std::cout << "Declaration type mismatch: cannot cast type " << expr_type->to_string() << " to " << type->to_string() << "\n";
-        return false;
-    }
-    // - is the identifier being used already taken?
-    Variable *v = add_variable(type, id);
+    if(asm_debug) fout << indent() << "# initialize local variable : " << type->to_string() << " " << id->name << "\n";
+    Variable *v = emit_initialize_variable(type, id, expr);
+    if(asm_debug) fout << indent() << "# done initialize local variable : " << type->to_string() << " " << id->name << "\n";
+
     if(v == nullptr) {
-        std::cout << "Unable to add variable : " << type->to_string() << " " << id->name << "\n";
         return false;
     }
 
@@ -2708,9 +3200,6 @@ bool DeclarationStatement::is_well_formed() {
         std::cout << "Declaration not well formed\n";
         return false;
     }
-
-    declaration->emit_asm();
-
     return true;
 }
 
@@ -2735,41 +3224,56 @@ bool ExpressionStatement::is_well_formed() {
 
 bool ReturnStatement::is_well_formed() {
     // - does the expression resolve to a type?
-    Type *t = nullptr;
+    Type *et = nullptr, *ft = enclosing_function->type;
     if(opt_expr.has_value()) {
         Expression *expr = opt_expr.value();
-        t = expr->resolve_type();
+        et = expr->resolve_type();
     }
-    else t = new BaseType("void");
-    if(t == nullptr) {
+    else et = new BaseType("void");
+    if(et == nullptr) {
         std::cout << "Return expression does not resolve to type\n";
         return false;
     }
-    // - does the expression return type match the return type of the enclosing function?
-    if(*t != *(enclosing_function->type)) {
-        std::cout << "Return type does not match enclosing function\n";
+    // - are we trying to return something when the function is returning void?
+    if(*ft == BaseType("void") && *et != BaseType("void")) {
+        std::cout << "Non-void return expression in void function\n";
         return false;
     }
-
-    //put return value into %rax
-    if(*t != BaseType("void")) {
+    
+    //see if we need to return something
+    if(*ft != BaseType("void")) {
         assert(opt_expr.has_value());
-        opt_expr.value()->emit_asm();
+        Expression *expr = opt_expr.value();
+        Identifier *vid = new Identifier(create_new_tmp_variable_name());
+        push_declaration_stack();
+
+        // - can the expression return type be assigned to the return type of enclosing function?
+        Variable *v = emit_initialize_variable(ft, vid, expr);
+        if(v == nullptr) {
+            std::cout << "Return expression cannot be cast to function return type, " << et->to_string() << " -> " << ft->to_string() << "\n";
+            return false;
+        }
+
+        //put value of declared variable into %rax
+        fout << indent() << "mov " << v->stack_offset << "(%rbp), %rax\n";
+
+        //clean up temp variable
+        pop_declaration_stack();
     }
 
     //clean up local variables
     if(declared_variables.size() != 0) {
-        fout << indent() << "add $" << declaration_stack.top().size() * 8 << ", %rsp\n";
+        fout << indent() << "add $" << -local_offset << ", %rsp\n"; //should not be managed by local_offset
     }
 
     if(FunctionSignature(new Identifier("main"), {}) == *(enclosing_function->resolve_function_signature())) {
         //function is main, use exit syscall instead
-        fout << indent() << "push %rax\n";
+        fout << indent() << "push %rax\n";  //should not be managed by local_offset
         fout << indent() << "call sys_exit\n";
     }
     else {
         //return from function
-        fout << indent() << "pop %rbp\n";
+        fout << indent() << "pop %rbp\n";   //should not be managed by local_offset
         fout << indent() << "ret\n";
     }
 
@@ -2864,12 +3368,15 @@ bool WhileStatement::is_well_formed() {
 bool ForStatement::is_well_formed() {
     push_declaration_stack();
 
-    // - is the declaration well formed? 
+    if(asm_debug) fout << indent() << "# for loop start\n";
+
+    // - is declaration well formed?   
     if(declaration.has_value()) {
         if(!declaration.value()->is_well_formed()) {
             return false;
         }
     }
+
     // - does the conditional expression resolve to type 'int'?
     if(expr1.has_value()) {
         Type *t = expr1.value()->resolve_type();
@@ -2885,11 +3392,6 @@ bool ForStatement::is_well_formed() {
             return false;
         }
     }
-
-    //declare loop variable
-    if(declaration.has_value()) declaration.value()->emit_asm();
-
-    if(asm_debug) fout << indent() << "# for loop start\n";
 
     //start of loop
     std::string loop_start_label = create_new_label();
@@ -2917,11 +3419,6 @@ bool ForStatement::is_well_formed() {
     //end of loop
     fout << loop_end_label << ":\n";
 
-    //remove local variables from stack
-    if(declaration_stack.top().size() != 0) {
-        fout << indent() << "add $" << declaration_stack.top().size() * 8 << ", %rsp\n";
-    }
-
     if(asm_debug) fout << indent() << "# for loop end\n";
 
     pop_declaration_stack();
@@ -2936,11 +3433,6 @@ bool CompoundStatement::is_well_formed() {
         if(!statements[i]->is_well_formed()) {
             return false;
         }
-    }
-
-    //remove local variables from stack
-    if(declaration_stack.top().size() != 0) {
-        fout << indent() << "add $" << declaration_stack.top().size() * 8 << ", %rsp\n";
     }
 
     pop_declaration_stack();
@@ -2982,7 +3474,7 @@ bool Function::is_well_formed() {
     }
 
     //setup function stack frame
-    fout << indent() << "push %rbp\n";
+    fout << indent() << "push %rbp\n";  //should not be managed by local_offset
     fout << indent() << "mov %rsp, %rbp\n";
     
     for(int i = 0; i < parameters.size(); i++){
@@ -3005,10 +3497,10 @@ bool Function::is_well_formed() {
     }
     
     //if has enclosing type, register self as variable (Type* this)
-    local_var_stack_offset = 8 + 8 * parameters.size();
+    local_offset = 8 + 8 * parameters.size();
     if(enclosing_type.has_value()) {
-        //adjust stack offset 
-        local_var_stack_offset += 8;
+        //adjust local offset for 'extra variable'
+        local_offset += 8;
 
         //register self as variable (Type this)
         Type *vt = enclosing_type.value();
@@ -3018,8 +3510,8 @@ bool Function::is_well_formed() {
             std::cout << "Unable to add variable : " << vt << " " << vid << "\n";
             return false;
         }
-        v->stack_offset = local_var_stack_offset;
-        local_var_stack_offset -= 8;
+        v->stack_offset = local_offset;
+        local_offset -= 8;
     }
     for(int i = 0; i < parameters.size(); i++){
         Variable* v = add_variable(parameters[i]->type, parameters[i]->id);
@@ -3027,12 +3519,15 @@ bool Function::is_well_formed() {
             std::cout << "Unable to add variable : " << parameters[i]->type->to_string() << " " << parameters[i]->id->name << "\n";
             return false;
         }
-        v->stack_offset = local_var_stack_offset;
-        local_var_stack_offset -= 8;
+        v->stack_offset = local_offset;
+        local_offset -= 8;
     }
 
-    //set stack offset to first local variable position
-    local_var_stack_offset = -8;   
+    //set local offset equal to %rsp
+    local_offset = 0;
+
+    //check that the local stack is empty so far
+    assert(stack_desc.size() == 0);
 
     // - make sure body is well formed
     if(!body->is_well_formed()) {
@@ -3068,7 +3563,7 @@ bool Function::is_well_formed() {
     }
     else {
         //add trailing return for void functions
-        fout << indent() << "pop %rbp\n";
+        fout << indent() << "pop %rbp\n";   //should not be managed by local_offset
         fout << indent() << "ret\n";
     }
 
@@ -3076,6 +3571,9 @@ bool Function::is_well_formed() {
 
     //unregister parameters as variables
     pop_declaration_stack();
+
+    //local stack should be empty before returning
+    assert(stack_desc.size() == 0);
 
     return true;
 }
@@ -3148,8 +3646,6 @@ bool Program::is_well_formed() {
     // - set up semantic checker controller
     reset_controller();
     std::cout << "DONE INIT CONTROLLER" << std::endl;
-
-    push_declaration_stack();
 
     fout << ".section .text\n";
 
@@ -3244,8 +3740,6 @@ bool Program::is_well_formed() {
         }
     }
 
-    pop_declaration_stack();
-
     assert(declaration_stack.size() == 0);
     assert(declared_variables.size() == 0);
 
@@ -3306,10 +3800,10 @@ int main(int argc, char* argv[]) {
             StructDefinition::MemberVariable *mv = sd->member_variables[j];
             std::cout << mv->type->to_string() << " " << mv->id->name << "\n";
         }
-        // std::cout << "MEMBER FUNCTIONS : \n";
-        // for(int j = 0; j < sd->functions.size(); j++){
-
-        // }
+        std::cout << "MEMBER FUNCTIONS : \n";
+        for(int j = 0; j < sd->functions.size(); j++){
+            std::cout << sd->functions[j]->resolve_function_signature()->to_string() << "\n";
+        }
         std::cout << "\n";
     }
    

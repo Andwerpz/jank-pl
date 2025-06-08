@@ -1,0 +1,166 @@
+
+//assignment update, sum query segment tree
+struct segtree {
+    int n;
+    int* a;
+
+    segtree segtree() {}
+    segtree segtree(int n) {
+        this.n = 2 * n;
+        this.a = malloc(sizeof(int) * 2 * n);
+        for(int i = 0; i < 2 * n; i++) this.a[i] = 0;
+    }
+    segtree segtree(segtree other) {
+        this.n = other.n;
+        this.a = malloc(sizeof(int) * this.n);
+        for(int i = 0; i < this.n; i++) this.a[i] = other.a[i];
+    }
+
+    //query sum of range [l, r)
+    int query(int l, int r) {
+        int ans = 0;
+        l = l + this.n;
+        r = r + this.n;
+        for(; l < r;) {
+            if(l % 2 == 1) {
+                ans = ans + this.a[l];
+                l = l + 1;
+            }
+            if(r % 2 == 1) {
+                r = r - 1;
+                ans = ans + this.a[r];
+            }
+            l = l / 2;
+            r = r / 2;
+        }
+        return ans;
+    }
+
+    //a[ind] = val
+    void modify(int ind, int val) {
+        ind = ind + this.n;
+        this.a[ind] = val;
+        ind = ind / 2;
+        while(ind > 0) {
+            this.a[ind] = this.a[ind * 2] + this.a[ind * 2 + 1];
+            ind = ind / 2;
+        }
+    }
+}
+
+//just a vector<int>
+struct vector {
+    int sz;
+    int cap;
+    int* a;
+
+    vector vector() {
+        this.sz = 0;
+        this.cap = 1;
+        this.a = malloc(sizeof(int) * 1);
+    }
+
+    vector vector(int n) {
+        this.sz = n;
+        this.cap = n;
+        this.a = malloc(sizeof(int) * n);
+        for(int i = 0; i < n; i = i + 1) this.a[i] = 0;
+    }
+
+    vector vector(vector other) {
+        this.sz = other.sz;
+        this.cap = other.cap;
+        this.a = malloc(sizeof(int) * this.cap);
+        for(int i = 0; i < this.cap; i++) this.a[i] = other.a[i];
+    }
+
+    void pop_back() {
+        if(this.sz == 0) return;
+        this.sz = this.sz - 1;
+    }
+
+    void push_back(int x) {
+        if(this.sz == this.cap) this.grow();
+        this.a[this.sz] = x;
+        this.sz = this.sz + 1;
+    }
+
+    void grow() {
+        this.cap = this.cap * 2;
+        int* na = malloc(sizeof(int) * this.cap);
+        for(int i = 0; i < this.sz; i = i + 1) {
+            na[i] = this.a[i];
+        }
+        this.a = na;
+
+        puts("grow : ");
+        puti_endl(this.cap);
+    }
+
+    int& at(int ind) {
+        return this.a[ind];
+    }
+}
+
+//pseudorandom array
+int* gen_arr(int n) {
+    int* a = malloc(sizeof(int) * n);
+    int mod = 100007;
+    int ptr = 1;
+    int mult = 67;
+    int add = 103;
+    for(int i = 0; i < n; i = i + 1) {
+        ptr = (ptr * mult + add) % mod;
+        a[i] = ptr;
+    }
+    return a;
+}
+
+int vector_test() {
+    vector a = vector();
+    for(int i = 0; i < 1000000; i = i + 1) {
+        a.push_back(i);
+    }
+    return 1;
+}
+
+int segt_test() {
+    int n = 500;
+    vector a = vector(n);
+    segtree b = segtree(n);
+    {
+        int* arr = gen_arr(n);
+        for(int i = 0; i < n; i = i + 1) {
+            a.at(i) = arr[i];
+            b.modify(i, arr[i]);
+        }
+    }
+    for(int i = 0; i < n; i = i + 1) {
+        for(int j = i + 1; j <= n; j = j + 1) {
+            int aans = 0;
+            int bans = b.query(i, j);
+            for(int k = i; k < j; k = k + 1) {
+                aans = aans + a.at(k);
+            }
+            if(aans != bans) {
+                puti(aans);
+                puts(" ");
+                puti_endl(bans);
+                return 0;
+            }
+        }
+    }
+    return 1;
+    puts_endl("segt test pass");
+}
+
+int main() {
+
+    if(vector_test()) puts_endl("vector test pass");
+    else puts_endl("vector test fail");
+    
+    if(segt_test()) puts_endl("segt test pass");
+    else puts_endl("segt test fail");
+
+    return 0;
+}
