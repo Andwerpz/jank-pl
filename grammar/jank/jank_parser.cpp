@@ -1,4 +1,4 @@
-// Date Generated : 06-07-2025 11:39:55
+// Date Generated : 06-11-2025 20:19:10
 #include <vector>
 #include <string>
 #include <cassert>
@@ -52,6 +52,9 @@ namespace parser {
         return ans;
     }
     
+    struct overloadable_operator;
+    struct overload_identifier;
+    struct function_identifier;
     struct function_definition;
     struct function;
     struct function_call;
@@ -100,18 +103,406 @@ namespace parser {
     struct compound_statement;
     struct program;
 
-    // function_definition = type , rws , identifier , ows , "(" , ows , parameter_list , ows , ")" ;
+    // overloadable_operator = "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "++x" | "--x" | "x++" | "x--" | "[]" | "=" | "*x" | "(cast)" ;
+    struct overloadable_operator {
+        struct a0 {
+            std::string t0;
+            a0(std::string _t0) {
+                t0 = _t0;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        struct a1 {
+            std::string t0;
+            a1(std::string _t0) {
+                t0 = _t0;
+            }
+            static a1* parse();
+            std::string to_string();
+        };
+        struct a2 {
+            std::string t0;
+            a2(std::string _t0) {
+                t0 = _t0;
+            }
+            static a2* parse();
+            std::string to_string();
+        };
+        struct a3 {
+            std::string t0;
+            a3(std::string _t0) {
+                t0 = _t0;
+            }
+            static a3* parse();
+            std::string to_string();
+        };
+        struct a4 {
+            std::string t0;
+            a4(std::string _t0) {
+                t0 = _t0;
+            }
+            static a4* parse();
+            std::string to_string();
+        };
+        struct a5 {
+            std::string t0;
+            a5(std::string _t0) {
+                t0 = _t0;
+            }
+            static a5* parse();
+            std::string to_string();
+        };
+        struct a6 {
+            std::string t0;
+            a6(std::string _t0) {
+                t0 = _t0;
+            }
+            static a6* parse();
+            std::string to_string();
+        };
+        struct a7 {
+            std::string t0;
+            a7(std::string _t0) {
+                t0 = _t0;
+            }
+            static a7* parse();
+            std::string to_string();
+        };
+        struct a8 {
+            std::string t0;
+            a8(std::string _t0) {
+                t0 = _t0;
+            }
+            static a8* parse();
+            std::string to_string();
+        };
+        struct a9 {
+            std::string t0;
+            a9(std::string _t0) {
+                t0 = _t0;
+            }
+            static a9* parse();
+            std::string to_string();
+        };
+        struct a10 {
+            std::string t0;
+            a10(std::string _t0) {
+                t0 = _t0;
+            }
+            static a10* parse();
+            std::string to_string();
+        };
+        struct a11 {
+            std::string t0;
+            a11(std::string _t0) {
+                t0 = _t0;
+            }
+            static a11* parse();
+            std::string to_string();
+        };
+        struct a12 {
+            std::string t0;
+            a12(std::string _t0) {
+                t0 = _t0;
+            }
+            static a12* parse();
+            std::string to_string();
+        };
+        struct a13 {
+            std::string t0;
+            a13(std::string _t0) {
+                t0 = _t0;
+            }
+            static a13* parse();
+            std::string to_string();
+        };
+        struct a14 {
+            std::string t0;
+            a14(std::string _t0) {
+                t0 = _t0;
+            }
+            static a14* parse();
+            std::string to_string();
+        };
+        struct a15 {
+            std::string t0;
+            a15(std::string _t0) {
+                t0 = _t0;
+            }
+            static a15* parse();
+            std::string to_string();
+        };
+        struct a16 {
+            std::string t0;
+            a16(std::string _t0) {
+                t0 = _t0;
+            }
+            static a16* parse();
+            std::string to_string();
+        };
+        struct a17 {
+            std::string t0;
+            a17(std::string _t0) {
+                t0 = _t0;
+            }
+            static a17* parse();
+            std::string to_string();
+        };
+        struct a18 {
+            std::string t0;
+            a18(std::string _t0) {
+                t0 = _t0;
+            }
+            static a18* parse();
+            std::string to_string();
+        };
+        struct a19 {
+            std::string t0;
+            a19(std::string _t0) {
+                t0 = _t0;
+            }
+            static a19* parse();
+            std::string to_string();
+        };
+        struct a20 {
+            std::string t0;
+            a20(std::string _t0) {
+                t0 = _t0;
+            }
+            static a20* parse();
+            std::string to_string();
+        };
+        struct a21 {
+            std::string t0;
+            a21(std::string _t0) {
+                t0 = _t0;
+            }
+            static a21* parse();
+            std::string to_string();
+        };
+        struct a22 {
+            std::string t0;
+            a22(std::string _t0) {
+                t0 = _t0;
+            }
+            static a22* parse();
+            std::string to_string();
+        };
+        struct a23 {
+            std::string t0;
+            a23(std::string _t0) {
+                t0 = _t0;
+            }
+            static a23* parse();
+            std::string to_string();
+        };
+        bool is_a0 = false;
+        a0 *t0;
+        bool is_a1 = false;
+        a1 *t1;
+        bool is_a2 = false;
+        a2 *t2;
+        bool is_a3 = false;
+        a3 *t3;
+        bool is_a4 = false;
+        a4 *t4;
+        bool is_a5 = false;
+        a5 *t5;
+        bool is_a6 = false;
+        a6 *t6;
+        bool is_a7 = false;
+        a7 *t7;
+        bool is_a8 = false;
+        a8 *t8;
+        bool is_a9 = false;
+        a9 *t9;
+        bool is_a10 = false;
+        a10 *t10;
+        bool is_a11 = false;
+        a11 *t11;
+        bool is_a12 = false;
+        a12 *t12;
+        bool is_a13 = false;
+        a13 *t13;
+        bool is_a14 = false;
+        a14 *t14;
+        bool is_a15 = false;
+        a15 *t15;
+        bool is_a16 = false;
+        a16 *t16;
+        bool is_a17 = false;
+        a17 *t17;
+        bool is_a18 = false;
+        a18 *t18;
+        bool is_a19 = false;
+        a19 *t19;
+        bool is_a20 = false;
+        a20 *t20;
+        bool is_a21 = false;
+        a21 *t21;
+        bool is_a22 = false;
+        a22 *t22;
+        bool is_a23 = false;
+        a23 *t23;
+        overloadable_operator(a0 *_t0) {
+            is_a0 = true;
+            t0 = _t0;
+        }
+        overloadable_operator(a1 *_t1) {
+            is_a1 = true;
+            t1 = _t1;
+        }
+        overloadable_operator(a2 *_t2) {
+            is_a2 = true;
+            t2 = _t2;
+        }
+        overloadable_operator(a3 *_t3) {
+            is_a3 = true;
+            t3 = _t3;
+        }
+        overloadable_operator(a4 *_t4) {
+            is_a4 = true;
+            t4 = _t4;
+        }
+        overloadable_operator(a5 *_t5) {
+            is_a5 = true;
+            t5 = _t5;
+        }
+        overloadable_operator(a6 *_t6) {
+            is_a6 = true;
+            t6 = _t6;
+        }
+        overloadable_operator(a7 *_t7) {
+            is_a7 = true;
+            t7 = _t7;
+        }
+        overloadable_operator(a8 *_t8) {
+            is_a8 = true;
+            t8 = _t8;
+        }
+        overloadable_operator(a9 *_t9) {
+            is_a9 = true;
+            t9 = _t9;
+        }
+        overloadable_operator(a10 *_t10) {
+            is_a10 = true;
+            t10 = _t10;
+        }
+        overloadable_operator(a11 *_t11) {
+            is_a11 = true;
+            t11 = _t11;
+        }
+        overloadable_operator(a12 *_t12) {
+            is_a12 = true;
+            t12 = _t12;
+        }
+        overloadable_operator(a13 *_t13) {
+            is_a13 = true;
+            t13 = _t13;
+        }
+        overloadable_operator(a14 *_t14) {
+            is_a14 = true;
+            t14 = _t14;
+        }
+        overloadable_operator(a15 *_t15) {
+            is_a15 = true;
+            t15 = _t15;
+        }
+        overloadable_operator(a16 *_t16) {
+            is_a16 = true;
+            t16 = _t16;
+        }
+        overloadable_operator(a17 *_t17) {
+            is_a17 = true;
+            t17 = _t17;
+        }
+        overloadable_operator(a18 *_t18) {
+            is_a18 = true;
+            t18 = _t18;
+        }
+        overloadable_operator(a19 *_t19) {
+            is_a19 = true;
+            t19 = _t19;
+        }
+        overloadable_operator(a20 *_t20) {
+            is_a20 = true;
+            t20 = _t20;
+        }
+        overloadable_operator(a21 *_t21) {
+            is_a21 = true;
+            t21 = _t21;
+        }
+        overloadable_operator(a22 *_t22) {
+            is_a22 = true;
+            t22 = _t22;
+        }
+        overloadable_operator(a23 *_t23) {
+            is_a23 = true;
+            t23 = _t23;
+        }
+        static overloadable_operator* parse();
+        std::string to_string();
+    };
+
+    // overload_identifier = "operator" , overloadable_operator ;
+    struct overload_identifier {
+        std::string t0;
+        overloadable_operator *t1;
+        overload_identifier(std::string _t0, overloadable_operator *_t1) {
+            t0 = _t0;
+            t1 = _t1;
+        }
+        static overload_identifier* parse();
+        std::string to_string();
+    };
+
+    // function_identifier = identifier | overload_identifier ;
+    struct function_identifier {
+        struct a0 {
+            identifier *t0;
+            a0(identifier *_t0) {
+                t0 = _t0;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        struct a1 {
+            overload_identifier *t0;
+            a1(overload_identifier *_t0) {
+                t0 = _t0;
+            }
+            static a1* parse();
+            std::string to_string();
+        };
+        bool is_a0 = false;
+        a0 *t0;
+        bool is_a1 = false;
+        a1 *t1;
+        function_identifier(a0 *_t0) {
+            is_a0 = true;
+            t0 = _t0;
+        }
+        function_identifier(a1 *_t1) {
+            is_a1 = true;
+            t1 = _t1;
+        }
+        static function_identifier* parse();
+        std::string to_string();
+    };
+
+    // function_definition = type , rws , function_identifier , ows , "(" , ows , parameter_list , ows , ")" ;
     struct function_definition {
         type *t0;
         rws *t1;
-        identifier *t2;
+        function_identifier *t2;
         ows *t3;
         std::string t4;
         ows *t5;
         parameter_list *t6;
         ows *t7;
         std::string t8;
-        function_definition(type *_t0, rws *_t1, identifier *_t2, ows *_t3, std::string _t4, ows *_t5, parameter_list *_t6, ows *_t7, std::string _t8) {
+        function_definition(type *_t0, rws *_t1, function_identifier *_t2, ows *_t3, std::string _t4, ows *_t5, parameter_list *_t6, ows *_t7, std::string _t8) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -3978,13 +4369,462 @@ namespace parser {
         std::string to_string();
     };
 
+    overloadable_operator::a0* overloadable_operator::a0::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "+") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a0(_t0);
+    }
+
+    std::string overloadable_operator::a0::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a1* overloadable_operator::a1::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "-") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a1(_t0);
+    }
+
+    std::string overloadable_operator::a1::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a2* overloadable_operator::a2::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "*") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a2(_t0);
+    }
+
+    std::string overloadable_operator::a2::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a3* overloadable_operator::a3::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "/") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a3(_t0);
+    }
+
+    std::string overloadable_operator::a3::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a4* overloadable_operator::a4::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "%") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a4(_t0);
+    }
+
+    std::string overloadable_operator::a4::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a5* overloadable_operator::a5::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "&") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a5(_t0);
+    }
+
+    std::string overloadable_operator::a5::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a6* overloadable_operator::a6::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "|") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a6(_t0);
+    }
+
+    std::string overloadable_operator::a6::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a7* overloadable_operator::a7::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "^") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a7(_t0);
+    }
+
+    std::string overloadable_operator::a7::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a8* overloadable_operator::a8::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "<<") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a8(_t0);
+    }
+
+    std::string overloadable_operator::a8::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a9* overloadable_operator::a9::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != ">>") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a9(_t0);
+    }
+
+    std::string overloadable_operator::a9::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a10* overloadable_operator::a10::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "==") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a10(_t0);
+    }
+
+    std::string overloadable_operator::a10::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a11* overloadable_operator::a11::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "!=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a11(_t0);
+    }
+
+    std::string overloadable_operator::a11::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a12* overloadable_operator::a12::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "<") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a12(_t0);
+    }
+
+    std::string overloadable_operator::a12::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a13* overloadable_operator::a13::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "<=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a13(_t0);
+    }
+
+    std::string overloadable_operator::a13::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a14* overloadable_operator::a14::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != ">") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a14(_t0);
+    }
+
+    std::string overloadable_operator::a14::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a15* overloadable_operator::a15::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != ">=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a15(_t0);
+    }
+
+    std::string overloadable_operator::a15::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a16* overloadable_operator::a16::parse() {
+        push_stack();
+        std::string _t0 = next_chars(3);
+        if(_t0 != "++x") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a16(_t0);
+    }
+
+    std::string overloadable_operator::a16::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a17* overloadable_operator::a17::parse() {
+        push_stack();
+        std::string _t0 = next_chars(3);
+        if(_t0 != "--x") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a17(_t0);
+    }
+
+    std::string overloadable_operator::a17::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a18* overloadable_operator::a18::parse() {
+        push_stack();
+        std::string _t0 = next_chars(3);
+        if(_t0 != "x++") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a18(_t0);
+    }
+
+    std::string overloadable_operator::a18::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a19* overloadable_operator::a19::parse() {
+        push_stack();
+        std::string _t0 = next_chars(3);
+        if(_t0 != "x--") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a19(_t0);
+    }
+
+    std::string overloadable_operator::a19::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a20* overloadable_operator::a20::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "[]") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a20(_t0);
+    }
+
+    std::string overloadable_operator::a20::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a21* overloadable_operator::a21::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a21(_t0);
+    }
+
+    std::string overloadable_operator::a21::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a22* overloadable_operator::a22::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "*x") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a22(_t0);
+    }
+
+    std::string overloadable_operator::a22::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a23* overloadable_operator::a23::parse() {
+        push_stack();
+        std::string _t0 = next_chars(6);
+        if(_t0 != "(cast)") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a23(_t0);
+    }
+
+    std::string overloadable_operator::a23::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator* overloadable_operator::parse() {
+        if(auto x = overloadable_operator::a0::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a1::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a2::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a3::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a4::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a5::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a6::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a7::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a8::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a9::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a10::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a11::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a12::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a13::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a14::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a15::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a16::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a17::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a18::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a19::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a20::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a21::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a22::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a23::parse()) return new overloadable_operator(x);
+        return nullptr;
+    }
+
+    std::string overloadable_operator::to_string() {
+        if(is_a0) return t0->to_string();
+        if(is_a1) return t1->to_string();
+        if(is_a2) return t2->to_string();
+        if(is_a3) return t3->to_string();
+        if(is_a4) return t4->to_string();
+        if(is_a5) return t5->to_string();
+        if(is_a6) return t6->to_string();
+        if(is_a7) return t7->to_string();
+        if(is_a8) return t8->to_string();
+        if(is_a9) return t9->to_string();
+        if(is_a10) return t10->to_string();
+        if(is_a11) return t11->to_string();
+        if(is_a12) return t12->to_string();
+        if(is_a13) return t13->to_string();
+        if(is_a14) return t14->to_string();
+        if(is_a15) return t15->to_string();
+        if(is_a16) return t16->to_string();
+        if(is_a17) return t17->to_string();
+        if(is_a18) return t18->to_string();
+        if(is_a19) return t19->to_string();
+        if(is_a20) return t20->to_string();
+        if(is_a21) return t21->to_string();
+        if(is_a22) return t22->to_string();
+        if(is_a23) return t23->to_string();
+        assert(false);
+    }
+
+    overload_identifier* overload_identifier::parse() {
+        push_stack();
+        std::string _t0 = next_chars(8);
+        if(_t0 != "operator") {pop_stack(); return nullptr;}
+        overloadable_operator *_t1 = overloadable_operator::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overload_identifier(_t0, _t1);
+    }
+
+    std::string overload_identifier::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        return ans;
+    }
+
+    function_identifier::a0* function_identifier::a0::parse() {
+        push_stack();
+        identifier *_t0 = identifier::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new function_identifier::a0(_t0);
+    }
+
+    std::string function_identifier::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    function_identifier::a1* function_identifier::a1::parse() {
+        push_stack();
+        overload_identifier *_t0 = overload_identifier::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new function_identifier::a1(_t0);
+    }
+
+    std::string function_identifier::a1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    function_identifier* function_identifier::parse() {
+        if(auto x = function_identifier::a0::parse()) return new function_identifier(x);
+        if(auto x = function_identifier::a1::parse()) return new function_identifier(x);
+        return nullptr;
+    }
+
+    std::string function_identifier::to_string() {
+        if(is_a0) return t0->to_string();
+        if(is_a1) return t1->to_string();
+        assert(false);
+    }
+
     function_definition* function_definition::parse() {
         push_stack();
         type *_t0 = type::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rws *_t1 = rws::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        identifier *_t2 = identifier::parse();
+        function_identifier *_t2 = function_identifier::parse();
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
         ows *_t3 = ows::parse();
         if(_t3 == nullptr) {pop_stack(); return nullptr;}

@@ -1,7 +1,18 @@
 #include "jank.ebnf" ;
 
+overloadable_operator = "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" |
+                        "==" | "!=" | "<" | "<=" | ">" | ">=" |
+                        "++x" | "--x" | "x++" | "x--" | 
+                        "[]" | 
+                        "=" |
+                        "*x" |
+                        "(cast)" ;
+overload_identifier = "operator" , overloadable_operator ;
+
+function_identifier = identifier | overload_identifier ;
+
 (* void main(int foo) *)
-function_definition = type , rws , identifier , ows , "(" , ows , parameter_list , ows , ")" ;
+function_definition = type , rws , function_identifier , ows , "(" , ows , parameter_list , ows , ")" ;
 
 (* void main(int foo) { } *)
 function = function_definition , ows , compound_statement ;

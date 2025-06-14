@@ -198,6 +198,84 @@ perhaps should also add 'layer' descriptions?
 some other features related to references that can be implemented:
  - detecting dangling references (perhaps this should be left for the user to debug)
 
+its not a big issue right now, but I'll have to think more about the difference between emit_asm() and is_well_formed(). 
+The original intention was to have two passes, once to check for semantic consistency, and the next to generate the code, but
+it seems like the two passes have kind of melded together into one. 
+
+
+ok, next is operator overloading. Since all my structs have all public member variables, every overload will just be a 
+free function. So for example, dot product could be implemented like
+
+int operator*(vec2 a, vec2 b) {
+    return a.x * b.x + a.y * b.y;
+}
+
+should also implement a more robust type conversion lookup system like the one for function calls. 
+
+what operators do we want to be overloadable?
+ - arithmetic binary operators : + - * / % & | ^ << >> 
+ - comparison operators : == != < <= > >=
+ - pre/post increment/decrement : ++x --x x++ x--
+ - indexing : x[]
+ - assignment : =
+ - referencing, dereferencing : &x *x
+ - casting : (type) x
+
+we don't really have to assign any meaning to each operator (that's up to the user). Whenever we see some operator,
+we first just check for an overload, then if we can't find an overload we just default to normal behaviour. 
+
+overload lookup will be very similar to function lookup. I'm going to use whether or not we can declare A as B
+as the ground truth for whether or not we can convert A into B. This is going to be used everywhere for implicit conversions
+like function calls, return statements, overloads. Except for the casting operator, for that one I'll only accept 
+exact matches. First, we don't want casts to have any weird conversions happening, and second, the assignment operator
+uses casts to figure out whether or not it can assign, so allowing implicit conversions for the casting operator 
+will result in infinite recursion. 
+
+I'll enforce that you cannot define operator overloads within a struct. Any function defined within a struct has
+to be a member function of that struct. 
+
+When converting overloads, we'll add them to the functions list as normal to be checked. Perhaps we should add another
+stage to the semantic checking, something like gather struct and function defs. Maybe gather_defs()? This should be
+applicable to Program, Struct, (and eventually Namespace). Then when actually checking, we maintain the set of stuff
+that can be refered to without any qualification. 
+
+This should only be a consideration when implementing namespaces though, as right now we don't have to make any 
+qualified references to anything. 
+
+To evaluate and emit expressions, we'll look up operator overloads first, then we'll fallback onto default behaviour. 
+When we elaborate, I want to turn all overloads into function calls, so when we emit we don't have to change the logic
+and we can reuse the function call logic. 
+
+ok, I've decided that I should respect the reference assignment rules. Namely, when initializing a reference, A&, we
+can only assign to it a lvalue of type A (maybe it's a little stricter). Probably the easiest way to respect this is
+to modify get_called_function() and is_declarable() to accept expressions instead of function signatures. This way I can
+query to see whether something is a l-value or not, as well as its type. 
+
+this change will make implementing builtin operators like '++' easier, as I can just insert them into the conversion map
+and say they require type int&, and in the case of ++x, returns int&. Note that any operator that returns a reference type
+should be classified as returning an l-value. 
+
+
+struct nesting / namespaces:
+only base types are allowed to be nested inside of other types
+only base types are allowed to contain other types
+essentially, only base types are allowed to participate in this nesting. (until I figure out templating)
+when we're parsing code, we always keep track of what type we're currently in. The semantically correct minimum 
+qualified typename depends on context. Suppose that we're currently in type A, and we want to refer to type B. 
+ - if A == B, we can just do B
+ - if the parent of B is A, we can just do B
+ - if B is an ancestor of A, we need to give the fully qualified type of B
+ - if B is a child of A, we can give the relative type from A
+ - otherwise, we need to give the fully qualified type
+
+if we have the restriction that types cannot be named the same as their ancestors, we can simply enforce that 
+B must be qualified at least to some common ancestor of A and B. So it suffices to check all ancestors of A to see
+where the B chain starts, and as all the ancestors of A must be unique, there is only one possible starting point. 
+
+to resolve overloads, look at all of the types in the overload, and find the namespaces the types are defined in. 
+Then, we can look in any namespace that contains any of the types mentioned to find overloads.
+
+
 TODO
  - make sure that int main() is never called
  - make actual C++ style pass by copy and reference. 
@@ -274,6 +352,11 @@ struct StructDefinition;
 struct Program;
 
 struct Variable;
+struct OperatorSignature;
+struct OperatorImplementation;
+struct BuiltinOperator;
+struct FunctionOperator;
+struct StructLayout;
 
 struct Literal {
     static Literal* convert(parser::literal *n);
@@ -448,8 +531,10 @@ struct ExprNode {
     virtual std::string to_string() = 0;
 };
 
+//Type* is just a placeholder for a variable of that type. It's just used for type conversion purposes. 
+//if there is a Type* and it tries to emit_asm(), it will assert(false). 
 struct ExprPrimary : ExprNode {
-    using val_t = std::variant<FunctionCall*, Identifier*, Literal*, Expression*>;
+    using val_t = std::variant<FunctionCall*, Identifier*, Literal*, Expression*, Type*>;
     val_t val;
     ExprPrimary(val_t _val) {
         val = _val;
@@ -716,26 +801,16 @@ struct Function {
     std::vector<Parameter*> parameters;
     CompoundStatement *body;
 
-    //global functions
-    Function(Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
-        enclosing_type = std::nullopt;
-        id = _id;
-        type = _type;
-        parameters = _parameters;
-        body = _body;
-
-        assert(body != nullptr);
-    }   
-
-    //struct member functions
-    Function(Type *_enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
+    Function(std::optional<Type*> _enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
         enclosing_type = _enclosing_type;
         id = _id;
         type = _type;
         parameters = _parameters;
         body = _body;
 
+        assert(type != nullptr);
         assert(body != nullptr);
+        assert(id != nullptr);
     }
 
     //use when inputting pre-defined asm functions
@@ -747,7 +822,12 @@ struct Function {
             parameters.push_back(new Parameter(input_types[i], new Identifier("v" + std::to_string(i))));
         }
         body = nullptr;
+
+        assert(type != nullptr);
+        assert(id != nullptr);
     }
+
+    virtual ~Function() = default;
 
     static Function* convert(parser::function *f);
     bool is_well_formed();
@@ -760,6 +840,15 @@ struct Function {
     bool operator!=(const Function& other) const {
         return !(*this == other);
     }
+};
+
+struct OperatorOverload : public Function {
+    std::string op;
+    OperatorOverload(std::string _op, std::optional<Type*> _enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) : Function(_enclosing_type, _type, _id, _parameters, _body) {
+        op = _op;
+    }
+
+    OperatorSignature* resolve_operator_signature() const;
 };
 
 struct FunctionCall {
@@ -777,8 +866,8 @@ struct FunctionCall {
         argument_list = _argument_list;
     }
     static FunctionCall* convert(parser::function_call *f);
+    Function* get_called_function();
     Type* resolve_type();
-    FunctionSignature* resolve_function_signature();
     void emit_asm();
 };
 
@@ -817,11 +906,6 @@ struct Program {
 };
 
 // -- SEMANTIC ANALYSIS + CODE GENERATION CONTROLLER --
-struct Variable;
-struct TypeConversionKey;
-struct TypeConversion;
-struct StructLayout;
-
 std::string indent();
 char escape_to_char(parser::escape *e);
 std::string create_new_label();
@@ -830,14 +914,12 @@ void emit_address_array(int sz);
 void emit_write_array(int sz);
 void emit_mem_retrieve(int sz);
 void emit_mem_store(int sz);
-Type* find_resulting_type(Type *left, std::string op, Type *right); //binary operators
-TypeConversion* find_type_conversion(Type *left, std::string op, Type *right);
-Type* find_resulting_type(std::string op, Type* right); //prefix operators
-TypeConversion* find_type_conversion(std::string op, Type* right);
-Type* find_resulting_type(Type *left, std::string op); //postfix operators
-TypeConversion* find_type_conversion(Type *left, std::string op);
-Type* find_resulting_type(Type* from, Type* to);    //casting
-TypeConversion* find_type_conversion(Type* from, Type* to); 
+bool is_declarable(Type *a, Expression* expr);       //does the declaration A foo = expr work?
+OperatorImplementation* find_typecast_implementation(Type *from, Type *to);
+OperatorImplementation* find_operator_implementation(std::optional<Expression*> left, std::string op, std::optional<Expression*> right);
+OperatorImplementation* find_operator_implementation(std::optional<ExprNode*> left, std::string op, std::optional<ExprNode*> right)
+Type* find_resulting_type(std::optional<Expression*> left, std::string op, std::optional<Expression*> right);
+Type* find_resulting_type(std::optional<ExprNode*> left, std::string op, std::optional<ExprNode*> right);
 Type* find_variable_type(Identifier *id);
 Type* find_function_type(FunctionSignature *fs);
 bool is_function_constructor(const Function *f);
@@ -845,7 +927,8 @@ bool is_type_declared(Type *t);
 bool is_type_primitive(Type *t);
 bool is_function_declared(FunctionSignature *fs);
 bool is_variable_declared(Identifier *id);
-Function* get_function(FunctionSignature *fs);
+Function* get_function(FunctionSignature *fs);  
+Function* get_called_function(std::optional<Type*> enclosing_type, Identifier *id, vector<Expression*> args);   //get function that matches, given you can convert each parameter
 std::string get_function_label(FunctionSignature *fs);
 Variable* get_variable(Identifier *id);
 bool is_identifier_used(Identifier *id);
@@ -854,6 +937,7 @@ bool add_primitive_type(Type *t);
 bool add_function(Function *f);
 bool add_sys_function(Function *f);
 Variable* add_variable(Type *t, Identifier *id);
+void remove_function(Function *f);
 void remove_variable(Identifier *id);
 void push_declaration_stack();
 void pop_declaration_stack();
@@ -867,6 +951,10 @@ void emit_push(std::string reg);
 void emit_pop(std::string reg);
 void emit_add_rsp(int amt);
 void emit_sub_rsp(int amt);
+bool add_operator_implementation(OperatorSignature *os, OperatorImplementation *oi);
+bool add_operator_implementation(OperatorOverload *f);
+void remove_operator_implementation(OperatorSignature *os, OperatorImplementation *oi);
+void remove_operator_implementation(OperatorOverload *f);
 
 struct Variable {
     Type *type;
@@ -878,55 +966,66 @@ struct Variable {
     }
 };
 
-struct TypeConversionKey {
+struct OperatorSignature {
     std::optional<Type*> left;
     std::string op;
     std::optional<Type*> right;
-    TypeConversionKey(Type *_left, std::string _op, Type *_right) { //binary operator
+    OperatorSignature(Type *_left, std::string _op, Type *_right) { //binary operator or indexing
         assert(_left != nullptr);
         assert(_right != nullptr);
         left = _left;
         op = _op;
         right = _right;
     }
-    TypeConversionKey(std::string _op, Type *_right) {  //left unary operator
+    OperatorSignature(std::string _op, Type *_right) {  //prefix operator
         assert(_right != nullptr);
         left = std::nullopt;
         op = _op;
         right = _right;
     }
-    TypeConversionKey(Type *_left, std::string _op) {   //right unary operator
+    OperatorSignature(Type *_left, std::string _op) {   //postfix operator
         assert(_left != nullptr);
         left = _left;
         op = _op;
         right = std::nullopt;
     }
-    TypeConversionKey(Type *from, Type *to) {   //casting
+    OperatorSignature(Type *from, Type *to) {   //casting
         left = from;
-        op = "cast";
+        op = "(cast)";
         right = to;
     }
 
-    bool operator==(const TypeConversionKey& other) const {
+    bool operator==(const OperatorSignature& other) const {
         if(left.has_value() != other.left.has_value()) return false;
         if(left.has_value() && *(left.value()) != *(other.left.value())) return false;
         if(right.has_value() != other.right.has_value()) return false;
         if(right.has_value() && *(right.value()) != *(other.right.value())) return false;
         return op == other.op;
     }
+
+    bool operator!=(const OperatorSignature& other) const {
+        return !(*this == other);
+    }
 };  
 
 namespace std {
     template<>
-    struct hash<TypeConversionKey> {
-        size_t operator()(const TypeConversionKey& key) const {
+    struct hash<OperatorSignature*> {
+        size_t operator()(const OperatorSignature *key) const {
             size_t seed = 0;
-            if(key.left.has_value()) hash_combine(seed, key.left.value()->hash());
+            if(key->left.has_value()) hash_combine(seed, key->left.value()->hash());
             else hash_combine(seed, 0);
-            if(key.right.has_value()) hash_combine(seed, key.right.value()->hash());
+            if(key->right.has_value()) hash_combine(seed, key->right.value()->hash());
             else hash_combine(seed, 0);
-            hash_combine(seed, std::hash<std::string>()(key.op));
+            hash_combine(seed, std::hash<std::string>()(key->op));
             return seed;
+        }
+    };
+    template<>
+    struct equal_to<OperatorSignature*> {
+        bool operator()(const OperatorSignature* lhs, const OperatorSignature* rhs) const {
+            if (lhs == nullptr || rhs == nullptr) return lhs == rhs;
+            return *lhs == *rhs;
         }
     };
 
@@ -976,6 +1075,21 @@ namespace std {
     };
 }
 
+struct OperatorImplementation {
+    Type* res_type;
+
+    OperatorImplementation(Type *_res_type) {
+        assert(_res_type != nullptr);
+        res_type = _res_type;
+    }
+
+    virtual ~OperatorImplementation() = default;
+
+    Type* get_res_type() {
+        return this->res_type;
+    }
+};
+
 //for non-binary l-value operations, %rcx is where the address is
 //for binary operators, assumes left is in %rax and right is in %rbx
 //for left unary operators, assumes right is in %rax
@@ -983,18 +1097,20 @@ namespace std {
 //for casting, assumes the input is in %rax
 //for the indexing operator specifically, '[]', the result of the expression is in %rbx
 //will place the answer into %rax
-struct TypeConversion {
-    Type* res_type;
+struct BuiltinOperator : public OperatorImplementation {
     std::vector<std::string> instructions;
-    TypeConversion() {
-        res_type = nullptr;
-    }
-    TypeConversion(Type *_res_type, std::vector<std::string> _instructions) {
-        res_type = _res_type;
+    BuiltinOperator(Type *_res_type, std::vector<std::string> _instructions) : OperatorImplementation(_res_type) {
         instructions = _instructions;
     }
 
     void emit_asm();
+};
+
+struct FunctionOperator : public OperatorImplementation {
+    OperatorOverload *function;
+    FunctionOperator(OperatorOverload *_function) : OperatorImplementation((assert(_function != nullptr), _function->type)) {
+        function = _function;
+    }
 };
 
 //holds information on where all the stuff is supposed to go within the heap portion of the struct
@@ -1046,7 +1162,7 @@ std::vector<Function*> declared_functions;
 std::unordered_map<FunctionSignature*, std::string> function_label_map;
 std::vector<Variable*> declared_variables;
 std::stack<std::vector<Variable*>> declaration_stack;   //every 'layer' of the declaration stack should be contiguous on the stack
-std::unordered_map<TypeConversionKey, TypeConversion> conversion_map;
+std::unordered_map<OperatorSignature*, OperatorImplementation*> conversion_map;
 
 int local_offset;   //tracks the value %rsp - %rbp
 
@@ -1100,40 +1216,40 @@ void reset_controller() {
     add_sys_function(new Function(p_void, new Identifier("puti_endl"), {p_int}));
 
     // - populate conversion map
-    conversion_map[{"++", p_int}] = {p_int, {
-        "inc %rax",
-        "incq (%rcx)",
-    }};
-    conversion_map[{"--", p_int}] = {p_int, {
-        "dec %rax",
-        "decq (%rcx)",
-    }};
-    conversion_map[{"+", p_int}] = {p_int, {}};
-    conversion_map[{"-", p_int}] = {p_int, {"neg %rax"}};
-    conversion_map[{"~", p_int}] = {p_int, {"not %rax"}};
-    conversion_map[{"!", p_int}] = {p_int, {
+    conversion_map[new OperatorSignature("+", p_int)] = new BuiltinOperator(p_int, {});
+    conversion_map[new OperatorSignature("-", p_int)] = new BuiltinOperator(p_int, {"neg %rax"});
+    conversion_map[new OperatorSignature("~", p_int)] = new BuiltinOperator(p_int, {"not %rax"});
+    conversion_map[new OperatorSignature("!", p_int)] = new BuiltinOperator(p_int, {
         "test %rax, %rax",
         "sete %al",
         "movzx %al, %rax",
-    }};
-    conversion_map[{p_int, "++"}] = {p_int, {"incq (%rcx)"}};
-    conversion_map[{p_int, "--"}] = {p_int, {"decq (%rcx)"}};
-    conversion_map[{p_int, "+", p_int}] = {p_int, {"add %rbx, %rax"}};
-    conversion_map[{p_int, "-", p_int}] = {p_int, {"sub %rbx, %rax"}};
-    conversion_map[{p_int, "*", p_int}] = {p_int, {"imul %rbx, %rax"}};
-    conversion_map[{p_int, "/", p_int}] = {p_int, {
+    });
+    conversion_map[new OperatorSignature("++", new ReferenceType(p_int))] = new BuiltinOperator(new ReferenceType(p_int), {
+        "inc %rax",
+        "incq (%rcx)",
+    });
+    conversion_map[new OperatorSignature("--", new ReferenceType(p_int))] = new BuiltinOperator(new ReferenceType(p_int), {
+        "dec %rax",
+        "decq (%rcx)",
+    });
+    conversion_map[new OperatorSignature(new ReferenceType(p_int), "++")] = new BuiltinOperator(p_int, {"incq (%rcx)"});
+    conversion_map[new OperatorSignature(new ReferenceType(p_int), "--")] = new BuiltinOperator(p_int, {"decq (%rcx)"});
+    conversion_map[new OperatorSignature(p_int, "+", p_int)] = new BuiltinOperator(p_int, {"add %rbx, %rax"});
+    conversion_map[new OperatorSignature(p_int, "-", p_int)] = new BuiltinOperator(p_int, {"sub %rbx, %rax"});
+    conversion_map[new OperatorSignature(p_int, "*", p_int)] = new BuiltinOperator(p_int, {"imul %rbx, %rax"});
+    conversion_map[new OperatorSignature(p_int, "/", p_int)] = new BuiltinOperator(p_int, {
         "cqo",
         "idiv %rbx",
-    }};
-    conversion_map[{p_int, "%", p_int}] = {p_int, {
+    });
+    conversion_map[new OperatorSignature(p_int, "%", p_int)] = new BuiltinOperator(p_int, {
         "cqo",
         "idiv %rbx",
         "mov %rdx, %rax",
-    }};
-    conversion_map[{p_int, "&", p_int}] = {p_int, {"and %rbx, %rax"}};
-    conversion_map[{p_int, "^", p_int}] = {p_int, {"xor %rbx, %rax"}};
-    conversion_map[{p_int, "|", p_int}] = {p_int, {"or %rbx, %rax"}};
-    conversion_map[{p_int, "&&", p_int}] = {p_int, {
+    });
+    conversion_map[new OperatorSignature(p_int, "&", p_int)] = new BuiltinOperator(p_int, {"and %rbx, %rax"});
+    conversion_map[new OperatorSignature(p_int, "^", p_int)] = new BuiltinOperator(p_int, {"xor %rbx, %rax"});
+    conversion_map[new OperatorSignature(p_int, "|", p_int)] = new BuiltinOperator(p_int, {"or %rbx, %rax"});
+    conversion_map[new OperatorSignature(p_int, "&&", p_int)] = new BuiltinOperator(p_int, {
         "test %rax, %rax",
         "setne %al",
         "movzx %al, %rax",
@@ -1141,8 +1257,8 @@ void reset_controller() {
         "setne %bl",
         "movzx %bl, %rbx",
         "and %rbx, %rax",
-    }};
-    conversion_map[{p_int, "||", p_int}] = {p_int, {
+    });
+    conversion_map[new OperatorSignature(p_int, "||", p_int)] = new BuiltinOperator(p_int, {
         "test %rax, %rax",
         "setne %al",
         "movzx %al, %rax",
@@ -1150,49 +1266,50 @@ void reset_controller() {
         "setne %bl",
         "movzx %bl, %rbx",
         "or %rbx, %rax",
-    }};
-    conversion_map[{p_int, "==", p_int}] = {p_int, {
+    });
+    conversion_map[new OperatorSignature(p_int, "==", p_int)] = new BuiltinOperator(p_int, {
         "cmp %rbx, %rax",
         "sete %al",
         "movzx %al, %rax",
-    }};
-    conversion_map[{p_int, "!=", p_int}] = {p_int, {
+    });
+    conversion_map[new OperatorSignature(p_int, "!=", p_int)] = new BuiltinOperator(p_int, {
         "cmp %rbx, %rax",
         "setne %al",
         "movzx %al, %rax",
-    }};
-    conversion_map[{p_int, "<", p_int}] = {p_int, {
+    });
+    conversion_map[new OperatorSignature(p_int, "<", p_int)] = new BuiltinOperator(p_int, {
         "cmp %rbx, %rax",
         "setl %al",
         "movzx %al, %rax",
-    }};
-    conversion_map[{p_int, ">", p_int}] = {p_int, {
+    });
+    conversion_map[new OperatorSignature(p_int, ">", p_int)] = new BuiltinOperator(p_int, {
         "cmp %rbx, %rax",
         "setg %al",
         "movzx %al, %rax",
-    }};
-    conversion_map[{p_int, "<=", p_int}] = {p_int, {
+    });
+    conversion_map[new OperatorSignature(p_int, "<=", p_int)] = new BuiltinOperator(p_int, {
         "cmp %rbx, %rax",
         "setle %al",
         "movzx %al, %rax",
-    }};
-    conversion_map[{p_int, ">=", p_int}] = {p_int, {
+    });
+    conversion_map[new OperatorSignature(p_int, ">=", p_int)] = new BuiltinOperator(p_int, {
         "cmp %rbx, %rax",
         "setge %al",
         "movzx %al, %rax",
-    }};
-    conversion_map[{p_int, "<<", p_int}] = {p_int, {
+    });
+    conversion_map[new OperatorSignature(p_int, "<<", p_int)] = new BuiltinOperator(p_int, {
         "push %rcx",
         "mov %rbx, %rcx",
         "sal %cl, %rax",
         "pop %rcx",
-    }};
-    conversion_map[{p_int, ">>", p_int}] = {p_int, {
+    });
+    conversion_map[new OperatorSignature(p_int, ">>", p_int)] = new BuiltinOperator(p_int, {
         "push %rcx",
         "mov %rbx, %rcx",
         "sar %cl, %rax",
         "pop %rcx",
-    }};
+    });
+
 }
 
 std::string indent() {
@@ -1367,122 +1484,105 @@ void emit_mem_store(int sz) {
     else assert(false);
 }
 
-Type* find_resulting_type(Type* left, std::string op, Type* right) {
-    if(left == nullptr || right == nullptr) return nullptr;
-    assert(op.size() != 0);
-    TypeConversionKey key = {left, op, right};
-    if(!conversion_map.count(key)) {
-        std::cout << "Invalid type conversion : " << left->to_string() << " " << op << " " << right->to_string() << "\n";
-        return nullptr;
+//returns true if we can create a new variable of type A with the given expression
+bool is_declarable(Type *A, Expression *expr) {
+    assert(A != nullptr);
+    assert(expr != nullptr);
+
+    Type *et = expr->resolve_type();
+    bool is_lvalue = expr->is_lvalue();
+    if(et == nullptr) return false;
+
+    // if we are assigning to a reference, we must match the type exactly and use a l-value
+    if(dynamic_cast<ReferenceType*>(A) != nullptr) {
+        if(is_lvalue && *(dynamic_cast<ReferenceType*>(A)->type) == *et) {
+            return true;
+        }
+        return false;
     }
-    return conversion_map[key].res_type;
+
+    // otherwise, can look for type conversions
+    Expression *expr = new Expression(new ExprBinary(new ExprPrimary(A), "=", new ExprPrimary(expr)));
+    if(expr->resolve_type() != nullptr) {
+        return true;
+    }
+    return false;
 }
 
-TypeConversion* find_type_conversion(Type* left, std::string op, Type* right) {
-    if(left == nullptr || right == nullptr) return nullptr;
-    assert(op.size() != 0);
-    TypeConversionKey key = {left, op, right};
-    if(!conversion_map.count(key)) {
-        std::cout << "Invalid type conversion : " << left->to_string() << " " << op << " " << right->to_string() << "\n";
-        return nullptr;
-    }
-    return &(conversion_map[key]);
-}
-
-Type* find_resulting_type(std::string op, Type* right) {
-    if(right == nullptr) return nullptr;
-    assert(op.size() != 0);
-    TypeConversionKey key = {op, right};
-    if(!conversion_map.count(key)) {
-        std::cout << "Invalid type conversion : " << op << " " << right->to_string() << "\n";
-        return nullptr;
-    }
-    return conversion_map[key].res_type;
-}
-
-TypeConversion* find_type_conversion(std::string op, Type* right) {
-    if(right == nullptr) return nullptr;
-    assert(op.size() != 0);
-    TypeConversionKey key = {op, right};
-    if(!conversion_map.count(key)) {
-        std::cout << "Invalid type conversion : " << op << " " << right->to_string() << "\n";
-        return nullptr;
-    }
-    return &(conversion_map[key]);
-}
-
-Type* find_resulting_type(Type *left, std::string op) {
-    if(left == nullptr) return nullptr;
-    assert(op.size() != 0);
-    TypeConversionKey key = {left, op};
-    if(!conversion_map.count(key)) {
-        std::cout << "Invalid type conversion : " << left->to_string() << " " << op << "\n";
-        return nullptr;
-    }
-    return conversion_map[key].res_type;
-}
-
-TypeConversion* find_type_conversion(Type *left, std::string op) {
-    if(left == nullptr) return nullptr;
-    assert(op.size() != 0);
-    TypeConversionKey key = {left, op};
-    if(!conversion_map.count(key)) {
-        std::cout << "Invalid type conversion : " << left->to_string() << " " << op << "\n";
-        return nullptr;
-    }
-    return &(conversion_map[key]);
-}
-
-Type* find_resulting_type(Type* from, Type* to) {
-    if(from == nullptr || to == nullptr) return nullptr;
-
+//requires that the types exactly match
+OperatorImplementation* find_typecast_implementation(Type *from, Type *to) {
     //special cases
     // - from and to are the same type
     if(*from == *to) {
-        return to;
+        return new BuiltinOperator(to, {});    //do nothing
     }
     Type* voidptr_t = new PointerType(new BaseType("void"));
     // - from is a pointer, to is void*
     if(dynamic_cast<PointerType*>(from) != nullptr && *to == *voidptr_t) {
-        return to;
+        return new BuiltinOperator(to, {});    //do nothing
     }
     // - from is void*, to is a pointer
     if(*from == *voidptr_t && dynamic_cast<PointerType*>(to) != nullptr) {
-        return to;
+        return new BuiltinOperator(to, {});    //do nothing
     }
 
-    TypeConversionKey key = {from, to};
-    if(!conversion_map.count(key)) {
-        std::cout << "Invalid type conversion : (" << to->to_string() << ") " << from->to_string() << "\n";
-        return nullptr;
+    //look through all conversions to see if we have an exact match
+    std::vector<OperatorImplementation*> viable;
+    OperatorSignature *key = new OperatorSignature(from, to);
+    for(auto i = conversion_map.begin(); i != conversion_map.end(); i++){
+        OperatorSignature *nkey = i->first;
+        if(*key == *nkey) viable.push_back(i->second);
     }
-    return conversion_map[key].res_type;
+    if(viable.size() != 1) return nullptr;
+    return viable[0];
 }
 
-TypeConversion* find_type_conversion(Type* from, Type* to) {
-    if(from == nullptr || to == nullptr) return nullptr;
-
-    //special cases
-    // - from and to are the same type
-    if(*from == *to) {
-        return new TypeConversion(to, {});    //do nothing
-    }
-    Type* voidptr_t = new PointerType(new BaseType("void"));
-    // - from is a pointer, to is void*
-    if(dynamic_cast<PointerType*>(from) != nullptr && *to == *voidptr_t) {
-        return new TypeConversion(to, {});    //do nothing
-    }
-    // - from is void*, to is a pointer
-    if(*from == *voidptr_t && dynamic_cast<PointerType*>(to) != nullptr) {
-        return new TypeConversion(to, {});    //do nothing
-    }
+//looks through all operator implementations and finds all that matches
+//same idea as get_function() for all conversions except for direct casting. 
+OperatorImplementation* find_operator_implementation(std::optional<Expression*> left, std::string op, std::optional<Expression*> right) {
+    //one of left or right has to have a value
+    assert(left.has_value() || right.has_value());
+    //check that the values are not nullptr
+    if(left.has_value()) assert(left.value() != nullptr);
+    if(right.has_value()) assert(right.value() != nullptr);
+    //this should not be the casting operator
+    assert(op != "(cast)");
     
-    TypeConversionKey key = {from, to};
-    if(!conversion_map.count(key)) {
-        std::cout << "Invalid type conversion : (" << to->to_string() << ") " << from->to_string() << "\n";
-        return nullptr;
+    std::vector<OperatorImplementation*> viable;
+    for(auto i = conversion_map.begin(); i != conversion_map.end(); i++){
+        OperatorSignature *nkey = i->first;
+        //does the operator match
+        if(key->op != nkey->op) continue;
+        //is the left argument convertible
+        if(left.has_value() != nkey->left.has_value()) continue;
+        if(left.has_value() && !is_declarable(left.value(), nkey->left.value())) continue;
+        //is the right argument convertible
+        if(key->right.has_value() != nkey->right.has_value()) continue;
+        if(key->right.has_value() && !is_declarable(key->right.value(), nkey->right.value())) continue;
+        viable.push_back(i->second);
     }
-    return &(conversion_map[key]);
+    if(viable.size() != 1) return nullptr;
+    return viable[0];
+}
+
+OperatorImplementation* find_operator_implementation(std::optional<ExprNode*> left, std::string op, std::optional<ExprNode*> right) {
+    if(left.has_value()) assert(left.value() != nullptr);
+    if(right.has_value()) assert(right.value() != nullptr);
+    std::optional<Expression*> _left = left.has_value() ? new Expression(left.value()) : std::nullopt;
+    std::optional<Expression*> _right = right.has_value() ? new Expression(right.value()) : std::nullopt;
+    return find_operator_implementation(_left, op, _right);
+}
+
+Type* find_resulting_type(std::optional<Expression*> left, std::string op, std::optional<Expression*> right) {
+    OperatorImplementation *oe = find_operator_implementation(left, op, right);
+    if(oe == nullptr) return nullptr;
+    return oe->res_type;
+}
+
+Type* find_resulting_type(std::optional<ExprNode*> left, std::string op, std::optional<ExprNode*> right) {
+    OperatorImplementation *oe = find_operator_implementation(left, op, right);
+    if(oe == nullptr) return nullptr;
+    return oe->res_type;
 }
 
 Type* find_variable_type(Identifier *id) {
@@ -1517,7 +1617,12 @@ bool is_type_declared(Type *t) {
 }
 
 bool is_function_declared(FunctionSignature *fs) {
-    return get_function(fs) != nullptr;
+    for(int i = 0; i < declared_functions.size(); i++){
+        if(*fs == *(declared_functions[i]->resolve_function_signature())) {
+            return true;
+        }
+    }
+    return false;
 }
 
 bool is_variable_declared(Identifier *id) {
@@ -1529,53 +1634,53 @@ bool is_variable_declared(Identifier *id) {
     return false;
 }
 
-//finds all viable functions. 
+Function* get_function(FunctionSignature *fs) {
+    for(int i = 0; i < declared_functions.size(); i++){
+        if(*fs == *(declared_functions[i]->resolve_function_signature())) {
+            return declared_functions[i];
+        }
+    }
+    return nullptr;
+}
+
+//finds all viable functions with parameter conversions
 // - If there is exactly one, returns that one
 // - If there are multiple or zero, returns nullptr
-Function* get_function(FunctionSignature *fs) {
+Function* get_called_function(std::optional<Type*> enclosing_type, Identifier *id, vector<Expression*> args) {
+    if(enclosing_type.has_value()) assert(enclosing_type.value() != nullptr);
+    assert(id != nullptr);
+
     std::vector<Function*> viable;
     for(int i = 0; i < declared_functions.size(); i++){
         FunctionSignature *nfs = declared_functions[i]->resolve_function_signature();
 
         // - do the identifiers match?
-        if(*(fs->id) != *(nfs->id)) {
+        if(*id != *(nfs->id)) {
             continue;
         }
         // - do the argument counts match?
-        if(fs->input_types.size() != nfs->input_types.size()) {
+        if(args.size() != nfs->input_types.size()) {
             continue;
         }
         // - does enclosing_type match? (must match exactly)
-        if(fs->enclosing_type.has_value() != nfs->enclosing_type.has_value()) {
+        if(enclosing_type.has_value() != nfs->enclosing_type.has_value()) {
             continue;
         }
-        if(fs->enclosing_type.has_value() && *(fs->enclosing_type.value()) != *(nfs->enclosing_type.value())) {
+        if(enclosing_type.has_value() && *(enclosing_type.value()) != *(nfs->enclosing_type.value())) {
             continue;
         }
 
-        // - can all the arguments of fs be somehow converted into nfs?
+        // - can all the arguments somehow be converted into nfs?
         bool is_viable = true;
         for(int j = 0; j < fs->input_types.size(); j++) {
-            Type *t = fs->input_types[j], *nt = nfs->input_types[j];
-            //they are exactly equal
-            if(*t == *nt) { 
-                continue;
+            Type *nt = nfs->input_types[j];
+            if(!is_declarable(nt, args[j])) {
+                is_viable = false;
             }
-            //nt is a reference of t
-            if(auto x = dynamic_cast<ReferenceType*>(nt)) {
-                if(*(x->type) != *nt) {
-                    continue;
-                }
-            }
-            //there exists a conversion from t to nt
-            if(find_type_conversion(t, nt) != nullptr) {
-                continue;
-            }
-            is_viable = false;
-            break;
         }
         if(!is_viable) continue;
 
+        //all checks passed
         viable.push_back(declared_functions[i]);
     }
 
@@ -1588,13 +1693,6 @@ Function* get_function(FunctionSignature *fs) {
         return nullptr;
     }
     return viable[0];
-
-    for(int i = 0; i < declared_functions.size(); i++){
-        if(*fs == *(declared_functions[i]->resolve_function_signature())) {
-            return declared_functions[i];
-        }
-    }
-    return nullptr;
 }
 
 std::string get_function_label(FunctionSignature *fs) {
@@ -1642,6 +1740,9 @@ bool add_function(Function *f){
     assert(f != nullptr);
     FunctionSignature *fs = f->resolve_function_signature();
     if(is_function_declared(fs)) return false;
+    if(auto x = dynamic_cast<OperatorOverload*>(f)) {   //if it's an overload, register it
+        if(!add_operator_implementation(x)) return false;
+    }
     declared_functions.push_back(f);
     function_label_map.insert({fs, create_new_label()});
     std::cout << "ADD FUNCTION : "<< fs->to_string() << std::endl;
@@ -1665,6 +1766,22 @@ Variable* add_variable(Type *t, Identifier *id) {
     declared_variables.push_back(v);
     declaration_stack.top().push_back(v);
     return v;
+}
+
+void remove_function(Function *f) {
+    assert(f != nullptr);
+    if(auto x = dynamic_cast<OperatorOverload*>(f)) {
+        remove_operator_implementation(x);
+    }
+    int ind = -1;
+    for(int i = 0; i < declared_functions.size(); i++){
+        if(*f == *(declared_functions[i])) {
+            ind = i;
+            break;
+        }
+    }
+    assert(ind != -1);
+    declared_functions.erase(declared_functions.begin() + ind);
 }
 
 void remove_variable(Identifier *id) {
@@ -1825,6 +1942,7 @@ void emit_initialize_struct(Type *t) {
     //now, %rax should hold location of heap ptr, %rbx holds location of actual struct start
 }
 
+//should be logically similar to is_declarable(), except this one emits a variable declaration 
 //every variable declaration must use this except for registering parameters at the beginning of function calls
 //evaluates the expression and initializes the variable onto the top of the stack
 //if for some reason is unable to initialize the variable, returns nullptr
@@ -1851,15 +1969,21 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr) {
         return nullptr;
     }
 
+    Type *et = expr->resolve_type();
+    bool is_lvalue = expr->is_lvalue();
     Variable *v = add_variable(vt, id);
     assert(v != nullptr);
 
-    //if type is a reference, and the right side is an l-value, we bind the l-value to the reference
-    //otherwise, just treat it like a normal declaration
-    if(dynamic_cast<ReferenceType*>(vt) && expr->is_lvalue()) {
-        // - does dereferenced type match expression type?
-        if(*(dynamic_cast<ReferenceType*>(vt)->type) != *(expr->resolve_type())) {
-            std::cout << "Cannot bind to non-matching reference type\n";
+    if(dynamic_cast<ReferenceType*>(vt) != nullptr) {
+        vt = dynamic_cast<ReferenceType*>(vt)->type;
+        // - must use l-value when binding references
+        if(!is_lvalue) {
+            std::cout << "Cannot assign r-value to reference\n";
+            return nullptr;
+        }
+        // - must bind to reference something of matching type (no conversions) 
+        if(*vt != *et) {
+            std::cout << "Cannot assign non-matching type to reference\n";
             return nullptr;
         }
 
@@ -1927,6 +2051,35 @@ void emit_dereference(Type *t) {
     int sz = t->calc_size();
     fout << indent() << "mov %rax, %rcx\n";
     emit_mem_retrieve(sz); 
+}
+
+bool add_operator_implementation(OperatorSignature *os, OperatorImplementation *oi){
+    if(conversion_map.count(os)) {
+        return false;
+    }
+    conversion_map[os] = oi;
+    return true;
+}
+
+bool add_operator_implementation(OperatorOverload *f){
+    assert(f != nullptr);
+    OperatorSignature *os = f->resolve_operator_signature();
+    if(os == nullptr) return false;
+    FunctionOperator *fo = new FunctionOperator(f);
+    return add_operator_implementation(os, fo);
+}
+
+void remove_operator_implementation(OperatorSignature *os, OperatorImplementation *oi) {
+    assert(conversion_map.count(os));
+    conversion_map.erase(os);
+}
+
+void remove_operator_implementation(OperatorOverload *f) {
+    assert(f != nullptr);
+    OperatorSignature *os = f->resolve_operator_signature();
+    assert(os != nullptr);
+    FunctionOperator *fo = new FunctionOperator(f);
+    remove_operator_implementation(os, fo);
 }
 
 // -- STRUCT FUNCTIONS --
@@ -2288,7 +2441,7 @@ Function* Function::convert(parser::function *f) {
     parser::function_definition *def = f->t0;
     parser::parameter_list *pl = def->t6;
     Type *type = Type::convert(def->t0);
-    Identifier *name = Identifier::convert(def->t2);
+    Identifier *name = new Identifier(def->t2->to_string());
     std::vector<Function::Parameter*> parameters;
     if(pl->t0 != nullptr) {
         parameters.push_back(Function::Parameter::convert(pl->t0->t0));
@@ -2298,7 +2451,15 @@ Function* Function::convert(parser::function *f) {
         }
     }
     CompoundStatement *body = CompoundStatement::convert(f->t2);
-    return new Function(type, name, parameters, body);
+    if(def->t2->is_a1) {
+        //operator overload
+        std::string op = def->t2->t1->t0->t1->to_string();
+        return new OperatorOverload(op, std::nullopt, type, name, parameters, body);
+    }
+    else {
+        //regular function
+        return new Function(std::nullopt, type, name, parameters, body);
+    }
 }
 
 FunctionCall* FunctionCall::convert(parser::function_call *f) {
@@ -2330,7 +2491,7 @@ StructDefinition* StructDefinition::convert(parser::struct_definition *s) {
         }
         else if(s->t6[i]->t0->is_c1) {  //function
             Function *f = Function::convert(s->t6[i]->t0->t1->t0);
-            f = new Function(type, f->type, f->id, f->parameters, f->body);
+            f->enclosing_type = type;
             functions.push_back(f);
         }
         else assert(false);
@@ -2385,6 +2546,10 @@ std::string ExprPrimary::to_string() {
     else if(std::holds_alternative<Expression*>(val)) {
         Expression *e = std::get<Expression*>(val);
         return "(" + e->to_string() + ")";
+    }
+    else if(std::holds_alternative<Type*>(val)) {
+        Type *t = std::get<Type*>(val);
+        return t->to_string();
     }
     else assert(false);
 }
@@ -2448,16 +2613,36 @@ bool ExprPrimary::is_lvalue() {
         Expression *e = std::get<Expression*>(val);
         return e->is_lvalue();
     }
+    else if(std::holds_alternative<Type*>(val)) {
+        return true;
+    }
     else assert(false);
 }
 
 bool ExprBinary::is_lvalue() {
+    Type *lt = left->resolve_type(), *rt = right->resolve_type();
+    if(lt == nullptr || rt == nullptr) return false;
+    //only overloads that return a reference can return a l-value
+    if(std::holds_alternative<std::string>(op)) {
+        std::string str_op = std::get<std::string>(op);
+        Type *otype = find_resulting_type(left, str_op, right);
+        if(otype != nullptr) {
+            if(dynamic_cast<ReferenceType*>(otype) != nullptr) {
+                return true;
+            }
+        }
+    }   
+    else assert(false);
     return false;
 }
 
 bool ExprPrefix::is_lvalue() {
+    Type *rt = right->resolve_type();
+    if(!rt->is_lvalue()) return false;
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
+
+
         if(str_op == "++" || str_op == "--" || str_op == "*") {
             return true;
         }
@@ -2544,35 +2729,46 @@ Type* ExprPrimary::resolve_type() {
         Expression *e = std::get<Expression*>(val);
         return e->resolve_type();
     }
+    else if(std::holds_alternative<Type*>(val)) {
+        Type *res = std::get<Type*>(val);
+
+        //if this is a reference, automatically dereference it
+        if(dynamic_cast<ReferenceType*>(res)) {
+            res = dynamic_cast<ReferenceType*>(res)->type;
+        }
+        return res;
+    }
     else assert(false);
 }
 
 Type* ExprBinary::resolve_type() {
     Type *lt = left->resolve_type(), *rt = right->resolve_type();
-    if(lt == nullptr || rt == nullptr) return nullptr;
+    if(lt == nullptr || rt == nullptr) return nullptr;    
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
+
+        //try to find overload / builtin
+        Type *otype = find_resulting_type(left, str_op, right);
+        if(otype != nullptr) {
+            return otype
+        }
+
+        //default behaviour
         if(str_op == "=") {
             if(!left->is_lvalue()) {
                 std::cout << "Cannot assign to r-value\n";
                 return nullptr;
             }
-            Type *res = find_resulting_type(rt, lt);
-            if(res == nullptr) {
+            OperatorImplementation *oe = find_typecast_implementation(rt, lt);
+            if(oe == nullptr) {
                 std::cout << "No direct conversion from " << rt->to_string() << " to " << lt->to_string() << "\n";
-                std::cout << to_string() << "\n";
                 return nullptr;
             }
             return res;
         }
-        else {            
-            Type *res = find_resulting_type(lt, str_op, rt);
-            if(res == nullptr) {
-                std::cout << "Binary operator " << lt->to_string() << " " << str_op << " " << rt->to_string() << " does not exist\n";
-                return nullptr;
-            }
-            return res;
-        }
+
+        std::cout << "Binary operator " << lt->to_string() << " " << str_op << " " << rt->to_string() << " does not exist\n";
+        return nullptr;
     }   
     else assert(false);
 }
@@ -2582,6 +2778,14 @@ Type* ExprPrefix::resolve_type() {
     if(rt == nullptr) return nullptr;
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
+
+        //try to find overload / builtin
+        Type *otype = find_resulting_type(std::nullopt, str_op, right);
+        if(otype != nullptr) {
+            return otype;
+        }
+
+        //default behaviour
         if(str_op == "*") {
             Type *res;
             if(dynamic_cast<PointerType*>(rt)) res = dynamic_cast<PointerType*>(rt)->type;
@@ -2592,14 +2796,9 @@ Type* ExprPrefix::resolve_type() {
             }
             return res;
         }
-        else {
-            Type *res = find_resulting_type(str_op, rt);
-            if(res == nullptr) {
-                std::cout << "Prefix operator " << str_op << " " << rt->to_string() << " does not exist\n";
-                return nullptr;
-            }
-            return res;
-        }
+
+        std::cout << "Prefix operator " << str_op << " " << rt->to_string() << " does not exist\n";
+        return nullptr;
     }
     else assert(false);
 }
@@ -2611,8 +2810,16 @@ Type* ExprPostfix::resolve_type() {
         Expression *expr = std::get<Expression*>(op);
         Type *et = expr->resolve_type();
         if(et == nullptr) return nullptr;
+
+        //try to find overload
+        Type *otype = find_resulting_type(left, "[]", expr->expr_node);
+        if(otype != nullptr) {
+            return otype;
+        }
+
+        //default behaviour
         if(*et != BaseType("int")) {
-            std::cout << "Indexing expression must resolve to int\n";
+            std::cout << "Builtin indexing expression must resolve to int\n";
             return nullptr;
         }
         if(dynamic_cast<PointerType*>(lt) == nullptr) {
@@ -2684,7 +2891,9 @@ Type* ExprPostfix::resolve_type() {
     }
     else if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
-        Type *res = find_resulting_type(lt, str_op);
+
+        //try to find overload / builtin
+        Type *res = find_resulting_type(left, str_op, std::nullopt);
         if(res == nullptr) {
             std::cout << "Postfix operator " << lt->to_string() << " " << str_op << " does not exist\n";
             return nullptr;
@@ -2699,14 +2908,16 @@ Type* Expression::resolve_type() {
 }
 
 Type* FunctionCall::resolve_type() {
-    FunctionSignature *fs = resolve_function_signature();
-    assert(fs != nullptr);
-    Function *f = get_function(fs);
+    Function *f = this->get_called_function();
     if(f == nullptr) {
-        std::cout << "Unknown function : " << fs->to_string() << "\n";
+        std::cout << "Cannot resolve function call : " << fs->to_string() << "\n";
         return nullptr;
     }
     return f->type;
+}
+
+Function* FunctionCall::get_called_function() {
+    return get_called_function(this->target_type, this->id, this->argument_list);
 }
 
 FunctionSignature* Function::resolve_function_signature() const {
@@ -2716,16 +2927,41 @@ FunctionSignature* Function::resolve_function_signature() const {
     return new FunctionSignature(id, input_types);
 }
 
-FunctionSignature* FunctionCall::resolve_function_signature() {
-    //for each argument, figure out its type
-    std::vector<Type*> types;
-    for(int i = 0; i < argument_list.size(); i++){
-        Type *t = argument_list[i]->resolve_type();
-        if(t == nullptr) return nullptr;
-        types.push_back(t);
+OperatorSignature* OperatorOverload::resolve_operator_signature() const {
+    if( op == "+" || op == "-" || op == "*" || op == "/" || op == "%" || 
+        op == "&" || op == "|" || op == "^" || op == "<<" || op == ">>" ||
+        op == "==" || op == "!=" || op == "<" || op == "<=" || op == ">" || 
+        op == ">=" || op == "=") {
+        //binary operator
+        if(this->parameters.size() != 2) return nullptr;
+        Type *left = this->parameters[0]->type, *right = this->parameters[1]->type;
+        return new OperatorSignature(left, op, right);
     }
-    if(target_type.has_value()) return new FunctionSignature(target_type.value(), id, types);
-    return new FunctionSignature(id, types);
+    else if(op == "++x" || op == "--x" || op == "*x" || op == "(cast)") {
+        //prefix operator
+        if(this->parameters.size() != 1) return nullptr;
+        Type *right = this->parameters[0]->type;
+        if(op == "++x") return new OperatorSignature("++", right);
+        else if(op == "--x") return new OperatorSignature("--", right);
+        else if(op == "*x") return new OperatorSignature("*x", right);
+        else if(op == "(cast)") return new OperatorSignature(right, this->type);
+        else assert(false);
+    }
+    else if(op == "x++" || op == "x--") {
+        //postfix operator
+        if(this->parameters.size() != 1) return nullptr;
+        Type *left = this->parameters[0]->type;
+        if(op == "x++") return new OperatorSignature(left, "++");
+        else if(op == "x--") return new OperatorSignature(left, "--");
+        else assert(false);
+    }
+    else if(op == "[]") {
+        //indexing
+        if(this->parameters.size() != 2) return nullptr;
+        Type *left = this->parameters[0]->type, *et = this->parameters[1]->type;
+        return new OperatorSignature(left, "[]", et)
+    }
+    else assert(false);
 }
 
 bool DeclarationStatement::is_always_returning() {
@@ -2765,7 +3001,7 @@ bool CompoundStatement::is_always_returning() {
     return false;
 }
 
-void TypeConversion::emit_asm() {
+void BuiltinOperator::emit_asm() {
     for(int i = 0; i < instructions.size(); i++){
         fout << indent() << instructions[i] << "\n";
     }
@@ -2837,6 +3073,9 @@ void ExprPrimary::elaborate() {
         Expression *expr = std::get<Expression*>(val);
         expr->elaborate();
     }
+    else if(std::holds_alternative<Type*>(val)) {
+        //do nothing
+    }
     else assert(false);
 }
 
@@ -2905,6 +3144,9 @@ void ExprPrimary::emit_asm() {
         Expression *e = std::get<Expression*>(val);
         e->emit_asm();
     }
+    else if(std::holds_alternative<Type*>(val)) {
+        assert(false);  //Type* is just for checking if an expression resolves to something. 
+    }
     else assert(false);
 }
 
@@ -2927,8 +3169,9 @@ void ExprBinary::emit_asm() {
                 fout << indent() << "mov %rax, %rbx\n";
                 emit_pop("%rax", "ExprBinary::emit_asm() : || save left");
 
-                TypeConversion *tc = find_type_conversion(lt, str_op, rt);
-                tc->emit_asm();
+                OperatorImplementation *oe = find_operator_implementation(lt, str_op, rt);
+                assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
+                dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
             }
 
             fout << label << ":\n";
@@ -2948,8 +3191,9 @@ void ExprBinary::emit_asm() {
                 fout << indent() << "mov %rax, %rbx\n";
                 emit_pop("%rax", "ExprBinary::emit_asm() : && save left");
 
-                TypeConversion *tc = find_type_conversion(lt, str_op, rt);
-                tc->emit_asm();
+                OperatorImplementation *oe = find_operator_implementation(lt, str_op, rt);
+                assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
+                dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
             }
 
             fout << label << ":\n";
@@ -2959,8 +3203,9 @@ void ExprBinary::emit_asm() {
             right->emit_asm();
 
             //cast right into left
-            TypeConversion *tc = find_type_conversion(rt, lt);
-            tc->emit_asm();
+            OperatorImplementation *oe = find_typecast_implementation(rt, lt);
+            assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
+            dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
 
             //save value
             emit_push("%rax", "ExprBinary::emit_asm() : = save left");
@@ -2981,8 +3226,9 @@ void ExprBinary::emit_asm() {
             fout << indent() << "mov %rax, %rbx\n";
             emit_pop("%rax", "ExprBinary::emit_asm() : save left");
             
-            TypeConversion *tc = find_type_conversion(lt, str_op, rt);
-            tc->emit_asm();
+            OperatorImplementation *oe = find_operator_implementation(lt, str_op, rt);
+            assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
+            dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
         }
     }
     else assert(false);
@@ -2994,6 +3240,7 @@ void ExprPrefix::emit_asm() {
 
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
+        assert(str_op != "(cast)"); //these should be handled seperately
         if(str_op == "*"){ 
             if(dynamic_cast<PointerType*>(rt)) rt = dynamic_cast<PointerType*>(rt)->type;
             else if(dynamic_cast<ReferenceType*>(rt)) rt = dynamic_cast<ReferenceType*>(rt)->type;
@@ -3004,8 +3251,9 @@ void ExprPrefix::emit_asm() {
             emit_mem_retrieve(sz); 
         }
         else {
-            TypeConversion *tc = find_type_conversion(str_op, rt);
-            tc->emit_asm();
+            OperatorImplementation *oe = find_operator_implementation(std::nullopt, str_op, rt);
+            assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
+            dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
         }
     }
     else assert(false);
@@ -3070,7 +3318,7 @@ void ExprPostfix::emit_asm() {
 
         //member function call
         fc = new FunctionCall(lt, fc->id, fc->argument_list);
-        Function *f = get_function(fc->resolve_function_signature());
+        Function *f = fc->get_called_function();
         assert(f != nullptr);
 
         //this is no longer l-value, so don't have to maintain %rcx
@@ -3116,8 +3364,9 @@ void ExprPostfix::emit_asm() {
     }
     else if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
-        TypeConversion *tc = find_type_conversion(lt, str_op);
-        tc->emit_asm();
+        OperatorImplementation *oe = find_operator_implementation(lt, str_op, std::nullopt);
+        assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
+        dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
     }
     else assert(false);
 }
@@ -3132,7 +3381,7 @@ void FunctionCall::emit_asm() {
     
     //find original function
     FunctionSignature *fs = resolve_function_signature();
-    Function *f = get_function(fs);
+    Function *f = this->get_called_function();
     assert(f != nullptr);
     bool is_constructor = is_function_constructor(f);
 
@@ -3598,9 +3847,14 @@ bool StructDefinition::is_well_formed() {
         }
     }
     // - are there any duplicate function definitions?
+    // - are all of the functions not overloads?
     //add all functions to global list to check later
     for(int i = 0; i < functions.size(); i++){
         Function *f = functions[i];
+        if(dynamic_cast<OperatorOverload*>(f) != nullptr) {
+            std::cout << "Cannot declare operator overload within struct\n";
+            return false;
+        }
         if(!add_function(f)) {
             std::cout << "Failed to add struct member function : " << f->resolve_function_signature()->to_string() << "\n";
             return false;
