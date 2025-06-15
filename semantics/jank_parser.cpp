@@ -1,4 +1,4 @@
-// Date Generated : 06-11-2025 20:19:10
+// Date Generated : 06-14-2025 18:00:50
 #include <vector>
 #include <string>
 #include <cassert>
@@ -457,19 +457,19 @@ namespace parser {
         std::string to_string();
     };
 
-    // function_identifier = identifier | overload_identifier ;
+    // function_identifier = overload_identifier | identifier ;
     struct function_identifier {
         struct a0 {
-            identifier *t0;
-            a0(identifier *_t0) {
+            overload_identifier *t0;
+            a0(overload_identifier *_t0) {
                 t0 = _t0;
             }
             static a0* parse();
             std::string to_string();
         };
         struct a1 {
-            overload_identifier *t0;
-            a1(overload_identifier *_t0) {
+            identifier *t0;
+            a1(identifier *_t0) {
                 t0 = _t0;
             }
             static a1* parse();
@@ -4780,7 +4780,7 @@ namespace parser {
 
     function_identifier::a0* function_identifier::a0::parse() {
         push_stack();
-        identifier *_t0 = identifier::parse();
+        overload_identifier *_t0 = overload_identifier::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new function_identifier::a0(_t0);
@@ -4794,7 +4794,7 @@ namespace parser {
 
     function_identifier::a1* function_identifier::a1::parse() {
         push_stack();
-        overload_identifier *_t0 = overload_identifier::parse();
+        identifier *_t0 = identifier::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new function_identifier::a1(_t0);

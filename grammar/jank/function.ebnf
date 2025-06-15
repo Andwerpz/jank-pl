@@ -9,7 +9,7 @@ overloadable_operator = "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | "
                         "(cast)" ;
 overload_identifier = "operator" , overloadable_operator ;
 
-function_identifier = identifier | overload_identifier ;
+function_identifier = overload_identifier | identifier ;
 
 (* void main(int foo) *)
 function_definition = type , rws , function_identifier , ows , "(" , ows , parameter_list , ows , ")" ;

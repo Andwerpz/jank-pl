@@ -73,7 +73,7 @@ L1:
     pop %rax
     movq %rax, (%rbx)
     # done initialize local variable : int i
-L16:
+L17:
     mov -8(%rbp), %rax
     lea -8(%rbp), %rcx
     push %rax
@@ -90,7 +90,7 @@ L16:
     setl %al
     movzx %al, %rax
     cmp $0, %rax
-    je L17
+    je L18
     mov $0, %rax
     push %rax
     mov 24(%rbp), %rax
@@ -116,20 +116,22 @@ L16:
     mov -8(%rbp), %rax
     lea -8(%rbp), %rcx
     incq (%rcx)
-    jmp L16
-L17:
+    jmp L17
+L18:
     # for loop end
     add $8, %rsp
     add $0, %rsp
     pop %rbp
     ret
 
-# segtree(segtree)
+# segtree(segtree&)
 L2:
     push %rbp
     mov %rsp, %rbp
     mov 16(%rbp), %rax
     lea 16(%rbp), %rcx
+    mov %rax, %rcx
+    movq (%rax), %rax
     lea 0(%rax), %rcx
     lea 0(%rax), %rax
     movq (%rax), %rax
@@ -186,7 +188,7 @@ L2:
     pop %rax
     movq %rax, (%rbx)
     # done initialize local variable : int i
-L18:
+L19:
     mov -8(%rbp), %rax
     lea -8(%rbp), %rcx
     push %rax
@@ -201,9 +203,11 @@ L18:
     setl %al
     movzx %al, %rax
     cmp $0, %rax
-    je L19
+    je L20
     mov 16(%rbp), %rax
     lea 16(%rbp), %rcx
+    mov %rax, %rcx
+    movq (%rax), %rax
     lea 8(%rax), %rcx
     lea 8(%rax), %rax
     movq (%rax), %rax
@@ -243,8 +247,8 @@ L18:
     mov -8(%rbp), %rax
     lea -8(%rbp), %rcx
     incq (%rcx)
-    jmp L18
-L19:
+    jmp L19
+L20:
     # for loop end
     add $8, %rsp
     add $0, %rsp
@@ -302,7 +306,7 @@ L3:
     pop %rax
     movq %rax, (%rbx)
     # for loop start
-L20:
+L21:
     mov 24(%rbp), %rax
     lea 24(%rbp), %rcx
     push %rax
@@ -314,7 +318,7 @@ L20:
     setl %al
     movzx %al, %rax
     cmp $0, %rax
-    je L21
+    je L22
     # if statement start
     mov 24(%rbp), %rax
     lea 24(%rbp), %rcx
@@ -333,9 +337,9 @@ L20:
     sete %al
     movzx %al, %rax
     cmp $0, %rax
-    jne L22
-    jmp L23
-L22:
+    jne L23
+    jmp L24
+L23:
     mov -8(%rbp), %rax
     lea -8(%rbp), %rcx
     push %rax
@@ -379,8 +383,8 @@ L22:
     pop %rax
     movq %rax, (%rbx)
     add $0, %rsp
-    jmp L23
-L23:
+    jmp L24
+L24:
     # if statement end
     # if statement start
     mov 16(%rbp), %rax
@@ -400,9 +404,9 @@ L23:
     sete %al
     movzx %al, %rax
     cmp $0, %rax
-    jne L24
-    jmp L25
-L24:
+    jne L25
+    jmp L26
+L25:
     mov 16(%rbp), %rax
     lea 16(%rbp), %rcx
     push %rax
@@ -446,8 +450,8 @@ L24:
     pop %rax
     movq %rax, (%rbx)
     add $0, %rsp
-    jmp L25
-L25:
+    jmp L26
+L26:
     # if statement end
     mov 24(%rbp), %rax
     lea 24(%rbp), %rcx
@@ -478,8 +482,8 @@ L25:
     pop %rax
     movq %rax, (%rbx)
     add $0, %rsp
-    jmp L20
-L21:
+    jmp L21
+L22:
     # for loop end
     add $0, %rsp
     sub $8, %rsp
@@ -559,7 +563,7 @@ L4:
     pop %rax
     movq %rax, (%rbx)
     # while loop start
-L26:
+L27:
     mov 24(%rbp), %rax
     lea 24(%rbp), %rcx
     push %rax
@@ -570,7 +574,7 @@ L26:
     setg %al
     movzx %al, %rax
     cmp $0, %rax
-    je L27
+    je L28
     mov 32(%rbp), %rax
     lea 32(%rbp), %rcx
     lea 8(%rax), %rcx
@@ -660,8 +664,8 @@ L26:
     pop %rax
     movq %rax, (%rbx)
     add $0, %rsp
-    jmp L26
-L27:
+    jmp L27
+L28:
     # while loop end
     add $0, %rsp
     pop %rbp
@@ -789,7 +793,7 @@ L6:
     pop %rax
     movq %rax, (%rbx)
     # done initialize local variable : int i
-L28:
+L29:
     mov -8(%rbp), %rax
     lea -8(%rbp), %rcx
     push %rax
@@ -801,7 +805,7 @@ L28:
     setl %al
     movzx %al, %rax
     cmp $0, %rax
-    je L29
+    je L30
     mov $0, %rax
     push %rax
     mov 24(%rbp), %rax
@@ -837,20 +841,22 @@ L28:
     mov %rcx, %rbx
     pop %rax
     movq %rax, (%rbx)
-    jmp L28
-L29:
+    jmp L29
+L30:
     # for loop end
     add $8, %rsp
     add $0, %rsp
     pop %rbp
     ret
 
-# vector(vector)
+# vector(vector&)
 L7:
     push %rbp
     mov %rsp, %rbp
     mov 16(%rbp), %rax
     lea 16(%rbp), %rcx
+    mov %rax, %rcx
+    movq (%rax), %rax
     lea 0(%rax), %rcx
     lea 0(%rax), %rax
     movq (%rax), %rax
@@ -865,6 +871,8 @@ L7:
     movq %rax, (%rbx)
     mov 16(%rbp), %rax
     lea 16(%rbp), %rcx
+    mov %rax, %rcx
+    movq (%rax), %rax
     lea 8(%rax), %rcx
     lea 8(%rax), %rax
     movq (%rax), %rax
@@ -921,7 +929,7 @@ L7:
     pop %rax
     movq %rax, (%rbx)
     # done initialize local variable : int i
-L30:
+L31:
     mov -8(%rbp), %rax
     lea -8(%rbp), %rcx
     push %rax
@@ -936,9 +944,11 @@ L30:
     setl %al
     movzx %al, %rax
     cmp $0, %rax
-    je L31
+    je L32
     mov 16(%rbp), %rax
     lea 16(%rbp), %rcx
+    mov %rax, %rcx
+    movq (%rax), %rax
     lea 16(%rax), %rcx
     lea 16(%rax), %rax
     movq (%rax), %rax
@@ -978,8 +988,8 @@ L30:
     mov -8(%rbp), %rax
     lea -8(%rbp), %rcx
     incq (%rcx)
-    jmp L30
-L31:
+    jmp L31
+L32:
     # for loop end
     add $8, %rsp
     add $0, %rsp
@@ -1004,14 +1014,14 @@ L8:
     sete %al
     movzx %al, %rax
     cmp $0, %rax
-    jne L32
-    jmp L33
-L32:
+    jne L33
+    jmp L34
+L33:
     add $0, %rsp
     pop %rbp
     ret
-    jmp L33
-L33:
+    jmp L34
+L34:
     # if statement end
     mov 16(%rbp), %rax
     lea 16(%rbp), %rcx
@@ -1058,9 +1068,9 @@ L9:
     sete %al
     movzx %al, %rax
     cmp $0, %rax
-    jne L34
-    jmp L35
-L34:
+    jne L35
+    jmp L36
+L35:
     mov 24(%rbp), %rax
     lea 24(%rbp), %rcx
     # calling function : grow
@@ -1068,8 +1078,8 @@ L34:
     call L10
     add $0, %rsp
     add $8, %rsp
-    jmp L35
-L35:
+    jmp L36
+L36:
     # if statement end
     mov 16(%rbp), %rax
     lea 16(%rbp), %rcx
@@ -1189,7 +1199,7 @@ L10:
     pop %rax
     movq %rax, (%rbx)
     # done initialize local variable : int i
-L36:
+L37:
     mov -16(%rbp), %rax
     lea -16(%rbp), %rcx
     push %rax
@@ -1204,7 +1214,7 @@ L36:
     setl %al
     movzx %al, %rax
     cmp $0, %rax
-    je L37
+    je L38
     mov 16(%rbp), %rax
     lea 16(%rbp), %rcx
     lea 16(%rax), %rcx
@@ -1254,8 +1264,8 @@ L36:
     mov %rcx, %rbx
     pop %rax
     movq %rax, (%rbx)
-    jmp L36
-L37:
+    jmp L37
+L38:
     # for loop end
     add $8, %rsp
     mov -8(%rbp), %rax
@@ -1332,12 +1342,109 @@ L37:
     pop %rbp
     ret
 
-# vector::at(int)
+# assert(int)
 L11:
+    push %rbp
+    mov %rsp, %rbp
+    # if statement start
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    test %rax, %rax
+    sete %al
+    movzx %al, %rax
+    cmp $0, %rax
+    jne L39
+    jmp L40
+L39:
+    # calling function : puts_endl
+    sub $8, %rsp
+    lea (%rsp), %rax
+    movq $0, (%rax)
+    mov $14, %rax
+    push %rax
+    call malloc
+    add $8, %rsp
+    push %rax
+    mov %rax, %rbx
+    movb $97, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $115, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $115, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $101, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $114, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $116, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $32, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $102, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $97, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $105, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $108, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $101, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $100, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $0, %al
+    movb %al, (%rbx)
+    pop %rax
+    push %rax
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax
+    movq %rax, (%rbx)
+    call puts_endl
+    add $8, %rsp
+    # calling function : sys_exit
+    sub $8, %rsp
+    lea (%rsp), %rax
+    movq $0, (%rax)
+    mov $1, %rax
+    push %rax
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax
+    movq %rax, (%rbx)
+    call sys_exit
+    add $8, %rsp
+    add $0, %rsp
+    jmp L40
+L40:
+    # if statement end
+    add $0, %rsp
+    pop %rbp
+    ret
+
+# operator[](vector&, int)
+L12:
     push %rbp
     mov %rsp, %rbp
     mov 24(%rbp), %rax
     lea 24(%rbp), %rcx
+    mov %rax, %rcx
+    movq (%rax), %rax
     lea 16(%rax), %rcx
     lea 16(%rax), %rax
     movq (%rax), %rax
@@ -1363,7 +1470,7 @@ L11:
     add $0, %rsp
 
 # gen_arr(int)
-L12:
+L13:
     push %rbp
     mov %rsp, %rbp
     # initialize local variable : int* a
@@ -1457,7 +1564,7 @@ L12:
     pop %rax
     movq %rax, (%rbx)
     # done initialize local variable : int i
-L38:
+L41:
     mov -48(%rbp), %rax
     lea -48(%rbp), %rcx
     push %rax
@@ -1469,7 +1576,7 @@ L38:
     setl %al
     movzx %al, %rax
     cmp $0, %rax
-    je L39
+    je L42
     mov -24(%rbp), %rax
     lea -24(%rbp), %rcx
     push %rax
@@ -1532,8 +1639,8 @@ L38:
     mov %rcx, %rbx
     pop %rax
     movq %rax, (%rbx)
-    jmp L38
-L39:
+    jmp L41
+L42:
     # for loop end
     add $8, %rsp
     sub $8, %rsp
@@ -1555,7 +1662,7 @@ L39:
     add $40, %rsp
 
 # vector_test()
-L13:
+L14:
     push %rbp
     mov %rsp, %rbp
     # initialize local variable : vector a
@@ -1620,7 +1727,7 @@ L13:
     pop %rax
     movq %rax, (%rbx)
     # done initialize local variable : int i
-L40:
+L43:
     mov -16(%rbp), %rax
     lea -16(%rbp), %rcx
     push %rax
@@ -1631,7 +1738,7 @@ L40:
     setl %al
     movzx %al, %rax
     cmp $0, %rax
-    je L41
+    je L44
     mov -8(%rbp), %rax
     lea -8(%rbp), %rcx
     # calling function : push_back
@@ -1664,29 +1771,91 @@ L40:
     mov %rcx, %rbx
     pop %rax
     movq %rax, (%rbx)
-    jmp L40
-L41:
+    jmp L43
+L44:
     # for loop end
     add $8, %rsp
+    # calling function : puts_endl
     sub $8, %rsp
     lea (%rsp), %rax
     movq $0, (%rax)
-    mov $1, %rax
+    mov $19, %rax
+    push %rax
+    call malloc
+    add $8, %rsp
+    push %rax
+    mov %rax, %rbx
+    movb $118, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $101, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $99, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $116, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $111, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $114, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $32, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $116, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $101, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $115, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $116, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $32, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $112, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $97, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $115, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $115, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $101, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $100, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $0, %al
+    movb %al, (%rbx)
+    pop %rax
     push %rax
     mov -16(%rbp), %rax
     lea -16(%rbp), %rcx
     mov %rcx, %rbx
     pop %rax
     movq %rax, (%rbx)
-    mov -16(%rbp), %rax
+    call puts_endl
     add $8, %rsp
     add $8, %rsp
     pop %rbp
     ret
-    add $8, %rsp
 
 # segt_test()
-L14:
+L15:
     push %rbp
     mov %rsp, %rbp
     # initialize local variable : int n
@@ -1833,7 +2002,7 @@ L14:
     mov %rcx, %rbx
     pop %rax
     movq %rax, (%rbx)
-    call L12
+    call L13
     add $8, %rsp
     push %rax
     mov -32(%rbp), %rax
@@ -1855,7 +2024,7 @@ L14:
     pop %rax
     movq %rax, (%rbx)
     # done initialize local variable : int i
-L42:
+L45:
     mov -40(%rbp), %rax
     lea -40(%rbp), %rcx
     push %rax
@@ -1867,7 +2036,7 @@ L42:
     setl %al
     movzx %al, %rax
     cmp $0, %rax
-    je L43
+    je L46
     mov -32(%rbp), %rax
     lea -32(%rbp), %rcx
     push %rax
@@ -1883,9 +2052,10 @@ L42:
     pop %rax
     movq (%rax, %rbx, 8), %rax
     push %rax
+    # calling function : operator[]
     mov -16(%rbp), %rax
     lea -16(%rbp), %rcx
-    # calling function : at
+    mov %rcx, %rax
     push %rax
     sub $8, %rsp
     lea (%rsp), %rax
@@ -1898,9 +2068,8 @@ L42:
     mov %rcx, %rbx
     pop %rax
     movq %rax, (%rbx)
-    call L11
-    add $8, %rsp
-    add $8, %rsp
+    call L12
+    add $16, %rsp
     mov %rax, %rcx
     movq (%rax), %rax
     mov %rcx, %rbx
@@ -1961,8 +2130,8 @@ L42:
     mov %rcx, %rbx
     pop %rax
     movq %rax, (%rbx)
-    jmp L42
-L43:
+    jmp L45
+L46:
     # for loop end
     add $8, %rsp
     add $8, %rsp
@@ -1979,7 +2148,7 @@ L43:
     pop %rax
     movq %rax, (%rbx)
     # done initialize local variable : int i
-L44:
+L47:
     mov -32(%rbp), %rax
     lea -32(%rbp), %rcx
     push %rax
@@ -1991,7 +2160,7 @@ L44:
     setl %al
     movzx %al, %rax
     cmp $0, %rax
-    je L45
+    je L48
     # for loop start
     # initialize local variable : int j
     sub $8, %rsp
@@ -2011,7 +2180,7 @@ L44:
     pop %rax
     movq %rax, (%rbx)
     # done initialize local variable : int j
-L46:
+L49:
     mov -40(%rbp), %rax
     lea -40(%rbp), %rcx
     push %rax
@@ -2023,7 +2192,7 @@ L46:
     setle %al
     movzx %al, %rax
     cmp $0, %rax
-    je L47
+    je L50
     # initialize local variable : int aans
     sub $8, %rsp
     lea (%rsp), %rax
@@ -2090,7 +2259,7 @@ L46:
     pop %rax
     movq %rax, (%rbx)
     # done initialize local variable : int k
-L48:
+L51:
     mov -64(%rbp), %rax
     lea -64(%rbp), %rcx
     push %rax
@@ -2102,13 +2271,14 @@ L48:
     setl %al
     movzx %al, %rax
     cmp $0, %rax
-    je L49
+    je L52
     mov -48(%rbp), %rax
     lea -48(%rbp), %rcx
     push %rax
+    # calling function : operator[]
     mov -16(%rbp), %rax
     lea -16(%rbp), %rcx
-    # calling function : at
+    mov %rcx, %rax
     push %rax
     sub $8, %rsp
     lea (%rsp), %rax
@@ -2121,9 +2291,8 @@ L48:
     mov %rcx, %rbx
     pop %rax
     movq %rax, (%rbx)
-    call L11
-    add $8, %rsp
-    add $8, %rsp
+    call L12
+    add $16, %rsp
     mov %rax, %rcx
     movq (%rax), %rax
     mov %rax, %rbx
@@ -2149,11 +2318,14 @@ L48:
     mov %rcx, %rbx
     pop %rax
     movq %rax, (%rbx)
-    jmp L48
-L49:
+    jmp L51
+L52:
     # for loop end
     add $8, %rsp
-    # if statement start
+    # calling function : assert
+    sub $8, %rsp
+    lea (%rsp), %rax
+    movq $0, (%rax)
     mov -48(%rbp), %rax
     lea -48(%rbp), %rcx
     push %rax
@@ -2162,83 +2334,16 @@ L49:
     mov %rax, %rbx
     pop %rax
     cmp %rbx, %rax
-    setne %al
+    sete %al
     movzx %al, %rax
-    cmp $0, %rax
-    jne L50
-    jmp L51
-L50:
-    # calling function : puti
-    sub $8, %rsp
-    lea (%rsp), %rax
-    movq $0, (%rax)
-    mov -48(%rbp), %rax
-    lea -48(%rbp), %rcx
     push %rax
     mov -64(%rbp), %rax
     lea -64(%rbp), %rcx
     mov %rcx, %rbx
     pop %rax
     movq %rax, (%rbx)
-    call puti
+    call L11
     add $8, %rsp
-    # calling function : puts
-    sub $8, %rsp
-    lea (%rsp), %rax
-    movq $0, (%rax)
-    mov $2, %rax
-    push %rax
-    call malloc
-    add $8, %rsp
-    push %rax
-    mov %rax, %rbx
-    movb $32, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $0, %al
-    movb %al, (%rbx)
-    pop %rax
-    push %rax
-    mov -64(%rbp), %rax
-    lea -64(%rbp), %rcx
-    mov %rcx, %rbx
-    pop %rax
-    movq %rax, (%rbx)
-    call puts
-    add $8, %rsp
-    # calling function : puti_endl
-    sub $8, %rsp
-    lea (%rsp), %rax
-    movq $0, (%rax)
-    mov -56(%rbp), %rax
-    lea -56(%rbp), %rcx
-    push %rax
-    mov -64(%rbp), %rax
-    lea -64(%rbp), %rcx
-    mov %rcx, %rbx
-    pop %rax
-    movq %rax, (%rbx)
-    call puti_endl
-    add $8, %rsp
-    sub $8, %rsp
-    lea (%rsp), %rax
-    movq $0, (%rax)
-    mov $0, %rax
-    push %rax
-    mov -64(%rbp), %rax
-    lea -64(%rbp), %rcx
-    mov %rcx, %rbx
-    pop %rax
-    movq %rax, (%rbx)
-    mov -64(%rbp), %rax
-    add $8, %rsp
-    add $56, %rsp
-    pop %rbp
-    ret
-    add $0, %rsp
-    jmp L51
-L51:
-    # if statement end
     add $16, %rsp
     mov -40(%rbp), %rax
     lea -40(%rbp), %rcx
@@ -2253,8 +2358,8 @@ L51:
     mov %rcx, %rbx
     pop %rax
     movq %rax, (%rbx)
-    jmp L46
-L47:
+    jmp L49
+L50:
     # for loop end
     add $8, %rsp
     add $0, %rsp
@@ -2271,25 +2376,10 @@ L47:
     mov %rcx, %rbx
     pop %rax
     movq %rax, (%rbx)
-    jmp L44
-L45:
+    jmp L47
+L48:
     # for loop end
     add $8, %rsp
-    sub $8, %rsp
-    lea (%rsp), %rax
-    movq $0, (%rax)
-    mov $1, %rax
-    push %rax
-    mov -32(%rbp), %rax
-    lea -32(%rbp), %rcx
-    mov %rcx, %rbx
-    pop %rax
-    movq %rax, (%rbx)
-    mov -32(%rbp), %rax
-    add $8, %rsp
-    add $24, %rsp
-    pop %rbp
-    ret
     # calling function : puts_endl
     sub $8, %rsp
     lea (%rsp), %rax
@@ -2354,191 +2444,37 @@ L45:
     call puts_endl
     add $8, %rsp
     add $24, %rsp
+    pop %rbp
+    ret
 
 # main()
 .global _start
 _start:
     push %rbp
     mov %rsp, %rbp
-    # if statement start
     # calling function : vector_test
-    call L13
-    add $0, %rsp
-    cmp $0, %rax
-    jne L52
-    jmp L53
-L52:
-    # calling function : puts_endl
-    sub $8, %rsp
-    lea (%rsp), %rax
-    movq $0, (%rax)
-    mov $17, %rax
-    push %rax
-    call malloc
-    add $8, %rsp
-    push %rax
-    mov %rax, %rbx
-    movb $118, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $101, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $99, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $116, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $111, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $114, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $32, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $116, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $101, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $115, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $116, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $32, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $112, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $97, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $115, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $115, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $0, %al
-    movb %al, (%rbx)
-    pop %rax
-    push %rax
-    mov -8(%rbp), %rax
-    lea -8(%rbp), %rcx
-    mov %rcx, %rbx
-    pop %rax
-    movq %rax, (%rbx)
-    call puts_endl
-    add $8, %rsp
-    jmp L54
-L53:
-    # calling function : puts_endl
-    sub $8, %rsp
-    lea (%rsp), %rax
-    movq $0, (%rax)
-    mov $17, %rax
-    push %rax
-    call malloc
-    add $8, %rsp
-    push %rax
-    mov %rax, %rbx
-    movb $118, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $101, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $99, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $116, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $111, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $114, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $32, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $116, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $101, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $115, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $116, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $32, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $102, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $97, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $105, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $108, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $0, %al
-    movb %al, (%rbx)
-    pop %rax
-    push %rax
-    mov -8(%rbp), %rax
-    lea -8(%rbp), %rcx
-    mov %rcx, %rbx
-    pop %rax
-    movq %rax, (%rbx)
-    call puts_endl
-    add $8, %rsp
-    jmp L54
-L54:
-    # if statement end
-    # if statement start
-    # calling function : segt_test
     call L14
     add $0, %rsp
-    cmp $0, %rax
-    jne L55
-    jmp L56
-L55:
+    # calling function : segt_test
+    call L15
+    add $0, %rsp
     # calling function : puts_endl
     sub $8, %rsp
     lea (%rsp), %rax
     movq $0, (%rax)
-    mov $15, %rax
+    mov $17, %rax
     push %rax
     call malloc
     add $8, %rsp
     push %rax
     mov %rax, %rbx
-    movb $115, %al
+    movb $97, %al
     movb %al, (%rbx)
     inc %rbx
-    movb $101, %al
+    movb $108, %al
     movb %al, (%rbx)
     inc %rbx
-    movb $103, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $116, %al
+    movb $108, %al
     movb %al, (%rbx)
     inc %rbx
     movb $32, %al
@@ -2554,6 +2490,9 @@ L55:
     movb %al, (%rbx)
     inc %rbx
     movb $116, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $115, %al
     movb %al, (%rbx)
     inc %rbx
     movb $32, %al
@@ -2571,69 +2510,10 @@ L55:
     movb $115, %al
     movb %al, (%rbx)
     inc %rbx
-    movb $0, %al
-    movb %al, (%rbx)
-    pop %rax
-    push %rax
-    mov -8(%rbp), %rax
-    lea -8(%rbp), %rcx
-    mov %rcx, %rbx
-    pop %rax
-    movq %rax, (%rbx)
-    call puts_endl
-    add $8, %rsp
-    jmp L57
-L56:
-    # calling function : puts_endl
-    sub $8, %rsp
-    lea (%rsp), %rax
-    movq $0, (%rax)
-    mov $15, %rax
-    push %rax
-    call malloc
-    add $8, %rsp
-    push %rax
-    mov %rax, %rbx
-    movb $115, %al
-    movb %al, (%rbx)
-    inc %rbx
     movb $101, %al
     movb %al, (%rbx)
     inc %rbx
-    movb $103, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $116, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $32, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $116, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $101, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $115, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $116, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $32, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $102, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $97, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $105, %al
-    movb %al, (%rbx)
-    inc %rbx
-    movb $108, %al
+    movb $100, %al
     movb %al, (%rbx)
     inc %rbx
     movb $0, %al
@@ -2647,9 +2527,6 @@ L56:
     movq %rax, (%rbx)
     call puts_endl
     add $8, %rsp
-    jmp L57
-L57:
-    # if statement end
     sub $8, %rsp
     lea (%rsp), %rax
     movq $0, (%rax)
