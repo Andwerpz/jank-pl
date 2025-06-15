@@ -1,29 +1,34 @@
 # Compiler and flags
-CXX = g++
-CXXFLAGS = -Wall -O2 -std=c++17
+CXX := g++
+CXXFLAGS := -std=c++17 -Wall -Wextra -Iinclude
 
-# Output binary
-TARGET = jjc.exe
+# Entry point
+ENTRY := ./jjc.cpp
 
-# Automatically gather all .cpp files in the current directory, excluding jjc.cpp
-SRCS := $(filter-out jjc.cpp, $(wildcard *.cpp))
+# Output binary name
+TARGET := ./jjc.exe
 
-# Convert to object files
-OBJS := $(SRCS:.cpp=.o)
+# Find all .cpp files (recursively), exclude jjc.cpp
+SRCS := $(filter-out $(ENTRY), $(shell find . -name '*.cpp'))
+OBJS := $(SRCS:%.cpp=build/%.o)
+
+# Ensure output directories exist
+DIRS := $(sort $(dir $(OBJS)))
 
 # Default target
 all: $(TARGET)
 
-# Link object files + jjc.cpp directly (without compiling main.o)
-$(TARGET): $(OBJS) jjc.cpp
-	$(CXX) $(CXXFLAGS) -o $@ $^  # $^ = OBJS + jjc.cpp
+# Build the final binary
+$(TARGET): $(OBJS) build/$(subst .cpp,.o,$(ENTRY))
+	$(CXX) $(CXXFLAGS) $^ -o $@
 
-# Compile each non-main .cpp file into a .o file
-%.o: %.cpp
+# Compile .cpp to .o into build/ directory
+build/%.o: %.cpp
+	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
-# Clean build artifacts
+# Clean up build artifacts
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -rf build $(TARGET)
 
 .PHONY: all clean

@@ -1,6 +1,6 @@
 
 #pragma once
-#include "../parser/parser.cpp"
+#include "../parser/parser.h"
 
 struct Type;
 

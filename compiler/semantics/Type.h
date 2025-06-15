@@ -1,10 +1,10 @@
 #pragma once
-#include "../parser/parser.cpp"
+#include "../parser/parser.h"
 
 struct Type {
     static Type* convert(parser::type *t);
+    
     virtual int calc_size() = 0;
-
     virtual bool equals(const Type *other) const = 0;
     bool operator==(const Type& other) const {return equals(&other);}
     bool operator!=(const Type& other) const {return !equals(&other);}

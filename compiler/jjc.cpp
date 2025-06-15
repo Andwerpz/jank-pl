@@ -12,7 +12,9 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
-#include "parser/parser.cpp"
+#include "parser/parser.h"
+#include "semantics/Identifier.h"
+#include "semantics/Type.h"
 
 /*
 Takes in a .jank file, generates AST using jank_parser, then makes sure the program is well formed 
@@ -324,10 +326,6 @@ struct IntegerLiteral;
 struct SizeofLiteral;
 struct CharLiteral;
 struct StringLiteral;
-struct Identifier;
-struct Type;
-struct BaseType;
-struct PointerType;
 struct ExprNode;
 struct ExprPrimary;
 struct ExprBinary;
@@ -398,112 +396,6 @@ struct StringLiteral : public Literal {
     }
     Type* resolve_type() override;
     void emit_asm() override;
-};
-
-struct Identifier {
-    std::string name;
-    Identifier(std::string _name) {
-        name = _name;
-    }
-    static Identifier* convert(parser::identifier *i);
-
-    size_t hash() const {
-        return std::hash<std::string>()(name);
-    }
-    bool operator==(const Identifier& other) const {
-        return name == other.name;
-    }
-    bool operator!=(const Identifier& other) const {
-        return !(*this == other);
-    }
-};
-
-struct Type {
-    static Type* convert(parser::type *t);
-    virtual int calc_size() = 0;
-
-    virtual bool equals(const Type *other) const = 0;
-    bool operator==(const Type& other) const {return equals(&other);}
-    bool operator!=(const Type& other) const {return !equals(&other);}
-    virtual size_t hash() const = 0;
-    virtual std::string to_string() = 0;
-};
-
-struct BaseType : public Type {
-    std::string name;
-    BaseType(std::string _name) {
-        name = _name;
-    }
-    static BaseType* convert(parser::base_type *t);
-
-    int calc_size() override {
-        if(name == "int") return 8;
-        else if(name == "char") return 1;
-        else return 8;
-    }
-
-    bool equals(const Type *other) const override {
-        if(auto x = dynamic_cast<const BaseType*>(other)) return name == x->name;
-        return false;
-    }
-
-    size_t hash() const override {
-        return std::hash<std::string>()(name) ^ 0x9e3779b9;
-    }
-
-    std::string to_string() {
-        return name;
-    }
-};  
-
-struct PointerType : public Type {
-    Type *type;
-    PointerType(Type *_type) {
-        assert(_type != nullptr);
-        type = _type;
-    }
-
-    int calc_size() override {
-        return 8;
-    }
-
-    bool equals(const Type *other) const override {
-        if(auto x = dynamic_cast<const PointerType*>(other)) return *type == *(x->type);
-        return false;
-    }
-
-    size_t hash() const override {
-        return type->hash() ^ 0x13952424;
-    }
-
-    std::string to_string() {
-        return type->to_string() + "*";
-    }
-};
-
-struct ReferenceType : public Type {
-    Type *type;
-    ReferenceType(Type *_type) {
-        assert(_type != nullptr);
-        type = _type;
-    }
-
-    int calc_size() override {
-        return 8;
-    }
-
-    bool equals(const Type *other) const override {
-        if(auto x = dynamic_cast<const ReferenceType*>(other)) return *type == *(x->type);
-        return false;
-    }
-
-    size_t hash() const override {
-        return type->hash() ^ 0xdeadbeef;
-    }
-
-    std::string to_string() {
-        return type->to_string() + "&";
-    }
 };
 
 struct ExprNode {
@@ -2147,25 +2039,6 @@ Literal* Literal::convert(parser::literal *l) {
         return new StringLiteral(val);
     }   
     else assert(false);    
-}
-
-Identifier* Identifier::convert(parser::identifier *i) {
-    return new Identifier(i->to_string());
-}
-
-Type* Type::convert(parser::type *t) {
-    Type *res = BaseType::convert(t->t0);
-    for(int i = 0; i < t->t1.size(); i++){
-        std::string suf = t->t1[i]->to_string();
-        if(suf == "*") res = new PointerType(res);
-        else if(suf == "&") res = new ReferenceType(res);
-        else assert(false);
-    }
-    return res;
-}
-
-BaseType* BaseType::convert(parser::base_type *t) {
-    return new BaseType(t->to_string());
 }
 
 ExprNode* ExprNode::convert(parser::expr_primary *e) {
@@ -4195,10 +4068,9 @@ int main(int argc, char* argv[]) {
     {
         std::cout << "CHECKING SYNTAX" << std::endl;
         std::string code = read_file(filename);
-        parser::s = code;
-        parser::ptr = 0;
+        parser::set_s(code);
         parser::program *p = parser::program::parse();
-        if(parser::ptr != code.size()) {
+        if(!parser::check_finished_parsing()) {
             std::cout << "SYNTAX ERROR\n";
             return 1;
         }

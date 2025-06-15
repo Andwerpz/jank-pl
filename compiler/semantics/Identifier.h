@@ -1,5 +1,5 @@
 #pragma once
-#include "../parser/parser.cpp"
+#include "../parser/parser.h"
 
 struct Identifier {
     std::string name;
@@ -8,8 +8,9 @@ struct Identifier {
     }
     static Identifier* convert(parser::identifier *i);
 
-    size_t hash();
-    bool operator==(const Identifier& other);
-    bool operator!=(const Identifier& other);
+    size_t hash() const;
+    bool equals(Identifier* other) const;
+    bool operator==(const Identifier& other) const;
+    bool operator!=(const Identifier& other) const;
 };
 
