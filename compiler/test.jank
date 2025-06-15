@@ -1,0 +1,109 @@
+
+void assert(int x) {
+    if(!x) {
+        puts_endl("assert failed");
+        sys_exit(1);
+    }
+}
+
+struct vec2 {
+    int x;
+    int y;
+
+    vec2 vec2() {
+        this.x = 0;
+        this.y = 0;
+    }
+    vec2 vec2(vec2& other) {
+        this.x = other.x;
+        this.y = other.y;
+    }
+    vec2 vec2(int x, int y) {
+        this.x = x;
+        this.y = y;
+    }
+
+    void print() {
+        puts("(");
+        puti(this.x);
+        puts(", ");
+        puti(this.y);
+        puts_endl(")");
+    }
+}
+
+vec2 operator+(vec2 a, vec2 b) {
+    return vec2(a.x + b.x, a.y + b.y);
+}
+
+vec2 operator-(vec2 a, vec2 b) {
+    return vec2(a.x - b.x, a.y - b.y);
+}
+
+vec2 operator*(vec2 a, int s) {
+    return vec2(a.x * s, a.y * s);
+}
+
+vec2 operator/(vec2 a, int s) {
+    return vec2(a.x / s, a.y / s);
+}
+
+int operator==(vec2 a, vec2 b) {
+    return a.x == b.x && a.y == b.y;
+}
+
+struct ostream {
+    ostream ostream() {
+        // do nothing
+    }
+    ostream ostream(ostream& other) {
+        // do nothing
+    }
+}
+
+ostream& operator<<(ostream& stream, int x) {
+    puti(x);
+    return stream;
+}
+
+ostream& operator<<(ostream& stream, char* s) {
+    puts(s);
+    return stream;
+}
+
+ostream& operator<<(ostream& stream, vec2 v) {
+    return stream << "(" << v.x << ", " << v.y << ")";
+}
+
+void vec2_test() {
+    {
+        vec2 a = vec2(1, 2);
+        vec2 b = vec2(3, 4);
+        vec2 c = a + b;
+        c.print();
+        assert(c == vec2(4, 6));
+    }
+
+    puts_endl("vec2 test passed");
+}
+
+void ostream_test() {
+    ostream cout = ostream();
+
+    cout << "bello!!" << "\n";
+    int x = 100;
+    cout << "X : " << x << "\n";
+
+    vec2 a = vec2(69, 420);
+    cout << "A : " << a << "\n";
+
+    puts_endl("ostream test passed");
+}
+
+int main() {
+
+    vec2_test();
+    ostream_test();
+
+    return 0;
+}
