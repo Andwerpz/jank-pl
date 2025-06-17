@@ -97,6 +97,9 @@ void ostream_test() {
     vec2 a = vec2(69, 420);
     cout << "A : " << a << "\n";
 
+    cout << "NESTING TEST : " << "\n";
+    cout << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "\n";
+
     puts_endl("ostream test passed");
 }
 
@@ -104,6 +107,7 @@ int main() {
 
     vec2_test();
     ostream_test();
+    puts_endl("all tests passed");
 
     return 0;
 }

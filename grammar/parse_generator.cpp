@@ -1507,9 +1507,10 @@ string get_current_date_string() {
     return oss.str();
 }
 
-void generate_program(grammar *g, bool generate_main){
+void generate_h(grammar *g) {
     indent_level = 0;
     cout << "// Date Generated : " << get_current_date_string() << "\n";
+    cout << "#pragma once\n";
     cout << "#include <vector>\n";
     cout << "#include <string>\n";
     cout << "#include <cassert>\n";
@@ -1518,6 +1519,39 @@ void generate_program(grammar *g, bool generate_main){
     cout << "#include <fstream>\n";
     cout << "#include <sstream>\n";
     cout << "#include <stdexcept>\n";
+    cout << "\n";
+    
+    cout << "namespace parser {\n";
+    indent_level ++;
+    // parse controller
+    {
+        cout << indent() << "void set_s(std::string& ns);\n";
+        cout << indent() << "bool check_finished_parsing();\n";
+    }
+    cout << "\n";
+
+    // struct defs
+    {   
+        //forward declare structs
+        for(int i = 0; i < g->rs.size(); i++){
+            cout << indent() << "struct " << print_identifier(g->rs[i]->i) << ";\n";
+        }
+        cout << "\n";
+
+        for(int i = 0; i < g->rs.size(); i++){
+            generate_struct_from_rule(g->rs[i]);
+            cout << "\n";
+        }
+    }
+
+    indent_level --;
+    cout << indent() << "};\n";
+}
+
+void generate_cpp(grammar *g) {
+    indent_level = 0;
+    cout << "// Date Generated : " << get_current_date_string() << "\n";
+    cout << "#include \"parser.h\"\n";
     cout << "\n";
 
     cout << "namespace parser {\n";
@@ -1533,7 +1567,21 @@ void generate_program(grammar *g, bool generate_main){
     int ptr;
 
     //this is so we know where to backtrack to
+    //the stack should be unaffected by any parse function. 
     std::stack<int> ptr_stack;
+
+    //initializes the parse controller
+    void set_s(std::string& ns) {
+        s = ns;
+        ptr = 0;
+        while(ptr_stack.size() != 0) ptr_stack.pop();
+    }
+
+    //call this when you think you are done
+    bool check_finished_parsing() {
+        if(ptr != s.size()) return false;
+        return true;
+    }
 
     //use before trying an optional grammar rule
     void push_stack() {
@@ -1552,9 +1600,7 @@ void generate_program(grammar *g, bool generate_main){
         assert(ptr_stack.size() != 0);
         ptr_stack.pop();
     }
-
-    //the stack should be unaffected by any parse function. 
-
+    
     char next_char() {
         if(ptr >= s.size()) return '\0';
         return s[ptr ++];
@@ -1570,60 +1616,17 @@ void generate_program(grammar *g, bool generate_main){
     )";
         cout << tmp << "\n";
     }
+    cout << "\n";
 
-    //struct defs
+    // function defs
     {   
-        //forward declare structs
-        for(int i = 0; i < g->rs.size(); i++){
-            cout << indent() << "struct " << print_identifier(g->rs[i]->i) << ";\n";
-        }
-        cout << "\n";
-
-        for(int i = 0; i < g->rs.size(); i++){
-            generate_struct_from_rule(g->rs[i]);
-            cout << "\n";
-        }
-    }
-
-    //parse defs
-    {
         for(int i = 0; i < g->rs.size(); i++){
             generate_fndef_from_rule(g->rs[i]);
         }
     }
+
     indent_level --;
     cout << indent() << "};\n";
-
-    //main
-    if(generate_main) {
-        //assumes that the last rule defined is the one you want to parse
-        string root_sid = print_identifier(g->rs[g->rs.size() - 1]->i);
-
-        cout << indent() << "std::string read_file(const std::string& filename) {\n";
-        indent_level ++;
-        cout << indent() << "std::ifstream file(filename);\n";
-        cout << indent() << "if(!file) throw std::runtime_error(\"Failed to open file : \" + filename);\n";
-        cout << indent() << "std::ostringstream buffer;\n";
-        cout << indent() << "buffer << file.rdbuf();\n";
-        cout << indent() << "return buffer.str();\n";
-        indent_level --;
-        cout << indent() << "}\n";
-        cout << indent() << "\n";
-        cout << indent() << "int main() {\n";
-        indent_level ++;
-        cout << indent() << "std::string filename;\n";
-        cout << indent() << "std::cin >> filename;\n";
-        cout << indent() << "s = read_file(filename);\n";
-        cout << indent() << "std::cout << \"PARSING\\n\";\n";
-        cout << indent() << "ptr = 0;\n";
-        cout << indent() << root_sid << " *x = parser::" << root_sid << "::parse();\n";
-        cout << indent() << "assert(ptr_stack.size() == 0);\n";
-        cout << indent() << "if(x == nullptr) {std::cout << \"FAILED\\n\"; return 0;}\n";
-        cout << indent() << "std::cout << \"SUCCESS\\n\";\n";
-        cout << indent() << "return 0;\n";
-        indent_level --;
-        cout << indent() << "}\n";
-    }
 }
 
 // -- MAIN --
@@ -1766,10 +1769,8 @@ string read_cstr(char* s) {
 }
 
 signed main(int argc, char* argv[]) {
-    if(argc == 1) {
+    if(argc != 2) {
         cout << "USAGE : <filename>\n";
-        cout << " -o <output_filename>\n";
-        cout << " -m (generate main)\n";
         cout << "<filename> must end with \".ebnf\"\n";
         return 1;
     }
@@ -1777,27 +1778,6 @@ signed main(int argc, char* argv[]) {
     // read it in
     int argptr = 1;
     string filename = read_cstr(argv[argptr ++]);
-    bool output_redirect = false;
-    string output_filename = "";
-    bool generate_main = false;
-    while(argptr != argc) {
-        string opt = read_cstr(argv[argptr ++]);
-        if(opt == "-o") {
-            if(argptr == argc) {
-                cout << "DIDN'T PROVIDE OUTPUT FILENAME\n";
-                return 1;
-            }
-            output_redirect = true;
-            output_filename = read_cstr(argv[argptr ++]);
-        }
-        else if(opt == "-m") {
-            generate_main = true;
-        }
-        else {
-            cout << "INVALID OPTION : " << opt << "\n";
-            return 1;
-        }
-    }
 
     // link
     cout << "LINKING\n";
@@ -1854,20 +1834,28 @@ signed main(int argc, char* argv[]) {
     
     // spit out code
     cout << "GENERATING PROGRAM\n";
-    if(output_redirect) {
-        streambuf *coutbuf = cout.rdbuf(); 
-        ofstream out = ofstream(output_filename);
+    string header_filename = "parser.h", cpp_filename = "parser.cpp";
+    streambuf *coutbuf = cout.rdbuf(); 
+    {
+        ofstream out = ofstream(header_filename);
         if (!out) {
-            cout << "Failed to open " << output_filename << "\n";
+            cout << "Failed to open " << header_filename << "\n";
             return 1;
         }
         cout.rdbuf(out.rdbuf());  
-        generate_program(g, generate_main);
-        cout.rdbuf(coutbuf); // required to not segfault D:
+        generate_h(g);
     }
-    else {
-        generate_program(g, generate_main);
+    {
+        ofstream out = ofstream(cpp_filename);
+        if(!out) {
+            cout << "Failed to open " << cpp_filename << "\n";
+            return 1;
+        }
+        cout.rdbuf(out.rdbuf());
+        generate_cpp(g);
     }
+
+    cout.rdbuf(coutbuf); // required to not segfault D:
     
     cout << "DONE GENERATING\n";
 

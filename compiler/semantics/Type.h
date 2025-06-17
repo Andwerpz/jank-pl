@@ -6,10 +6,11 @@ struct Type {
     
     virtual int calc_size() = 0;
     virtual bool equals(const Type *other) const = 0;
-    bool operator==(const Type& other) const {return equals(&other);}
-    bool operator!=(const Type& other) const {return !equals(&other);}
+    bool operator==(const Type& other) const;
+    bool operator!=(const Type& other) const;
     virtual size_t hash() const = 0;
     virtual std::string to_string() = 0;
+    virtual Type* make_copy() = 0;
 };
 
 struct BaseType : public Type {
@@ -23,6 +24,7 @@ struct BaseType : public Type {
     bool equals(const Type *other) const override;
     size_t hash() const override;
     std::string to_string() override;
+    Type* make_copy() override;
 };  
 
 struct PointerType : public Type {
@@ -36,6 +38,7 @@ struct PointerType : public Type {
     bool equals(const Type *other) const override;
     size_t hash() const override;
     std::string to_string() override;
+    Type* make_copy() override;
 };
 
 struct ReferenceType : public Type {
@@ -49,4 +52,5 @@ struct ReferenceType : public Type {
     bool equals(const Type *other) const override;
     size_t hash() const override;
     std::string to_string() override;
+    Type* make_copy() override;
 };

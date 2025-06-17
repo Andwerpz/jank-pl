@@ -1,5 +1,13 @@
 #include "Type.h"
 
+bool Type::operator==(const Type& other) const {
+    return this->equals(&other);
+}
+
+bool Type::operator!=(const Type& other) const {
+    return !this->equals(&other);
+}
+
 // -- BaseType --
 int BaseType::calc_size() {
     if(name == "int") return 8;
@@ -70,4 +78,17 @@ Type* Type::convert(parser::type *t) {
 
 BaseType* BaseType::convert(parser::base_type *t) {
     return new BaseType(t->to_string());
+}
+
+// -- MAKE COPY --
+Type* BaseType::make_copy() {
+    return new BaseType(name);
+}
+
+Type* PointerType::make_copy() {
+    return new PointerType(type->make_copy());
+}
+
+Type* ReferenceType::make_copy() {
+    return new ReferenceType(type->make_copy());
 }

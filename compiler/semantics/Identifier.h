@@ -3,14 +3,12 @@
 
 struct Identifier {
     std::string name;
-    Identifier(std::string _name) {
-        name = _name;
-    }
+    Identifier(std::string _name);
     static Identifier* convert(parser::identifier *i);
 
     size_t hash() const;
-    bool equals(Identifier* other) const;
+    bool equals(const Identifier* other) const;
     bool operator==(const Identifier& other) const;
     bool operator!=(const Identifier& other) const;
+    Identifier* make_copy();
 };
-
