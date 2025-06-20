@@ -1,0 +1,9 @@
+(4, 6)
+vec2 test passed
+bello!!
+X : 100
+A : (69, 420)
+NESTING TEST : 
+....................
+ostream test passed
+all tests passed

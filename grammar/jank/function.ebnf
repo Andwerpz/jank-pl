@@ -1,11 +1,11 @@
 #include "jank.ebnf" ;
 
-overloadable_operator = "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" |
+overloadable_operator = "++x" | "--x" | "x++" | "x--" |
+                        "*x" |
+                        "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" |
                         "==" | "!=" | "<" | "<=" | ">" | ">=" |
-                        "++x" | "--x" | "x++" | "x--" | 
                         "[]" | 
                         "=" |
-                        "*x" |
                         "(cast)" ;
 overload_identifier = "operator" , overloadable_operator ;
 

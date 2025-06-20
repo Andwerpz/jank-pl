@@ -166,7 +166,7 @@ void emit_malloc(int sz_bytes);
 // -- CONTROLLER --
 //should probably move this stuff into its own file
 
-inline std::ofstream fout("test.asm");
+inline std::ofstream fout;
 
 //have these here to be visible. 
 inline Function* enclosing_function;

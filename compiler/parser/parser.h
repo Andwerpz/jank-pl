@@ -1,4 +1,4 @@
-// Date Generated : 06-15-2025 12:21:02
+// Date Generated : 06-19-2025 23:28:23
 #pragma once
 #include <vector>
 #include <string>
@@ -64,7 +64,7 @@ namespace parser {
     struct compound_statement;
     struct program;
 
-    // overloadable_operator = "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "++x" | "--x" | "x++" | "x--" | "[]" | "=" | "*x" | "(cast)" ;
+    // overloadable_operator = "++x" | "--x" | "x++" | "x--" | "*x" | "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "[]" | "=" | "(cast)" ;
     struct overloadable_operator {
         struct a0 {
             std::string t0;

@@ -21,6 +21,278 @@
 #include "semantics/Statement.h"
 #include "semantics/FunctionSignature.h"
 
+#include "semantics/utils.h"
+
+#include <unistd.h>  
+#include <sys/wait.h>
+#include <cstring>
+#include <cstdio>  
+#include <limits.h>
+#include <libgen.h>
+#include <sys/stat.h>
+
+std::string read_file(const std::string& filename) {
+    std::ifstream file(filename); 
+    if (!file) {
+        throw std::runtime_error("Failed to open file: " + filename);
+    }
+    std::ostringstream buffer;
+    buffer << file.rdbuf(); 
+    return buffer.str();     
+}
+
+std::string read_cstr(char* s) {
+    std::string ans = "";
+    int ptr = 0;
+    while(s[ptr] != '\0') {
+        ans.push_back(s[ptr ++]);
+    }
+    return ans;
+}
+
+std::vector<std::string> str_split(std::string s, char sep) {
+    std::vector<std::string> ret;
+    int l = 0;
+    for(int i = 0; i < s.size(); i++) {
+        if(s[i] == sep) {
+            ret.push_back(s.substr(l, i - l));
+            l = i + 1;
+        }
+    }
+    ret.push_back(s.substr(l, s.size() - l));
+    return ret;
+}
+
+std::string extract_filename(std::string path) {
+    return *(str_split(path, '/').rbegin());
+}
+
+std::string extract_stem(std::string filename) {
+    for(int i = filename.size() - 1; i >= 0; i--) {
+        if(filename[i] == '.') return filename.substr(0, i);
+    }
+    return filename;
+}   
+
+std::string extract_ext(std::string filename) {
+    for(int i = filename.size() - 1; i >= 0; i--){
+        if(filename[i] == '.') return filename.substr(i);
+    }
+    return "";
+}
+
+int gen_asm(std::string src_path, char tmp_filename[]) {
+    Program *program = nullptr;
+    {
+        std::cout << "CHECKING SYNTAX" << std::endl;
+        std::string code = read_file(src_path);
+        parser::set_s(code);
+        parser::program *p = parser::program::parse();
+        if(!parser::check_finished_parsing()) {
+            std::cout << "SYNTAX ERROR\n";
+            return 1;
+        }
+        std::cout << "SYNTAX PASS" << std::endl;
+        std::cout << "CONVERTING ..." << std::endl;
+        program = Program::convert(p);
+    }
+
+    std::cout << "--- STRUCT DEFINITIONS ---" << std::endl;
+    for(int i = 0; i < program->structs.size(); i++){
+        StructDefinition *sd = program->structs[i];
+        std::cout << "NAME : " << sd->type->to_string() << std::endl;
+        std::cout << "MEMBER VARIABLES : \n";
+        for(int j = 0; j < sd->member_variables.size(); j++) {
+            MemberVariable *mv = sd->member_variables[j];
+            std::cout << mv->type->to_string() << " " << mv->id->name << "\n";
+        }
+        std::cout << "MEMBER FUNCTIONS : \n";
+        for(int j = 0; j < sd->functions.size(); j++){
+            std::cout << sd->functions[j]->resolve_function_signature()->to_string() << "\n";
+        }
+        std::cout << "\n";
+    }
+   
+    std::cout << "--- GLOBAL FUNCTION DEFINITIONS ---" << std::endl;
+    for(int i = 0; i < program->functions.size(); i++){
+        std::cout << "NAME : " << program->functions[i]->id->name << ", TYPE : " << program->functions[i]->type->to_string() << ", PARAMS :\n";
+        for(int j = 0; j < program->functions[i]->parameters.size(); j++){
+            Function::Parameter *param = program->functions[i]->parameters[j];
+            std::cout << param->type->to_string() << " " << param->id->name << "\n";
+        }
+        std::cout << "NR STATEMENTS : " << program->functions[i]->body->statements.size() << std::endl;
+        std::cout << "\n";
+    }
+
+    std::cout << "CHECK PROGRAM SEMANTICS" << std::endl;
+    fout = std::ofstream(tmp_filename);
+    if(!program->is_well_formed()) {
+        std::cout << "Program not well formed\n";
+        fout.close();
+        return 1;
+    }
+    std::cout << "Program is well formed\n";
+    fout.close();
+
+    return 0;
+}
+
+std::string compiler_dir;
+
+int assemble(char src_path[], char res_path[]) {
+    pid_t pid = fork();
+    if(pid == 0) {
+        execlp(
+            "gcc", "gcc", 
+            "-x", "assembler",  //gcc expects .s files to be assembly. 
+            "-nostartfiles", "-nostdlib",   //tell gcc that we're not compiling C assembly
+            src_path,
+            (compiler_dir + "/asm/malloc.asm").c_str(),
+            (compiler_dir + "/asm/string.asm").c_str(),
+            (compiler_dir + "/asm/syscall.asm").c_str(),
+            "-o", res_path,
+            (char*) NULL
+        );
+        perror("execlp gcc failed");
+        return 1;
+    }
+    else {
+        int status;
+        waitpid(pid, &status, 0);
+        if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            return 1;
+        }
+    }
+    return 0; 
+}
+
+int main(int argc, char* argv[]) {
+    if(argc == 1) {
+        std::cout << "USAGE : <filepath>\n";
+        std::cout << "-S : generate assembly instead of executable\n";
+        std::cout << "-o <out_filepath>\n";
+        return 1;
+    }
+    int argptr = 1;
+    std::string filepath = read_cstr(argv[argptr ++]);
+    std::string dst_dir = "a.out";
+
+    //figure out compiler absolute directory
+    {
+        // /proc/self/exe is symlink to currently running binary
+        // so readlink should give the absolute path no matter how this was invoked
+        char exe_path[PATH_MAX];
+        ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+        if (len != -1) {
+            exe_path[len] = '\0';
+            compiler_dir = dirname(exe_path);
+        }
+        else {
+            std::cout << "Could not find jjc path\n";
+            return 1;
+        }
+    }
+
+    //read in arguments
+    bool return_asm = false;
+    while(argptr < argc) {
+        std::string arg(argv[argptr ++]);
+        if(arg == "-S") {
+            return_asm = true;
+        }
+        else if(arg == "-o") {
+            if(argptr >= argc) {
+                std::cout << "Missing output directory after -o\n";
+                return 1;
+            }
+            dst_dir = std::string(argv[argptr ++]);
+        }
+    }
+
+    char asm_file[] = "jjc_asmXXXXXX";
+    int fd = mkstemp(asm_file);
+    if(fd == -1) {
+        perror("mkstemp failed");
+        return 1;
+    }
+    close(fd);
+
+    pid_t pid = fork();
+    if(pid == 0) {
+        exit(gen_asm(filepath, asm_file));
+    }
+    else {
+        int status;
+        waitpid(pid, &status, 0);
+        if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            std::cout << "Compilation Error\n";
+            std::remove(asm_file);
+            return 1;
+        }
+    }
+
+    if(return_asm) {
+        std::ifstream src(asm_file);
+        std::ofstream dst(dst_dir);
+        if(!src || !dst) {
+            std::cout << "Failed to copy over from " << asm_file << " to " << dst_dir << "\n";
+            std::remove(asm_file);
+            return 1;
+        }
+        dst << src.rdbuf();
+        std::remove(asm_file);
+        return 0;
+    }
+
+    //gen_asm success, time to assemble
+    char exe_file[] = "jjc_exeXXXXXX";
+    fd = mkstemp(exe_file);
+    if(fd == -1) {
+        perror("mkstemp failed");
+        std::remove(asm_file);
+        return 1;
+    }
+    close(fd);
+    pid = fork();
+    if(pid == 0){
+        exit(assemble(asm_file, exe_file));
+    }
+    else {
+        int status;
+        waitpid(pid, &status, 0);
+        if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            std::cout << "Assembling Error\n";
+            std::remove(asm_file);
+            std::remove(exe_file);
+            return 1;
+        }
+    }
+
+    //gen exe done, remove asm file
+    std::remove(asm_file);
+
+    //move exe file to output
+    {
+        std::ifstream src(exe_file);
+        std::ofstream dst(dst_dir);
+        if(!src || !dst) {
+            std::cout << "Failed to copy over from " << exe_file << " to " << dst_dir << "\n";
+            std::remove(exe_file);
+            return 1;
+        }
+        dst << src.rdbuf();
+
+        //give file execute permissions
+        chmod(dst_dir.c_str(), 0755);
+    }
+    
+    //delete exe file
+    std::remove(exe_file);
+    
+    return 0;
+}
+
+
 /*
 Takes in a .jank file, generates AST using jank_parser, then makes sure the program is well formed 
  - ensure every variable used is declared
@@ -263,6 +535,16 @@ and say they require type int&, and in the case of ++x, returns int&. Note that 
 should be classified as returning an l-value. 
 
 
+Seems like expression evaluation is actually going to be a relatively expensive portion of the compiler. I optimized it
+enough such that it can run fine if you have 20 nested function calls, which should be good enough for the vast majority
+of cases. Next feature is probably going to be templating, but I want to first write some testing utilities to automatically
+run the tests that I've been writing up until now. I also want to write some tests that won't compile. 
+
+
+Some thoughts on templating: Either we can write the templated functions to resolve the type at runtime, or do the far
+easier option which is to generate every version of templated type during compile time, then treat them as different types. 
+
+
 struct nesting / namespaces:
 only base types are allowed to be nested inside of other types
 only base types are allowed to contain other types
@@ -320,84 +602,3 @@ CODE GENERATION
  - the caller must pass the arguments onto the stack. 
  - the callee is responsible for setting up and returning the base pointer
 */
-
-std::string read_file(const std::string& filename) {
-    std::ifstream file(filename); 
-    if (!file) {
-        throw std::runtime_error("Failed to open file: " + filename);
-    }
-    std::ostringstream buffer;
-    buffer << file.rdbuf(); 
-    return buffer.str();     
-}
-
-std::string read_cstr(char* s) {
-    std::string ans = "";
-    int ptr = 0;
-    while(s[ptr] != '\0') {
-        ans.push_back(s[ptr ++]);
-    }
-    return ans;
-}
-
-int main(int argc, char* argv[]) {
-    if(argc == 1) {
-        std::cout << "USAGE : <filename>\n";
-        std::cout << "<filename> must end with \".jank\"\n";
-        return 1;
-    }
-    int argptr = 1;
-    std::string filename = read_cstr(argv[argptr ++]);
-    assert(filename.size() >= 5 && filename.substr(filename.size() - 5) == ".jank");
-
-    Program *program = nullptr;
-    {
-        std::cout << "CHECKING SYNTAX" << std::endl;
-        std::string code = read_file(filename);
-        parser::set_s(code);
-        parser::program *p = parser::program::parse();
-        if(!parser::check_finished_parsing()) {
-            std::cout << "SYNTAX ERROR\n";
-            return 1;
-        }
-        std::cout << "SYNTAX PASS" << std::endl;
-        std::cout << "CONVERTING ..." << std::endl;
-        program = Program::convert(p);
-    }
-
-    std::cout << "--- STRUCT DEFINITIONS ---" << std::endl;
-    for(int i = 0; i < program->structs.size(); i++){
-        StructDefinition *sd = program->structs[i];
-        std::cout << "NAME : " << sd->type->to_string() << std::endl;
-        std::cout << "MEMBER VARIABLES : \n";
-        for(int j = 0; j < sd->member_variables.size(); j++) {
-            MemberVariable *mv = sd->member_variables[j];
-            std::cout << mv->type->to_string() << " " << mv->id->name << "\n";
-        }
-        std::cout << "MEMBER FUNCTIONS : \n";
-        for(int j = 0; j < sd->functions.size(); j++){
-            std::cout << sd->functions[j]->resolve_function_signature()->to_string() << "\n";
-        }
-        std::cout << "\n";
-    }
-   
-    std::cout << "--- GLOBAL FUNCTION DEFINITIONS ---" << std::endl;
-    for(int i = 0; i < program->functions.size(); i++){
-        std::cout << "NAME : " << program->functions[i]->id->name << ", TYPE : " << program->functions[i]->type->to_string() << ", PARAMS :\n";
-        for(int j = 0; j < program->functions[i]->parameters.size(); j++){
-            Function::Parameter *param = program->functions[i]->parameters[j];
-            std::cout << param->type->to_string() << " " << param->id->name << "\n";
-        }
-        std::cout << "NR STATEMENTS : " << program->functions[i]->body->statements.size() << std::endl;
-        std::cout << "\n";
-    }
-
-    std::cout << "CHECK PROGRAM SEMANTICS" << std::endl;
-    if(!program->is_well_formed()) {
-        std::cout << "Program not well formed\n";
-        return 1;
-    }
-    std::cout << "Program is well formed\n";
-    
-    return 0;
-}

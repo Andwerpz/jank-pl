@@ -1,0 +1,26 @@
+
+int main() {
+    int x = 10;
+    int y = x;
+    return 0;
+}
+
+int foo(int arg1, int arg2) {
+    int y = 10;
+    int z = 100;
+    int k = 2;
+    {
+        int i = 0;
+        int j = i + 1 + k;
+    }
+    {
+        int i = 1;
+        int j = i + 3 * k;
+    }
+    return z + y;
+}
+
+int bar(int arg2, int arg_3) {
+    int abc_def = foo(3, 4) + 20 * bar(foo(3, 4), arg2);
+    return abc_def * abc_def * (foo(abc_def, 20 + 10) + 10);
+}

@@ -1,0 +1,67 @@
+
+void assert(int x) {
+    if(!x) {
+        puts_endl("assert failed");
+        sys_exit(1);
+    }
+}
+
+void increment(int& val) {
+    val ++;
+}
+
+void basic_tests() {
+    //reference binding
+    {
+        int x = 42;
+        int& ref = x;  
+        assert(x == 42 && ref == 42);
+        
+        ref = 10;      
+        assert(x == 10 && ref == 10);
+    }
+
+    //reference to reference
+    {
+        int x = 100;
+        int& ref1 = x;
+        int& ref2 = ref1;
+        assert(x == ref1 && ref1 == ref2);
+        
+        ref2 = 200;
+        assert(x == 200 && ref1 == 200 && ref2 == 200);
+    }
+    
+    //function calls
+    {
+        int x = 5;
+        increment(x);
+        assert(x == 6);
+    }
+
+    //ref to array element
+    {
+        int* arr = malloc(sizeof(int) * 5);
+        int& ref = arr[1]; 
+        ref = 20;
+        assert(arr[1] == 20);
+    }
+
+    //self assignment
+    {
+        int x = 5;
+        int& ref = x;
+        ref = ref + 1; 
+        assert(x == 6);
+    }
+
+    puts_endl("basic tests passed");
+}
+
+int main() {
+
+    basic_tests();
+    puts_endl("all tests passed");
+
+    return 0;
+}
