@@ -326,6 +326,55 @@ void reset_controller() {
         "sar %cl, %rax",
         "pop %rcx",
     });
+    conversion_map[new OperatorSignature(new ReferenceType(p_int), "+=", p_int)] = new BuiltinOperator(p_int, {
+        "add %rbx, %rax",
+        "mov %rax, (%rcx)",
+    });
+    conversion_map[new OperatorSignature(new ReferenceType(p_int), "-=", p_int)] = new BuiltinOperator(p_int, {
+        "sub %rbx, %rax",
+        "mov %rax, (%rcx)",
+    });
+    conversion_map[new OperatorSignature(new ReferenceType(p_int), "*=", p_int)] = new BuiltinOperator(p_int, {
+        "imul %rbx, %rax",
+        "mov %rax, (%rcx)",
+    });
+    conversion_map[new OperatorSignature(new ReferenceType(p_int), "/=", p_int)] = new BuiltinOperator(p_int, {
+        "cqo",
+        "idiv %rbx",
+        "mov %rax, (%rcx)",
+    });
+    conversion_map[new OperatorSignature(new ReferenceType(p_int), "%=", p_int)] = new BuiltinOperator(p_int, {
+        "cqo",
+        "idiv %rbx",
+        "mov %rdx, %rax",
+        "mov %rax, (%rcx)",
+    });
+    conversion_map[new OperatorSignature(new ReferenceType(p_int), "<<=", p_int)] = new BuiltinOperator(p_int, {
+        "push %rcx",
+        "mov %rbx, %rcx",
+        "sal %cl, %rax",
+        "pop %rcx",
+        "mov %rax, (%rcx)",
+    });
+    conversion_map[new OperatorSignature(new ReferenceType(p_int), ">>=", p_int)] = new BuiltinOperator(p_int, {
+        "push %rcx",
+        "mov %rbx, %rcx",
+        "sar %cl, %rax",
+        "pop %rcx",
+        "mov %rax, (%rcx)",
+    });
+    conversion_map[new OperatorSignature(new ReferenceType(p_int), "&=", p_int)] = new BuiltinOperator(p_int, {
+        "and %rbx, %rax",
+        "mov %rax, (%rcx)",
+    });
+    conversion_map[new OperatorSignature(new ReferenceType(p_int), "^=", p_int)] = new BuiltinOperator(p_int, {
+        "xor %rbx, %rax",
+        "mov %rax, (%rcx)",
+    });
+    conversion_map[new OperatorSignature(new ReferenceType(p_int), "|=", p_int)] = new BuiltinOperator(p_int, {
+        "or %rbx, %rax",
+        "mov %rax, (%rcx)",
+    });
 
 }
 

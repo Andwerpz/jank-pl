@@ -74,13 +74,13 @@ struct OperatorImplementation {
     Type* get_res_type();
 };
 
-//for non-binary l-value operations, %rcx is where the address is
-//for binary operators, assumes left is in %rax and right is in %rbx
+//when returning a l-value, %rcx is where the mem address should go
+//for binary operators, assumes left is in %rax, right in %rcx
 //for left unary operators, assumes right is in %rax
 //for right unary operators, assumes left is in %rax
 //for casting, assumes the input is in %rax
 //for the indexing operator specifically, '[]', the result of the expression is in %rbx
-//will place the answer into %rax
+//will place the answer into %rax, address in %rcx
 struct BuiltinOperator : public OperatorImplementation {
     std::vector<std::string> instructions;
     BuiltinOperator(Type *_res_type, std::vector<std::string> _instructions);

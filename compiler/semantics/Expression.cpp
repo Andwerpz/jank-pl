@@ -216,11 +216,6 @@ ExprNode* ExprNode::convert(parser::expr_assignment *e) {
     ExprNode *right = nodes[nodes.size() - 1];
     for(int i = (int) nodes.size() - 2; i >= 0; i--){
         std::string op = e->t1[i]->t1->to_string();
-        if(op.size() != 1) {    //handle update + assignment operators
-            std::string nop = op.substr(0, op.size() - 1);
-            right = new ExprBinary(nodes[i], nop, right->make_copy());
-            op = "=";
-        }
         right = new ExprBinary(nodes[i], op, right);
     }
     return right;
@@ -808,23 +803,22 @@ void ExprBinary::emit_asm() {
             dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
 
             //save value
-            emit_push("%rax", "ExprBinary::emit_asm() : = save left");
+            emit_push("%rax", "ExprBinary::emit_asm() : = save right");
 
             //evaluate left l-value
             left->emit_asm();
 
-            //move value into mem location
+            //move right value into left mem location
             int sz = lt->calc_size();
             fout << indent() << "mov %rcx, %rbx\n";
-            emit_pop("%rax", "ExprBinary::emit_asm() : = save left");
+            emit_pop("%rax", "ExprBinary::emit_asm() : = save right");
             emit_mem_store(sz);
         }
         else {
-            left->emit_asm();
-            emit_push("%rax", "ExprBinary::emit_asm() : save left");
             right->emit_asm();
-            fout << indent() << "mov %rax, %rbx\n";
-            emit_pop("%rax", "ExprBinary::emit_asm() : save left");
+            emit_push("%rax", "ExprBinary::emit_asm() : save right");
+            left->emit_asm();
+            emit_pop("%rbx", "ExprBinary::emit_asm() : save right");
             
             OperatorImplementation *oe = find_operator_implementation(left, str_op, right);
             assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);

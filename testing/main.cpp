@@ -173,7 +173,7 @@ int main(int argc, char* argv[]) {
         bool passing = true;
         try {
             for(int i = 0; i < tests.size(); i++) {
-                cout << "Running " << tests[i] << " : ";
+                cout << "Running " << tests[i] << " : " << flush;
                 string testdir = "./tests/" + tests[i];
     
                 ifstream info_fin(testdir + "/info.txt");
