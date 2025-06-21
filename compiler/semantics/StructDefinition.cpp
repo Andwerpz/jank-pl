@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "FunctionSignature.h"
 #include "Constructor.h"
+#include "ConstructorSignature.h"
 
 MemberVariable::MemberVariable(Type *_type, Identifier *_id) {
     type = _type;
@@ -30,6 +31,7 @@ StructDefinition* StructDefinition::convert(parser::struct_definition *s) {
     BaseType *type = BaseType::convert(s->t2);
     std::vector<MemberVariable*> member_variables;
     std::vector<Function*> functions;
+    std::vector<Constructor*> constructors;
     for(int i = 0; i < s->t6.size(); i++){
         if(s->t6[i]->t0->is_c0) {   //member variable declaration
             member_variables.push_back(MemberVariable::convert(s->t6[i]->t0->t0->t0));
@@ -39,9 +41,12 @@ StructDefinition* StructDefinition::convert(parser::struct_definition *s) {
             f->enclosing_type = type;
             functions.push_back(f);
         }
+        else if(s->t6[i]->t0->is_c2) {  //constructor
+            constructors.push_back(Constructor::convert(s->t6[i]->t0->t2->t0));
+        }
         else assert(false);
     }
-    return new StructDefinition(type, member_variables, functions);
+    return new StructDefinition(type, member_variables, functions, constructors);
 }
 
 bool StructDefinition::is_well_formed() {
@@ -77,18 +82,29 @@ bool StructDefinition::is_well_formed() {
             return false;
         } 
     }
+
+    // - are there any duplicate constructors?
+    //add all constructors to global list to check later
+    for(int i = 0; i < constructors.size(); i++) {
+        Constructor *c = constructors[i];
+        if(!add_constructor(c)) {
+            std::cout << "Failed to add struct constructor : " << c->resolve_constructor_signature()->to_string() << "\n";
+            return false;
+        }
+    }
+
     // - is there a default constructor?
     {
-        FunctionSignature *fid = new FunctionSignature(new Identifier(base_type->to_string()), {});
-        if(!is_function_declared(fid)) {
+        ConstructorSignature *cid = new ConstructorSignature(base_type->make_copy(), {});
+        if(!is_constructor_declared(cid)) {
             std::cout << "Default constructor for " << base_type->to_string() << " not defined\n";
             return false;
         }
     }
     // - is there a copy constructor?
     {
-        FunctionSignature *fid = new FunctionSignature(new Identifier(base_type->to_string()), {new ReferenceType(base_type)});
-        if(!is_function_declared(fid)) {
+        ConstructorSignature *cid = new ConstructorSignature(base_type->make_copy(), {new ReferenceType(base_type->make_copy())});
+        if(!is_constructor_declared(cid)) {
             std::cout << "Copy constructor for " << base_type->to_string() << " not defined\n";
             return false;
         }

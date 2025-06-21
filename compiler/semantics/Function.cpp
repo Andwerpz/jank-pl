@@ -87,13 +87,6 @@ bool Function::is_well_formed() {
     push_declaration_stack();
 
     bool is_main = FunctionSignature(new Identifier("main"), {}) == *(fs);
-    bool is_constructor = is_function_constructor(this);
-
-    // - if this function name is exactly equal to a type, make sure that it's a constructor
-    if(is_type_declared(new BaseType(id->name)) && !is_function_constructor(this)) {
-        std::cout << "Invalid function name : " << id->name << "\n";
-        return false;
-    }
 
     //print function label
     //if function signature is main(), substitute main for _start
@@ -173,7 +166,7 @@ bool Function::is_well_formed() {
     
     // - if type is not void, check for existence of return statement as last reachable statement
     // - constructors also don't have to have return statements, they're treated as void functions
-    if(*type != BaseType("void") && !is_constructor) {
+    if(*type != BaseType("void")) {
         // from any point of runnable code, we expect that it should be able to reach a return statement. 
         // this effectively means that the last statement should always be a return statement, regardless of 
         // the rest of the code, as the statement right before it needs to be able to return. 

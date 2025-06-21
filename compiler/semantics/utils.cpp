@@ -6,6 +6,9 @@
 #include "FunctionSignature.h"
 #include "FunctionCall.h"
 #include "StructDefinition.h"
+#include "Constructor.h"
+#include "ConstructorSignature.h"
+#include "ConstructorCall.h"
 
 Variable::Variable(Type *_type, Identifier *_id) {
     id = _id;
@@ -153,6 +156,17 @@ namespace {
         }
     };
 
+    struct ConstructorSignatureHash {
+        size_t operator()(ConstructorSignature *cs) const {
+            return cs ? cs->hash() : 0;
+        }
+    };
+    struct ConstructorSignatureEquals {
+        bool operator()(ConstructorSignature *lhs, ConstructorSignature *rhs) const {
+            return (!lhs || !rhs) ? lhs == rhs : lhs->equals(rhs);
+        }
+    };
+
     struct OperatorSignatureHash {
         size_t operator()(OperatorSignature *os) const {
             return os ? os->hash() : 0;
@@ -189,6 +203,7 @@ std::vector<Type*> declared_types;
 std::unordered_set<Type*, TypeHash, TypeEquals> primitive_base_types;
 std::unordered_map<Type*, StructLayout*, TypeHash, TypeEquals> struct_layout_map;
 std::unordered_map<FunctionSignature*, std::string, FunctionSignatureHash, FunctionSignatureEquals> function_label_map;
+std::unordered_map<ConstructorSignature*, std::string, ConstructorSignatureHash, ConstructorSignatureEquals> constructor_label_map;
 std::unordered_map<OperatorSignature*, OperatorImplementation*, OperatorSignatureHash, OperatorSignatureEquals> conversion_map;  
 
 int label_counter;
@@ -203,6 +218,9 @@ void reset_controller() {
 
     declared_functions.clear();
     function_label_map.clear();
+
+    declared_constructors.clear();
+    constructor_label_map.clear();
     
     declared_variables.clear();
     while(declaration_stack.size()) declaration_stack.pop();
@@ -703,14 +721,6 @@ Type* find_function_type(FunctionSignature *fs) {
     return nullptr;
 }
 
-// - has enclosing type
-// - return type equals the enclosing type
-// - name of function equals type name
-bool is_function_constructor(const Function *f) {
-    // FunctionSignature *fs = f->resolve_function_signature();
-    return f->enclosing_type.has_value() && *(f->type) == *(f->enclosing_type.value()) && f->id->name == f->type->to_string();
-}
-
 bool is_type_declared(Type *t) {
     if(auto x = dynamic_cast<PointerType*>(t)) return is_type_declared(x->type);
     if(auto x = dynamic_cast<ReferenceType*>(t)) return is_type_declared(x->type);
@@ -738,6 +748,15 @@ bool is_variable_declared(Identifier *id) {
     return false;
 }
 
+bool is_constructor_declared(ConstructorSignature *cs) {
+    for(int i = 0; i < declared_constructors.size(); i++){
+        if(cs->equals(declared_constructors[i]->resolve_constructor_signature())) {
+            return true;
+        }
+    }
+    return false;
+}
+
 Function* get_function(FunctionSignature *fs) {
     for(int i = 0; i < declared_functions.size(); i++){
         if(*fs == *(declared_functions[i]->resolve_function_signature())) {
@@ -751,6 +770,7 @@ Function* get_function(FunctionSignature *fs) {
 // - If there is exactly one, returns that one
 // - If there are multiple or zero, returns nullptr
 Function* get_called_function(FunctionCall *fc) {
+    assert(fc != nullptr);
     std::optional<Type*> enclosing_type = fc->target_type;
     Identifier *id = fc->id;
     std::vector<Expression*> args = fc->argument_list;
@@ -802,9 +822,59 @@ Function* get_called_function(FunctionCall *fc) {
     return viable[0];
 }
 
+//pretty much exactly the same as get_called_function
+Constructor* get_called_constructor(ConstructorCall *cc) {
+    assert(cc != nullptr);
+    Type *type = cc->type;
+    std::vector<Expression*> args = cc->argument_list;
+    assert(type != nullptr);
+    
+    std::vector<Constructor*> viable;
+    for(int i = 0; i < declared_constructors.size(); i++){
+        ConstructorSignature *ncc = declared_constructors[i]->resolve_constructor_signature();
+
+        //do the types match?
+        if(!cc->type->equals(ncc->type)) {
+            continue;
+        }
+        //do the argument counts match?
+        if(args.size() != ncc->input_types.size()) {
+            continue;
+        }
+
+        //can all args be somehow converted into ncc->input_types?
+        bool is_viable = true;
+        for(int j = 0; j < args.size(); j++){
+            Type *nt = ncc->input_types[j];
+            if(!is_declarable(nt, args[j])) {
+                is_viable = false;
+            }
+        }
+        if(!is_viable) break;
+
+        //all checks passed
+        viable.push_back(declared_constructors[i]);
+    }
+
+    if(viable.size() == 0) {
+        std::cout << "No matching constructor for signature : " << cc->to_string() << "\n";
+        return nullptr;
+    }
+    else if(viable.size() > 1){
+        std::cout << "Ambiguous function call : " << cc->to_string() << "\n";
+        return nullptr;
+    }
+    return viable[0];
+}
+
 std::string get_function_label(FunctionSignature *fs) {
     assert(function_label_map.count(fs));
     return function_label_map[fs];
+}
+
+std::string get_constructor_label(ConstructorSignature *cs) {
+    assert(constructor_label_map.count(cs));
+    return constructor_label_map[cs];
 }
 
 Variable* get_variable(Identifier *id) {
@@ -852,7 +922,7 @@ bool add_function(Function *f){
     }
     declared_functions.push_back(f);
     function_label_map.insert({fs, create_new_label()});
-    std::cout << "ADD FUNCTION : "<< fs->to_string() << std::endl;
+    std::cout << "ADD FUNCTION : " << fs->to_string() << std::endl;
     return true;
 }
 
@@ -862,6 +932,16 @@ bool add_sys_function(Function *f) {
     if(is_function_declared(fs)) assert(false);
     declared_functions.push_back(f);
     function_label_map.insert({fs, f->id->name});
+    return true;
+}
+
+bool add_constructor(Constructor *c) {
+    assert(c != nullptr);
+    ConstructorSignature *cs = c->resolve_constructor_signature();
+    if(is_constructor_declared(cs)) assert(false);
+    declared_constructors.push_back(c);
+    constructor_label_map.insert({cs, create_new_label()});
+    std::cout << "ADD CONSTRUCTOR : " << cs->to_string() << std::endl;
     return true;
 }
 
@@ -888,6 +968,7 @@ void remove_function(Function *f) {
         }
     }
     assert(ind != -1);
+    function_label_map.erase(f->resolve_function_signature());
     declared_functions.erase(declared_functions.begin() + ind);
 }
 
@@ -902,6 +983,20 @@ void remove_variable(Identifier *id) {
     }
     assert(ind != -1);
     declared_variables.erase(declared_variables.begin() + ind);
+}
+
+void remove_constructor(Constructor *c) {
+    assert(c != nullptr);
+    int ind = -1;
+    for(int i = 0; i < declared_constructors.size(); i++){
+        if(c->equals(declared_constructors[i])) {
+            ind = i;
+            break;
+        }
+    }
+    assert(ind != -1);
+    constructor_label_map.erase(c->resolve_constructor_signature());
+    declared_constructors.erase(declared_constructors.begin() + ind);
 }
 
 void push_declaration_stack() {

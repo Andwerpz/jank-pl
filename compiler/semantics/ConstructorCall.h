@@ -1,5 +1,7 @@
 #pragma once
 #include "../parser/parser.h"
+#include <vector>
+#include <string>
 
 struct Type;
 struct Expression;

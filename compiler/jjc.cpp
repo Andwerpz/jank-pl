@@ -20,6 +20,7 @@
 #include "semantics/Type.h"
 #include "semantics/Statement.h"
 #include "semantics/FunctionSignature.h"
+#include "semantics/Parameter.h"
 
 #include "semantics/utils.h"
 
@@ -100,7 +101,7 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
     std::cout << "--- STRUCT DEFINITIONS ---" << std::endl;
     for(int i = 0; i < program->structs.size(); i++){
         StructDefinition *sd = program->structs[i];
-        std::cout << "NAME : " << sd->type->to_string() << std::endl;
+        std::cout << "NAME : " << sd->base_type->to_string() << std::endl;
         std::cout << "MEMBER VARIABLES : \n";
         for(int j = 0; j < sd->member_variables.size(); j++) {
             MemberVariable *mv = sd->member_variables[j];
@@ -117,7 +118,7 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
     for(int i = 0; i < program->functions.size(); i++){
         std::cout << "NAME : " << program->functions[i]->id->name << ", TYPE : " << program->functions[i]->type->to_string() << ", PARAMS :\n";
         for(int j = 0; j < program->functions[i]->parameters.size(); j++){
-            Function::Parameter *param = program->functions[i]->parameters[j];
+            Parameter *param = program->functions[i]->parameters[j];
             std::cout << param->type->to_string() << " " << param->id->name << "\n";
         }
         std::cout << "NR STATEMENTS : " << program->functions[i]->body->statements.size() << std::endl;

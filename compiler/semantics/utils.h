@@ -19,6 +19,9 @@ struct OperatorOverload;
 struct StructDefinition;
 struct MemberVariable;
 struct FunctionCall;
+struct Constructor;
+struct ConstructorSignature;
+struct ConstructorCall;
 
 struct Variable;
 struct OperatorSignature;
@@ -127,23 +130,27 @@ Type* find_resulting_type(std::optional<Expression*> left, std::string op, std::
 Type* find_resulting_type(std::optional<ExprNode*> left, std::string op, std::optional<ExprNode*> right);
 Type* find_variable_type(Identifier *id);
 Type* find_function_type(FunctionSignature *fs);
-bool is_function_constructor(const Function *f);
 bool is_type_declared(Type *t);
 bool is_type_primitive(Type *t);
 bool is_function_declared(FunctionSignature *fs);
 bool is_variable_declared(Identifier *id);
+bool is_constructor_declared(ConstructorSignature *cs);
 Function* get_function(FunctionSignature *fs);  
 Function* get_called_function(FunctionCall *fc);
+Constructor* get_called_constructor(ConstructorCall *cc);
 std::string get_function_label(FunctionSignature *fs);
+std::string get_constructor_label(ConstructorSignature *cs);
 Variable* get_variable(Identifier *id);
 bool is_identifier_used(Identifier *id);
 bool add_type(Type *t);
 bool add_primitive_type(Type *t);
 bool add_function(Function *f);
 bool add_sys_function(Function *f);
+bool add_constructor(Constructor *c);
 Variable* add_variable(Type *t, Identifier *id);
 void remove_function(Function *f);
 void remove_variable(Identifier *id);
+void remove_constructor(Constructor *c);
 void push_declaration_stack();
 void pop_declaration_stack();
 StructLayout* get_struct_layout(Type *t);
@@ -171,6 +178,7 @@ inline std::ofstream fout;
 //have these here to be visible. 
 inline Function* enclosing_function;
 inline std::vector<Function*> declared_functions;
+inline std::vector<Constructor*> declared_constructors;
 inline std::vector<Variable*> declared_variables;
 inline std::stack<std::vector<Variable*>> declaration_stack;   //every 'layer' of the declaration stack should be contiguous on the stack
 
