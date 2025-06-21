@@ -36,8 +36,10 @@ ws = " " | "\n" | "\t" | "\r" | "\f" | "\b"
 rws = < ws > ;                                  (* required whitespace *)
 ows = { ws } ;                                  (* optional whitespace *)
 
-type = base_type , { "*" | "&" } ;
+type = base_type , [ "<" , ows , type , { ows , "," , ows , type } , ows , ">" ] , { "*" | "&" } ;
 base_type = alpha , { alpha | digit | "_" } ;
+
+template_header = "template" , ows , "<" , ows , base_type , { ows , "," , ows , base_type } , ows , ">" ;
 
 identifier = ( alpha | "_" ) , { alpha | digit | "_" } ;
 
@@ -60,5 +62,5 @@ control_statement = "if" , ows , "(" , ows ,  expression , ows , ")" , ows , sta
                   | "for" , ows , "(" , ows , [ declaration ] , ows , ";" , ows , [ expression ] , ows , ";" , ows , [ expression ] , ows , ")" , ows , statement ;
 compound_statement = "{" , ows , { statement , ows } , "}" ;
 
-program = { ows , ( function | struct_definition ) } , ows ;
+program = { ows , ( function | struct_definition | templated_function | templated_struct_definition ) } , ows ;
 

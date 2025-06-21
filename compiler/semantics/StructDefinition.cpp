@@ -5,7 +5,7 @@
 #include "Function.h"
 #include "utils.h"
 #include "FunctionSignature.h"
-
+#include "Constructor.h"
 
 MemberVariable::MemberVariable(Type *_type, Identifier *_id) {
     type = _type;
@@ -19,14 +19,15 @@ MemberVariable* MemberVariable::convert(parser::member_variable_declaration *mvd
 }
 
 
-StructDefinition::StructDefinition(Type *_type, std::vector<MemberVariable*> _member_variables, std::vector<Function*> _functions) {
-    type = _type;
+StructDefinition::StructDefinition(BaseType *_base_type, std::vector<MemberVariable*> _member_variables, std::vector<Function*> _functions, std::vector<Constructor*> _constructors) {
+    base_type = _base_type;
     member_variables = _member_variables;
     functions = _functions;
+    constructors = _constructors;
 }
 
 StructDefinition* StructDefinition::convert(parser::struct_definition *s) {
-    Type *type = BaseType::convert(s->t2);
+    BaseType *type = BaseType::convert(s->t2);
     std::vector<MemberVariable*> member_variables;
     std::vector<Function*> functions;
     for(int i = 0; i < s->t6.size(); i++){
@@ -78,17 +79,17 @@ bool StructDefinition::is_well_formed() {
     }
     // - is there a default constructor?
     {
-        FunctionSignature *fid = new FunctionSignature(new Identifier(type->to_string()), {});
+        FunctionSignature *fid = new FunctionSignature(new Identifier(base_type->to_string()), {});
         if(!is_function_declared(fid)) {
-            std::cout << "Default constructor for " << type->to_string() << " not defined\n";
+            std::cout << "Default constructor for " << base_type->to_string() << " not defined\n";
             return false;
         }
     }
     // - is there a copy constructor?
     {
-        FunctionSignature *fid = new FunctionSignature(new Identifier(type->to_string()), {new ReferenceType(type)});
+        FunctionSignature *fid = new FunctionSignature(new Identifier(base_type->to_string()), {new ReferenceType(base_type)});
         if(!is_function_declared(fid)) {
-            std::cout << "Copy constructor for " << type->to_string() << " not defined\n";
+            std::cout << "Copy constructor for " << base_type->to_string() << " not defined\n";
             return false;
         }
     }
@@ -104,8 +105,8 @@ bool StructDefinition::is_well_formed() {
 
     // - make sure we can actually add StructLayout into the controller
     StructLayout *sl = new StructLayout(member_variables, offset_map, size);
-    if(!add_struct_layout(type, sl)) {
-        std::cout << "Failed to add StructLayout for " << type->to_string() << "\n";
+    if(!add_struct_layout(base_type, sl)) {
+        std::cout << "Failed to add StructLayout for " << base_type->to_string() << "\n";
         return false;
     }
 

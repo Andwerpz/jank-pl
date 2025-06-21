@@ -4,6 +4,8 @@
 struct Type;
 struct Identifier;
 struct Function;
+struct BaseType;
+struct Constructor;
 
 struct MemberVariable {
     Type *type;
@@ -13,10 +15,11 @@ struct MemberVariable {
 };
 
 struct StructDefinition {
-    Type *type;
+    BaseType *base_type;
     std::vector<MemberVariable*> member_variables;
     std::vector<Function*> functions;
-    StructDefinition(Type *_type, std::vector<MemberVariable*> _member_variables, std::vector<Function*> _functions);
+    std::vector<Constructor*> constructors;
+    StructDefinition(BaseType *_base_type, std::vector<MemberVariable*> _member_variables, std::vector<Function*> _functions, std::vector<Constructor*> _constructors);
     static StructDefinition* convert(parser::struct_definition *s);
-    bool is_well_formed();
+    bool is_well_formed(); 
 };

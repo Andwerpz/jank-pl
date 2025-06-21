@@ -1,4 +1,5 @@
 #include "Type.h"
+#include "utils.h"
 
 bool Type::operator==(const Type& other) const {
     return this->equals(&other);
@@ -8,29 +9,53 @@ bool Type::operator!=(const Type& other) const {
     return !this->equals(&other);
 }
 
-// -- BaseType --
+// -- CONSTRUCTOR --
+BaseType::BaseType(std::string _name) {
+    name = _name;
+}
+
+PointerType::PointerType(Type *_type) {
+    assert(_type != nullptr);
+    type = _type;
+}
+
+ReferenceType::ReferenceType(Type *_type) {
+    assert(_type != nullptr);
+    type = _type;
+}
+
+TemplatedType::TemplatedType(BaseType *_base_type, std::vector<Type*> _template_types) {
+    assert(_base_type != nullptr);
+    assert(_template_types.size() != 0);
+    for(int i = 0; i < _template_types.size(); i++) assert(_template_types[i] != nullptr);
+    base_type = _base_type;
+    template_types = _template_types;
+}
+
+// -- CALC SIZE --
 int BaseType::calc_size() {
     if(name == "int") return 8;
     else if(name == "char") return 1;
-    else return 8;
+    else return 8;  //user defined type
 }
 
+int PointerType::calc_size() {
+    return 8;
+}
+
+int ReferenceType::calc_size() {
+    return 8;
+}
+
+int TemplatedType::calc_size() {
+    //a templated type should always be user defined
+    return 8;
+}
+
+// -- EQUALS --
 bool BaseType::equals(const Type *other) const {
     if(auto x = dynamic_cast<const BaseType*>(other)) return name == x->name;
     return false;
-}
-
-size_t BaseType::hash() const {
-    return std::hash<std::string>()(name) ^ 0x9e3779b9;
-}
-
-std::string BaseType::to_string() {
-    return name;
-}
-
-// -- PointerType --
-int PointerType::calc_size() {
-    return 8;
 }
 
 bool PointerType::equals(const Type *other) const {
@@ -38,46 +63,64 @@ bool PointerType::equals(const Type *other) const {
     return false;
 }
 
-size_t PointerType::hash() const {
-    return type->hash() ^ 0x13952424;
-}
-
-std::string PointerType::to_string() {
-    return type->to_string() + "*";
-}
-
-// -- ReferenceType --
-int ReferenceType::calc_size() {
-    return 8;
-}
-
 bool ReferenceType::equals(const Type *other) const {
     if(auto x = dynamic_cast<const ReferenceType*>(other)) return *type == *(x->type);
     return false;
+}
+
+bool TemplatedType::equals(const Type *other) const {
+    if(auto x = dynamic_cast<const TemplatedType*>(other)) {
+        if(!base_type->equals(x->base_type)) return false;
+        if(template_types.size() != x->template_types.size()) return false;
+        for(int i = 0; i < template_types.size(); i++) if(!template_types[i]->equals(x->template_types[i])) return false;
+        return true;
+    }
+    return false;
+}
+
+// -- HASH --
+size_t BaseType::hash() const {
+    return std::hash<std::string>()(name) ^ 0x9e3779b9;
+}
+
+size_t PointerType::hash() const {
+    return type->hash() ^ 0x13952424;
 }
 
 size_t ReferenceType::hash() const {
     return type->hash() ^ 0xdeadbeef;
 }
 
+size_t TemplatedType::hash() const {
+    size_t hash = 0;
+    hash_combine(hash, base_type->hash());
+    for(int i = 0; i < template_types.size(); i++) hash_combine(hash, template_types[i]->hash());
+    return hash;
+}
+
+// -- TO STRING --
+std::string BaseType::to_string() {
+    return name;
+}
+
+std::string PointerType::to_string() {
+    return type->to_string() + "*";
+}
+
 std::string ReferenceType::to_string() {
     return type->to_string() + "&";
 }
 
-// -- convert --
-Type* Type::convert(parser::type *t) {
-    Type *res = BaseType::convert(t->t0);
-    for(int i = 0; i < t->t1.size(); i++){
-        std::string suf = t->t1[i]->to_string();
-        if(suf == "*") res = new PointerType(res);
-        else if(suf == "&") res = new ReferenceType(res);
-        else assert(false);
+std::string TemplatedType::to_string() {
+    std::string res = "";
+    res += base_type->to_string();
+    res += "<";
+    for(int i = 0; i < template_types.size(); i++) {
+        res += template_types[i]->to_string();
+        if(i + 1 != template_types.size()) res += ", ";
     }
+    res += ">";
     return res;
-}
-
-BaseType* BaseType::convert(parser::base_type *t) {
-    return new BaseType(t->to_string());
 }
 
 // -- MAKE COPY --
@@ -91,4 +134,36 @@ Type* PointerType::make_copy() {
 
 Type* ReferenceType::make_copy() {
     return new ReferenceType(type->make_copy());
+}
+
+Type* TemplatedType::make_copy() {
+    std::vector<Type*> template_types_copy;
+    for(int i = 0; i < template_types.size(); i++) {
+        template_types_copy.push_back(template_types[i]->make_copy());
+    }
+    return new TemplatedType(dynamic_cast<BaseType*>(base_type->make_copy()), template_types_copy);
+}
+
+// -- CONVERT --
+Type* Type::convert(parser::type *t) {
+    Type *res = BaseType::convert(t->t0);
+    if(t->t1 != nullptr) {  //template types
+        std::vector<Type*> template_types;
+        template_types.push_back(Type::convert(t->t1->t2));
+        for(int i = 0; i < t->t1->t3.size(); i++){
+            template_types.push_back(Type::convert(t->t1->t3[i]->t3));
+        }
+        res = new TemplatedType(dynamic_cast<BaseType*>(res), template_types);
+    }
+    for(int i = 0; i < t->t2.size(); i++){
+        std::string suf = t->t2[i]->to_string();
+        if(suf == "*") res = new PointerType(res);
+        else if(suf == "&") res = new ReferenceType(res);
+        else assert(false);
+    }
+    return res;
+}
+
+BaseType* BaseType::convert(parser::base_type *t) {
+    return new BaseType(t->to_string());
 }

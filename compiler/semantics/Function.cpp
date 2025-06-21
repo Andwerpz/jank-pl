@@ -4,11 +4,7 @@
 #include "FunctionSignature.h"
 #include "utils.h"
 #include "Statement.h"
-
-Function::Parameter::Parameter(Type *_type, Identifier *_id) {
-    type = _type;
-    id = _id;
-}
+#include "Parameter.h"
 
 Function::Function(std::optional<Type*> _enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
     enclosing_type = _enclosing_type;
@@ -59,12 +55,12 @@ Function* Function::convert(parser::function *f) {
     parser::parameter_list *pl = def->t6;
     Type *type = Type::convert(def->t0);
     Identifier *name = new Identifier(def->t2->to_string());
-    std::vector<Function::Parameter*> parameters;
+    std::vector<Parameter*> parameters;
     if(pl->t0 != nullptr) {
-        parameters.push_back(Function::Parameter::convert(pl->t0->t0));
+        parameters.push_back(Parameter::convert(pl->t0->t0));
         std::vector<parser::parameter_list::a0::b0*> tmp = pl->t0->t1;
         for(int i = 0; i < tmp.size(); i++){
-            parameters.push_back(Function::Parameter::convert(tmp[i]->t3));
+            parameters.push_back(Parameter::convert(tmp[i]->t3));
         }
     }
     CompoundStatement *body = CompoundStatement::convert(f->t2);
@@ -77,12 +73,6 @@ Function* Function::convert(parser::function *f) {
         //regular function
         return new Function(std::nullopt, type, name, parameters, body);
     }
-}
-
-Function::Parameter* Function::Parameter::convert(parser::parameter *p) {
-    Type *type = Type::convert(p->t0);
-    Identifier* name = Identifier::convert(p->t2);
-    return new Parameter(type, name);
 }
 
 bool Function::is_well_formed() {

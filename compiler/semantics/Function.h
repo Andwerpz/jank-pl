@@ -8,15 +8,9 @@ struct Identifier;
 struct Type;
 struct FunctionSignature;
 struct OperatorSignature;
+struct Parameter;
 
-struct Function {
-    struct Parameter {
-        Type *type;
-        Identifier *id;
-        Parameter(Type *_type, Identifier *_id);
-        static Parameter* convert(parser::parameter *p);
-    };
-    
+struct Function {    
     std::optional<Type*> enclosing_type;
     Type *type;
     Identifier *id;

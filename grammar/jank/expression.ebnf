@@ -1,8 +1,9 @@
 #include "jank.ebnf" ;
 #include "function.ebnf" ;
 #include "literal.ebnf" ;
+#include "struct.ebnf" ;
 
-(* TODO handle casting. This should be an unary operator, like "(" , type , ")" *)
+(* TODO handle casting. This should be a prefix operator, like "(" , type , ")" *)
 (* TODO handle referencing (&) *)
 
 (* in order of precedence *)
@@ -21,7 +22,7 @@
 (* = += -= <mult>= /= %= <<= >>= &= ^= |= *) 
 (* , *) (* as of right now, the comma operator is not supported because it conflicts with function calls *)
 
-expr_primary = literal | function_call | identifier | "(" , ows , expression , ows , ")" ;
+expr_primary = literal | constructor_call | function_call | identifier | "(" , ows , expression , ows , ")" ;
 expr_postfix = expr_primary , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , function_call | "->" , ows , function_call | "." , ows , identifier | "->" , ows , identifier | "++" | "--" ) } ;
 expr_unary = ( "++" | "--" | "+" | "-" | "~" | "!" | "*" ) , ows , expr_unary | expr_postfix ;
 expr_multiplicative = expr_unary , { ows , ( "*" | "/" | "%" ) , ows , expr_unary } ;

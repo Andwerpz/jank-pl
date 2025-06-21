@@ -17,5 +17,7 @@ function_definition = type , rws , function_identifier , ows , "(" , ows , param
 (* void main(int foo) { } *)
 function = function_definition , ows , compound_statement ;
 
+templated_function = template_header , ows , function ;
+
 (* print("asdf") *)
 function_call = identifier , ows , "(" , ows , argument_list , ows , ")" ;

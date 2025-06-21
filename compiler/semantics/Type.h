@@ -15,9 +15,7 @@ struct Type {
 
 struct BaseType : public Type {
     std::string name;
-    BaseType(std::string _name) {
-        name = _name;
-    }
+    BaseType(std::string _name);
     static BaseType* convert(parser::base_type *t);
 
     int calc_size() override;
@@ -29,10 +27,7 @@ struct BaseType : public Type {
 
 struct PointerType : public Type {
     Type *type;
-    PointerType(Type *_type) {
-        assert(_type != nullptr);
-        type = _type;
-    }
+    PointerType(Type *_type);
 
     int calc_size() override;
     bool equals(const Type *other) const override;
@@ -43,10 +38,19 @@ struct PointerType : public Type {
 
 struct ReferenceType : public Type {
     Type *type;
-    ReferenceType(Type *_type) {
-        assert(_type != nullptr);
-        type = _type;
-    }
+    ReferenceType(Type *_type);
+
+    int calc_size() override;
+    bool equals(const Type *other) const override;
+    size_t hash() const override;
+    std::string to_string() override;
+    Type* make_copy() override;
+};
+
+struct TemplatedType : public Type {
+    BaseType *base_type;
+    std::vector<Type*> template_types;
+    TemplatedType(BaseType *_base_type, std::vector<Type*> _template_types);
 
     int calc_size() override;
     bool equals(const Type *other) const override;

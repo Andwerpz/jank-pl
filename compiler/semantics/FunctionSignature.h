@@ -23,20 +23,3 @@ struct FunctionSignature {
     bool operator!=(const FunctionSignature& other) const;
     std::string to_string();
 };
-
-namespace std {
-    template<>
-    struct hash<FunctionSignature*> {
-        size_t operator()(const FunctionSignature *fs) const {
-            if(fs == nullptr) return 0;
-            return fs->hash();
-        }
-    };
-    template<> 
-    struct equal_to<FunctionSignature*> {
-        bool operator()(const FunctionSignature *lhs, const FunctionSignature *rhs) const { 
-            if(lhs == nullptr || rhs == nullptr) return lhs == rhs;
-            return lhs->equals(rhs);
-        }
-    };
-}

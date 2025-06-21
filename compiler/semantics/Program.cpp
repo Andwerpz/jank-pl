@@ -8,16 +8,23 @@
 #include <queue>
 #include "FunctionSignature.h"
 #include "Identifier.h"
+#include "TemplatedStructDefinition.h"
+#include "TemplatedFunction.h"
 
-
-Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions) {
+Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions) {
     structs = _structs;
     functions = _functions;
+
+    templated_structs = _templated_structs;
+    templated_functions = _templated_functions;
 }
 
 Program* Program::convert(parser::program *p) {
     std::vector<StructDefinition*> structs;
     std::vector<Function*> functions;
+
+    std::vector<TemplatedStructDefinition*> templated_structs;
+    std::vector<TemplatedFunction*> templated_functions;
     for(int i = 0; i < p->t0.size(); i++){
         if(p->t0[i]->t1->is_c0) {   //function
             functions.push_back(Function::convert(p->t0[i]->t1->t0->t0));
@@ -25,9 +32,15 @@ Program* Program::convert(parser::program *p) {
         else if(p->t0[i]->t1->is_c1) {  //struct definition
             structs.push_back(StructDefinition::convert(p->t0[i]->t1->t1->t0));
         }
+        else if(p->t0[i]->t1->is_c2) {  //templated function
+            templated_functions.push_back(TemplatedFunction::convert(p->t0[i]->t1->t2->t0));
+        }
+        else if(p->t0[i]->t1->is_c3) {  //templated struct definition
+            templated_structs.push_back(TemplatedStructDefinition::convert(p->t0[i]->t1->t3->t0));
+        }
         else assert(false);
     }
-    return new Program(structs, functions);
+    return new Program(structs, functions, templated_structs, templated_functions);
 }
 
 bool Program::is_well_formed() {
@@ -39,8 +52,8 @@ bool Program::is_well_formed() {
 
     //for all structs, register them as types
     for(int i = 0; i < structs.size(); i++) {
-        if(!add_type(structs[i]->type)) {
-            std::cout << "Failed to add type : " << structs[i]->type->to_string() << "\n";
+        if(!add_type(structs[i]->base_type)) {
+            std::cout << "Failed to add type : " << structs[i]->base_type->to_string() << "\n";
             return false;
         }
     }
@@ -52,7 +65,7 @@ bool Program::is_well_formed() {
     {
         int n = structs.size();
         std::unordered_map<Type*, int> indmp;
-        for(int i = 0; i < n; i++) indmp[structs[i]->type] = i;
+        for(int i = 0; i < n; i++) indmp[structs[i]->base_type] = i;
         std::vector<std::vector<int>> c(n);
         std::vector<int> indeg(n, 0);
         for(int i = 0; i < n; i++){
@@ -91,7 +104,7 @@ bool Program::is_well_formed() {
     for(int i = 0; i < structs.size(); i++){
         StructDefinition *s = structs[top_ord[i]];
         if(!s->is_well_formed()) {
-            std::cout << "Struct not well formed : " << s->type->to_string() << "\n";
+            std::cout << "Struct not well formed : " << s->base_type->to_string() << "\n";
             return false;
         }
     }

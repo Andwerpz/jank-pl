@@ -1,4 +1,4 @@
-// Date Generated : 06-19-2025 23:28:23
+// Date Generated : 06-21-2025 11:57:09
 #pragma once
 #include <vector>
 #include <string>
@@ -18,6 +18,7 @@ namespace parser {
     struct function_identifier;
     struct function_definition;
     struct function;
+    struct templated_function;
     struct function_call;
     struct literal_sizeof;
     struct literal_integer;
@@ -25,6 +26,12 @@ namespace parser {
     struct literal_char;
     struct literal_string;
     struct literal;
+    struct member_variable_declaration;
+    struct constructor_definition;
+    struct constructor;
+    struct constructor_call;
+    struct struct_definition;
+    struct templated_struct_definition;
     struct expr_primary;
     struct expr_postfix;
     struct expr_unary;
@@ -40,8 +47,6 @@ namespace parser {
     struct expr_logical_or;
     struct expr_assignment;
     struct expression;
-    struct member_variable_declaration;
-    struct struct_definition;
     struct alpha;
     struct digit;
     struct escape;
@@ -53,6 +58,7 @@ namespace parser {
     struct ows;
     struct type;
     struct base_type;
+    struct template_header;
     struct identifier;
     struct declaration;
     struct parameter;
@@ -492,6 +498,20 @@ namespace parser {
         std::string to_string();
     };
 
+    // templated_function = template_header , ows , function ;
+    struct templated_function {
+        template_header *t0;
+        ows *t1;
+        function *t2;
+        templated_function(template_header *_t0, ows *_t1, function *_t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static templated_function* parse();
+        std::string to_string();
+    };
+
     // function_call = identifier , ows , "(" , ows , argument_list , ows , ")" ;
     struct function_call {
         identifier *t0;
@@ -822,7 +842,179 @@ namespace parser {
         std::string to_string();
     };
 
-    // expr_primary = literal | function_call | identifier | "(" , ows , expression , ows , ")" ;
+    // member_variable_declaration = type , rws , identifier , ";" ;
+    struct member_variable_declaration {
+        type *t0;
+        rws *t1;
+        identifier *t2;
+        std::string t3;
+        member_variable_declaration(type *_t0, rws *_t1, identifier *_t2, std::string _t3) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+        }
+        static member_variable_declaration* parse();
+        std::string to_string();
+    };
+
+    // constructor_definition = base_type , ows , "(" , ows , parameter_list , ows , ")" ;
+    struct constructor_definition {
+        base_type *t0;
+        ows *t1;
+        std::string t2;
+        ows *t3;
+        parameter_list *t4;
+        ows *t5;
+        std::string t6;
+        constructor_definition(base_type *_t0, ows *_t1, std::string _t2, ows *_t3, parameter_list *_t4, ows *_t5, std::string _t6) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
+            t5 = _t5;
+            t6 = _t6;
+        }
+        static constructor_definition* parse();
+        std::string to_string();
+    };
+
+    // constructor = constructor_definition , ows , compound_statement ;
+    struct constructor {
+        constructor_definition *t0;
+        ows *t1;
+        compound_statement *t2;
+        constructor(constructor_definition *_t0, ows *_t1, compound_statement *_t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static constructor* parse();
+        std::string to_string();
+    };
+
+    // constructor_call = "new" , rws , type , ows , "(" , ows , argument_list , ows , ")" ;
+    struct constructor_call {
+        std::string t0;
+        rws *t1;
+        type *t2;
+        ows *t3;
+        std::string t4;
+        ows *t5;
+        argument_list *t6;
+        ows *t7;
+        std::string t8;
+        constructor_call(std::string _t0, rws *_t1, type *_t2, ows *_t3, std::string _t4, ows *_t5, argument_list *_t6, ows *_t7, std::string _t8) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
+            t5 = _t5;
+            t6 = _t6;
+            t7 = _t7;
+            t8 = _t8;
+        }
+        static constructor_call* parse();
+        std::string to_string();
+    };
+
+    // struct_definition = "struct" , ows , base_type , ows , "{" , ows , { ( member_variable_declaration | function | constructor ) , ows } , "}" ;
+    struct struct_definition {
+        struct a0 {
+            struct b0 {
+                struct c0 {
+                    member_variable_declaration *t0;
+                    c0(member_variable_declaration *_t0) {
+                        t0 = _t0;
+                    }
+                    static c0* parse();
+                    std::string to_string();
+                };
+                struct c1 {
+                    function *t0;
+                    c1(function *_t0) {
+                        t0 = _t0;
+                    }
+                    static c1* parse();
+                    std::string to_string();
+                };
+                struct c2 {
+                    constructor *t0;
+                    c2(constructor *_t0) {
+                        t0 = _t0;
+                    }
+                    static c2* parse();
+                    std::string to_string();
+                };
+                bool is_c0 = false;
+                c0 *t0;
+                bool is_c1 = false;
+                c1 *t1;
+                bool is_c2 = false;
+                c2 *t2;
+                b0(c0 *_t0) {
+                    is_c0 = true;
+                    t0 = _t0;
+                }
+                b0(c1 *_t1) {
+                    is_c1 = true;
+                    t1 = _t1;
+                }
+                b0(c2 *_t2) {
+                    is_c2 = true;
+                    t2 = _t2;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            b0 *t0;
+            ows *t1;
+            a0(b0 *_t0, ows *_t1) {
+                t0 = _t0;
+                t1 = _t1;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        std::string t0;
+        ows *t1;
+        base_type *t2;
+        ows *t3;
+        std::string t4;
+        ows *t5;
+        std::vector<a0*> t6;
+        std::string t7;
+        struct_definition(std::string _t0, ows *_t1, base_type *_t2, ows *_t3, std::string _t4, ows *_t5, std::vector<a0*> _t6, std::string _t7) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
+            t5 = _t5;
+            t6 = _t6;
+            t7 = _t7;
+        }
+        static struct_definition* parse();
+        std::string to_string();
+    };
+
+    // templated_struct_definition = template_header , ows , struct_definition ;
+    struct templated_struct_definition {
+        template_header *t0;
+        ows *t1;
+        struct_definition *t2;
+        templated_struct_definition(template_header *_t0, ows *_t1, struct_definition *_t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static templated_struct_definition* parse();
+        std::string to_string();
+    };
+
+    // expr_primary = literal | constructor_call | function_call | identifier | "(" , ows , expression , ows , ")" ;
     struct expr_primary {
         struct a0 {
             literal *t0;
@@ -833,35 +1025,43 @@ namespace parser {
             std::string to_string();
         };
         struct a1 {
-            function_call *t0;
-            a1(function_call *_t0) {
+            constructor_call *t0;
+            a1(constructor_call *_t0) {
                 t0 = _t0;
             }
             static a1* parse();
             std::string to_string();
         };
         struct a2 {
-            identifier *t0;
-            a2(identifier *_t0) {
+            function_call *t0;
+            a2(function_call *_t0) {
                 t0 = _t0;
             }
             static a2* parse();
             std::string to_string();
         };
         struct a3 {
+            identifier *t0;
+            a3(identifier *_t0) {
+                t0 = _t0;
+            }
+            static a3* parse();
+            std::string to_string();
+        };
+        struct a4 {
             std::string t0;
             ows *t1;
             expression *t2;
             ows *t3;
             std::string t4;
-            a3(std::string _t0, ows *_t1, expression *_t2, ows *_t3, std::string _t4) {
+            a4(std::string _t0, ows *_t1, expression *_t2, ows *_t3, std::string _t4) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
                 t3 = _t3;
                 t4 = _t4;
             }
-            static a3* parse();
+            static a4* parse();
             std::string to_string();
         };
         bool is_a0 = false;
@@ -872,6 +1072,8 @@ namespace parser {
         a2 *t2;
         bool is_a3 = false;
         a3 *t3;
+        bool is_a4 = false;
+        a4 *t4;
         expr_primary(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
@@ -887,6 +1089,10 @@ namespace parser {
         expr_primary(a3 *_t3) {
             is_a3 = true;
             t3 = _t3;
+        }
+        expr_primary(a4 *_t4) {
+            is_a4 = true;
+            t4 = _t4;
         }
         static expr_primary* parse();
         std::string to_string();
@@ -1833,88 +2039,6 @@ namespace parser {
             t0 = _t0;
         }
         static expression* parse();
-        std::string to_string();
-    };
-
-    // member_variable_declaration = type , rws , identifier , ";" ;
-    struct member_variable_declaration {
-        type *t0;
-        rws *t1;
-        identifier *t2;
-        std::string t3;
-        member_variable_declaration(type *_t0, rws *_t1, identifier *_t2, std::string _t3) {
-            t0 = _t0;
-            t1 = _t1;
-            t2 = _t2;
-            t3 = _t3;
-        }
-        static member_variable_declaration* parse();
-        std::string to_string();
-    };
-
-    // struct_definition = "struct" , ows , base_type , ows , "{" , ows , { ( member_variable_declaration | function ) , ows } , "}" ;
-    struct struct_definition {
-        struct a0 {
-            struct b0 {
-                struct c0 {
-                    member_variable_declaration *t0;
-                    c0(member_variable_declaration *_t0) {
-                        t0 = _t0;
-                    }
-                    static c0* parse();
-                    std::string to_string();
-                };
-                struct c1 {
-                    function *t0;
-                    c1(function *_t0) {
-                        t0 = _t0;
-                    }
-                    static c1* parse();
-                    std::string to_string();
-                };
-                bool is_c0 = false;
-                c0 *t0;
-                bool is_c1 = false;
-                c1 *t1;
-                b0(c0 *_t0) {
-                    is_c0 = true;
-                    t0 = _t0;
-                }
-                b0(c1 *_t1) {
-                    is_c1 = true;
-                    t1 = _t1;
-                }
-                static b0* parse();
-                std::string to_string();
-            };
-            b0 *t0;
-            ows *t1;
-            a0(b0 *_t0, ows *_t1) {
-                t0 = _t0;
-                t1 = _t1;
-            }
-            static a0* parse();
-            std::string to_string();
-        };
-        std::string t0;
-        ows *t1;
-        base_type *t2;
-        ows *t3;
-        std::string t4;
-        ows *t5;
-        std::vector<a0*> t6;
-        std::string t7;
-        struct_definition(std::string _t0, ows *_t1, base_type *_t2, ows *_t3, std::string _t4, ows *_t5, std::vector<a0*> _t6, std::string _t7) {
-            t0 = _t0;
-            t1 = _t1;
-            t2 = _t2;
-            t3 = _t3;
-            t4 = _t4;
-            t5 = _t5;
-            t6 = _t6;
-            t7 = _t7;
-        }
-        static struct_definition* parse();
         std::string to_string();
     };
 
@@ -3682,9 +3806,41 @@ namespace parser {
         std::string to_string();
     };
 
-    // type = base_type , { "*" | "&" } ;
+    // type = base_type , [ "<" , ows , type , { ows , "," , ows , type } , ows , ">" ] , { "*" | "&" } ;
     struct type {
         struct a0 {
+            struct b0 {
+                ows *t0;
+                std::string t1;
+                ows *t2;
+                type *t3;
+                b0(ows *_t0, std::string _t1, ows *_t2, type *_t3) {
+                    t0 = _t0;
+                    t1 = _t1;
+                    t2 = _t2;
+                    t3 = _t3;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            std::string t0;
+            ows *t1;
+            type *t2;
+            std::vector<b0*> t3;
+            ows *t4;
+            std::string t5;
+            a0(std::string _t0, ows *_t1, type *_t2, std::vector<b0*> _t3, ows *_t4, std::string _t5) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+                t4 = _t4;
+                t5 = _t5;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        struct a1 {
             struct b0 {
                 std::string t0;
                 b0(std::string _t0) {
@@ -3705,22 +3861,24 @@ namespace parser {
             b0 *t0;
             bool is_b1 = false;
             b1 *t1;
-            a0(b0 *_t0) {
+            a1(b0 *_t0) {
                 is_b0 = true;
                 t0 = _t0;
             }
-            a0(b1 *_t1) {
+            a1(b1 *_t1) {
                 is_b1 = true;
                 t1 = _t1;
             }
-            static a0* parse();
+            static a1* parse();
             std::string to_string();
         };
         base_type *t0;
-        std::vector<a0*> t1;
-        type(base_type *_t0, std::vector<a0*> _t1) {
+        a0 *t1;
+        std::vector<a1*> t2;
+        type(base_type *_t0, a0 *_t1, std::vector<a1*> _t2) {
             t0 = _t0;
             t1 = _t1;
+            t2 = _t2;
         }
         static type* parse();
         std::string to_string();
@@ -3781,6 +3939,44 @@ namespace parser {
             t1 = _t1;
         }
         static base_type* parse();
+        std::string to_string();
+    };
+
+    // template_header = "template" , ows , "<" , ows , base_type , { ows , "," , ows , base_type } , ows , ">" ;
+    struct template_header {
+        struct a0 {
+            ows *t0;
+            std::string t1;
+            ows *t2;
+            base_type *t3;
+            a0(ows *_t0, std::string _t1, ows *_t2, base_type *_t3) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        std::string t0;
+        ows *t1;
+        std::string t2;
+        ows *t3;
+        base_type *t4;
+        std::vector<a0*> t5;
+        ows *t6;
+        std::string t7;
+        template_header(std::string _t0, ows *_t1, std::string _t2, ows *_t3, base_type *_t4, std::vector<a0*> _t5, ows *_t6, std::string _t7) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
+            t5 = _t5;
+            t6 = _t6;
+            t7 = _t7;
+        }
+        static template_header* parse();
         std::string to_string();
     };
 
@@ -4276,7 +4472,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // program = { ows , ( function | struct_definition ) } , ows ;
+    // program = { ows , ( function | struct_definition | templated_function | templated_struct_definition ) } , ows ;
     struct program {
         struct a0 {
             struct b0 {
@@ -4296,10 +4492,30 @@ namespace parser {
                     static c1* parse();
                     std::string to_string();
                 };
+                struct c2 {
+                    templated_function *t0;
+                    c2(templated_function *_t0) {
+                        t0 = _t0;
+                    }
+                    static c2* parse();
+                    std::string to_string();
+                };
+                struct c3 {
+                    templated_struct_definition *t0;
+                    c3(templated_struct_definition *_t0) {
+                        t0 = _t0;
+                    }
+                    static c3* parse();
+                    std::string to_string();
+                };
                 bool is_c0 = false;
                 c0 *t0;
                 bool is_c1 = false;
                 c1 *t1;
+                bool is_c2 = false;
+                c2 *t2;
+                bool is_c3 = false;
+                c3 *t3;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -4307,6 +4523,14 @@ namespace parser {
                 b0(c1 *_t1) {
                     is_c1 = true;
                     t1 = _t1;
+                }
+                b0(c2 *_t2) {
+                    is_c2 = true;
+                    t2 = _t2;
+                }
+                b0(c3 *_t3) {
+                    is_c3 = true;
+                    t3 = _t3;
                 }
                 static b0* parse();
                 std::string to_string();
