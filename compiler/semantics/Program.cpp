@@ -10,6 +10,8 @@
 #include "Identifier.h"
 #include "TemplatedStructDefinition.h"
 #include "TemplatedFunction.h"
+#include "Constructor.h"
+#include "ConstructorSignature.h"
 
 Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions) {
     structs = _structs;
@@ -32,12 +34,12 @@ Program* Program::convert(parser::program *p) {
         else if(p->t0[i]->t1->is_c1) {  //struct definition
             structs.push_back(StructDefinition::convert(p->t0[i]->t1->t1->t0));
         }
-        else if(p->t0[i]->t1->is_c2) {  //templated function
-            templated_functions.push_back(TemplatedFunction::convert(p->t0[i]->t1->t2->t0));
-        }
-        else if(p->t0[i]->t1->is_c3) {  //templated struct definition
-            templated_structs.push_back(TemplatedStructDefinition::convert(p->t0[i]->t1->t3->t0));
-        }
+        // else if(p->t0[i]->t1->is_c2) {  //templated function
+        //     templated_functions.push_back(TemplatedFunction::convert(p->t0[i]->t1->t2->t0));
+        // }
+        // else if(p->t0[i]->t1->is_c3) {  //templated struct definition
+        //     templated_structs.push_back(TemplatedStructDefinition::convert(p->t0[i]->t1->t3->t0));
+        // }
         else assert(false);
     }
     return new Program(structs, functions, templated_structs, templated_functions);
@@ -134,9 +136,17 @@ bool Program::is_well_formed() {
     // - make sure every function is well formed
     for(int i = 0; i < declared_functions.size(); i++){
         enclosing_function = declared_functions[i];
-
         if(!declared_functions[i]->is_well_formed()) {
             std::cout << "Function not well formed : " << declared_functions[i]->resolve_function_signature()->to_string() << "\n";
+            return false;
+        }
+    }
+    enclosing_function = nullptr;
+
+    // - make sure every constructor is well formed
+    for(int i = 0; i < declared_constructors.size(); i++){
+        if(!declared_constructors[i]->is_well_formed()) {
+            std::cout << "Constructor not well formed : " << declared_constructors[i]->resolve_constructor_signature()->to_string() << "\n";
             return false;
         }
     }

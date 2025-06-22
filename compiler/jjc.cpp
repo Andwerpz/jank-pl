@@ -21,6 +21,8 @@
 #include "semantics/Statement.h"
 #include "semantics/FunctionSignature.h"
 #include "semantics/Parameter.h"
+#include "semantics/Constructor.h"
+#include "semantics/ConstructorSignature.h"
 
 #include "semantics/utils.h"
 
@@ -107,6 +109,10 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
             MemberVariable *mv = sd->member_variables[j];
             std::cout << mv->type->to_string() << " " << mv->id->name << "\n";
         }
+        std::cout << "MEMBER CONSTRUCTORS : \n";
+        for(int j = 0; j < sd->constructors.size(); j++){
+            std::cout << sd->constructors[j]->resolve_constructor_signature()->to_string() << "\n";
+        }
         std::cout << "MEMBER FUNCTIONS : \n";
         for(int j = 0; j < sd->functions.size(); j++){
             std::cout << sd->functions[j]->resolve_function_signature()->to_string() << "\n";
@@ -161,6 +167,11 @@ int assemble(char src_path[], char res_path[]) {
         int status;
         waitpid(pid, &status, 0);
         if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            if (WIFSIGNALED(status)) {
+                int sig = WTERMSIG(status);
+                std::cout << "Terminated by signal " << sig << " (" << strsignal(sig) << ")" << std::endl;
+            }
+            std::cout << "Assembling Error" << std::endl;
             return 1;
         }
     }
@@ -226,6 +237,10 @@ int main(int argc, char* argv[]) {
         int status;
         waitpid(pid, &status, 0);
         if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            if (WIFSIGNALED(status)) {
+                int sig = WTERMSIG(status);
+                std::cout << "Terminated by signal " << sig << " (" << strsignal(sig) << ")" << std::endl;
+            }
             std::cout << "Compilation Error\n";
             std::remove(asm_file);
             return 1;

@@ -749,11 +749,16 @@ bool is_variable_declared(Identifier *id) {
 }
 
 bool is_constructor_declared(ConstructorSignature *cs) {
+    assert(cs != nullptr);
+    std::cout << "CHECKING IS CONSTRUCTOR DECLARED" << std::endl;
     for(int i = 0; i < declared_constructors.size(); i++){
+        std::cout << "I : " << i << std::endl;
         if(cs->equals(declared_constructors[i]->resolve_constructor_signature())) {
+            std::cout << "FOUND CONSTRUCTOR" << std::endl;
             return true;
         }
     }
+    std::cout << "COULD NOT FIND CONSTRUCTOR" << std::endl;
     return false;
 }
 
@@ -850,7 +855,7 @@ Constructor* get_called_constructor(ConstructorCall *cc) {
                 is_viable = false;
             }
         }
-        if(!is_viable) break;
+        if(!is_viable) continue;
 
         //all checks passed
         viable.push_back(declared_constructors[i]);
@@ -1121,8 +1126,9 @@ void emit_initialize_struct(Type *t) {
         else {  //struct
             //invoke default constructor
             emit_push("%rax", "emit_initialize_struct() : struct ptr");
-            FunctionCall *fc = new FunctionCall(new Identifier(t->to_string()), {});
-            fc->emit_asm();
+            ConstructorCall *cc = new ConstructorCall(mv->type->make_copy(), {});
+            assert(cc != nullptr);
+            cc->emit_asm();
 
             //save reference to struct
             fout << indent() << "mov %rax, %rbx\n";

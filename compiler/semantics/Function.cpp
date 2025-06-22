@@ -34,7 +34,7 @@ Function::Function(Type *_type, Identifier *_id, std::vector<Type*> input_types)
 FunctionSignature* Function::resolve_function_signature() const {
     std::vector<Type*> input_types;
     for(int i = 0; i < parameters.size(); i++) input_types.push_back(parameters[i]->type);
-    if(enclosing_type.has_value() && !is_function_constructor(this)) return new FunctionSignature(enclosing_type.value(), id, input_types);
+    if(enclosing_type.has_value()) return new FunctionSignature(enclosing_type.value(), id, input_types);
     return new FunctionSignature(id, input_types);
 }
 

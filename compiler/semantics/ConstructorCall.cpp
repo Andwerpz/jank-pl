@@ -3,6 +3,8 @@
 #include "Expression.h"
 #include "Constructor.h"
 #include "utils.h"
+#include "Identifier.h"
+#include "Parameter.h"
 
 ConstructorCall::ConstructorCall(Type *_type, std::vector<Expression*> _argument_list) {
     assert(_type != nullptr);
@@ -29,11 +31,54 @@ Constructor* ConstructorCall::resolve_called_constructor() {
 }
 
 Type* ConstructorCall::resolve_type() {
-    return type;
+    Constructor *c = this->resolve_called_constructor();
+    if(c == nullptr){
+        std::cout << "Cannot resolve constructor call : " << to_string() << "\n";
+        return nullptr;
+    }
+    return c->type;
 }
 
 void ConstructorCall::emit_asm() {
-    // TODO
+    if(asm_debug) fout << indent() << "# calling constructor : " << type->to_string() << "\n";
+
+    //find constructor
+    Constructor *c = this->resolve_called_constructor();
+    assert(c != nullptr);
+
+    //create new instance of the object
+    emit_initialize_struct(this->type);
+
+    //save reference to type for return value
+    emit_push("%rbx", "ConstructorCall::emit_asm() : target struct return ref");
+
+    //put reference into %rax
+    fout << indent() << "mov %rbx, %rax\n";
+
+    //also pass in struct as argument
+    emit_push("%rax", "ConstructorCall::emit_asm() : target struct");
+
+    //create temp variables for all arguments
+    push_declaration_stack();
+    assert(c->parameters.size() == argument_list.size());
+    for(int i = 0; i < argument_list.size(); i++){
+        Identifier *id = new Identifier(create_new_tmp_variable_name());
+        Variable *v = emit_initialize_variable(c->parameters[i]->type, id, argument_list[i]);
+        assert(v != nullptr);
+    }
+
+    //call constructor
+    std::string label = get_constructor_label(c->resolve_constructor_signature());
+    fout << indent() << "call " << label << "\n";
+
+    //clean up argument temp variables
+    pop_declaration_stack();
+
+    //clean up target struct argument
+    emit_add_rsp(8, "ConstructorCall::emit_asm() : target struct");
+
+    //return reference to type
+    emit_pop("%rax", "ConstructorCall::emit_asm() : target struct return ref");
 }
 
 std::string ConstructorCall::to_string() {

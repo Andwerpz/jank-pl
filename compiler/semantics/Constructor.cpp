@@ -12,7 +12,7 @@ Constructor::Constructor(Type* _type, std::vector<Parameter*> _parameters, Compo
     body = _body;
 }
 
-Constructor* convert(parser::constructor *c) {
+Constructor* Constructor::convert(parser::constructor *c) {
     Type *type = BaseType::convert(c->t0->t0);
     parser::parameter_list *pl = c->t0->t4;
     std::vector<Parameter*> parameters;

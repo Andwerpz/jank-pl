@@ -87,11 +87,13 @@ bool StructDefinition::is_well_formed() {
     //add all constructors to global list to check later
     for(int i = 0; i < constructors.size(); i++) {
         Constructor *c = constructors[i];
+        std::cout << "NEXT CONSTRUCTOR : " << c << " " << i << " " << std::endl;
         if(!add_constructor(c)) {
             std::cout << "Failed to add struct constructor : " << c->resolve_constructor_signature()->to_string() << "\n";
             return false;
         }
     }
+    std::cout << "DONE ADDING CONSTRUCTORS" << std::endl;
 
     // - is there a default constructor?
     {

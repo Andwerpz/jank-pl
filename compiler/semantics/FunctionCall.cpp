@@ -5,6 +5,7 @@
 #include "Type.h"
 #include "utils.h"
 #include "Function.h"
+#include "Parameter.h"
 
 FunctionCall::FunctionCall(Identifier *_id, std::vector<Expression*> _argument_list) {
     target_type = std::nullopt;
@@ -56,23 +57,10 @@ void FunctionCall::emit_asm() {
     //find original function
     Function *f = this->resolve_called_function();
     assert(f != nullptr);
-    bool is_constructor = is_function_constructor(f);
-
-    //if it is a constructor, create a new instance of the object
-    if(is_constructor) {  
-        Type *t = f->type;
-        emit_initialize_struct(t);
-
-        //save reference to type as return value
-        emit_push("%rbx", "FunctionCall::emit_asm() : constructor");
-
-        //put reference into %rax
-        fout << indent() << "mov %rbx, %rax\n";
-    }
     
     //if is member function, pass in target struct as an argument
     //expects the target struct to be in %rax
-    if(target_type.has_value() || is_constructor) {  //member function
+    if(target_type.has_value()) {  //member function
         emit_push("%rax", "FunctionCall::emit_asm() : target struct");
     }
 
@@ -80,7 +68,6 @@ void FunctionCall::emit_asm() {
     push_declaration_stack();
     assert(f->parameters.size() == argument_list.size());
     for(int i = 0; i < argument_list.size(); i++){
-        //identifiers cannot begin with digits, so this shouldn't collide with anything else
         Identifier *id = new Identifier(create_new_tmp_variable_name());
         Variable *v = emit_initialize_variable(f->parameters[i]->type, id, argument_list[i]);
         assert(v != nullptr);
@@ -94,13 +81,8 @@ void FunctionCall::emit_asm() {
     pop_declaration_stack();
 
     //clean up target struct argument
-    if(target_type.has_value() || is_constructor) {
+    if(target_type.has_value()) {
         emit_add_rsp(8, "FunctionCall::emit_asm() : target struct");
-    }
-
-    //if is a constructor, should return reference to type
-    if(is_constructor) {
-        emit_pop("%rax", "FunctionCall::emit_asm() : constructor");
     }
 }
 

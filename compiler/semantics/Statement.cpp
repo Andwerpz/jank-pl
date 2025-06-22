@@ -203,6 +203,14 @@ bool ExpressionStatement::is_well_formed() {
 }
 
 bool ReturnStatement::is_well_formed() {
+    // - if we are not in a function right now (constructor), make sure this is a void return
+    if(enclosing_function == nullptr) {
+        if(opt_expr.has_value()) {
+            return false;
+        }
+        return true;
+    }
+
     // - does the expression resolve to a type?
     Type *et = nullptr, *ft = enclosing_function->type;
     if(opt_expr.has_value()) {

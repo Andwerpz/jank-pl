@@ -21,6 +21,7 @@ size_t ConstructorSignature::hash() const {
 bool ConstructorSignature::equals(const ConstructorSignature* other) const {
     if(other == nullptr) return false;
     if(!type->equals(other->type)) return false;
+    if(input_types.size() != other->input_types.size()) return false;
     for(int i = 0; i < input_types.size(); i++) if(!input_types[i]->equals(other->input_types[i])) return false;
     return true;
 }

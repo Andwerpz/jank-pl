@@ -6,6 +6,7 @@
 #include "Type.h"
 #include "utils.h"
 #include "Function.h"
+#include "ConstructorCall.h"
 
 // -- CONSTRUCTOR --
 ExprPrimary::ExprPrimary(val_t _val) {
@@ -44,13 +45,16 @@ ExprNode* ExprNode::convert(parser::expr_primary *e) {
         val = Literal::convert(e->t0->t0);
     }
     else if(e->is_a1) {
-        val = FunctionCall::convert(e->t1->t0);
+        val = ConstructorCall::convert(e->t1->t0);
     }
     else if(e->is_a2) {
-        val = Identifier::convert(e->t2->t0);
+        val = FunctionCall::convert(e->t2->t0);
     }
     else if(e->is_a3) {
-        val = Expression::convert(e->t3->t2);
+        val = Identifier::convert(e->t3->t0);
+    }
+    else if(e->is_a4) {
+        val = Expression::convert(e->t4->t2);
     }
     else assert(false);
     return new ExprPrimary(val);
@@ -239,6 +243,15 @@ Type* ExprPrimary::resolve_type() {
         //if this is a reference, automatically dereference it
         if(dynamic_cast<ReferenceType*>(res)) {
             res = dynamic_cast<ReferenceType*>(res)->type;
+        }
+        return res;
+    }
+    else if(std::holds_alternative<ConstructorCall*>(val)) {
+        ConstructorCall *c = std::get<ConstructorCall*>(val);
+        Type *res = c->resolve_type();
+        if(res == nullptr){
+            std::cout << "Constructor call does not resolve to type : " << c->to_string() << "\n";
+            return nullptr;
         }
         return res;
     }
@@ -469,6 +482,9 @@ bool ExprPrimary::is_lvalue() {
         if(dynamic_cast<ReferenceType*>(t) != nullptr) return true;
         return false;
     }
+    else if(std::holds_alternative<ConstructorCall*>(val)) {
+        return false;
+    }
     else if(std::holds_alternative<Identifier*>(val)) {
         return true;
     }
@@ -592,6 +608,9 @@ void ExprPrimary::elaborate(ExprNode*& self) {
     if(std::holds_alternative<FunctionCall*>(val)) {
         //do nothing
     }
+    else if(std::holds_alternative<ConstructorCall*>(val)) {
+        //do nothing
+    }
     else if(std::holds_alternative<Identifier*>(val)) {
         //do nothing
     }
@@ -628,7 +647,7 @@ void ExprBinary::elaborate(ExprNode*& self) {
         if(str_op == "=") {
             Type *rt = right->resolve_type();
             if(!is_type_primitive(rt) && right->is_lvalue()) {
-                FunctionCall *copy = new FunctionCall(new Identifier(rt->to_string()), {new Expression(right)});
+                ConstructorCall *copy = new ConstructorCall(rt->make_copy(), {new Expression(right)});
                 right = new ExprPrimary(copy);
             }
         }
@@ -716,6 +735,10 @@ void ExprPrimary::emit_asm() {
         if(dynamic_cast<ReferenceType*>(ft)) {
             emit_dereference(ft);
         }
+    }
+    else if(std::holds_alternative<ConstructorCall*>(val)) {
+        ConstructorCall *c = std::get<ConstructorCall*>(val);
+        c->emit_asm();
     }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
@@ -996,6 +1019,10 @@ std::string ExprPrimary::to_string() {
         FunctionCall *fc = std::get<FunctionCall*>(val);
         return fc->to_string();
     }
+    else if(std::holds_alternative<ConstructorCall*>(val)) {
+        ConstructorCall *c = std::get<ConstructorCall*>(val);
+        return c->to_string();
+    }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
         return id->name;
@@ -1060,6 +1087,10 @@ size_t ExprPrimary::hash() {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *fc = std::get<FunctionCall*>(val);
         return fc->hash();
+    }
+    else if(std::holds_alternative<ConstructorCall*>(val)) {
+        ConstructorCall *c = std::get<ConstructorCall*>(val);
+        return c->hash();
     }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
@@ -1143,6 +1174,11 @@ bool ExprPrimary::equals(ExprNode* _other) {
         FunctionCall *fc = std::get<FunctionCall*>(val);
         FunctionCall *ofc = std::get<FunctionCall*>(other->val);
         return fc->equals(ofc);
+    }
+    else if(std::holds_alternative<ConstructorCall*>(val)) {
+        ConstructorCall *c = std::get<ConstructorCall*>(val);
+        ConstructorCall *oc = std::get<ConstructorCall*>(other->val);
+        return c->equals(oc);
     }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
@@ -1242,6 +1278,14 @@ void ExprPrimary::id_to_type() {
             fc->argument_list[i]->id_to_type();
         }
     }
+    else if(std::holds_alternative<ConstructorCall*>(val)) {
+        ConstructorCall *c = std::get<ConstructorCall*>(val);
+
+        //turn all arguments of function call to type
+        for(int i = 0; i < c->argument_list.size(); i++){
+            c->argument_list[i]->id_to_type();
+        }
+    }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);   
 
@@ -1299,6 +1343,10 @@ ExprNode* ExprPrimary::make_copy() {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *fc = std::get<FunctionCall*>(val);
         return new ExprPrimary(fc->make_copy());
+    }
+    else if(std::holds_alternative<ConstructorCall*>(val)) {
+        ConstructorCall *c = std::get<ConstructorCall*>(val);
+        return new ExprPrimary(c->make_copy());
     }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
