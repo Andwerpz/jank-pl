@@ -1,5 +1,6 @@
 #include "Type.h"
 #include "utils.h"
+#include "TemplateMapping.h"
 
 bool Type::operator==(const Type& other) const {
     return this->equals(&other);
@@ -166,4 +167,37 @@ Type* Type::convert(parser::type *t) {
 
 BaseType* BaseType::convert(parser::base_type *t) {
     return new BaseType(t->to_string());
+}
+
+// -- REPLACE TEMPLATED TYPES --
+bool BaseType::replace_templated_types(TemplateMapping *mapping) {
+    // do nothing
+    return true;
+}
+
+bool PointerType::replace_templated_types(TemplateMapping *mapping) {
+    if(auto x = mapping->find_mapped_type(type)) {type = x; return true;}
+    else return type->replace_templated_types(mapping);
+}
+
+bool ReferenceType::replace_templated_types(TemplateMapping *mapping) {
+    if(auto x = mapping->find_mapped_type(type)) {type = x; return true;}
+    else return type->replace_templated_types(mapping);
+}
+
+bool TemplatedType::replace_templated_types(TemplateMapping *mapping) {
+    //right now, I'm not supporting template template parameters
+    //template <template <typename> class T>
+    if(mapping->find_mapped_type(base_type)) {
+        std::cout << "Currently not supporting template template parameters\n";
+        return false;
+    }
+
+    for(int i = 0; i < template_types.size(); i++){
+        if(auto x = mapping->find_mapped_type(template_types[i])) template_types[i] = x;
+        else {
+            if(!template_types[i]->replace_templated_types(mapping)) return false;
+        }
+    }
+    return true;
 }

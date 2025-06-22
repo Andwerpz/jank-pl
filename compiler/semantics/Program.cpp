@@ -52,32 +52,65 @@ bool Program::is_well_formed() {
 
     fout << ".section .text\n";
 
+    //for all templated structs, register their basetype
+    for(int i = 0; i < templated_structs.size(); i++){
+        BaseType *sbt = dynamic_cast<BaseType*>(templated_structs[i]->struct_def->type);
+        assert(sbt != nullptr);
+        if(!add_basetype(sbt)) {
+            std::cout << "Failed to add basetype : " << sbt->to_string() << "\n";
+            return false;
+        }
+    }
+
     //for all structs, register them as types
     for(int i = 0; i < structs.size(); i++) {
-        if(!add_type(structs[i]->base_type)) {
-            std::cout << "Failed to add type : " << structs[i]->base_type->to_string() << "\n";
+        BaseType *sbt = dynamic_cast<BaseType*>(structs[i]->type);
+        assert(sbt != nullptr);
+        if(!add_basetype(sbt)) {
+            std::cout << "Failed to add basetype : " << sbt->to_string() << "\n";
+            return false;
+        }
+        if(!add_type(structs[i]->type)) {
+            std::cout << "Failed to add type : " << structs[i]->type->to_string() << "\n";
             return false;
         }
     }
     std::cout << "DONE REGISTER STRUCTS AS TYPES" << std::endl;
+
+    // - are all the templated structs well formed?
+    for(int i = 0; i < templated_structs.size(); i++){
+        if(!templated_structs[i]->is_well_formed()) {
+            std::cout << "Templated struct not well formed\n";
+            return false;
+        }
+    }
+
+    //TODO generate templated structs
+
 
     // - are there circular dependencies in the struct member variables?
     //build struct graph, do topological sort on the graph.
     std::vector<int> top_ord(0);
     {
         int n = structs.size();
-        std::unordered_map<Type*, int> indmp;
-        for(int i = 0; i < n; i++) indmp[structs[i]->base_type] = i;
+        std::vector<Type*> indmp(n);
+        for(int i = 0; i < n; i++) indmp[i] = structs[i]->type;
         std::vector<std::vector<int>> c(n);
         std::vector<int> indeg(n, 0);
         for(int i = 0; i < n; i++){
             StructDefinition *sd = structs[i];
             for(int j = 0; j < sd->member_variables.size(); j++){
                 Type *vt = sd->member_variables[j]->type;
-                if(indmp.count(vt)) {
-                    int x = indmp[vt];
-                    c[i].push_back(x);
-                    indeg[x] ++;
+                int ind = -1;
+                for(int k = 0; k < indmp.size(); k++) {
+                    if(vt->equals(indmp[k])) {
+                        ind = k;
+                        break;
+                    }
+                }
+                if(ind != -1) {
+                    c[i].push_back(ind);
+                    indeg[ind] ++;
                 }
             }
         }
@@ -106,7 +139,7 @@ bool Program::is_well_formed() {
     for(int i = 0; i < structs.size(); i++){
         StructDefinition *s = structs[top_ord[i]];
         if(!s->is_well_formed()) {
-            std::cout << "Struct not well formed : " << s->base_type->to_string() << "\n";
+            std::cout << "Struct not well formed : " << s->type->to_string() << "\n";
             return false;
         }
     }

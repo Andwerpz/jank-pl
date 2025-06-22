@@ -5,6 +5,7 @@
 #include "ConstructorSignature.h"
 #include "utils.h"
 #include "Identifier.h"
+#include "TemplateMapping.h"
 
 Constructor::Constructor(Type* _type, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
     type = _type;
@@ -126,4 +127,24 @@ bool Constructor::is_well_formed() {
 
     return true;
 
+}
+
+Constructor* Constructor::make_copy() {
+    Type *_type = type->make_copy();
+    std::vector<Parameter*> _parameters;
+    for(int i = 0; i < parameters.size(); i++){
+        _parameters.push_back(parameters[i]->make_copy());
+    }
+    CompoundStatement *_body = dynamic_cast<CompoundStatement*>(body->make_copy());
+    return new Constructor(_type, _parameters, _body);
+}
+
+bool Constructor::replace_templated_types(TemplateMapping *mapping) {
+    if(auto x = mapping->find_mapped_type(type)) type = x;
+    else if(!type->replace_templated_types(mapping)) return false;
+    for(int i = 0; i < parameters.size(); i++){
+        if(!parameters[i]->replace_templated_types(mapping)) return false;
+    }
+    if(!body->replace_templated_types(mapping)) return false;
+    return true;
 }

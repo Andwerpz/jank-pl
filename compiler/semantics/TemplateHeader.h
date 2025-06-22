@@ -3,8 +3,12 @@
 #include <vector>
 
 struct Type;
+struct BaseType;
 
 struct TemplateHeader {
-    std::vector<Type*> types;
-    TemplateHeader(std::vector<Type*> _types);
+    std::vector<BaseType*> types;
+    TemplateHeader(std::vector<BaseType*> _types);
+
+    static TemplateHeader* convert(parser::template_header *h);
+    std::string to_string();
 };

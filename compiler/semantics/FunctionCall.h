@@ -7,6 +7,7 @@ struct Type;
 struct Identifier;
 struct Expression;
 struct Function;
+struct TemplateMapping;
 
 struct FunctionCall {
     std::optional<Type*> target_type;
@@ -25,4 +26,5 @@ struct FunctionCall {
     size_t hash();
     bool equals(FunctionCall *other);
     FunctionCall* make_copy();
+    bool replace_templated_types(TemplateMapping *mapping);
 };

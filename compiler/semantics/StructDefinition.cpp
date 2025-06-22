@@ -7,6 +7,7 @@
 #include "FunctionSignature.h"
 #include "Constructor.h"
 #include "ConstructorSignature.h"
+#include "TemplateMapping.h"
 
 MemberVariable::MemberVariable(Type *_type, Identifier *_id) {
     type = _type;
@@ -19,12 +20,24 @@ MemberVariable* MemberVariable::convert(parser::member_variable_declaration *mvd
     return new MemberVariable(type, id);
 }
 
+MemberVariable* MemberVariable::make_copy() {
+    return new MemberVariable(type->make_copy(), id->make_copy());
+}
 
-StructDefinition::StructDefinition(BaseType *_base_type, std::vector<MemberVariable*> _member_variables, std::vector<Function*> _functions, std::vector<Constructor*> _constructors) {
-    base_type = _base_type;
+bool MemberVariable::replace_templated_types(TemplateMapping *mapping) {
+    if(auto x = mapping->find_mapped_type(type)) type = x; 
+    else if(!type->replace_templated_types(mapping)) return false;
+    return true;
+}
+
+
+StructDefinition::StructDefinition(Type *_type, std::vector<MemberVariable*> _member_variables, std::vector<Function*> _functions, std::vector<Constructor*> _constructors) {
+    type = _type;
     member_variables = _member_variables;
     functions = _functions;
     constructors = _constructors;
+
+    assert(_type != nullptr);
 }
 
 StructDefinition* StructDefinition::convert(parser::struct_definition *s) {
@@ -97,17 +110,17 @@ bool StructDefinition::is_well_formed() {
 
     // - is there a default constructor?
     {
-        ConstructorSignature *cid = new ConstructorSignature(base_type->make_copy(), {});
+        ConstructorSignature *cid = new ConstructorSignature(type->make_copy(), {});
         if(!is_constructor_declared(cid)) {
-            std::cout << "Default constructor for " << base_type->to_string() << " not defined\n";
+            std::cout << "Default constructor for " << type->to_string() << " not defined\n";
             return false;
         }
     }
     // - is there a copy constructor?
     {
-        ConstructorSignature *cid = new ConstructorSignature(base_type->make_copy(), {new ReferenceType(base_type->make_copy())});
+        ConstructorSignature *cid = new ConstructorSignature(type->make_copy(), {new ReferenceType(type->make_copy())});
         if(!is_constructor_declared(cid)) {
-            std::cout << "Copy constructor for " << base_type->to_string() << " not defined\n";
+            std::cout << "Copy constructor for " << type->to_string() << " not defined\n";
             return false;
         }
     }
@@ -123,10 +136,42 @@ bool StructDefinition::is_well_formed() {
 
     // - make sure we can actually add StructLayout into the controller
     StructLayout *sl = new StructLayout(member_variables, offset_map, size);
-    if(!add_struct_layout(base_type, sl)) {
-        std::cout << "Failed to add StructLayout for " << base_type->to_string() << "\n";
+    if(!add_struct_layout(type, sl)) {
+        std::cout << "Failed to add StructLayout for " << type->to_string() << "\n";
         return false;
     }
 
+    return true;
+}
+
+StructDefinition* StructDefinition::make_copy() {
+    Type *_type = type->make_copy();
+    std::vector<MemberVariable*> _member_variables;
+    std::vector<Function*> _functions;
+    std::vector<Constructor*> _constructors;
+    for(int i = 0; i < member_variables.size(); i++){
+        _member_variables.push_back(member_variables[i]->make_copy());
+    }
+    for(int i = 0; i < functions.size(); i++){
+        _functions.push_back(functions[i]->make_copy());
+    }
+    for(int i = 0; i < constructors.size(); i++){
+        _constructors.push_back(constructors[i]->make_copy());
+    }
+    return new StructDefinition(_type, _member_variables, _functions, _constructors);
+}
+
+bool StructDefinition::replace_templated_types(TemplateMapping *mapping) {
+    if(auto x = mapping->find_mapped_type(type)) type = x;
+    else if(!type->replace_templated_types(mapping)) return false;
+    for(int i = 0; i < member_variables.size(); i++){
+        if(!member_variables[i]->replace_templated_types(mapping)) return false;
+    }
+    for(int i = 0; i < functions.size(); i++){
+        if(!functions[i]->replace_templated_types(mapping)) return false;
+    }
+    for(int i = 0; i < constructors.size(); i++){
+        if(!constructors[i]->replace_templated_types(mapping)) return false;
+    }
     return true;
 }

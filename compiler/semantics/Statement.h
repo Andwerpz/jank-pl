@@ -2,19 +2,25 @@
 #include "../parser/parser.h"
 #include <optional>
 #include <vector>
+
 struct Declaration;
 struct Expression;
+struct TemplateMapping;
 
 struct Statement {
     static Statement* convert(parser::statement *s);
     virtual bool is_well_formed() = 0;
     virtual bool is_always_returning() = 0;
+    virtual Statement* make_copy() = 0;
+    virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
 };
 
 struct SimpleStatement : public Statement {
     static SimpleStatement* convert(parser::simple_statement *s);
     virtual bool is_well_formed() = 0;
     virtual bool is_always_returning() = 0;
+    virtual Statement* make_copy() = 0;
+    virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
 };
 
 struct DeclarationStatement : public SimpleStatement {
@@ -22,6 +28,8 @@ struct DeclarationStatement : public SimpleStatement {
     DeclarationStatement(Declaration *_declaration);
     bool is_well_formed() override;
     bool is_always_returning() override;
+    Statement* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct ExpressionStatement : public SimpleStatement {
@@ -29,6 +37,8 @@ struct ExpressionStatement : public SimpleStatement {
     ExpressionStatement(Expression *_expr);
     bool is_well_formed() override;
     bool is_always_returning() override;
+    Statement* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct ReturnStatement : public SimpleStatement {
@@ -36,12 +46,16 @@ struct ReturnStatement : public SimpleStatement {
     ReturnStatement(Expression* expr);
     bool is_well_formed() override;
     bool is_always_returning() override;
+    Statement* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct ControlStatement : public Statement {
     static ControlStatement* convert(parser::control_statement *s);
     virtual bool is_well_formed() = 0;
     virtual bool is_always_returning() = 0;
+    virtual Statement* make_copy() = 0;
+    virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
 };
 
 struct IfStatement : public ControlStatement {
@@ -51,6 +65,8 @@ struct IfStatement : public ControlStatement {
     IfStatement(std::vector<Expression*> _exprs, std::vector<Statement*> _statements, Statement *_else_statement);
     bool is_well_formed() override;
     bool is_always_returning() override;
+    Statement* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct WhileStatement : public ControlStatement {
@@ -59,6 +75,8 @@ struct WhileStatement : public ControlStatement {
     WhileStatement(Expression *_expr, Statement *_statement);
     bool is_well_formed() override;
     bool is_always_returning() override;
+    Statement* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct ForStatement : public ControlStatement {
@@ -69,12 +87,16 @@ struct ForStatement : public ControlStatement {
     ForStatement(Declaration *_declaration, Expression *_expr1, Expression *_expr2, Statement *_statement);
     bool is_well_formed() override;
     bool is_always_returning() override;
+    Statement* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };  
 
 struct CompoundStatement : public Statement {
     std::vector<Statement*> statements;
     CompoundStatement(std::vector<Statement*> _statements);
     static CompoundStatement* convert(parser::compound_statement *s);
-    bool is_well_formed();
-    bool is_always_returning();
+    bool is_well_formed() override;
+    bool is_always_returning() override;
+    Statement* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };

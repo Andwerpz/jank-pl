@@ -22,6 +22,7 @@ struct FunctionCall;
 struct Constructor;
 struct ConstructorSignature;
 struct ConstructorCall;
+struct TemplatedType;
 
 struct Variable;
 struct OperatorSignature;
@@ -131,6 +132,8 @@ Type* find_resulting_type(std::optional<ExprNode*> left, std::string op, std::op
 Type* find_variable_type(Identifier *id);
 Type* find_function_type(FunctionSignature *fs);
 bool is_type_declared(Type *t);
+bool is_basetype_declared(BaseType *t);
+bool is_templated_type_well_formed(TemplatedType *t);
 bool is_type_primitive(Type *t);
 bool is_function_declared(FunctionSignature *fs);
 bool is_variable_declared(Identifier *id);
@@ -143,7 +146,8 @@ std::string get_constructor_label(ConstructorSignature *cs);
 Variable* get_variable(Identifier *id);
 bool is_identifier_used(Identifier *id);
 bool add_type(Type *t);
-bool add_primitive_type(Type *t);
+bool add_primitive_basetype(BaseType *t);   //these don't constitute all the primitive types, you can have derived primitive types (like pointer)
+bool add_basetype(BaseType *t);
 bool add_function(Function *f);
 bool add_sys_function(Function *f);
 bool add_constructor(Constructor *c);

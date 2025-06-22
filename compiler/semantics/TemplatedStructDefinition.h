@@ -4,6 +4,7 @@
 struct TemplateHeader;
 struct StructDefinition;
 struct TemplatedType;
+struct TemplateMapping;
 
 struct TemplatedStructDefinition {  
     TemplateHeader* header;
@@ -13,6 +14,7 @@ struct TemplatedStructDefinition {
 
     static TemplatedStructDefinition* convert(parser::templated_struct_definition *s);
 
-    bool is_match(TemplatedType* type);
+    bool is_well_formed();
+    TemplateMapping* calc_mapping(TemplatedType *type);
     StructDefinition* gen_struct_def(TemplatedType* type);
 };

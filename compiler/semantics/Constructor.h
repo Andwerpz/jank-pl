@@ -6,6 +6,7 @@ struct Type;
 struct Parameter;
 struct CompoundStatement;
 struct ConstructorSignature;
+struct TemplateMapping;
 
 struct Constructor {
     Type *type;
@@ -17,4 +18,6 @@ struct Constructor {
     ConstructorSignature* resolve_constructor_signature() const;
     bool equals(const Constructor* other) const;
     bool is_well_formed();
+    Constructor* make_copy();
+    bool replace_templated_types(TemplateMapping *mapping);
 };

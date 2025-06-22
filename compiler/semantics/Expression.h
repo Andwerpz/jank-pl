@@ -16,6 +16,7 @@ struct Identifier;
 struct FunctionSignature;
 struct OperatorSignature;
 struct ConstructorCall;
+struct TemplateMapping;
 
 struct ExprNode {
     static ExprNode* convert(parser::expr_primary *e);
@@ -49,6 +50,7 @@ struct ExprNode {
     // If you don't do this, you'll be comparing Identifiers. 
     virtual void id_to_type() = 0;
     virtual ExprNode* make_copy() = 0;
+    virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
 };
 
 //Type* is just a placeholder for a variable of that type. It's just used for type conversion purposes. 
@@ -67,6 +69,7 @@ struct ExprPrimary : ExprNode {
     bool equals(ExprNode* other) override;
     void id_to_type() override;
     ExprNode* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct ExprBinary : ExprNode {
@@ -85,6 +88,7 @@ struct ExprBinary : ExprNode {
     bool equals(ExprNode* other) override;
     void id_to_type() override;
     ExprNode* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct ExprPrefix : ExprNode {
@@ -102,6 +106,7 @@ struct ExprPrefix : ExprNode {
     bool equals(ExprNode* other) override;
     void id_to_type() override;
     ExprNode* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct ExprPostfix : ExprNode {
@@ -119,6 +124,7 @@ struct ExprPostfix : ExprNode {
     bool equals(ExprNode* other) override;
     void id_to_type() override;
     ExprNode* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct Expression {
@@ -136,4 +142,5 @@ struct Expression {
     bool equals(Expression* other);
     void id_to_type();
     Expression* make_copy();
+    bool replace_templated_types(TemplateMapping *mapping);
 };

@@ -200,6 +200,7 @@ namespace {
 }
 
 std::vector<Type*> declared_types;
+std::vector<BaseType*> declared_basetypes;
 std::unordered_set<Type*, TypeHash, TypeEquals> primitive_base_types;
 std::unordered_map<Type*, StructLayout*, TypeHash, TypeEquals> struct_layout_map;
 std::unordered_map<FunctionSignature*, std::string, FunctionSignatureHash, FunctionSignatureEquals> function_label_map;
@@ -213,6 +214,7 @@ void reset_controller() {
     // - reset semantic controller
     enclosing_function = nullptr;
     declared_types.clear();
+    declared_basetypes.clear();
     primitive_base_types.clear();
     struct_layout_map.clear();
 
@@ -233,12 +235,12 @@ void reset_controller() {
     tmp_variable_counter = 0;
 
     // - primitive types
-    Type *p_int = new BaseType("int");
-    Type *p_char = new BaseType("char");
-    Type *p_void = new BaseType("void");
-    add_primitive_type(p_int);
-    add_primitive_type(p_char);
-    add_primitive_type(p_void);
+    BaseType *p_int = new BaseType("int");
+    BaseType *p_char = new BaseType("char");
+    BaseType *p_void = new BaseType("void");
+    add_primitive_basetype(p_int);
+    add_primitive_basetype(p_char);
+    add_primitive_basetype(p_void);
 
     // - sys functions
     add_sys_function(new Function(p_void, new Identifier("sys_exit"), {p_int}));
@@ -715,6 +717,7 @@ Type* find_variable_type(Identifier *id) {
 }
 
 Type* find_function_type(FunctionSignature *fs) {
+    assert(fs != nullptr);
     for(int i = 0; i < declared_functions.size(); i++){
         if(*(declared_functions[i]->resolve_function_signature()) == *fs) return declared_functions[i]->type;
     }
@@ -722,12 +725,44 @@ Type* find_function_type(FunctionSignature *fs) {
 }
 
 bool is_type_declared(Type *t) {
+    assert(t != nullptr);
     if(auto x = dynamic_cast<PointerType*>(t)) return is_type_declared(x->type);
     if(auto x = dynamic_cast<ReferenceType*>(t)) return is_type_declared(x->type);
     for(int i = 0; i < declared_types.size(); i++){
         if(*(declared_types[i]) == *t) return true;
     }
     return false;
+}
+
+bool is_basetype_declared(BaseType* t) {
+    assert(t != nullptr);
+    for(int i = 0; i < declared_basetypes.size(); i++){
+        if(t->equals(declared_basetypes[i])) return true;
+    }
+    return false;
+}
+
+//just checks to make sure that it's composed of declared base types. 
+bool is_templated_type_well_formed(TemplatedType *t) {
+    assert(t != nullptr);
+    if(!is_basetype_declared(t->base_type)) return false;
+    for(int i = 0; i < t->template_types.size(); i++){
+        Type *nt = t->template_types[i];
+        assert(nt != nullptr);
+        while(dynamic_cast<ReferenceType*>(nt) || dynamic_cast<PointerType*>(nt)) {
+            if(auto x = dynamic_cast<ReferenceType*>(nt)) nt = x->type;
+            else if(auto x = dynamic_cast<PointerType*>(nt)) nt = x->type;
+            else assert(false);
+        }
+        if(auto x = dynamic_cast<BaseType*>(nt)) {
+            if(!is_basetype_declared(x)) return false;
+        }
+        else if(auto x = dynamic_cast<TemplatedType*>(nt)) {
+            if(!is_templated_type_well_formed(x)) return false;
+        }
+        else assert(false);
+    }
+    return true;
 }
 
 bool is_function_declared(FunctionSignature *fs) {
@@ -910,11 +945,19 @@ bool add_type(Type *t) {
     return true;
 }
 
-bool add_primitive_type(Type *t) {
+bool add_primitive_basetype(BaseType *t) {
     assert(t != nullptr);
     if(is_type_declared(t)) return false;
+    if(!add_basetype(t)) return false;
     declared_types.push_back(t);
     primitive_base_types.insert(t);
+    return true;
+}
+
+bool add_basetype(BaseType *t) {
+    assert(t != nullptr);
+    if(is_basetype_declared(t)) return false;
+    declared_basetypes.push_back(t);
     return true;
 }
 

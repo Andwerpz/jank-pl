@@ -4,6 +4,7 @@
 struct Type;
 struct Identifier;
 struct Expression;
+struct TemplateMapping;
 
 struct Declaration {
     Type *type;
@@ -14,4 +15,6 @@ struct Declaration {
 
     static Declaration* convert(parser::declaration *d);
     bool is_well_formed();
+    Declaration* make_copy();
+    bool replace_templated_types(TemplateMapping *mapping);
 };

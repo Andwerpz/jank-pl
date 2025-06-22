@@ -6,6 +6,7 @@
 struct Type;
 struct Expression;
 struct Constructor;
+struct TemplateMapping;
 
 struct ConstructorCall {
     Type *type;
@@ -20,4 +21,5 @@ struct ConstructorCall {
     size_t hash();
     bool equals(ConstructorCall *other);
     ConstructorCall* make_copy();
+    bool replace_templated_types(TemplateMapping *mapping);
 };

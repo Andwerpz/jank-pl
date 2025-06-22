@@ -426,3 +426,107 @@ bool CompoundStatement::is_well_formed() {
     pop_declaration_stack();
     return true;
 }
+
+// -- MAKE COPY --
+Statement* DeclarationStatement::make_copy() {
+    return new DeclarationStatement(declaration->make_copy());
+}
+
+Statement* ExpressionStatement::make_copy() {
+    return new ExpressionStatement(expr->make_copy());
+}
+
+Statement* ReturnStatement::make_copy() {
+    Expression *_expr = nullptr;
+    if(opt_expr.has_value()) _expr = opt_expr.value()->make_copy();
+    return new ReturnStatement(_expr);
+}
+
+Statement* IfStatement::make_copy() {
+    std::vector<Expression*> _exprs;
+    std::vector<Statement*> _statements;
+    Statement* _else_statement = nullptr;
+    for(int i = 0; i < exprs.size(); i++){
+        _exprs.push_back(exprs[i]->make_copy());
+    }
+    for(int i = 0; i < statements.size(); i++){
+        _statements.push_back(statements[i]->make_copy());
+    }
+    if(else_statement.has_value()) _else_statement = else_statement.value()->make_copy();
+    return new IfStatement(_exprs, _statements, _else_statement);
+}
+
+Statement* WhileStatement::make_copy() {
+    return new WhileStatement(expr->make_copy(), statement->make_copy());
+}
+
+Statement* ForStatement::make_copy() {
+    Declaration *_declaration = nullptr;
+    Expression *_expr1 = nullptr;
+    Expression *_expr2 = nullptr;
+    Statement *_statement = statement->make_copy();
+    if(declaration.has_value()) _declaration = declaration.value()->make_copy();
+    if(expr1.has_value()) _expr1 = expr1.value()->make_copy();
+    if(expr2.has_value()) _expr2 = expr2.value()->make_copy();
+    return new ForStatement(_declaration, _expr1, _expr2, _statement);
+}
+
+Statement* CompoundStatement::make_copy() {
+    std::vector<Statement*> _statements;
+    for(int i = 0; i < statements.size(); i++){
+        _statements.push_back(statements[i]->make_copy());
+    }
+    return new CompoundStatement(_statements);
+}
+
+// -- REPLACE TEMPLATED TYPES --
+bool DeclarationStatement::replace_templated_types(TemplateMapping *mapping) {
+    if(!declaration->replace_templated_types(mapping)) return false;
+    return true;
+}
+
+bool ExpressionStatement::replace_templated_types(TemplateMapping *mapping) {
+    if(!expr->replace_templated_types(mapping)) return false;
+    return true;
+}
+
+bool ReturnStatement::replace_templated_types(TemplateMapping *mapping) {
+    if(opt_expr.has_value()) {
+        Expression *expr = opt_expr.value();
+        if(!expr->replace_templated_types(mapping)) return false;
+        opt_expr = expr;
+    }
+    return true;
+}
+
+bool IfStatement::replace_templated_types(TemplateMapping *mapping) {
+    for(int i = 0; i < exprs.size(); i++){
+        if(!exprs[i]->replace_templated_types(mapping)) return false;
+    }
+    for(int i = 0; i < statements.size(); i++){
+        if(!statements[i]->replace_templated_types(mapping)) return false;
+    }
+    if(else_statement.has_value() && !else_statement.value()->replace_templated_types(mapping)) return false;
+    return true;
+}
+
+bool WhileStatement::replace_templated_types(TemplateMapping *mapping) {
+    if(!expr->replace_templated_types(mapping)) return false;
+    if(!statement->replace_templated_types(mapping)) return false;
+    return true;
+}
+
+bool ForStatement::replace_templated_types(TemplateMapping *mapping) {
+    if(declaration.has_value() && !declaration.value()->replace_templated_types(mapping)) return false;
+    if(expr1.has_value() && !expr1.value()->replace_templated_types(mapping)) return false;
+    if(expr2.has_value() && !expr2.value()->replace_templated_types(mapping)) return false;
+    if(!statement->replace_templated_types(mapping)) return false;
+    return true;
+}
+
+bool CompoundStatement::replace_templated_types(TemplateMapping *mapping) {
+    for(int i = 0; i < statements.size(); i++){
+        if(!statements[i]->replace_templated_types(mapping)) return false;
+    }
+    return true;
+}

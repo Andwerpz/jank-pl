@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "Function.h"
 #include "Parameter.h"
+#include "TemplateMapping.h"
 
 FunctionCall::FunctionCall(Identifier *_id, std::vector<Expression*> _argument_list) {
     target_type = std::nullopt;
@@ -125,4 +126,17 @@ FunctionCall* FunctionCall::make_copy() {
         _argument_list[i] = argument_list[i]->make_copy();
     }
     return new FunctionCall(_target_type, _id, _argument_list);
+}
+
+bool FunctionCall::replace_templated_types(TemplateMapping *mapping) {
+    if(target_type.has_value()) {
+        Type *val = target_type.value();
+        if(auto x = mapping->find_mapped_type(val)) val = x;
+        else if(!val->replace_templated_types(mapping)) return false;
+        target_type = val;
+    }
+    for(int i = 0; i < argument_list.size(); i++){
+        if(!argument_list[i]->replace_templated_types(mapping)) return false;
+    }
+    return true;
 }

@@ -1,6 +1,8 @@
 #pragma once
 #include "../parser/parser.h"
 
+struct TemplateMapping;
+
 struct Type {
     static Type* convert(parser::type *t);
     
@@ -11,6 +13,7 @@ struct Type {
     virtual size_t hash() const = 0;
     virtual std::string to_string() = 0;
     virtual Type* make_copy() = 0;
+    virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
 };
 
 struct BaseType : public Type {
@@ -23,6 +26,7 @@ struct BaseType : public Type {
     size_t hash() const override;
     std::string to_string() override;
     Type* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };  
 
 struct PointerType : public Type {
@@ -34,6 +38,7 @@ struct PointerType : public Type {
     size_t hash() const override;
     std::string to_string() override;
     Type* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct ReferenceType : public Type {
@@ -45,6 +50,7 @@ struct ReferenceType : public Type {
     size_t hash() const override;
     std::string to_string() override;
     Type* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct TemplatedType : public Type {
@@ -57,4 +63,5 @@ struct TemplatedType : public Type {
     size_t hash() const override;
     std::string to_string() override;
     Type* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };

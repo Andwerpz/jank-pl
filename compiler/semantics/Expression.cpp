@@ -7,6 +7,7 @@
 #include "utils.h"
 #include "Function.h"
 #include "ConstructorCall.h"
+#include "TemplateMapping.h"
 
 // -- CONSTRUCTOR --
 ExprPrimary::ExprPrimary(val_t _val) {
@@ -1397,4 +1398,80 @@ ExprNode* ExprPostfix::make_copy() {
 
 Expression* Expression::make_copy() {
     return new Expression(expr_node->make_copy());
+}
+
+// -- REPLACE TEMPLATED TYPES --
+bool ExprPrimary::replace_templated_types(TemplateMapping *mapping) {
+    if(std::holds_alternative<FunctionCall*>(val)) {
+        FunctionCall *fc = std::get<FunctionCall*>(val);
+        return fc->replace_templated_types(mapping);
+    }
+    else if(std::holds_alternative<ConstructorCall*>(val)) {
+        ConstructorCall *c = std::get<ConstructorCall*>(val);
+        return c->replace_templated_types(mapping);
+    }
+    else if(std::holds_alternative<Identifier*>(val)) {
+        Identifier *id = std::get<Identifier*>(val);
+        //do nothing 
+        return true;
+    }
+    else if(std::holds_alternative<Literal*>(val)) {
+        Literal *l = std::get<Literal*>(val);
+        //do nothing
+        return true;
+    }
+    else if(std::holds_alternative<Expression*>(val)) {
+        Expression *e = std::get<Expression*>(val);
+        return e->replace_templated_types(mapping);
+    }
+    else if(std::holds_alternative<Type*>(val)) {
+        Type *t = std::get<Type*>(val);
+        return t->replace_templated_types(mapping);
+    }
+    else assert(false);
+}
+
+bool ExprBinary::replace_templated_types(TemplateMapping *mapping) {
+    if(!left->replace_templated_types(mapping)) return false;
+    if(!right->replace_templated_types(mapping)) return false;
+    if(std::holds_alternative<std::string>(op)) {
+        //do nothing
+    }
+    else assert(false);
+    return true;
+}
+
+bool ExprPrefix::replace_templated_types(TemplateMapping *mapping) {
+    if(!right->replace_templated_types(mapping)) return false;
+    if(std::holds_alternative<std::string>(op)) {
+        //do nothing
+    }
+    else assert(false);
+    return true;
+}
+
+bool ExprPostfix::replace_templated_types(TemplateMapping *mapping) {
+    if(!left->replace_templated_types(mapping)) return false;
+    if(std::holds_alternative<Expression*>(op)) {   //indexing
+        Expression *expr = std::get<Expression*>(op);
+        if(!expr->replace_templated_types(mapping)) return false;
+    }
+    else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {    //function call
+        std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
+        if(!p.second->replace_templated_types(mapping)) return false;
+    }
+    else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {    //member variable access
+        std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
+        //do nothing
+    }
+    else if(std::holds_alternative<std::string>(op)) {  //postfix increment / decrement
+        std::string str_op = std::get<std::string>(op);
+        //do nothing
+    }
+    else assert(false);
+    return true;
+}
+
+bool Expression::replace_templated_types(TemplateMapping *mapping) {
+    return expr_node->replace_templated_types(mapping);
 }

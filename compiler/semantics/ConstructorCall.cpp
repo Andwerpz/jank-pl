@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "Identifier.h"
 #include "Parameter.h"
+#include "TemplateMapping.h"
 
 ConstructorCall::ConstructorCall(Type *_type, std::vector<Expression*> _argument_list) {
     assert(_type != nullptr);
@@ -117,4 +118,13 @@ ConstructorCall* ConstructorCall::make_copy() {
         argument_list_copy.push_back(argument_list[i]->make_copy());
     }
     return new ConstructorCall(type->make_copy(), argument_list_copy);
+}
+
+bool ConstructorCall::replace_templated_types(TemplateMapping *mapping) {
+    if(auto x = mapping->find_mapped_type(type)) type = x;
+    else if(!type->replace_templated_types(mapping)) return false;
+    for(int i = 0; i < argument_list.size(); i++){
+        if(!argument_list[i]->replace_templated_types(mapping)) return false;
+    }
+    return true;
 }

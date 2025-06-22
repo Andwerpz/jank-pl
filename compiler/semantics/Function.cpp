@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "Statement.h"
 #include "Parameter.h"
+#include "TemplateMapping.h"
 
 Function::Function(std::optional<Type*> _enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
     enclosing_type = _enclosing_type;
@@ -207,6 +208,35 @@ bool Function::is_well_formed() {
     return true;
 }
 
+Function* Function::make_copy() {
+    std::optional<Type*> _enclosing_type = std::nullopt;
+    if(enclosing_type.has_value()) _enclosing_type = enclosing_type.value()->make_copy();
+    Type *_type = type->make_copy();
+    Identifier *_id = id->make_copy();
+    std::vector<Parameter*> _parameters;
+    for(int i = 0; i < parameters.size(); i++){
+        _parameters.push_back(parameters[i]->make_copy());
+    }
+    CompoundStatement *_body = dynamic_cast<CompoundStatement*>(body->make_copy());
+    return new Function(_enclosing_type, _type, _id, _parameters, _body);
+}
+
+bool Function::replace_templated_types(TemplateMapping *mapping) {
+    if(enclosing_type.has_value()) {
+        Type *val = enclosing_type.value();
+        if(auto x = mapping->find_mapped_type(val)) val = x;
+        else if(!val->replace_templated_types(mapping)) return false;
+        enclosing_type = val;
+    }
+    if(auto x = mapping->find_mapped_type(type)) type = x;
+    else if(!type->replace_templated_types(mapping)) return false;
+    for(int i = 0; i < parameters.size(); i++){
+        if(!parameters[i]->replace_templated_types(mapping)) return false;
+    }
+    if(!body->replace_templated_types(mapping)) return false;
+    return true;
+}
+
 
 OperatorOverload::OperatorOverload(std::string _op, std::optional<Type*> _enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) : Function(_enclosing_type, _type, _id, _parameters, _body) {
     op = _op;
@@ -247,4 +277,16 @@ OperatorSignature* OperatorOverload::resolve_operator_signature() const {
         return new OperatorSignature(left, "[]", et);
     }
     else assert(false);
+}
+
+Function* OperatorOverload::make_copy() {
+    std::optional<Type*> _enclosing_type = std::nullopt;
+    Type *_type = type->make_copy();
+    Identifier *_id = id->make_copy();
+    std::vector<Parameter*> _parameters;
+    for(int i = 0; i < parameters.size(); i++){
+        _parameters.push_back(parameters[i]->make_copy());
+    }
+    CompoundStatement *_body = dynamic_cast<CompoundStatement*>(body->make_copy());
+    return new OperatorOverload(op, _enclosing_type, _type, _id, _parameters, _body);
 }

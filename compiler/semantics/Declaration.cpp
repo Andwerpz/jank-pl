@@ -30,3 +30,13 @@ bool Declaration::is_well_formed() {
 
     return true;
 }
+
+Declaration* Declaration::make_copy() {
+    return new Declaration(type->make_copy(), id->make_copy(), expr->make_copy());
+}
+
+bool Declaration::replace_templated_types(TemplateMapping *mapping) {
+    if(!type->replace_templated_types(mapping)) return false;
+    if(!expr->replace_templated_types(mapping)) return false;
+    return true;
+}

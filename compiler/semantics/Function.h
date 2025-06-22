@@ -9,6 +9,7 @@ struct Type;
 struct FunctionSignature;
 struct OperatorSignature;
 struct Parameter;
+struct TemplateMapping;
 
 struct Function {    
     std::optional<Type*> enclosing_type;
@@ -31,10 +32,13 @@ struct Function {
 
     static Function* convert(parser::function *f);
     bool is_well_formed();
+    virtual Function* make_copy();
+    bool replace_templated_types(TemplateMapping *mapping);
 };
 
 struct OperatorOverload : public Function {
     std::string op;
     OperatorOverload(std::string _op, std::optional<Type*> _enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body);
     OperatorSignature* resolve_operator_signature() const;
+    Function* make_copy() override;
 };

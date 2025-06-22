@@ -103,7 +103,7 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
     std::cout << "--- STRUCT DEFINITIONS ---" << std::endl;
     for(int i = 0; i < program->structs.size(); i++){
         StructDefinition *sd = program->structs[i];
-        std::cout << "NAME : " << sd->base_type->to_string() << std::endl;
+        std::cout << "NAME : " << sd->type->to_string() << std::endl;
         std::cout << "MEMBER VARIABLES : \n";
         for(int j = 0; j < sd->member_variables.size(); j++) {
             MemberVariable *mv = sd->member_variables[j];
@@ -559,6 +559,17 @@ run the tests that I've been writing up until now. I also want to write some tes
 
 Some thoughts on templating: Either we can write the templated functions to resolve the type at runtime, or do the far
 easier option which is to generate every version of templated type during compile time, then treat them as different types. 
+
+Yes, we are going to treat templates as compile time macros. We'll support templating for structs, functions, and overloads. 
+Before checking anything else, we look through the entire AST for templated struct instantiations, templated function calls, 
+and templated overload usages. Then, we generate the templated instances of those usages. We keep doing this until there 
+are no more undefined template usages in the code. Finally, we compile the resulting AST as if there are no templates. 
+
+
+some miscellaneous features:
+ - continue, break (loop control statements)
+ - global variables
+ - importing other files 
 
 
 struct nesting / namespaces:
