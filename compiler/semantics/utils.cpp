@@ -9,6 +9,8 @@
 #include "Constructor.h"
 #include "ConstructorSignature.h"
 #include "ConstructorCall.h"
+#include "TemplatedStructDefinition.h"
+#include "Program.h"
 
 Variable::Variable(Type *_type, Identifier *_id) {
     id = _id;
@@ -200,6 +202,8 @@ namespace {
 }
 
 std::vector<Type*> declared_types;
+std::vector<TemplatedStructDefinition*> declared_templated_structs;
+std::vector<TemplatedFunction*> declared_templated_functions;
 std::vector<BaseType*> declared_basetypes;
 std::unordered_set<Type*, TypeHash, TypeEquals> primitive_base_types;
 std::unordered_map<Type*, StructLayout*, TypeHash, TypeEquals> struct_layout_map;
@@ -213,8 +217,11 @@ int tmp_variable_counter;
 void reset_controller() {
     // - reset semantic controller
     enclosing_function = nullptr;
+    enclosing_program = nullptr;
     declared_types.clear();
     declared_basetypes.clear();
+    declared_templated_structs.clear();
+    declared_templated_functions.clear();
     primitive_base_types.clear();
     struct_layout_map.clear();
 
@@ -742,6 +749,15 @@ bool is_basetype_declared(BaseType* t) {
     return false;
 }
 
+//just checks the basetype against all other declared templated struct defs
+bool is_templated_struct_declared(TemplatedStructDefinition *t) {
+    assert(t != nullptr);
+    for(int i = 0; declared_templated_structs.size(); i++){
+        if(t->struct_def->type->equals(declared_templated_structs[i]->struct_def->type)) return true;
+    }
+    return false;
+}
+
 //just checks to make sure that it's composed of declared base types. 
 bool is_templated_type_well_formed(TemplatedType *t) {
     assert(t != nullptr);
@@ -785,15 +801,11 @@ bool is_variable_declared(Identifier *id) {
 
 bool is_constructor_declared(ConstructorSignature *cs) {
     assert(cs != nullptr);
-    std::cout << "CHECKING IS CONSTRUCTOR DECLARED" << std::endl;
     for(int i = 0; i < declared_constructors.size(); i++){
-        std::cout << "I : " << i << std::endl;
         if(cs->equals(declared_constructors[i]->resolve_constructor_signature())) {
-            std::cout << "FOUND CONSTRUCTOR" << std::endl;
             return true;
         }
     }
-    std::cout << "COULD NOT FIND CONSTRUCTOR" << std::endl;
     return false;
 }
 
@@ -937,11 +949,27 @@ bool is_identifier_used(Identifier *id) {
     return false;
 }
 
-bool add_type(Type *t) {
-    assert(t != nullptr);
+bool add_type(StructDefinition *sd) {
+    assert(sd != nullptr);
+    Type *t = sd->type;
     if(is_type_declared(t)) return false;
     declared_types.push_back(t);
+
+    //construct StructLayout
+    std::unordered_map<std::string, int> offset_map;
+    int size = 0;
+    for(int i = 0; i < sd->member_variables.size(); i++){
+        MemberVariable *mv = sd->member_variables[i];
+        offset_map.insert({mv->id->name, size});
+        size += mv->type->calc_size();
+    }
+
+    //we should always be able to add sl to the controller
+    StructLayout *sl = new StructLayout(sd->member_variables, offset_map, size);
+    assert(add_struct_layout(t, sl));
+
     std::cout << "ADD TYPE : " << t->to_string() << "\n";
+
     return true;
 }
 
@@ -959,6 +987,36 @@ bool add_basetype(BaseType *t) {
     if(is_basetype_declared(t)) return false;
     declared_basetypes.push_back(t);
     return true;
+}
+
+bool add_templated_struct(TemplatedStructDefinition *t) {
+    assert(t != nullptr);
+    if(is_templated_struct_declared(t)) return false;
+    declared_templated_structs.push_back(t);
+    return true;
+}
+
+//look through all declared templated struct defs. If one matches, create it. 
+void create_templated_type(TemplatedType *t) {
+    //have we already generated this type?
+    if(is_type_declared(t)) return;
+    //try to generate it
+    for(int i = 0; i < declared_templated_structs.size(); i++){
+        TemplatedStructDefinition *tsd = declared_templated_structs[i];
+        StructDefinition *sd = tsd->gen_struct_def(t);
+        if(sd != nullptr) {
+            //add this type as declared
+            assert(sd->type->equals(t));
+            assert(add_type(sd));
+
+            //add to enclosing_program
+            enclosing_program->structs.push_back(sd);
+
+            //look inside this type for more templates
+            sd->look_for_templates();
+            break;
+        }
+    }
 }
 
 bool add_function(Function *f){

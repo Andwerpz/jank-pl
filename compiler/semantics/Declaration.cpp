@@ -40,3 +40,8 @@ bool Declaration::replace_templated_types(TemplateMapping *mapping) {
     if(!expr->replace_templated_types(mapping)) return false;
     return true;
 }
+
+void Declaration::look_for_templates(){
+    type->look_for_templates();
+    expr->look_for_templates();
+}

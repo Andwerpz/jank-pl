@@ -14,6 +14,7 @@ struct Type {
     virtual std::string to_string() = 0;
     virtual Type* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
+    virtual void look_for_templates() = 0;
 };
 
 struct BaseType : public Type {
@@ -27,6 +28,7 @@ struct BaseType : public Type {
     std::string to_string() override;
     Type* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
+    void look_for_templates() override;
 };  
 
 struct PointerType : public Type {
@@ -39,6 +41,7 @@ struct PointerType : public Type {
     std::string to_string() override;
     Type* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
+    void look_for_templates() override;
 };
 
 struct ReferenceType : public Type {
@@ -51,6 +54,7 @@ struct ReferenceType : public Type {
     std::string to_string() override;
     Type* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
+    void look_for_templates() override;
 };
 
 struct TemplatedType : public Type {
@@ -64,4 +68,5 @@ struct TemplatedType : public Type {
     std::string to_string() override;
     Type* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
+    void look_for_templates() override;
 };

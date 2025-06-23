@@ -15,6 +15,7 @@ struct MemberVariable {
     static MemberVariable* convert(parser::member_variable_declaration *mvd);
     MemberVariable* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
+    void look_for_templates();
 };
 
 struct StructDefinition {
@@ -27,4 +28,5 @@ struct StructDefinition {
     bool is_well_formed(); 
     StructDefinition* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
+    void look_for_templates();
 };

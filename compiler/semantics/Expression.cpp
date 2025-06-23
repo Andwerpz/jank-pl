@@ -1014,7 +1014,7 @@ void Expression::emit_asm() {
     expr_node->emit_asm();
 }
 
-// -- TO_STRING --
+// -- TO STRING --
 std::string ExprPrimary::to_string() {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *fc = std::get<FunctionCall*>(val);
@@ -1474,4 +1474,77 @@ bool ExprPostfix::replace_templated_types(TemplateMapping *mapping) {
 
 bool Expression::replace_templated_types(TemplateMapping *mapping) {
     return expr_node->replace_templated_types(mapping);
+}
+
+// -- LOOK FOR TEMPLATES --
+void ExprPrimary::look_for_templates() {
+    if(std::holds_alternative<FunctionCall*>(val)) {
+        FunctionCall *fc = std::get<FunctionCall*>(val);
+        fc->look_for_templates();
+    }
+    else if(std::holds_alternative<ConstructorCall*>(val)) {
+        ConstructorCall *c = std::get<ConstructorCall*>(val);
+        c->look_for_templates();
+    }
+    else if(std::holds_alternative<Identifier*>(val)) {
+        Identifier *id = std::get<Identifier*>(val);
+        // do nothing
+    }
+    else if(std::holds_alternative<Literal*>(val)) {
+        Literal *l = std::get<Literal*>(val);
+        // do nothing
+    }
+    else if(std::holds_alternative<Expression*>(val)) {
+        Expression *e = std::get<Expression*>(val);
+        e->look_for_templates();
+    }
+    else if(std::holds_alternative<Type*>(val)) {
+        Type *t = std::get<Type*>(val);
+        t->look_for_templates();
+    }
+    else assert(false);
+}
+
+void ExprBinary::look_for_templates() {
+    left->look_for_templates();
+    right->look_for_templates();
+    if(std::holds_alternative<std::string>(op)) {
+        std::string str_op = std::get<std::string>(op);
+        // do nothing
+    }
+    else assert(false);
+}
+
+void ExprPrefix::look_for_templates() {
+    right->look_for_templates();
+    if(std::holds_alternative<std::string>(op)) {
+        std::string str_op = std::get<std::string>(op);
+        // do nothing
+    }
+    else assert(false);
+}
+
+void ExprPostfix::look_for_templates() {
+    left->look_for_templates();
+    if(std::holds_alternative<Expression*>(op)) {   //indexing
+        Expression *expr = std::get<Expression*>(op);
+        expr->look_for_templates();
+    }
+    else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {    //function call
+        std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
+        p.second->look_for_templates();
+    }
+    else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {    //member variable access
+        std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
+        // do nothing
+    }
+    else if(std::holds_alternative<std::string>(op)) {  //postfix increment / decrement
+        std::string str_op = std::get<std::string>(op);
+        // do nothing
+    }
+    else assert(false);
+}
+
+void Expression::look_for_templates() {
+    expr_node->look_for_templates();
 }

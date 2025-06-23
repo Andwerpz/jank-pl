@@ -34,6 +34,7 @@ struct Function {
     bool is_well_formed();
     virtual Function* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
+    void look_for_templates();
 };
 
 struct OperatorOverload : public Function {

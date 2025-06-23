@@ -37,9 +37,9 @@ Program* Program::convert(parser::program *p) {
         // else if(p->t0[i]->t1->is_c2) {  //templated function
         //     templated_functions.push_back(TemplatedFunction::convert(p->t0[i]->t1->t2->t0));
         // }
-        // else if(p->t0[i]->t1->is_c3) {  //templated struct definition
-        //     templated_structs.push_back(TemplatedStructDefinition::convert(p->t0[i]->t1->t3->t0));
-        // }
+        else if(p->t0[i]->t1->is_c3) {  //templated struct definition
+            templated_structs.push_back(TemplatedStructDefinition::convert(p->t0[i]->t1->t3->t0));
+        }
         else assert(false);
     }
     return new Program(structs, functions, templated_structs, templated_functions);
@@ -50,14 +50,20 @@ bool Program::is_well_formed() {
     reset_controller();
     std::cout << "DONE INIT CONTROLLER" << std::endl;
 
+    enclosing_program = this;
+
     fout << ".section .text\n";
 
-    //for all templated structs, register their basetype
+    //for all templated structs, register their basetype, add them as templated structs
     for(int i = 0; i < templated_structs.size(); i++){
         BaseType *sbt = dynamic_cast<BaseType*>(templated_structs[i]->struct_def->type);
         assert(sbt != nullptr);
         if(!add_basetype(sbt)) {
             std::cout << "Failed to add basetype : " << sbt->to_string() << "\n";
+            return false;
+        }
+        if(!add_templated_struct(templated_structs[i])) {
+            std::cout << "Failed to add templated struct : " << sbt->to_string() << "\n";
             return false;
         }
     }
@@ -70,7 +76,7 @@ bool Program::is_well_formed() {
             std::cout << "Failed to add basetype : " << sbt->to_string() << "\n";
             return false;
         }
-        if(!add_type(structs[i]->type)) {
+        if(!add_type(structs[i])) {
             std::cout << "Failed to add type : " << structs[i]->type->to_string() << "\n";
             return false;
         }
@@ -85,8 +91,16 @@ bool Program::is_well_formed() {
         }
     }
 
-    //TODO generate templated structs
-
+    //generate templated structs and functions
+    //if we generate something, it will be appended to structs or functions. 
+    std::cout << "GENERATING FROM TEMPLATES" << std::endl;
+    for(int i = (int) structs.size() - 1; i >= 0; i--){
+        structs[i]->look_for_templates();
+    }
+    for(int i = (int) functions.size() - 1; i >= 0; i--){
+        functions[i]->look_for_templates();
+    }
+    std::cout << "DONE GENERATING FROM TEMPLATES" << std::endl;
 
     // - are there circular dependencies in the struct member variables?
     //build struct graph, do topological sort on the graph.
@@ -183,6 +197,8 @@ bool Program::is_well_formed() {
             return false;
         }
     }
+
+    enclosing_program = nullptr;
 
     assert(declaration_stack.size() == 0);
     assert(declared_variables.size() == 0);

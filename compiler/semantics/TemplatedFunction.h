@@ -6,6 +6,7 @@ struct Function;
 struct FunctionCall;
 struct OperatorSignature;
 struct OperatorOverload;
+struct TemplateMapping;
 
 struct TemplatedFunction {
     TemplateHeader *header;
@@ -15,9 +16,7 @@ struct TemplatedFunction {
 
     static TemplatedFunction* convert(parser::templated_function *f);
 
-    bool is_match(FunctionCall *fc);
+    bool is_well_formed();
+    TemplateMapping* calc_mapping(FunctionCall *fc);
     Function* gen_function(FunctionCall *fc);
-
-    bool is_match(OperatorSignature *os);
-    OperatorOverload* gen_overload(OperatorSignature *os);
 };

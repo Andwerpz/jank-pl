@@ -201,3 +201,26 @@ bool TemplatedType::replace_templated_types(TemplateMapping *mapping) {
     }
     return true;
 }
+
+// -- LOOK FOR TEMPLATES --
+void BaseType::look_for_templates() {
+    // do nothing
+}
+
+void PointerType::look_for_templates() {
+    type->look_for_templates();
+}
+
+void ReferenceType::look_for_templates(){
+    type->look_for_templates();
+}
+
+void TemplatedType::look_for_templates() {
+    //aha! found one! 
+    create_templated_type(this);
+
+    base_type->look_for_templates();
+    for(int i = 0; i < template_types.size(); i++){
+        template_types[i]->look_for_templates();
+    }
+}

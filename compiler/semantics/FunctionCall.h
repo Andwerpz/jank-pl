@@ -27,4 +27,5 @@ struct FunctionCall {
     bool equals(FunctionCall *other);
     FunctionCall* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
+    void look_for_templates();
 };

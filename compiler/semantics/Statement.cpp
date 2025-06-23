@@ -530,3 +530,38 @@ bool CompoundStatement::replace_templated_types(TemplateMapping *mapping) {
     }
     return true;
 }
+
+// -- LOOK FOR TEMPLATES --
+void DeclarationStatement::look_for_templates() {
+    declaration->look_for_templates();
+}
+
+void ExpressionStatement::look_for_templates() {
+    expr->look_for_templates();
+}
+
+void ReturnStatement::look_for_templates() {
+    if(opt_expr.has_value()) opt_expr.value()->look_for_templates();
+}
+
+void IfStatement::look_for_templates() {
+    for(int i = 0; i < exprs.size(); i++) exprs[i]->look_for_templates();
+    for(int i = 0; i < statements.size(); i++) statements[i]->look_for_templates();
+    if(else_statement.has_value()) else_statement.value()->look_for_templates();
+}
+
+void WhileStatement::look_for_templates() {
+    expr->look_for_templates();
+    statement->look_for_templates();
+}
+
+void ForStatement::look_for_templates() {
+    if(declaration.has_value()) declaration.value()->look_for_templates();
+    if(expr1.has_value()) expr1.value()->look_for_templates();
+    if(expr2.has_value()) expr2.value()->look_for_templates();
+    statement->look_for_templates();
+}
+
+void CompoundStatement::look_for_templates() {
+    for(int i = 0; i < statements.size(); i++) statements[i]->look_for_templates();
+}

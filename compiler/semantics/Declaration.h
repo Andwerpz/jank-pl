@@ -17,4 +17,5 @@ struct Declaration {
     bool is_well_formed();
     Declaration* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
+    void look_for_templates();
 };

@@ -30,6 +30,10 @@ bool MemberVariable::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
+void MemberVariable::look_for_templates(){
+    type->look_for_templates();
+}
+
 
 StructDefinition::StructDefinition(Type *_type, std::vector<MemberVariable*> _member_variables, std::vector<Function*> _functions, std::vector<Constructor*> _constructors) {
     type = _type;
@@ -100,13 +104,11 @@ bool StructDefinition::is_well_formed() {
     //add all constructors to global list to check later
     for(int i = 0; i < constructors.size(); i++) {
         Constructor *c = constructors[i];
-        std::cout << "NEXT CONSTRUCTOR : " << c << " " << i << " " << std::endl;
         if(!add_constructor(c)) {
             std::cout << "Failed to add struct constructor : " << c->resolve_constructor_signature()->to_string() << "\n";
             return false;
         }
     }
-    std::cout << "DONE ADDING CONSTRUCTORS" << std::endl;
 
     // - is there a default constructor?
     {
@@ -124,23 +126,7 @@ bool StructDefinition::is_well_formed() {
             return false;
         }
     }
-
-    //construct StructLayout
-    std::unordered_map<std::string, int> offset_map;
-    int size = 0;
-    for(int i = 0; i < member_variables.size(); i++){
-        MemberVariable *mv = member_variables[i];
-        offset_map.insert({mv->id->name, size});
-        size += mv->type->calc_size();
-    }
-
-    // - make sure we can actually add StructLayout into the controller
-    StructLayout *sl = new StructLayout(member_variables, offset_map, size);
-    if(!add_struct_layout(type, sl)) {
-        std::cout << "Failed to add StructLayout for " << type->to_string() << "\n";
-        return false;
-    }
-
+    
     return true;
 }
 
@@ -174,4 +160,11 @@ bool StructDefinition::replace_templated_types(TemplateMapping *mapping) {
         if(!constructors[i]->replace_templated_types(mapping)) return false;
     }
     return true;
+}
+
+void StructDefinition::look_for_templates() {
+    type->look_for_templates();
+    for(int i = 0; i < member_variables.size(); i++) member_variables[i]->look_for_templates();
+    for(int i = 0; i < functions.size(); i++) functions[i]->look_for_templates();
+    for(int i = 0; i < constructors.size(); i++) constructors[i]->look_for_templates();
 }

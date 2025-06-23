@@ -23,6 +23,8 @@ struct Constructor;
 struct ConstructorSignature;
 struct ConstructorCall;
 struct TemplatedType;
+struct TemplatedStructDefinition;
+struct Program;
 
 struct Variable;
 struct OperatorSignature;
@@ -133,6 +135,7 @@ Type* find_variable_type(Identifier *id);
 Type* find_function_type(FunctionSignature *fs);
 bool is_type_declared(Type *t);
 bool is_basetype_declared(BaseType *t);
+bool is_templated_struct_declared(TemplatedStructDefinition *t);
 bool is_templated_type_well_formed(TemplatedType *t);
 bool is_type_primitive(Type *t);
 bool is_function_declared(FunctionSignature *fs);
@@ -145,9 +148,11 @@ std::string get_function_label(FunctionSignature *fs);
 std::string get_constructor_label(ConstructorSignature *cs);
 Variable* get_variable(Identifier *id);
 bool is_identifier_used(Identifier *id);
-bool add_type(Type *t);
+bool add_type(StructDefinition *sd);
 bool add_primitive_basetype(BaseType *t);   //these don't constitute all the primitive types, you can have derived primitive types (like pointer)
 bool add_basetype(BaseType *t);
+bool add_templated_struct(TemplatedStructDefinition *t);
+void create_templated_type(TemplatedType *t); 
 bool add_function(Function *f);
 bool add_sys_function(Function *f);
 bool add_constructor(Constructor *c);
@@ -181,6 +186,7 @@ inline std::ofstream fout;
 
 //have these here to be visible. 
 inline Function* enclosing_function;
+inline Program* enclosing_program;
 inline std::vector<Function*> declared_functions;
 inline std::vector<Constructor*> declared_constructors;
 inline std::vector<Variable*> declared_variables;

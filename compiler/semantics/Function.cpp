@@ -237,6 +237,13 @@ bool Function::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
+void Function::look_for_templates() {
+    if(enclosing_type.has_value()) enclosing_type.value()->look_for_templates();
+    type->look_for_templates();
+    for(int i = 0; i < parameters.size(); i++) parameters[i]->look_for_templates();
+    body->look_for_templates();
+}
+
 
 OperatorOverload::OperatorOverload(std::string _op, std::optional<Type*> _enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) : Function(_enclosing_type, _type, _id, _parameters, _body) {
     op = _op;

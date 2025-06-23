@@ -148,3 +148,11 @@ bool Constructor::replace_templated_types(TemplateMapping *mapping) {
     if(!body->replace_templated_types(mapping)) return false;
     return true;
 }
+
+void Constructor::look_for_templates() {
+    type->look_for_templates();
+    for(int i = 0; i < parameters.size(); i++){
+        parameters[i]->look_for_templates();
+    }
+    body->look_for_templates();
+}

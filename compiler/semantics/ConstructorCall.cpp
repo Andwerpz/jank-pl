@@ -128,3 +128,8 @@ bool ConstructorCall::replace_templated_types(TemplateMapping *mapping) {
     }
     return true;
 }
+
+void ConstructorCall::look_for_templates() {
+    type->look_for_templates();
+    for(int i = 0; i < argument_list.size(); i++) argument_list[i]->look_for_templates();
+}

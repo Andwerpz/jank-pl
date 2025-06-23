@@ -26,3 +26,7 @@ bool Parameter::replace_templated_types(TemplateMapping *mapping) {
     else if(!type->replace_templated_types(mapping)) return false;
     return true;
 }
+
+void Parameter::look_for_templates() {
+    type->look_for_templates();
+}
