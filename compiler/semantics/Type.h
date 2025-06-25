@@ -1,11 +1,14 @@
 #pragma once
 #include "../parser/parser.h"
 
+struct TemplateHeader;
 struct TemplateMapping;
 
 struct Type {
     static Type* convert(parser::type *t);
     
+    Type* remove_reference();
+
     virtual int calc_size() = 0;
     virtual bool equals(const Type *other) const = 0;
     bool operator==(const Type& other) const;
@@ -14,7 +17,8 @@ struct Type {
     virtual std::string to_string() = 0;
     virtual Type* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
-    virtual void look_for_templates() = 0;
+    virtual bool look_for_templates() = 0;
+    virtual TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) = 0;
 };
 
 struct BaseType : public Type {
@@ -28,7 +32,8 @@ struct BaseType : public Type {
     std::string to_string() override;
     Type* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
+    TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
 };  
 
 struct PointerType : public Type {
@@ -41,7 +46,8 @@ struct PointerType : public Type {
     std::string to_string() override;
     Type* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
+    TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
 };
 
 struct ReferenceType : public Type {
@@ -54,7 +60,8 @@ struct ReferenceType : public Type {
     std::string to_string() override;
     Type* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
+    TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
 };
 
 struct TemplatedType : public Type {
@@ -68,5 +75,6 @@ struct TemplatedType : public Type {
     std::string to_string() override;
     Type* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
+    TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
 };

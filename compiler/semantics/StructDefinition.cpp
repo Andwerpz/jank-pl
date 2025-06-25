@@ -30,8 +30,8 @@ bool MemberVariable::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-void MemberVariable::look_for_templates(){
-    type->look_for_templates();
+bool MemberVariable::look_for_templates(){
+    return type->look_for_templates();
 }
 
 
@@ -85,27 +85,11 @@ bool StructDefinition::is_well_formed() {
             }
         }
     }
-    // - are there any duplicate function definitions?
-    // - are all of the functions not overloads?
-    //add all functions to global list to check later
-    for(int i = 0; i < functions.size(); i++){
-        Function *f = functions[i];
-        if(dynamic_cast<OperatorOverload*>(f) != nullptr) {
-            std::cout << "Cannot declare operator overload within struct\n";
-            return false;
-        }
-        if(!add_function(f)) {
-            std::cout << "Failed to add struct member function : " << f->resolve_function_signature()->to_string() << "\n";
-            return false;
-        } 
-    }
 
-    // - are there any duplicate constructors?
-    //add all constructors to global list to check later
-    for(int i = 0; i < constructors.size(); i++) {
-        Constructor *c = constructors[i];
-        if(!add_constructor(c)) {
-            std::cout << "Failed to add struct constructor : " << c->resolve_constructor_signature()->to_string() << "\n";
+    // - are all the constructors actually constructing this type?
+    for(int i = 0; i < constructors.size(); i++){
+        if(!type->equals(constructors[i]->type)) {
+            std::cout << "Constructor in " << type->to_string() << " is of wrong type : " << constructors[i]->type->to_string() << "\n";
             return false;
         }
     }
@@ -162,9 +146,10 @@ bool StructDefinition::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-void StructDefinition::look_for_templates() {
-    type->look_for_templates();
-    for(int i = 0; i < member_variables.size(); i++) member_variables[i]->look_for_templates();
-    for(int i = 0; i < functions.size(); i++) functions[i]->look_for_templates();
-    for(int i = 0; i < constructors.size(); i++) constructors[i]->look_for_templates();
+bool StructDefinition::look_for_templates() {
+    if(!type->look_for_templates()) return false;
+    for(int i = 0; i < member_variables.size(); i++) if(!member_variables[i]->look_for_templates()) return false;
+    for(int i = 0; i < functions.size(); i++) if(!functions[i]->look_for_templates()) return false;
+    for(int i = 0; i < constructors.size(); i++) if(!constructors[i]->look_for_templates()) return false;
+    return true;
 }

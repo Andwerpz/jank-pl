@@ -27,6 +27,6 @@ bool Parameter::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-void Parameter::look_for_templates() {
-    type->look_for_templates();
+bool Parameter::look_for_templates() {
+    return type->look_for_templates();
 }

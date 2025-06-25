@@ -13,7 +13,7 @@ struct Statement {
     virtual bool is_always_returning() = 0;
     virtual Statement* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
-    virtual void look_for_templates() = 0;
+    virtual bool look_for_templates() = 0;
 };
 
 struct SimpleStatement : public Statement {
@@ -22,7 +22,7 @@ struct SimpleStatement : public Statement {
     virtual bool is_always_returning() = 0;
     virtual Statement* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
-    virtual void look_for_templates() = 0;
+    virtual bool look_for_templates() = 0;
 };
 
 struct DeclarationStatement : public SimpleStatement {
@@ -32,7 +32,7 @@ struct DeclarationStatement : public SimpleStatement {
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
 };
 
 struct ExpressionStatement : public SimpleStatement {
@@ -42,7 +42,7 @@ struct ExpressionStatement : public SimpleStatement {
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
 };
 
 struct ReturnStatement : public SimpleStatement {
@@ -52,7 +52,7 @@ struct ReturnStatement : public SimpleStatement {
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
 };
 
 struct ControlStatement : public Statement {
@@ -61,7 +61,7 @@ struct ControlStatement : public Statement {
     virtual bool is_always_returning() = 0;
     virtual Statement* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
-    virtual void look_for_templates() = 0;
+    virtual bool look_for_templates() = 0;
 };
 
 struct IfStatement : public ControlStatement {
@@ -73,7 +73,7 @@ struct IfStatement : public ControlStatement {
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
 };
 
 struct WhileStatement : public ControlStatement {
@@ -84,7 +84,7 @@ struct WhileStatement : public ControlStatement {
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
 };
 
 struct ForStatement : public ControlStatement {
@@ -97,7 +97,7 @@ struct ForStatement : public ControlStatement {
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
 };  
 
 struct CompoundStatement : public Statement {
@@ -108,5 +108,5 @@ struct CompoundStatement : public Statement {
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
 };

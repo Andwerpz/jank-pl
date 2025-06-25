@@ -1,4 +1,4 @@
-// Date Generated : 06-21-2025 11:57:09
+// Date Generated : 06-24-2025 19:19:49
 #pragma once
 #include <vector>
 #include <string>
@@ -13,9 +13,6 @@ namespace parser {
     void set_s(std::string& ns);
     bool check_finished_parsing();
 
-    struct overloadable_operator;
-    struct overload_identifier;
-    struct function_identifier;
     struct function_definition;
     struct function;
     struct templated_function;
@@ -47,6 +44,10 @@ namespace parser {
     struct expr_logical_or;
     struct expr_assignment;
     struct expression;
+    struct overloadable_operator;
+    struct overload_definition;
+    struct overload;
+    struct templated_overload;
     struct alpha;
     struct digit;
     struct escape;
@@ -70,406 +71,18 @@ namespace parser {
     struct compound_statement;
     struct program;
 
-    // overloadable_operator = "++x" | "--x" | "x++" | "x--" | "*x" | "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "[]" | "=" | "(cast)" ;
-    struct overloadable_operator {
-        struct a0 {
-            std::string t0;
-            a0(std::string _t0) {
-                t0 = _t0;
-            }
-            static a0* parse();
-            std::string to_string();
-        };
-        struct a1 {
-            std::string t0;
-            a1(std::string _t0) {
-                t0 = _t0;
-            }
-            static a1* parse();
-            std::string to_string();
-        };
-        struct a2 {
-            std::string t0;
-            a2(std::string _t0) {
-                t0 = _t0;
-            }
-            static a2* parse();
-            std::string to_string();
-        };
-        struct a3 {
-            std::string t0;
-            a3(std::string _t0) {
-                t0 = _t0;
-            }
-            static a3* parse();
-            std::string to_string();
-        };
-        struct a4 {
-            std::string t0;
-            a4(std::string _t0) {
-                t0 = _t0;
-            }
-            static a4* parse();
-            std::string to_string();
-        };
-        struct a5 {
-            std::string t0;
-            a5(std::string _t0) {
-                t0 = _t0;
-            }
-            static a5* parse();
-            std::string to_string();
-        };
-        struct a6 {
-            std::string t0;
-            a6(std::string _t0) {
-                t0 = _t0;
-            }
-            static a6* parse();
-            std::string to_string();
-        };
-        struct a7 {
-            std::string t0;
-            a7(std::string _t0) {
-                t0 = _t0;
-            }
-            static a7* parse();
-            std::string to_string();
-        };
-        struct a8 {
-            std::string t0;
-            a8(std::string _t0) {
-                t0 = _t0;
-            }
-            static a8* parse();
-            std::string to_string();
-        };
-        struct a9 {
-            std::string t0;
-            a9(std::string _t0) {
-                t0 = _t0;
-            }
-            static a9* parse();
-            std::string to_string();
-        };
-        struct a10 {
-            std::string t0;
-            a10(std::string _t0) {
-                t0 = _t0;
-            }
-            static a10* parse();
-            std::string to_string();
-        };
-        struct a11 {
-            std::string t0;
-            a11(std::string _t0) {
-                t0 = _t0;
-            }
-            static a11* parse();
-            std::string to_string();
-        };
-        struct a12 {
-            std::string t0;
-            a12(std::string _t0) {
-                t0 = _t0;
-            }
-            static a12* parse();
-            std::string to_string();
-        };
-        struct a13 {
-            std::string t0;
-            a13(std::string _t0) {
-                t0 = _t0;
-            }
-            static a13* parse();
-            std::string to_string();
-        };
-        struct a14 {
-            std::string t0;
-            a14(std::string _t0) {
-                t0 = _t0;
-            }
-            static a14* parse();
-            std::string to_string();
-        };
-        struct a15 {
-            std::string t0;
-            a15(std::string _t0) {
-                t0 = _t0;
-            }
-            static a15* parse();
-            std::string to_string();
-        };
-        struct a16 {
-            std::string t0;
-            a16(std::string _t0) {
-                t0 = _t0;
-            }
-            static a16* parse();
-            std::string to_string();
-        };
-        struct a17 {
-            std::string t0;
-            a17(std::string _t0) {
-                t0 = _t0;
-            }
-            static a17* parse();
-            std::string to_string();
-        };
-        struct a18 {
-            std::string t0;
-            a18(std::string _t0) {
-                t0 = _t0;
-            }
-            static a18* parse();
-            std::string to_string();
-        };
-        struct a19 {
-            std::string t0;
-            a19(std::string _t0) {
-                t0 = _t0;
-            }
-            static a19* parse();
-            std::string to_string();
-        };
-        struct a20 {
-            std::string t0;
-            a20(std::string _t0) {
-                t0 = _t0;
-            }
-            static a20* parse();
-            std::string to_string();
-        };
-        struct a21 {
-            std::string t0;
-            a21(std::string _t0) {
-                t0 = _t0;
-            }
-            static a21* parse();
-            std::string to_string();
-        };
-        struct a22 {
-            std::string t0;
-            a22(std::string _t0) {
-                t0 = _t0;
-            }
-            static a22* parse();
-            std::string to_string();
-        };
-        struct a23 {
-            std::string t0;
-            a23(std::string _t0) {
-                t0 = _t0;
-            }
-            static a23* parse();
-            std::string to_string();
-        };
-        bool is_a0 = false;
-        a0 *t0;
-        bool is_a1 = false;
-        a1 *t1;
-        bool is_a2 = false;
-        a2 *t2;
-        bool is_a3 = false;
-        a3 *t3;
-        bool is_a4 = false;
-        a4 *t4;
-        bool is_a5 = false;
-        a5 *t5;
-        bool is_a6 = false;
-        a6 *t6;
-        bool is_a7 = false;
-        a7 *t7;
-        bool is_a8 = false;
-        a8 *t8;
-        bool is_a9 = false;
-        a9 *t9;
-        bool is_a10 = false;
-        a10 *t10;
-        bool is_a11 = false;
-        a11 *t11;
-        bool is_a12 = false;
-        a12 *t12;
-        bool is_a13 = false;
-        a13 *t13;
-        bool is_a14 = false;
-        a14 *t14;
-        bool is_a15 = false;
-        a15 *t15;
-        bool is_a16 = false;
-        a16 *t16;
-        bool is_a17 = false;
-        a17 *t17;
-        bool is_a18 = false;
-        a18 *t18;
-        bool is_a19 = false;
-        a19 *t19;
-        bool is_a20 = false;
-        a20 *t20;
-        bool is_a21 = false;
-        a21 *t21;
-        bool is_a22 = false;
-        a22 *t22;
-        bool is_a23 = false;
-        a23 *t23;
-        overloadable_operator(a0 *_t0) {
-            is_a0 = true;
-            t0 = _t0;
-        }
-        overloadable_operator(a1 *_t1) {
-            is_a1 = true;
-            t1 = _t1;
-        }
-        overloadable_operator(a2 *_t2) {
-            is_a2 = true;
-            t2 = _t2;
-        }
-        overloadable_operator(a3 *_t3) {
-            is_a3 = true;
-            t3 = _t3;
-        }
-        overloadable_operator(a4 *_t4) {
-            is_a4 = true;
-            t4 = _t4;
-        }
-        overloadable_operator(a5 *_t5) {
-            is_a5 = true;
-            t5 = _t5;
-        }
-        overloadable_operator(a6 *_t6) {
-            is_a6 = true;
-            t6 = _t6;
-        }
-        overloadable_operator(a7 *_t7) {
-            is_a7 = true;
-            t7 = _t7;
-        }
-        overloadable_operator(a8 *_t8) {
-            is_a8 = true;
-            t8 = _t8;
-        }
-        overloadable_operator(a9 *_t9) {
-            is_a9 = true;
-            t9 = _t9;
-        }
-        overloadable_operator(a10 *_t10) {
-            is_a10 = true;
-            t10 = _t10;
-        }
-        overloadable_operator(a11 *_t11) {
-            is_a11 = true;
-            t11 = _t11;
-        }
-        overloadable_operator(a12 *_t12) {
-            is_a12 = true;
-            t12 = _t12;
-        }
-        overloadable_operator(a13 *_t13) {
-            is_a13 = true;
-            t13 = _t13;
-        }
-        overloadable_operator(a14 *_t14) {
-            is_a14 = true;
-            t14 = _t14;
-        }
-        overloadable_operator(a15 *_t15) {
-            is_a15 = true;
-            t15 = _t15;
-        }
-        overloadable_operator(a16 *_t16) {
-            is_a16 = true;
-            t16 = _t16;
-        }
-        overloadable_operator(a17 *_t17) {
-            is_a17 = true;
-            t17 = _t17;
-        }
-        overloadable_operator(a18 *_t18) {
-            is_a18 = true;
-            t18 = _t18;
-        }
-        overloadable_operator(a19 *_t19) {
-            is_a19 = true;
-            t19 = _t19;
-        }
-        overloadable_operator(a20 *_t20) {
-            is_a20 = true;
-            t20 = _t20;
-        }
-        overloadable_operator(a21 *_t21) {
-            is_a21 = true;
-            t21 = _t21;
-        }
-        overloadable_operator(a22 *_t22) {
-            is_a22 = true;
-            t22 = _t22;
-        }
-        overloadable_operator(a23 *_t23) {
-            is_a23 = true;
-            t23 = _t23;
-        }
-        static overloadable_operator* parse();
-        std::string to_string();
-    };
-
-    // overload_identifier = "operator" , overloadable_operator ;
-    struct overload_identifier {
-        std::string t0;
-        overloadable_operator *t1;
-        overload_identifier(std::string _t0, overloadable_operator *_t1) {
-            t0 = _t0;
-            t1 = _t1;
-        }
-        static overload_identifier* parse();
-        std::string to_string();
-    };
-
-    // function_identifier = overload_identifier | identifier ;
-    struct function_identifier {
-        struct a0 {
-            overload_identifier *t0;
-            a0(overload_identifier *_t0) {
-                t0 = _t0;
-            }
-            static a0* parse();
-            std::string to_string();
-        };
-        struct a1 {
-            identifier *t0;
-            a1(identifier *_t0) {
-                t0 = _t0;
-            }
-            static a1* parse();
-            std::string to_string();
-        };
-        bool is_a0 = false;
-        a0 *t0;
-        bool is_a1 = false;
-        a1 *t1;
-        function_identifier(a0 *_t0) {
-            is_a0 = true;
-            t0 = _t0;
-        }
-        function_identifier(a1 *_t1) {
-            is_a1 = true;
-            t1 = _t1;
-        }
-        static function_identifier* parse();
-        std::string to_string();
-    };
-
-    // function_definition = type , rws , function_identifier , ows , "(" , ows , parameter_list , ows , ")" ;
+    // function_definition = type , rws , identifier , ows , "(" , ows , parameter_list , ows , ")" ;
     struct function_definition {
         type *t0;
         rws *t1;
-        function_identifier *t2;
+        identifier *t2;
         ows *t3;
         std::string t4;
         ows *t5;
         parameter_list *t6;
         ows *t7;
         std::string t8;
-        function_definition(type *_t0, rws *_t1, function_identifier *_t2, ows *_t3, std::string _t4, ows *_t5, parameter_list *_t6, ows *_t7, std::string _t8) {
+        function_definition(type *_t0, rws *_t1, identifier *_t2, ows *_t3, std::string _t4, ows *_t5, parameter_list *_t6, ows *_t7, std::string _t8) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -2039,6 +1652,404 @@ namespace parser {
             t0 = _t0;
         }
         static expression* parse();
+        std::string to_string();
+    };
+
+    // overloadable_operator = "++x" | "--x" | "x++" | "x--" | "*x" | "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "[]" | "=" | "(cast)" ;
+    struct overloadable_operator {
+        struct a0 {
+            std::string t0;
+            a0(std::string _t0) {
+                t0 = _t0;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        struct a1 {
+            std::string t0;
+            a1(std::string _t0) {
+                t0 = _t0;
+            }
+            static a1* parse();
+            std::string to_string();
+        };
+        struct a2 {
+            std::string t0;
+            a2(std::string _t0) {
+                t0 = _t0;
+            }
+            static a2* parse();
+            std::string to_string();
+        };
+        struct a3 {
+            std::string t0;
+            a3(std::string _t0) {
+                t0 = _t0;
+            }
+            static a3* parse();
+            std::string to_string();
+        };
+        struct a4 {
+            std::string t0;
+            a4(std::string _t0) {
+                t0 = _t0;
+            }
+            static a4* parse();
+            std::string to_string();
+        };
+        struct a5 {
+            std::string t0;
+            a5(std::string _t0) {
+                t0 = _t0;
+            }
+            static a5* parse();
+            std::string to_string();
+        };
+        struct a6 {
+            std::string t0;
+            a6(std::string _t0) {
+                t0 = _t0;
+            }
+            static a6* parse();
+            std::string to_string();
+        };
+        struct a7 {
+            std::string t0;
+            a7(std::string _t0) {
+                t0 = _t0;
+            }
+            static a7* parse();
+            std::string to_string();
+        };
+        struct a8 {
+            std::string t0;
+            a8(std::string _t0) {
+                t0 = _t0;
+            }
+            static a8* parse();
+            std::string to_string();
+        };
+        struct a9 {
+            std::string t0;
+            a9(std::string _t0) {
+                t0 = _t0;
+            }
+            static a9* parse();
+            std::string to_string();
+        };
+        struct a10 {
+            std::string t0;
+            a10(std::string _t0) {
+                t0 = _t0;
+            }
+            static a10* parse();
+            std::string to_string();
+        };
+        struct a11 {
+            std::string t0;
+            a11(std::string _t0) {
+                t0 = _t0;
+            }
+            static a11* parse();
+            std::string to_string();
+        };
+        struct a12 {
+            std::string t0;
+            a12(std::string _t0) {
+                t0 = _t0;
+            }
+            static a12* parse();
+            std::string to_string();
+        };
+        struct a13 {
+            std::string t0;
+            a13(std::string _t0) {
+                t0 = _t0;
+            }
+            static a13* parse();
+            std::string to_string();
+        };
+        struct a14 {
+            std::string t0;
+            a14(std::string _t0) {
+                t0 = _t0;
+            }
+            static a14* parse();
+            std::string to_string();
+        };
+        struct a15 {
+            std::string t0;
+            a15(std::string _t0) {
+                t0 = _t0;
+            }
+            static a15* parse();
+            std::string to_string();
+        };
+        struct a16 {
+            std::string t0;
+            a16(std::string _t0) {
+                t0 = _t0;
+            }
+            static a16* parse();
+            std::string to_string();
+        };
+        struct a17 {
+            std::string t0;
+            a17(std::string _t0) {
+                t0 = _t0;
+            }
+            static a17* parse();
+            std::string to_string();
+        };
+        struct a18 {
+            std::string t0;
+            a18(std::string _t0) {
+                t0 = _t0;
+            }
+            static a18* parse();
+            std::string to_string();
+        };
+        struct a19 {
+            std::string t0;
+            a19(std::string _t0) {
+                t0 = _t0;
+            }
+            static a19* parse();
+            std::string to_string();
+        };
+        struct a20 {
+            std::string t0;
+            a20(std::string _t0) {
+                t0 = _t0;
+            }
+            static a20* parse();
+            std::string to_string();
+        };
+        struct a21 {
+            std::string t0;
+            a21(std::string _t0) {
+                t0 = _t0;
+            }
+            static a21* parse();
+            std::string to_string();
+        };
+        struct a22 {
+            std::string t0;
+            a22(std::string _t0) {
+                t0 = _t0;
+            }
+            static a22* parse();
+            std::string to_string();
+        };
+        struct a23 {
+            std::string t0;
+            a23(std::string _t0) {
+                t0 = _t0;
+            }
+            static a23* parse();
+            std::string to_string();
+        };
+        bool is_a0 = false;
+        a0 *t0;
+        bool is_a1 = false;
+        a1 *t1;
+        bool is_a2 = false;
+        a2 *t2;
+        bool is_a3 = false;
+        a3 *t3;
+        bool is_a4 = false;
+        a4 *t4;
+        bool is_a5 = false;
+        a5 *t5;
+        bool is_a6 = false;
+        a6 *t6;
+        bool is_a7 = false;
+        a7 *t7;
+        bool is_a8 = false;
+        a8 *t8;
+        bool is_a9 = false;
+        a9 *t9;
+        bool is_a10 = false;
+        a10 *t10;
+        bool is_a11 = false;
+        a11 *t11;
+        bool is_a12 = false;
+        a12 *t12;
+        bool is_a13 = false;
+        a13 *t13;
+        bool is_a14 = false;
+        a14 *t14;
+        bool is_a15 = false;
+        a15 *t15;
+        bool is_a16 = false;
+        a16 *t16;
+        bool is_a17 = false;
+        a17 *t17;
+        bool is_a18 = false;
+        a18 *t18;
+        bool is_a19 = false;
+        a19 *t19;
+        bool is_a20 = false;
+        a20 *t20;
+        bool is_a21 = false;
+        a21 *t21;
+        bool is_a22 = false;
+        a22 *t22;
+        bool is_a23 = false;
+        a23 *t23;
+        overloadable_operator(a0 *_t0) {
+            is_a0 = true;
+            t0 = _t0;
+        }
+        overloadable_operator(a1 *_t1) {
+            is_a1 = true;
+            t1 = _t1;
+        }
+        overloadable_operator(a2 *_t2) {
+            is_a2 = true;
+            t2 = _t2;
+        }
+        overloadable_operator(a3 *_t3) {
+            is_a3 = true;
+            t3 = _t3;
+        }
+        overloadable_operator(a4 *_t4) {
+            is_a4 = true;
+            t4 = _t4;
+        }
+        overloadable_operator(a5 *_t5) {
+            is_a5 = true;
+            t5 = _t5;
+        }
+        overloadable_operator(a6 *_t6) {
+            is_a6 = true;
+            t6 = _t6;
+        }
+        overloadable_operator(a7 *_t7) {
+            is_a7 = true;
+            t7 = _t7;
+        }
+        overloadable_operator(a8 *_t8) {
+            is_a8 = true;
+            t8 = _t8;
+        }
+        overloadable_operator(a9 *_t9) {
+            is_a9 = true;
+            t9 = _t9;
+        }
+        overloadable_operator(a10 *_t10) {
+            is_a10 = true;
+            t10 = _t10;
+        }
+        overloadable_operator(a11 *_t11) {
+            is_a11 = true;
+            t11 = _t11;
+        }
+        overloadable_operator(a12 *_t12) {
+            is_a12 = true;
+            t12 = _t12;
+        }
+        overloadable_operator(a13 *_t13) {
+            is_a13 = true;
+            t13 = _t13;
+        }
+        overloadable_operator(a14 *_t14) {
+            is_a14 = true;
+            t14 = _t14;
+        }
+        overloadable_operator(a15 *_t15) {
+            is_a15 = true;
+            t15 = _t15;
+        }
+        overloadable_operator(a16 *_t16) {
+            is_a16 = true;
+            t16 = _t16;
+        }
+        overloadable_operator(a17 *_t17) {
+            is_a17 = true;
+            t17 = _t17;
+        }
+        overloadable_operator(a18 *_t18) {
+            is_a18 = true;
+            t18 = _t18;
+        }
+        overloadable_operator(a19 *_t19) {
+            is_a19 = true;
+            t19 = _t19;
+        }
+        overloadable_operator(a20 *_t20) {
+            is_a20 = true;
+            t20 = _t20;
+        }
+        overloadable_operator(a21 *_t21) {
+            is_a21 = true;
+            t21 = _t21;
+        }
+        overloadable_operator(a22 *_t22) {
+            is_a22 = true;
+            t22 = _t22;
+        }
+        overloadable_operator(a23 *_t23) {
+            is_a23 = true;
+            t23 = _t23;
+        }
+        static overloadable_operator* parse();
+        std::string to_string();
+    };
+
+    // overload_definition = type , rws , "operator" , overloadable_operator , ows , "(" , ows , parameter_list , ows , ")" ;
+    struct overload_definition {
+        type *t0;
+        rws *t1;
+        std::string t2;
+        overloadable_operator *t3;
+        ows *t4;
+        std::string t5;
+        ows *t6;
+        parameter_list *t7;
+        ows *t8;
+        std::string t9;
+        overload_definition(type *_t0, rws *_t1, std::string _t2, overloadable_operator *_t3, ows *_t4, std::string _t5, ows *_t6, parameter_list *_t7, ows *_t8, std::string _t9) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
+            t5 = _t5;
+            t6 = _t6;
+            t7 = _t7;
+            t8 = _t8;
+            t9 = _t9;
+        }
+        static overload_definition* parse();
+        std::string to_string();
+    };
+
+    // overload = overload_definition , ows , compound_statement ;
+    struct overload {
+        overload_definition *t0;
+        ows *t1;
+        compound_statement *t2;
+        overload(overload_definition *_t0, ows *_t1, compound_statement *_t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static overload* parse();
+        std::string to_string();
+    };
+
+    // templated_overload = template_header , ows , overload ;
+    struct templated_overload {
+        template_header *t0;
+        ows *t1;
+        overload *t2;
+        templated_overload(template_header *_t0, ows *_t1, overload *_t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static templated_overload* parse();
         std::string to_string();
     };
 
@@ -4472,7 +4483,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // program = { ows , ( function | struct_definition | templated_function | templated_struct_definition ) } , ows ;
+    // program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload ) } , ows ;
     struct program {
         struct a0 {
             struct b0 {
@@ -4508,6 +4519,22 @@ namespace parser {
                     static c3* parse();
                     std::string to_string();
                 };
+                struct c4 {
+                    overload *t0;
+                    c4(overload *_t0) {
+                        t0 = _t0;
+                    }
+                    static c4* parse();
+                    std::string to_string();
+                };
+                struct c5 {
+                    templated_overload *t0;
+                    c5(templated_overload *_t0) {
+                        t0 = _t0;
+                    }
+                    static c5* parse();
+                    std::string to_string();
+                };
                 bool is_c0 = false;
                 c0 *t0;
                 bool is_c1 = false;
@@ -4516,6 +4543,10 @@ namespace parser {
                 c2 *t2;
                 bool is_c3 = false;
                 c3 *t3;
+                bool is_c4 = false;
+                c4 *t4;
+                bool is_c5 = false;
+                c5 *t5;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -4531,6 +4562,14 @@ namespace parser {
                 b0(c3 *_t3) {
                     is_c3 = true;
                     t3 = _t3;
+                }
+                b0(c4 *_t4) {
+                    is_c4 = true;
+                    t4 = _t4;
+                }
+                b0(c5 *_t5) {
+                    is_c5 = true;
+                    t5 = _t5;
                 }
                 static b0* parse();
                 std::string to_string();

@@ -12,5 +12,5 @@ struct Parameter {
     static Parameter* convert(parser::parameter *p);
     Parameter* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
-    void look_for_templates();
+    bool look_for_templates();
 };

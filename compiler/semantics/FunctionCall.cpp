@@ -141,7 +141,8 @@ bool FunctionCall::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-void FunctionCall::look_for_templates() {
-    if(target_type.has_value()) target_type.value()->look_for_templates();
-    for(int i = 0; i < argument_list.size(); i++) argument_list[i]->look_for_templates();
+bool FunctionCall::look_for_templates() {
+    if(target_type.has_value()) if(!target_type.value()->look_for_templates()) return false;
+    for(int i = 0; i < argument_list.size(); i++) if(!argument_list[i]->look_for_templates()) return false;
+    return true;
 }

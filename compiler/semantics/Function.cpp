@@ -65,15 +65,7 @@ Function* Function::convert(parser::function *f) {
         }
     }
     CompoundStatement *body = CompoundStatement::convert(f->t2);
-    if(def->t2->is_a0) {
-        //operator overload
-        std::string op = def->t2->t0->t0->t1->to_string();
-        return new OperatorOverload(op, std::nullopt, type, name, parameters, body);
-    }
-    else {
-        //regular function
-        return new Function(std::nullopt, type, name, parameters, body);
-    }
+    return new Function(std::nullopt, type, name, parameters, body);
 }
 
 bool Function::is_well_formed() {
@@ -84,6 +76,12 @@ bool Function::is_well_formed() {
         return true;
     }
     std::cout << "CHECKING FUNCTION : " << fs->to_string() << std::endl;
+
+    // - are templates all resolvable?
+    if(!look_for_templates()) {
+        std::cout << "Unable to resolve templates in function : " << resolve_function_signature()->to_string() << "\n";
+        return false;
+    }
 
     push_declaration_stack();
 
@@ -168,22 +166,6 @@ bool Function::is_well_formed() {
     // - if type is not void, check for existence of return statement as last reachable statement
     // - constructors also don't have to have return statements, they're treated as void functions
     if(*type != BaseType("void")) {
-        // from any point of runnable code, we expect that it should be able to reach a return statement. 
-        // this effectively means that the last statement should always be a return statement, regardless of 
-        // the rest of the code, as the statement right before it needs to be able to return. 
-
-        // once we introduce conditionals, this logic is going to change. For example
-        // if(<condition>) {}
-        // else {}
-        // should not have to be followed with a return statement if there is a return statement in 
-        // the <if> and <else> blocks
-
-        // define a compound statement to be 'always returning' if when code execution reaches it, it's guaranteed
-        // to return, regardless of whatever values might be in the variables. 
-
-        // In order for a compound statement to be 'always returning', it just have to have some statement inside of it that is
-        // 'always returning'. so we just need to check if the function body is 'always returning'. 
-
         // Note that if there is a statement before the last that is always returning, then any statement after
         // it is unreachable code, in which case we should print some warnings. 
         if(!body->is_always_returning()) {
@@ -237,63 +219,10 @@ bool Function::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-void Function::look_for_templates() {
-    if(enclosing_type.has_value()) enclosing_type.value()->look_for_templates();
-    type->look_for_templates();
-    for(int i = 0; i < parameters.size(); i++) parameters[i]->look_for_templates();
-    body->look_for_templates();
-}
-
-
-OperatorOverload::OperatorOverload(std::string _op, std::optional<Type*> _enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) : Function(_enclosing_type, _type, _id, _parameters, _body) {
-    op = _op;
-}
-
-OperatorSignature* OperatorOverload::resolve_operator_signature() const {
-    if( op == "+" || op == "-" || op == "*" || op == "/" || op == "%" || 
-        op == "&" || op == "|" || op == "^" || op == "<<" || op == ">>" ||
-        op == "==" || op == "!=" || op == "<" || op == "<=" || op == ">" || 
-        op == ">=" || op == "=") {
-        //binary operator
-        if(this->parameters.size() != 2) return nullptr;
-        Type *left = this->parameters[0]->type, *right = this->parameters[1]->type;
-        return new OperatorSignature(left, op, right);
-    }
-    else if(op == "++x" || op == "--x" || op == "*x" || op == "(cast)") {
-        //prefix operator
-        if(this->parameters.size() != 1) return nullptr;
-        Type *right = this->parameters[0]->type;
-        if(op == "++x") return new OperatorSignature("++", right);
-        else if(op == "--x") return new OperatorSignature("--", right);
-        else if(op == "*x") return new OperatorSignature("*x", right);
-        else if(op == "(cast)") return new OperatorSignature(right, this->type);
-        else assert(false);
-    }
-    else if(op == "x++" || op == "x--") {
-        //postfix operator
-        if(this->parameters.size() != 1) return nullptr;
-        Type *left = this->parameters[0]->type;
-        if(op == "x++") return new OperatorSignature(left, "++");
-        else if(op == "x--") return new OperatorSignature(left, "--");
-        else assert(false);
-    }
-    else if(op == "[]") {
-        //indexing
-        if(this->parameters.size() != 2) return nullptr;
-        Type *left = this->parameters[0]->type, *et = this->parameters[1]->type;
-        return new OperatorSignature(left, "[]", et);
-    }
-    else assert(false);
-}
-
-Function* OperatorOverload::make_copy() {
-    std::optional<Type*> _enclosing_type = std::nullopt;
-    Type *_type = type->make_copy();
-    Identifier *_id = id->make_copy();
-    std::vector<Parameter*> _parameters;
-    for(int i = 0; i < parameters.size(); i++){
-        _parameters.push_back(parameters[i]->make_copy());
-    }
-    CompoundStatement *_body = dynamic_cast<CompoundStatement*>(body->make_copy());
-    return new OperatorOverload(op, _enclosing_type, _type, _id, _parameters, _body);
+bool Function::look_for_templates() {
+    if(enclosing_type.has_value()) if(!enclosing_type.value()->look_for_templates()) return false;
+    if(!type->look_for_templates()) return false;
+    for(int i = 0; i < parameters.size(); i++) if(!parameters[i]->look_for_templates()) return false;
+    if(!body->look_for_templates()) return false;
+    return true;
 }

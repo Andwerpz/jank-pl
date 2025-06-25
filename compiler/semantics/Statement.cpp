@@ -6,6 +6,7 @@
 #include "Identifier.h"
 #include "FunctionSignature.h"
 #include "utils.h"
+#include "Overload.h"
 
 // -- CONSTRUCTOR --
 DeclarationStatement::DeclarationStatement(Declaration *_declaration) {
@@ -203,8 +204,8 @@ bool ExpressionStatement::is_well_formed() {
 }
 
 bool ReturnStatement::is_well_formed() {
-    // - if we are not in a function right now (constructor), make sure this is a void return
-    if(enclosing_function == nullptr) {
+    // - if we are not in a function or overload right now (constructor), make sure this is a void return
+    if(enclosing_function == nullptr && enclosing_overload == nullptr) {
         if(opt_expr.has_value()) {
             return false;
         }
@@ -212,7 +213,11 @@ bool ReturnStatement::is_well_formed() {
     }
 
     // - does the expression resolve to a type?
-    Type *et = nullptr, *ft = enclosing_function->type;
+    Type *et = nullptr, *ft = nullptr;
+    if(enclosing_function != nullptr) ft = enclosing_function->type;
+    else if(enclosing_overload != nullptr) ft = enclosing_overload->type;
+    else assert(false);
+
     if(opt_expr.has_value()) {
         Expression *expr = opt_expr.value();
         et = expr->resolve_type();
@@ -254,7 +259,8 @@ bool ReturnStatement::is_well_formed() {
         fout << indent() << "add $" << -local_offset << ", %rsp\n"; //should not be managed by local_offset
     }
 
-    if(FunctionSignature(new Identifier("main"), {}) == *(enclosing_function->resolve_function_signature())) {
+    //special case for exiting out of main
+    if(enclosing_function != nullptr && FunctionSignature(new Identifier("main"), {}) == *(enclosing_function->resolve_function_signature())) {
         //function is main, use exit syscall instead
         fout << indent() << "push %rax\n";  //should not be managed by local_offset
         fout << indent() << "call sys_exit\n";
@@ -532,36 +538,41 @@ bool CompoundStatement::replace_templated_types(TemplateMapping *mapping) {
 }
 
 // -- LOOK FOR TEMPLATES --
-void DeclarationStatement::look_for_templates() {
-    declaration->look_for_templates();
+bool DeclarationStatement::look_for_templates() {
+    return declaration->look_for_templates();
 }
 
-void ExpressionStatement::look_for_templates() {
-    expr->look_for_templates();
+bool ExpressionStatement::look_for_templates() {
+    return expr->look_for_templates();
 }
 
-void ReturnStatement::look_for_templates() {
-    if(opt_expr.has_value()) opt_expr.value()->look_for_templates();
+bool ReturnStatement::look_for_templates() {
+    if(opt_expr.has_value()) if(!opt_expr.value()->look_for_templates()) return false;
+    return true;
 }
 
-void IfStatement::look_for_templates() {
-    for(int i = 0; i < exprs.size(); i++) exprs[i]->look_for_templates();
-    for(int i = 0; i < statements.size(); i++) statements[i]->look_for_templates();
-    if(else_statement.has_value()) else_statement.value()->look_for_templates();
+bool IfStatement::look_for_templates() {
+    for(int i = 0; i < exprs.size(); i++) if(!exprs[i]->look_for_templates()) return false;
+    for(int i = 0; i < statements.size(); i++) if(!statements[i]->look_for_templates()) return false;
+    if(else_statement.has_value()) if(!else_statement.value()->look_for_templates()) return false;
+    return true;
 }
 
-void WhileStatement::look_for_templates() {
-    expr->look_for_templates();
-    statement->look_for_templates();
+bool WhileStatement::look_for_templates() {
+    if(!expr->look_for_templates()) return false;
+    if(!statement->look_for_templates()) return false;
+    return true;
 }
 
-void ForStatement::look_for_templates() {
-    if(declaration.has_value()) declaration.value()->look_for_templates();
-    if(expr1.has_value()) expr1.value()->look_for_templates();
-    if(expr2.has_value()) expr2.value()->look_for_templates();
-    statement->look_for_templates();
+bool ForStatement::look_for_templates() {
+    if(declaration.has_value()) if(!declaration.value()->look_for_templates()) return false;
+    if(expr1.has_value()) if(!expr1.value()->look_for_templates()) return false;
+    if(expr2.has_value()) if(!expr2.value()->look_for_templates()) return false;
+    if(!statement->look_for_templates()) return false;
+    return true;
 }
 
-void CompoundStatement::look_for_templates() {
-    for(int i = 0; i < statements.size(); i++) statements[i]->look_for_templates();
+bool CompoundStatement::look_for_templates() {
+    for(int i = 0; i < statements.size(); i++) if(!statements[i]->look_for_templates()) return false;
+    return true;
 }

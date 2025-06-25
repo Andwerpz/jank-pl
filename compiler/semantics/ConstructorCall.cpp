@@ -28,6 +28,9 @@ ConstructorCall* ConstructorCall::convert(parser::constructor_call *c) {
 }
 
 Constructor* ConstructorCall::resolve_called_constructor() {
+    // - can we even emit code to initialize this struct?
+    if(!can_initialize_struct(this->type)) return nullptr;
+    
     return get_called_constructor(this);
 }
 
@@ -129,7 +132,8 @@ bool ConstructorCall::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-void ConstructorCall::look_for_templates() {
-    type->look_for_templates();
-    for(int i = 0; i < argument_list.size(); i++) argument_list[i]->look_for_templates();
+bool ConstructorCall::look_for_templates() {
+    if(!type->look_for_templates()) return false;
+    for(int i = 0; i < argument_list.size(); i++) if(!argument_list[i]->look_for_templates()) return false;
+    return true;
 }

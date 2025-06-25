@@ -20,7 +20,7 @@ struct Function {
 
     Function(std::optional<Type*> _enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body);
 
-    //use when inputting pre-defined asm functions
+    //use when inputting pre-defined asm functions (sys functions)
     Function(Type *_type, Identifier *_id, std::vector<Type*> input_types);
 
     virtual ~Function() = default;
@@ -34,12 +34,5 @@ struct Function {
     bool is_well_formed();
     virtual Function* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
-    void look_for_templates();
-};
-
-struct OperatorOverload : public Function {
-    std::string op;
-    OperatorOverload(std::string _op, std::optional<Type*> _enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body);
-    OperatorSignature* resolve_operator_signature() const;
-    Function* make_copy() override;
+    bool look_for_templates();
 };

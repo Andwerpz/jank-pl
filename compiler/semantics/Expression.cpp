@@ -8,6 +8,7 @@
 #include "Function.h"
 #include "ConstructorCall.h"
 #include "TemplateMapping.h"
+#include "OverloadCall.h"
 
 // -- CONSTRUCTOR --
 ExprPrimary::ExprPrimary(val_t _val) {
@@ -256,6 +257,20 @@ Type* ExprPrimary::resolve_type() {
         }
         return res;
     }
+    else if(std::holds_alternative<OverloadCall*>(val)) {
+        OverloadCall *o = std::get<OverloadCall*>(val);
+        Type *res = o->resolve_type();
+        if(res == nullptr){
+            std::cout << "Overload does not resolve to type : " << o->to_string() << "\n";
+            return nullptr;
+        }
+
+        //if this is a reference, automatically dereference it
+        if(dynamic_cast<ReferenceType*>(res)) {
+            res = dynamic_cast<ReferenceType*>(res)->type;
+        }
+        return res;
+    }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
         Type *res = find_variable_type(id);
@@ -486,6 +501,14 @@ bool ExprPrimary::is_lvalue() {
     else if(std::holds_alternative<ConstructorCall*>(val)) {
         return false;
     }
+    else if(std::holds_alternative<OverloadCall*>(val)) {
+        OverloadCall *o = std::get<OverloadCall*>(val);
+        Type *t = o->resolve_type();
+        if(t == nullptr) return false;
+        //if return type is reference, auto-dereference
+        if(dynamic_cast<ReferenceType*>(t) != nullptr) return true;
+        return false;
+    }
     else if(std::holds_alternative<Identifier*>(val)) {
         return true;
     }
@@ -612,6 +635,9 @@ void ExprPrimary::elaborate(ExprNode*& self) {
     else if(std::holds_alternative<ConstructorCall*>(val)) {
         //do nothing
     }
+    else if(std::holds_alternative<OverloadCall*>(val)) {
+        //do nothing
+    }
     else if(std::holds_alternative<Identifier*>(val)) {
         //do nothing
     }
@@ -635,12 +661,12 @@ void ExprBinary::elaborate(ExprNode*& self) {
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
 
-        //convert function overloads into function calls
+        //convert overloads into overload calls
         OperatorImplementation *oe = find_operator_implementation(left, str_op, right);
-        if(auto fo = dynamic_cast<FunctionOperator*>(oe)) {
-            OperatorOverload *f = fo->function;
-            FunctionCall *fc = new FunctionCall(f->id, {new Expression(left), new Expression(right)});
-            self = new ExprPrimary(fc);
+        if(auto fo = dynamic_cast<OverloadedOperator*>(oe)) {
+            Overload *o = fo->overload;
+            OverloadCall *oc = new OverloadCall(left, str_op, right);
+            self = new ExprPrimary(oc);
             return;
         }
 
@@ -662,12 +688,13 @@ void ExprPrefix::elaborate(ExprNode*& self) {
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
 
-        //convert function overloads into function calls
+
+        //convert overloads into overload calls
         OperatorImplementation *oe = find_operator_implementation(std::nullopt, str_op, right);
-        if(auto fo = dynamic_cast<FunctionOperator*>(oe)) {
-            OperatorOverload *f = fo->function;
-            FunctionCall *fc = new FunctionCall(f->id, {new Expression(right)});
-            self = new ExprPrimary(fc);
+        if(auto fo = dynamic_cast<OverloadedOperator*>(oe)) {
+            Overload *o = fo->overload;
+            OverloadCall *oc = new OverloadCall(std::nullopt, str_op, right);
+            self = new ExprPrimary(oc);
             return;
         }
 
@@ -683,12 +710,12 @@ void ExprPostfix::elaborate(ExprNode*& self) {
         Expression *expr = std::get<Expression*>(op);
         assert(expr->resolve_type() != nullptr);
 
-        //convert function overloads into function calls
+        //convert overloads into overload calls
         OperatorImplementation *oe = find_operator_implementation(left, "[]", expr->expr_node);
-        if(auto fo = dynamic_cast<FunctionOperator*>(oe)) {
-            OperatorOverload *f = fo->function;
-            FunctionCall *fc = new FunctionCall(f->id, {new Expression(left), expr});
-            self = new ExprPrimary(fc);
+        if(auto fo = dynamic_cast<OverloadedOperator*>(oe)) {
+            Overload *o = fo->overload;
+            OverloadCall *oc = new OverloadCall(left, "[]", expr->expr_node);
+            self = new ExprPrimary(oc);
             return;
         }
     }
@@ -701,12 +728,12 @@ void ExprPostfix::elaborate(ExprNode*& self) {
     else if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
 
-        //convert function overloads into function calls
+        //convert overloads into overload calls
         OperatorImplementation *oe = find_operator_implementation(left, str_op, std::nullopt);
-        if(auto fo = dynamic_cast<FunctionOperator*>(oe)) {
-            OperatorOverload *f = fo->function;
-            FunctionCall *fc = new FunctionCall(f->id, {new Expression(left)});
-            self = new ExprPrimary(fc);
+        if(auto fo = dynamic_cast<OverloadedOperator*>(oe)) {
+            Overload *o = fo->overload;
+            OverloadCall *oc = new OverloadCall(left, str_op, std::nullopt);
+            self = new ExprPrimary(oc);
             return;
         }
     }
@@ -718,7 +745,7 @@ void Expression::elaborate() {
         std::cout << "ALREADY ELABORATED : " << to_string() << "\n";
         assert(false);
     }
-    std::cout << "ELABORATING : " << to_string() << "\n";
+    std::cout << "ELABORATING : " << to_string() << std::endl;
     has_elaborated = true;
     expr_node->elaborate(expr_node);
 }
@@ -740,6 +767,18 @@ void ExprPrimary::emit_asm() {
     else if(std::holds_alternative<ConstructorCall*>(val)) {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
         c->emit_asm();
+    }
+    else if(std::holds_alternative<OverloadCall*>(val)) {
+        OverloadCall *o = std::get<OverloadCall*>(val);
+        o->emit_asm();
+
+        Type *ot = o->resolve_type();
+        assert(ot != nullptr);
+
+        //if this is a reference, dereference it
+        if(dynamic_cast<ReferenceType*>(ot)) {
+            emit_dereference(ot);
+        }
     }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
@@ -1024,6 +1063,10 @@ std::string ExprPrimary::to_string() {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
         return c->to_string();
     }
+    else if(std::holds_alternative<OverloadCall*>(val)) {
+        OverloadCall *o = std::get<OverloadCall*>(val);
+        return o->to_string();
+    }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
         return id->name;
@@ -1092,6 +1135,10 @@ size_t ExprPrimary::hash() {
     else if(std::holds_alternative<ConstructorCall*>(val)) {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
         return c->hash();
+    }
+    else if(std::holds_alternative<OverloadCall*>(val)) {
+        OverloadCall *o = std::get<OverloadCall*>(val);
+        return o->hash();
     }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
@@ -1180,6 +1227,11 @@ bool ExprPrimary::equals(ExprNode* _other) {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
         ConstructorCall *oc = std::get<ConstructorCall*>(other->val);
         return c->equals(oc);
+    }
+    else if(std::holds_alternative<OverloadCall*>(val)) {
+        OverloadCall *o = std::get<OverloadCall*>(val);
+        OverloadCall *oo = std::get<OverloadCall*>(other->val);
+        return o->equals(oo);
     }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
@@ -1287,6 +1339,13 @@ void ExprPrimary::id_to_type() {
             c->argument_list[i]->id_to_type();
         }
     }
+    else if(std::holds_alternative<OverloadCall*>(val)) {
+        OverloadCall *o = std::get<OverloadCall*>(val);
+        
+        //turn both arguments to type
+        if(o->left.has_value()) o->left.value()->id_to_type();
+        if(o->right.has_value()) o->right.value()->id_to_type();
+    }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);   
 
@@ -1349,6 +1408,10 @@ ExprNode* ExprPrimary::make_copy() {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
         return new ExprPrimary(c->make_copy());
     }
+    else if(std::holds_alternative<OverloadCall*>(val)) {
+        OverloadCall *o = std::get<OverloadCall*>(val);
+        return new ExprPrimary(o->make_copy());
+    }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
         return new ExprPrimary(id->make_copy());
@@ -1409,6 +1472,10 @@ bool ExprPrimary::replace_templated_types(TemplateMapping *mapping) {
     else if(std::holds_alternative<ConstructorCall*>(val)) {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
         return c->replace_templated_types(mapping);
+    }
+    else if(std::holds_alternative<OverloadCall*>(val)) {
+        OverloadCall *o = std::get<OverloadCall*>(val);
+        return o->replace_templated_types(mapping);
     }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
@@ -1477,14 +1544,18 @@ bool Expression::replace_templated_types(TemplateMapping *mapping) {
 }
 
 // -- LOOK FOR TEMPLATES --
-void ExprPrimary::look_for_templates() {
+bool ExprPrimary::look_for_templates() {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *fc = std::get<FunctionCall*>(val);
-        fc->look_for_templates();
+        if(!fc->look_for_templates()) return false;
     }
     else if(std::holds_alternative<ConstructorCall*>(val)) {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
-        c->look_for_templates();
+        if(!c->look_for_templates()) return false;
+    }
+    else if(std::holds_alternative<OverloadCall*>(val)) {
+        OverloadCall *o = std::get<OverloadCall*>(val);
+        if(!o->look_for_templates()) return false;
     }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
@@ -1496,43 +1567,46 @@ void ExprPrimary::look_for_templates() {
     }
     else if(std::holds_alternative<Expression*>(val)) {
         Expression *e = std::get<Expression*>(val);
-        e->look_for_templates();
+        if(!e->look_for_templates()) return false;
     }
     else if(std::holds_alternative<Type*>(val)) {
         Type *t = std::get<Type*>(val);
-        t->look_for_templates();
+        if(!t->look_for_templates()) return false;
     }
     else assert(false);
+    return true;
 }
 
-void ExprBinary::look_for_templates() {
-    left->look_for_templates();
-    right->look_for_templates();
+bool ExprBinary::look_for_templates() {
+    if(!left->look_for_templates()) return false;
+    if(!right->look_for_templates()) return false;
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
         // do nothing
     }
     else assert(false);
+    return true;
 }
 
-void ExprPrefix::look_for_templates() {
-    right->look_for_templates();
+bool ExprPrefix::look_for_templates() {
+    if(!right->look_for_templates()) return false;
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
         // do nothing
     }
     else assert(false);
+    return true;
 }
 
-void ExprPostfix::look_for_templates() {
-    left->look_for_templates();
+bool ExprPostfix::look_for_templates() {
+    if(!left->look_for_templates()) return false;
     if(std::holds_alternative<Expression*>(op)) {   //indexing
         Expression *expr = std::get<Expression*>(op);
-        expr->look_for_templates();
+        if(!expr->look_for_templates()) return false;
     }
     else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {    //function call
         std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
-        p.second->look_for_templates();
+        if(!p.second->look_for_templates()) return false;
     }
     else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {    //member variable access
         std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
@@ -1543,8 +1617,9 @@ void ExprPostfix::look_for_templates() {
         // do nothing
     }
     else assert(false);
+    return true;
 }
 
-void Expression::look_for_templates() {
-    expr_node->look_for_templates();
+bool Expression::look_for_templates() {
+    return expr_node->look_for_templates();
 }

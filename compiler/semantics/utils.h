@@ -25,6 +25,9 @@ struct ConstructorCall;
 struct TemplatedType;
 struct TemplatedStructDefinition;
 struct Program;
+struct TemplatedFunction;
+struct Overload;
+struct TemplatedOverload;
 
 struct Variable;
 struct OperatorSignature;
@@ -69,6 +72,7 @@ struct OperatorSignature {
     bool equals(const OperatorSignature* other) const;
     bool operator==(const OperatorSignature& other) const;
     bool operator!=(const OperatorSignature& other) const;
+    std::string to_string();
 };  
 
 struct OperatorImplementation {
@@ -93,9 +97,9 @@ struct BuiltinOperator : public OperatorImplementation {
     void emit_asm();
 };
 
-struct FunctionOperator : public OperatorImplementation {
-    OperatorOverload *function;
-    FunctionOperator(OperatorOverload *_function);
+struct OverloadedOperator : public OperatorImplementation {
+    Overload *overload;
+    OverloadedOperator(Overload *_overload);
 };
 
 //holds information on where all the stuff is supposed to go within the heap portion of the struct
@@ -139,6 +143,7 @@ bool is_templated_struct_declared(TemplatedStructDefinition *t);
 bool is_templated_type_well_formed(TemplatedType *t);
 bool is_type_primitive(Type *t);
 bool is_function_declared(FunctionSignature *fs);
+bool is_sys_function(FunctionSignature *fs);
 bool is_variable_declared(Identifier *id);
 bool is_constructor_declared(ConstructorSignature *cs);
 Function* get_function(FunctionSignature *fs);  
@@ -146,13 +151,17 @@ Function* get_called_function(FunctionCall *fc);
 Constructor* get_called_constructor(ConstructorCall *cc);
 std::string get_function_label(FunctionSignature *fs);
 std::string get_constructor_label(ConstructorSignature *cs);
+std::string get_overload_label(OperatorSignature *os);
 Variable* get_variable(Identifier *id);
 bool is_identifier_used(Identifier *id);
-bool add_type(StructDefinition *sd);
+bool add_struct_type(StructDefinition *sd);
+bool add_templated_struct_type(StructDefinition *sd);
 bool add_primitive_basetype(BaseType *t);   //these don't constitute all the primitive types, you can have derived primitive types (like pointer)
 bool add_basetype(BaseType *t);
 bool add_templated_struct(TemplatedStructDefinition *t);
-void create_templated_type(TemplatedType *t); 
+bool add_templated_function(TemplatedFunction *f);  //TODO add unification checking 
+bool add_templated_overload(TemplatedOverload *o);
+bool create_templated_type(TemplatedType *t); 
 bool add_function(Function *f);
 bool add_sys_function(Function *f);
 bool add_constructor(Constructor *c);
@@ -166,6 +175,7 @@ StructLayout* get_struct_layout(Type *t);
 bool add_struct_layout(Type *t, StructLayout *sl);
 void emit_initialize_primitive(Type *t);
 void emit_initialize_struct(Type *t);
+bool can_initialize_struct(Type *t);
 Variable* emit_initialize_variable(Type* vt, Identifier *id, Expression *expr);
 void emit_dereference(Type *t);
 void emit_push(std::string reg, std::string desc);
@@ -174,9 +184,9 @@ void emit_add_rsp(int amt, std::string desc);
 void emit_add_rsp(int amt, std::vector<std::string> desc_list);
 void emit_sub_rsp(int amt, std::string desc);
 bool add_operator_implementation(OperatorSignature *os, OperatorImplementation *oi);
-bool add_operator_implementation(OperatorOverload *f);
+bool add_operator_implementation(Overload *o);
 void remove_operator_implementation(OperatorSignature *os, OperatorImplementation *oi);
-void remove_operator_implementation(OperatorOverload *f);
+void remove_operator_implementation(Overload *o);
 void emit_malloc(int sz_bytes);
 
 // -- CONTROLLER --
@@ -186,8 +196,11 @@ inline std::ofstream fout;
 
 //have these here to be visible. 
 inline Function* enclosing_function;
+inline Overload* enclosing_overload;
 inline Program* enclosing_program;
 inline std::vector<Function*> declared_functions;
+inline std::vector<StructDefinition*> declared_structs;
+inline std::vector<Overload*> declared_overloads;
 inline std::vector<Constructor*> declared_constructors;
 inline std::vector<Variable*> declared_variables;
 inline std::stack<std::vector<Variable*>> declaration_stack;   //every 'layer' of the declaration stack should be contiguous on the stack

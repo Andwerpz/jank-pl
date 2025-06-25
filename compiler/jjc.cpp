@@ -565,11 +565,103 @@ Before checking anything else, we look through the entire AST for templated stru
 and templated overload usages. Then, we generate the templated instances of those usages. We keep doing this until there 
 are no more undefined template usages in the code. Finally, we compile the resulting AST as if there are no templates. 
 
+to resolve function templates, it requires being able to resolve the types of the arguments. To resolve the types of the arguments,
+we need to generate all the types in the arguments, and add all their functions and member variable mappings into the controller. 
+Adding all the functions and member variables just means generating any templated structs within the generated struct. 
+
+I'm just concerned about circular dependencies between the structs. For example, what if we have something like this:
+
+template <T>
+struct A {
+    B<T>* foo;
+
+    T do_calc(T arg) {
+        return foo->do_calc(new T());
+    }
+}
+
+template <T>
+struct B {
+    A<T>* foo;
+
+    T do_calc(T arg) {
+        return foo->do_calc(new T());
+    }
+}
+
+Can we generate all possible structs without generating any functions at all? I don't think so, consider make_pair(T, U). We'll need to 
+generate the pair from the return value. And then we can have make_triple(make_pair(T, U), V), triple<T, U, V> is completely obscured by
+the templated function calls. But eventually if we go deep enough, there will always be a function call that contains purely non-templated
+function calls (?).
+
+the concern is that what if there is a function call that doesn't contain any more templated function calls, but does contain references to 
+a templated type that then contains a function call back to itself? Like:
+
+template<T>
+struct A {
+    A() {
+        foo(this);
+    }
+}
+
+template<T>
+void foo(A<T> arg) {
+
+}
+
+foo(new A<int>())
+
+We want to resolve the type of (new A<int>()), but we first need to generate struct A<int>. But generating struct A<int> and then checking it 
+will then run into foo(A<int>), which is infinite recursion. 
+
+Perhaps when running into structs, I should only initialize them (make sure their member variables and function parameters are instantiated). 
+Then, push their member functions and constructors to be checked later. This way when I'm actually checking a function body and I need to 
+instantiate a type to resolve a function call, I can just do a 'shallow' instantiation and still collect all member variables and function
+signatures, and this 'shallow' instantiation will not trigger any rounds of 'deep' instantiation. 
+
+ok, realized that we need knowledge of variable types to do function call type resolution. So instead I've worked this out:
+
+ - add_type() will take struct definition, register its type, add all functions / constructors, resolve any templated types
+   in the struct member variables and functions and constructors. Will also make sure templated types are well formed
+ - get_called_function() should first scan through all templated functions, and generate them. same goes for finding overloads. 
+ - look_for_templates() will not resolve function calls, it will just do pattern matching on TemplatedType. 
+ - create a new function can_initialize_struct(). This will take the place of the circular dependency checker in Program. 
+   should call this before we emit_initialize_struct(). 
+
+ok, it works... kind of. Currently, I'm being waay too loose on checking for ambiguous functions generated when resolving
+templated functions. Also, OperatorOverload should not be a child class of Function, it should be its own thing, like 
+Constructor. Then, I can implement templated overloads much like templated functions.
+
+is it sufficient to check that a function call cannot map to more than 1 templated function? I just want to avoid the situation
+where two different templated functions generate the same signature. I'll try to prove it:
+
+Suppose there exists two templated functions A, B, that both map to some function signature S. This means there is some assignment
+of the templated types of A and B such that they both result in the same function signature. Since the resulting function signature
+is exactly equal to the argument types in the case of templating, there must exist some function call such that it matches with
+both A and B. 
+
+Suppose there is some function call that matches with both A and B. It's trivial to see that A and B can map to the same function
+signature. 
+
+Now, the question is should I raise an error only when there exists some function that maps to two templated functions, or
+should I check for it preemptively? How would I even check for it? Probably checking for it preemtpively is the better option. 
+
+The problem I need to solve is called unification, there exists a nice algorithm called 'Robinson's Unification Algorithm'
+I should do pairwise checks for every templated function and overload to make sure they can't resolve to the same signature. 
+I should also check templated functions and overloads against their untemplated counterparts to make sure the templated versions
+can't resolve to an untemplated version. 
+
+Also, should probably change the type grammar to only allow references on the outermost layer, and move OperatorSignature outside
+of utils. One thing that I'm struggling with is whether or not to treat Overload like an operator, or like a function, as currently
+it's sitting somewhere in between, Overload is more like a function, while OverloadCall is more like an operator. 
+
 
 some miscellaneous features:
  - continue, break (loop control statements)
  - global variables
  - importing other files 
+ - floats
+ - primitive type constructors, so new int() is valid (mostly useful for templating)
 
 
 struct nesting / namespaces:

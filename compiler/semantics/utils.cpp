@@ -11,6 +11,9 @@
 #include "ConstructorCall.h"
 #include "TemplatedStructDefinition.h"
 #include "Program.h"
+#include "TemplatedFunction.h"
+#include "Overload.h"
+#include "TemplatedOverload.h"
 
 Variable::Variable(Type *_type, Identifier *_id) {
     id = _id;
@@ -71,6 +74,14 @@ bool OperatorSignature::operator!=(const OperatorSignature& other) const {
     return !this->equals(&other);
 }
 
+std::string OperatorSignature::to_string() {
+    std::string res = "";
+    if(left.has_value()) res += left.value()->to_string() + " ";
+    res += op;
+    if(right.has_value()) res += " " + right.value()->to_string();
+    return res;
+}
+
 OperatorImplementation::OperatorImplementation(Type *_res_type) {
     assert(_res_type != nullptr);
     res_type = _res_type;
@@ -90,8 +101,8 @@ void BuiltinOperator::emit_asm() {
     }
 }
 
-FunctionOperator::FunctionOperator(OperatorOverload *_function) : OperatorImplementation((assert(_function != nullptr), _function->type)) {
-    function = _function;
+OverloadedOperator::OverloadedOperator(Overload *_overload) : OperatorImplementation((assert(_overload != nullptr), _overload->type)) {
+    overload = _overload;
 }
 
 StructLayout::StructLayout(std::vector<MemberVariable*> _member_variables, std::unordered_map<std::string, int> _offset_map, int _size) {
@@ -202,13 +213,16 @@ namespace {
 }
 
 std::vector<Type*> declared_types;
+std::vector<Function*> declared_sys_functions;
 std::vector<TemplatedStructDefinition*> declared_templated_structs;
 std::vector<TemplatedFunction*> declared_templated_functions;
+std::vector<TemplatedOverload*> declared_templated_overloads;
 std::vector<BaseType*> declared_basetypes;
 std::unordered_set<Type*, TypeHash, TypeEquals> primitive_base_types;
 std::unordered_map<Type*, StructLayout*, TypeHash, TypeEquals> struct_layout_map;
 std::unordered_map<FunctionSignature*, std::string, FunctionSignatureHash, FunctionSignatureEquals> function_label_map;
 std::unordered_map<ConstructorSignature*, std::string, ConstructorSignatureHash, ConstructorSignatureEquals> constructor_label_map;
+std::unordered_map<OperatorSignature*, std::string, OperatorSignatureHash, OperatorSignatureEquals> overload_label_map;
 std::unordered_map<OperatorSignature*, OperatorImplementation*, OperatorSignatureHash, OperatorSignatureEquals> conversion_map;  
 
 int label_counter;
@@ -220,8 +234,13 @@ void reset_controller() {
     enclosing_program = nullptr;
     declared_types.clear();
     declared_basetypes.clear();
+    declared_structs.clear();
+    declared_overloads.clear();
+    declared_functions.clear();
     declared_templated_structs.clear();
     declared_templated_functions.clear();
+    declared_templated_overloads.clear();
+    declared_sys_functions.clear();
     primitive_base_types.clear();
     struct_layout_map.clear();
 
@@ -667,6 +686,7 @@ OperatorImplementation* find_typecast_implementation(Type *from, Type *to) {
 //looks through all operator implementations and finds all that matches
 //same idea as get_function() for all conversions except for direct casting. 
 OperatorImplementation* find_operator_implementation(std::optional<Expression*> left, std::string op, std::optional<Expression*> right) {
+    //some sanity checks
     //one of left or right has to have a value
     assert(left.has_value() || right.has_value());
     //check that the values are not nullptr
@@ -674,6 +694,15 @@ OperatorImplementation* find_operator_implementation(std::optional<Expression*> 
     if(right.has_value()) assert(right.value() != nullptr);
     //this should not be the casting operator
     assert(op != "(cast)");
+
+    //try to construct templated overload
+    for(int i = 0; i < declared_templated_overloads.size(); i++){
+        Overload *no = declared_templated_overloads[i]->gen_overload(left, op, right);
+        if(no == nullptr) {
+            continue;
+        }
+        add_operator_implementation(no);
+    }
 
     // std::cout << "Find operator implementation : " << op << "\n";
     
@@ -759,16 +788,16 @@ bool is_templated_struct_declared(TemplatedStructDefinition *t) {
 }
 
 //just checks to make sure that it's composed of declared base types. 
+//also, none of the template types can be ReferenceType
 bool is_templated_type_well_formed(TemplatedType *t) {
     assert(t != nullptr);
     if(!is_basetype_declared(t->base_type)) return false;
     for(int i = 0; i < t->template_types.size(); i++){
         Type *nt = t->template_types[i];
         assert(nt != nullptr);
-        while(dynamic_cast<ReferenceType*>(nt) || dynamic_cast<PointerType*>(nt)) {
-            if(auto x = dynamic_cast<ReferenceType*>(nt)) nt = x->type;
-            else if(auto x = dynamic_cast<PointerType*>(nt)) nt = x->type;
-            else assert(false);
+        if(dynamic_cast<ReferenceType*>(nt)) return false;
+        while(dynamic_cast<PointerType*>(nt)) {
+            nt = dynamic_cast<PointerType*>(nt)->type;
         }
         if(auto x = dynamic_cast<BaseType*>(nt)) {
             if(!is_basetype_declared(x)) return false;
@@ -784,6 +813,15 @@ bool is_templated_type_well_formed(TemplatedType *t) {
 bool is_function_declared(FunctionSignature *fs) {
     for(int i = 0; i < declared_functions.size(); i++){
         if(fs->equals(declared_functions[i]->resolve_function_signature())) {
+            return true;
+        }
+    }
+    return false;
+}
+
+bool is_sys_function(FunctionSignature *fs) {
+    for(int i = 0; i < declared_sys_functions.size(); i++){
+        if(fs->equals(declared_sys_functions[i]->resolve_function_signature())) {
             return true;
         }
     }
@@ -823,6 +861,26 @@ Function* get_function(FunctionSignature *fs) {
 // - If there are multiple or zero, returns nullptr
 Function* get_called_function(FunctionCall *fc) {
     assert(fc != nullptr);
+
+    //see if we can make some templated function out of fc
+    //TODO check if some function call is ambiguous due to templating. 
+    std::cout << "TRYING TO CREATE TEMPLATED FUNCTION : " << fc->to_string() << "\n";
+    for(int i = 0; i < declared_templated_functions.size(); i++){
+        Function* nf = declared_templated_functions[i]->gen_function(fc);
+        if(nf == nullptr) {
+            continue;
+        }
+
+        std::cout << "GENERATED NEW FUNCTION : " << nf->resolve_function_signature()->to_string() << "\n";
+
+        //ok, we've generated a new function. Add it
+        if(!add_function(nf)) {
+            //duplicate function signature is bad?
+            // std::cout << "Generated duplicate function signature from templated function : " << nf->resolve_function_signature()->to_string() << "\n";
+            // return nullptr;
+        }
+    }
+
     std::optional<Type*> enclosing_type = fc->target_type;
     Identifier *id = fc->id;
     std::vector<Expression*> args = fc->argument_list;
@@ -920,13 +978,21 @@ Constructor* get_called_constructor(ConstructorCall *cc) {
 }
 
 std::string get_function_label(FunctionSignature *fs) {
+    assert(fs != nullptr);
     assert(function_label_map.count(fs));
     return function_label_map[fs];
 }
 
 std::string get_constructor_label(ConstructorSignature *cs) {
+    assert(cs != nullptr);
     assert(constructor_label_map.count(cs));
     return constructor_label_map[cs];
+}
+
+std::string get_overload_label(OperatorSignature *os) {
+    assert(os != nullptr);
+    assert(overload_label_map.count(os));
+    return overload_label_map[os];
 }
 
 Variable* get_variable(Identifier *id) {
@@ -949,11 +1015,26 @@ bool is_identifier_used(Identifier *id) {
     return false;
 }
 
-bool add_type(StructDefinition *sd) {
+bool add_struct_type(StructDefinition *sd) {
     assert(sd != nullptr);
     Type *t = sd->type;
     if(is_type_declared(t)) return false;
     declared_types.push_back(t);
+    declared_structs.push_back(sd);
+
+    //add all functions and constructors
+    for(int i = 0; i < sd->functions.size(); i++){
+        Function *f = sd->functions[i];
+        if(!add_function(f)) {
+            std::cout << "Failed to add struct member function : " << f->resolve_function_signature()->to_string() << "\n";
+        } 
+    }
+    for(int i = 0; i < sd->constructors.size(); i++) {
+        Constructor *c = sd->constructors[i];
+        if(!add_constructor(c)) {
+            std::cout << "Failed to add struct constructor : " << c->resolve_constructor_signature()->to_string() << "\n";
+        }
+    }
 
     //construct StructLayout
     std::unordered_map<std::string, int> offset_map;
@@ -968,7 +1049,24 @@ bool add_type(StructDefinition *sd) {
     StructLayout *sl = new StructLayout(sd->member_variables, offset_map, size);
     assert(add_struct_layout(t, sl));
 
+    //resolve all templates in function signature and member variables
+    if(!sd->look_for_templates()) {
+        std::cout << "Unable to resolve all templates in " << t->to_string() << "\n";
+        return false;
+    }
+
     std::cout << "ADD TYPE : " << t->to_string() << "\n";
+
+    return true;
+}
+
+bool add_templated_struct_type(StructDefinition *sd) {
+    if(!add_struct_type(sd)) return false;
+
+    //also, make sure this is well formed
+    if(!sd->is_well_formed()) {
+        return false;
+    }
 
     return true;
 }
@@ -996,10 +1094,23 @@ bool add_templated_struct(TemplatedStructDefinition *t) {
     return true;
 }
 
+bool add_templated_function(TemplatedFunction *f) {
+    assert(f != nullptr);
+    declared_templated_functions.push_back(f);
+    return true;
+}
+
+bool add_templated_overload(TemplatedOverload *o) {
+    assert(o != nullptr);
+    declared_templated_overloads.push_back(o);
+    return true;
+}   
+
 //look through all declared templated struct defs. If one matches, create it. 
-void create_templated_type(TemplatedType *t) {
+//returns false if it creates a malformed type, or can't create the type
+bool create_templated_type(TemplatedType *t) {
     //have we already generated this type?
-    if(is_type_declared(t)) return;
+    if(is_type_declared(t)) return true;
     //try to generate it
     for(int i = 0; i < declared_templated_structs.size(); i++){
         TemplatedStructDefinition *tsd = declared_templated_structs[i];
@@ -1007,25 +1118,19 @@ void create_templated_type(TemplatedType *t) {
         if(sd != nullptr) {
             //add this type as declared
             assert(sd->type->equals(t));
-            assert(add_type(sd));
-
-            //add to enclosing_program
-            enclosing_program->structs.push_back(sd);
-
-            //look inside this type for more templates
-            sd->look_for_templates();
-            break;
+            if(!add_templated_struct_type(sd)) {
+                return false;
+            }
+            return true;
         }
     }
+    return true;
 }
 
 bool add_function(Function *f){
     assert(f != nullptr);
     FunctionSignature *fs = f->resolve_function_signature();
     if(is_function_declared(fs)) return false;
-    if(auto x = dynamic_cast<OperatorOverload*>(f)) {   //if it's an overload, register it
-        if(!add_operator_implementation(x)) return false;
-    }
     declared_functions.push_back(f);
     function_label_map.insert({fs, create_new_label()});
     std::cout << "ADD FUNCTION : " << fs->to_string() << std::endl;
@@ -1037,6 +1142,7 @@ bool add_sys_function(Function *f) {
     FunctionSignature *fs = f->resolve_function_signature();
     if(is_function_declared(fs)) assert(false);
     declared_functions.push_back(f);
+    declared_sys_functions.push_back(f);
     function_label_map.insert({fs, f->id->name});
     return true;
 }
@@ -1063,9 +1169,6 @@ Variable* add_variable(Type *t, Identifier *id) {
 
 void remove_function(Function *f) {
     assert(f != nullptr);
-    if(auto x = dynamic_cast<OperatorOverload*>(f)) {
-        remove_operator_implementation(x);
-    }
     int ind = -1;
     for(int i = 0; i < declared_functions.size(); i++){
         if(*f == *(declared_functions[i])) {
@@ -1251,6 +1354,12 @@ void emit_initialize_struct(Type *t) {
     //now, %rax should hold location of heap ptr, %rbx holds location of actual struct start
 }
 
+//should call this in Constructor::resolve_called_constructor()
+bool can_initialize_struct(Type *t) {
+    //TODO
+    return true;
+}
+
 //should be logically similar to is_declarable(), except this one emits a variable declaration 
 //every variable declaration must use this except for registering parameters at the beginning of function calls
 //evaluates the expression and initializes the variable onto the top of the stack
@@ -1371,12 +1480,16 @@ bool add_operator_implementation(OperatorSignature *os, OperatorImplementation *
     return true;
 }
 
-bool add_operator_implementation(OperatorOverload *f){
-    assert(f != nullptr);
-    OperatorSignature *os = f->resolve_operator_signature();
+bool add_operator_implementation(Overload *o){
+    assert(o != nullptr);
+    OperatorSignature *os = o->resolve_operator_signature();
     if(os == nullptr) return false;
-    FunctionOperator *fo = new FunctionOperator(f);
-    return add_operator_implementation(os, fo);
+    OverloadedOperator *oo = new OverloadedOperator(o);
+    if(!add_operator_implementation(os, oo)) return false;
+    declared_overloads.push_back(o);
+    overload_label_map.insert({os, create_new_label()});
+    std::cout << "ADD OVERLOAD : " << o->resolve_operator_signature()->to_string() << std::endl;
+    return true;
 }
 
 void remove_operator_implementation(OperatorSignature *os, OperatorImplementation *oi) {
@@ -1384,10 +1497,21 @@ void remove_operator_implementation(OperatorSignature *os, OperatorImplementatio
     conversion_map.erase(os);
 }
 
-void remove_operator_implementation(OperatorOverload *f) {
-    assert(f != nullptr);
-    OperatorSignature *os = f->resolve_operator_signature();
+void remove_operator_implementation(Overload *o) {
+    assert(o != nullptr);
+    OperatorSignature *os = o->resolve_operator_signature();
     assert(os != nullptr);
-    FunctionOperator *fo = new FunctionOperator(f);
-    remove_operator_implementation(os, fo);
+    OverloadedOperator *oo = new OverloadedOperator(o);
+    remove_operator_implementation(os, oo);
+    {
+        int ind = -1;
+        for(int i = 0; i < declared_overloads.size(); i++){
+            if(o->resolve_operator_signature()->equals(declared_overloads[i]->resolve_operator_signature())) {
+                ind = i;
+            }
+        }   
+        assert(ind != -1);
+        declared_overloads.erase(declared_overloads.begin() + ind);
+    }
+    overload_label_map.erase(os);
 }

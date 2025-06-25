@@ -1,23 +1,6 @@
 #include "jank.ebnf" ;
 
-overloadable_operator = "++x" | "--x" | "x++" | "x--" |
-                        "*x" |
-                        "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" |
-                        "==" | "!=" | "<" | "<=" | ">" | ">=" |
-                        "[]" | 
-                        "=" |
-                        "(cast)" ;
-overload_identifier = "operator" , overloadable_operator ;
-
-function_identifier = overload_identifier | identifier ;
-
-(* void main(int foo) *)
-function_definition = type , rws , function_identifier , ows , "(" , ows , parameter_list , ows , ")" ;
-
-(* void main(int foo) { } *)
+function_definition = type , rws , identifier , ows , "(" , ows , parameter_list , ows , ")" ;
 function = function_definition , ows , compound_statement ;
-
 templated_function = template_header , ows , function ;
-
-(* print("asdf") *)
 function_call = identifier , ows , "(" , ows , argument_list , ows , ")" ;

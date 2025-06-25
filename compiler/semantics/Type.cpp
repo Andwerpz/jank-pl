@@ -1,6 +1,13 @@
 #include "Type.h"
 #include "utils.h"
 #include "TemplateMapping.h"
+#include "TemplateHeader.h"
+
+Type* Type::remove_reference() {
+    Type *ret = this->make_copy();
+    if(dynamic_cast<ReferenceType*>(ret)) ret = dynamic_cast<ReferenceType*>(ret)->type;
+    return ret;
+}
 
 bool Type::operator==(const Type& other) const {
     return this->equals(&other);
@@ -203,24 +210,104 @@ bool TemplatedType::replace_templated_types(TemplateMapping *mapping) {
 }
 
 // -- LOOK FOR TEMPLATES --
-void BaseType::look_for_templates() {
+bool BaseType::look_for_templates() {
     // do nothing
+    return true;
 }
 
-void PointerType::look_for_templates() {
-    type->look_for_templates();
+bool PointerType::look_for_templates() {
+    return type->look_for_templates();
 }
 
-void ReferenceType::look_for_templates(){
-    type->look_for_templates();
+bool ReferenceType::look_for_templates(){
+    return type->look_for_templates();
 }
 
-void TemplatedType::look_for_templates() {
-    //aha! found one! 
-    create_templated_type(this);
-
-    base_type->look_for_templates();
+bool TemplatedType::look_for_templates() {
+    if(!base_type->look_for_templates()) return false;
     for(int i = 0; i < template_types.size(); i++){
-        template_types[i]->look_for_templates();
+        if(!template_types[i]->look_for_templates()) return false;
+    }
+
+    //aha! found one! 
+    if(!create_templated_type(this)) return false;
+    
+    return true;
+}
+
+// -- GENERATE MAPPING --
+TemplateMapping* BaseType::generate_mapping(Type *_t, TemplateHeader *header) {
+    if(dynamic_cast<BaseType*>(_t) == nullptr) return nullptr;
+    BaseType *t = dynamic_cast<BaseType*>(_t);
+    // - is t a templated type?
+    for(int i = 0; i < header->types.size(); i++){
+        if(header->types[i]->equals(t)) {
+            TemplateMapping *mapping = new TemplateMapping();
+            mapping->add_mapping(header->types[i], this->make_copy());
+            return mapping;
+        }
+    }
+    // - is t equal to this type?
+    if(this->equals(t)) {
+        return new TemplateMapping();
+    }
+    return nullptr;
+}
+
+TemplateMapping* PointerType::generate_mapping(Type *_t, TemplateHeader *header) {
+    if(dynamic_cast<BaseType*>(_t)) {
+        BaseType *t = dynamic_cast<BaseType*>(_t);
+        // - is t a templated type?
+        for(int i = 0; i < header->types.size(); i++){
+            if(header->types[i]->equals(t)) {
+                TemplateMapping *mapping = new TemplateMapping();
+                mapping->add_mapping(header->types[i], this->make_copy());
+                return mapping;
+            }
+        }
+        return nullptr;
+    }
+    else {
+        if(dynamic_cast<PointerType*>(_t) == nullptr) return nullptr;
+        PointerType *t = dynamic_cast<PointerType*>(_t);
+        return this->type->generate_mapping(t->type, header);
+    }
+}
+
+TemplateMapping* ReferenceType::generate_mapping(Type *_t, TemplateHeader *header) {
+    assert(false);
+}
+
+TemplateMapping* TemplatedType::generate_mapping(Type *_t, TemplateHeader *header) {
+    if(dynamic_cast<BaseType*>(_t)) {
+        BaseType *t = dynamic_cast<BaseType*>(_t);
+        // - is t a templated type?
+        for(int i = 0; i < header->types.size(); i++){
+            if(header->types[i]->equals(t)) {
+                TemplateMapping *mapping = new TemplateMapping();
+                mapping->add_mapping(header->types[i], this->make_copy());
+                return mapping;
+            }
+        }
+        return nullptr;
+    }
+    else {
+        if(dynamic_cast<TemplatedType*>(_t) == nullptr) return nullptr;
+        TemplatedType *t = dynamic_cast<TemplatedType*>(_t);
+
+        // - exclude matches like T<int, int>
+        if(!this->base_type->equals(t->base_type)) return nullptr;
+
+        // - number of template types must match
+        if(this->template_types.size() != t->template_types.size()) return nullptr;
+
+        // - find matches in all template types
+        TemplateMapping *mapping = new TemplateMapping();
+        for(int i = 0; i < this->template_types.size(); i++){
+            TemplateMapping *nm = this->template_types[i]->generate_mapping(t->template_types[i], header);
+            if(nm == nullptr) return nullptr;
+            if(!mapping->merge_with_mapping(nm)) return nullptr;
+        }
+        return mapping;
     }
 }

@@ -12,21 +12,27 @@
 #include "TemplatedFunction.h"
 #include "Constructor.h"
 #include "ConstructorSignature.h"
+#include "Overload.h"
+#include "TemplatedOverload.h"
 
-Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions) {
+Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> _overloads, std::vector<TemplatedOverload*> _templated_overloads) {
     structs = _structs;
     functions = _functions;
+    overloads = _overloads;
 
     templated_structs = _templated_structs;
     templated_functions = _templated_functions;
+    templated_overloads = _templated_overloads;
 }
 
 Program* Program::convert(parser::program *p) {
     std::vector<StructDefinition*> structs;
     std::vector<Function*> functions;
+    std::vector<Overload*> overloads;
 
     std::vector<TemplatedStructDefinition*> templated_structs;
     std::vector<TemplatedFunction*> templated_functions;
+    std::vector<TemplatedOverload*> templated_overloads;
     for(int i = 0; i < p->t0.size(); i++){
         if(p->t0[i]->t1->is_c0) {   //function
             functions.push_back(Function::convert(p->t0[i]->t1->t0->t0));
@@ -34,15 +40,21 @@ Program* Program::convert(parser::program *p) {
         else if(p->t0[i]->t1->is_c1) {  //struct definition
             structs.push_back(StructDefinition::convert(p->t0[i]->t1->t1->t0));
         }
-        // else if(p->t0[i]->t1->is_c2) {  //templated function
-        //     templated_functions.push_back(TemplatedFunction::convert(p->t0[i]->t1->t2->t0));
-        // }
+        else if(p->t0[i]->t1->is_c2) {  //templated function
+            templated_functions.push_back(TemplatedFunction::convert(p->t0[i]->t1->t2->t0));
+        }
         else if(p->t0[i]->t1->is_c3) {  //templated struct definition
             templated_structs.push_back(TemplatedStructDefinition::convert(p->t0[i]->t1->t3->t0));
         }
+        else if(p->t0[i]->t1->is_c4) {  //overload
+            overloads.push_back(Overload::convert(p->t0[i]->t1->t4->t0));
+        }
+        else if(p->t0[i]->t1->is_c5) {  //templated overload
+            templated_overloads.push_back(TemplatedOverload::convert(p->t0[i]->t1->t5->t0));
+        }
         else assert(false);
     }
-    return new Program(structs, functions, templated_structs, templated_functions);
+    return new Program(structs, functions, templated_structs, templated_functions, overloads, templated_overloads);
 }
 
 bool Program::is_well_formed() {
@@ -68,6 +80,22 @@ bool Program::is_well_formed() {
         }
     }
 
+    //for all templated functions add them
+    for(int i = 0; i < templated_functions.size(); i++){
+        if(!add_templated_function(templated_functions[i])) {
+            std::cout << "Failed to add templated function : " << templated_functions[i]->function->resolve_function_signature()->to_string() << "\n";
+            return false;
+        }
+    }
+
+    //for all templated overloads add them
+    for(int i = 0; i < templated_overloads.size(); i++){
+        if(!add_templated_overload(templated_overloads[i])) {
+            std::cout << "Failed to add templated overload : " << templated_overloads[i]->overload->resolve_operator_signature()->to_string() << "\n";
+            return false;
+        }
+    }
+
     //for all structs, register them as types
     for(int i = 0; i < structs.size(); i++) {
         BaseType *sbt = dynamic_cast<BaseType*>(structs[i]->type);
@@ -76,84 +104,40 @@ bool Program::is_well_formed() {
             std::cout << "Failed to add basetype : " << sbt->to_string() << "\n";
             return false;
         }
-        if(!add_type(structs[i])) {
+        if(!add_struct_type(structs[i])) {
             std::cout << "Failed to add type : " << structs[i]->type->to_string() << "\n";
             return false;
         }
     }
-    std::cout << "DONE REGISTER STRUCTS AS TYPES" << std::endl;
 
-    // - are all the templated structs well formed?
-    for(int i = 0; i < templated_structs.size(); i++){
-        if(!templated_structs[i]->is_well_formed()) {
-            std::cout << "Templated struct not well formed\n";
+    // - are all structs well formed?
+    for(int i = 0; i < structs.size(); i++){
+        if(!structs[i]->is_well_formed()) {
+            std::cout << "Struct not well formed : " << structs[i]->type->to_string() << "\n";
             return false;
         }
     }
 
-    //generate templated structs and functions
-    //if we generate something, it will be appended to structs or functions. 
-    std::cout << "GENERATING FROM TEMPLATES" << std::endl;
-    for(int i = (int) structs.size() - 1; i >= 0; i--){
-        structs[i]->look_for_templates();
+    // - are all the templated structs well formed?
+    for(int i = 0; i < templated_structs.size(); i++){
+        if(!templated_structs[i]->is_well_formed()) {
+            std::cout << "Templated struct not well formed : " << templated_structs[i]->struct_def->type->to_string() << "\n";
+            return false;
+        }
     }
-    for(int i = (int) functions.size() - 1; i >= 0; i--){
-        functions[i]->look_for_templates();
-    }
-    std::cout << "DONE GENERATING FROM TEMPLATES" << std::endl;
 
-    // - are there circular dependencies in the struct member variables?
-    //build struct graph, do topological sort on the graph.
-    std::vector<int> top_ord(0);
-    {
-        int n = structs.size();
-        std::vector<Type*> indmp(n);
-        for(int i = 0; i < n; i++) indmp[i] = structs[i]->type;
-        std::vector<std::vector<int>> c(n);
-        std::vector<int> indeg(n, 0);
-        for(int i = 0; i < n; i++){
-            StructDefinition *sd = structs[i];
-            for(int j = 0; j < sd->member_variables.size(); j++){
-                Type *vt = sd->member_variables[j]->type;
-                int ind = -1;
-                for(int k = 0; k < indmp.size(); k++) {
-                    if(vt->equals(indmp[k])) {
-                        ind = k;
-                        break;
-                    }
-                }
-                if(ind != -1) {
-                    c[i].push_back(ind);
-                    indeg[ind] ++;
-                }
-            }
-        }
-        std::queue<int> q;
-        for(int i = 0; i < n; i++){
-            if(indeg[i] == 0) q.push(i);
-        }
-        while(q.size() != 0){
-            int cur = q.front();
-            q.pop();
-            top_ord.push_back(cur);
-            for(int x : c[cur]) {
-                indeg[x] --;
-                if(indeg[x] == 0) q.push(x);
-            }
+    // - are all the templated functions well formed?
+    for(int i = 0; i < templated_functions.size(); i++){
+        if(!templated_functions[i]->is_well_formed()) {
+            std::cout << "Templated function not well formed : " << templated_functions[i]->function->resolve_function_signature()->to_string() << "\n";
+            return false;
         }
     }
-    if(top_ord.size() != structs.size()) {
-        std::cout << "There exists a circular dependency in the struct graph\n";
-        return false;
-    }
-    std::cout << "DONE CHECK CIRCULAR DEPENDENCIES" << std::endl;
 
-    // - are all structs well formed?
-    //do this in topological order
-    for(int i = 0; i < structs.size(); i++){
-        StructDefinition *s = structs[top_ord[i]];
-        if(!s->is_well_formed()) {
-            std::cout << "Struct not well formed : " << s->type->to_string() << "\n";
+    // - are all the templated overloads well formed?
+    for(int i = 0; i < templated_overloads.size(); i++){
+        if(!templated_overloads[i]->is_well_formed()) {
+            std::cout << "Templated overload not well formed : " << templated_overloads[i]->overload->resolve_operator_signature()->to_string() << "\n";
             return false;
         }
     }
@@ -162,6 +146,14 @@ bool Program::is_well_formed() {
     for(int i = 0; i < functions.size(); i++) {
         if(!add_function(functions[i])) {
             std::cout << "Failed to add global function : " << functions[i]->resolve_function_signature()->to_string() << "\n";
+            return false;
+        }
+    }
+
+    // - are there any duplicate overloads?
+    for(int i = 0; i < overloads.size(); i++){
+        if(!add_operator_implementation(overloads[i])) {
+            std::cout << "Failed to add overload : " << overloads[i]->resolve_operator_signature()->to_string() << "\n";
             return false;
         }
     }
@@ -180,21 +172,33 @@ bool Program::is_well_formed() {
         }
     }
 
-    // - make sure every function is well formed
-    for(int i = 0; i < declared_functions.size(); i++){
-        enclosing_function = declared_functions[i];
-        if(!declared_functions[i]->is_well_formed()) {
-            std::cout << "Function not well formed : " << declared_functions[i]->resolve_function_signature()->to_string() << "\n";
-            return false;
+    // - check all functions and constructors, make sure they're well formed
+    int function_ptr = 0;
+    int constructor_ptr = 0;
+    int overload_ptr = 0;
+    while(function_ptr < declared_functions.size() || constructor_ptr < declared_constructors.size() || overload_ptr < declared_overloads.size()) {
+        while(function_ptr < declared_functions.size()) {
+            Function *f = declared_functions[function_ptr ++];
+            enclosing_function = f;
+            if(!f->is_well_formed()) {
+                enclosing_function = nullptr;
+                return false;
+            }
+            enclosing_function = nullptr;
         }
-    }
-    enclosing_function = nullptr;
-
-    // - make sure every constructor is well formed
-    for(int i = 0; i < declared_constructors.size(); i++){
-        if(!declared_constructors[i]->is_well_formed()) {
-            std::cout << "Constructor not well formed : " << declared_constructors[i]->resolve_constructor_signature()->to_string() << "\n";
-            return false;
+        while(constructor_ptr < declared_constructors.size()) {
+            Constructor *c = declared_constructors[constructor_ptr ++];
+            if(!c->is_well_formed()) {
+                return false;
+            }
+        }
+        while(overload_ptr < declared_overloads.size()) {
+            Overload *o = declared_overloads[overload_ptr ++];
+            enclosing_overload = o;
+            if(!o->is_well_formed()) {
+                return false;
+            }
+            enclosing_overload = nullptr;
         }
     }
 

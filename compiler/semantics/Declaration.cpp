@@ -41,7 +41,8 @@ bool Declaration::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-void Declaration::look_for_templates(){
-    type->look_for_templates();
-    expr->look_for_templates();
+bool Declaration::look_for_templates(){
+    if(!type->look_for_templates()) return false;
+    if(!expr->look_for_templates()) return false;
+    return true;
 }

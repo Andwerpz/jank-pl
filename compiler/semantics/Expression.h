@@ -17,6 +17,7 @@ struct FunctionSignature;
 struct OperatorSignature;
 struct ConstructorCall;
 struct TemplateMapping;
+struct OverloadCall;
 
 struct ExprNode {
     static ExprNode* convert(parser::expr_primary *e);
@@ -51,13 +52,13 @@ struct ExprNode {
     virtual void id_to_type() = 0;
     virtual ExprNode* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
-    virtual void look_for_templates() = 0;
+    virtual bool look_for_templates() = 0;
 };
 
 //Type* is just a placeholder for a variable of that type. It's just used for type conversion purposes. 
 //if there is a Type* and it tries to emit_asm(), it will assert(false). 
 struct ExprPrimary : ExprNode {
-    using val_t = std::variant<FunctionCall*, ConstructorCall*, Identifier*, Literal*, Expression*, Type*>;
+    using val_t = std::variant<FunctionCall*, ConstructorCall*, OverloadCall*, Identifier*, Literal*, Expression*, Type*>;
     val_t val;
     ExprPrimary(val_t _val);
 
@@ -71,7 +72,7 @@ struct ExprPrimary : ExprNode {
     void id_to_type() override;
     ExprNode* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
 };
 
 struct ExprBinary : ExprNode {
@@ -91,7 +92,7 @@ struct ExprBinary : ExprNode {
     void id_to_type() override;
     ExprNode* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
 };
 
 struct ExprPrefix : ExprNode {
@@ -110,7 +111,7 @@ struct ExprPrefix : ExprNode {
     void id_to_type() override;
     ExprNode* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
 };
 
 struct ExprPostfix : ExprNode {
@@ -129,7 +130,7 @@ struct ExprPostfix : ExprNode {
     void id_to_type() override;
     ExprNode* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    void look_for_templates() override;
+    bool look_for_templates() override;
 };
 
 struct Expression {
@@ -148,5 +149,5 @@ struct Expression {
     void id_to_type();
     Expression* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
-    void look_for_templates();
+    bool look_for_templates();
 };

@@ -43,6 +43,13 @@ bool Constructor::equals(const Constructor* other) const {
 bool Constructor::is_well_formed() {
     ConstructorSignature *cc = resolve_constructor_signature();
     std::cout << "CHECKING CONSTRUCTOR : " << cc->to_string() << std::endl;
+
+    // - can all the templates be resolved?
+    if(!look_for_templates()) {
+        std::cout << "Cannot resolve all templates in constructor : " << resolve_constructor_signature()->to_string();
+        return false;
+    }
+
     push_declaration_stack();
 
     if(asm_debug) {
@@ -149,10 +156,11 @@ bool Constructor::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-void Constructor::look_for_templates() {
-    type->look_for_templates();
+bool Constructor::look_for_templates() {
+    if(!type->look_for_templates()) return false;
     for(int i = 0; i < parameters.size(); i++){
-        parameters[i]->look_for_templates();
+        if(!parameters[i]->look_for_templates()) return false;
     }
-    body->look_for_templates();
+    if(!body->look_for_templates()) return false;
+    return true;
 }
