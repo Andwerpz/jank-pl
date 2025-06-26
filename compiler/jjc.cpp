@@ -655,13 +655,22 @@ Also, should probably change the type grammar to only allow references on the ou
 of utils. One thing that I'm struggling with is whether or not to treat Overload like an operator, or like a function, as currently
 it's sitting somewhere in between, Overload is more like a function, while OverloadCall is more like an operator. 
 
+So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
+
 
 some miscellaneous features:
  - continue, break (loop control statements)
  - global variables
  - importing other files 
  - floats
- - primitive type constructors, so new int() is valid (mostly useful for templating)
+ - syntax error reporting, keep track of the deepest parse. 
+ - reduce the amount of debug prints (enable using flags)
+ - replace type grammar with this:
+base_type = alpha , { alpha | digit | "_" } ;
+templated_type = base_type , [ "<" , ows , templated_type , { ows , "," , ows , templated_type } , ows , ">" ] , { "*" }
+type = templated_type , [ "&" ] ;
+   I don't want reference types contained within templates, or pointed to. Reference should be the outer layer of a type. 
+   Probably should enforce this semantically. 
 
 
 struct nesting / namespaces:

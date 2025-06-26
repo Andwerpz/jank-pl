@@ -781,7 +781,7 @@ bool is_basetype_declared(BaseType* t) {
 //just checks the basetype against all other declared templated struct defs
 bool is_templated_struct_declared(TemplatedStructDefinition *t) {
     assert(t != nullptr);
-    for(int i = 0; declared_templated_structs.size(); i++){
+    for(int i = 0; i < declared_templated_structs.size(); i++){
         if(t->struct_def->type->equals(declared_templated_structs[i]->struct_def->type)) return true;
     }
     return false;
@@ -933,11 +933,26 @@ Function* get_called_function(FunctionCall *fc) {
 }
 
 //pretty much exactly the same as get_called_function
+//has some special logic with primitive 
 Constructor* get_called_constructor(ConstructorCall *cc) {
     assert(cc != nullptr);
     Type *type = cc->type;
     std::vector<Expression*> args = cc->argument_list;
     assert(type != nullptr);
+
+    //see if we're doing a primitive default constructor
+    if(is_type_primitive(cc->type) && cc->argument_list.size() == 0) {
+        Constructor *c = new PrimitiveConstructor(cc->type, false);
+        if(!is_constructor_declared(c->resolve_constructor_signature())) add_constructor(c);
+        return c;
+    }
+
+    //see if we're doing a primitive copy constructor
+    if(is_type_primitive(cc->type) && cc->argument_list.size() == 1 && is_declarable(cc->type, cc->argument_list[0])) {
+        Constructor *c = new PrimitiveConstructor(cc->type, true);
+        if(!is_constructor_declared(c->resolve_constructor_signature())) add_constructor(c);
+        return c;
+    }
     
     std::vector<Constructor*> viable;
     for(int i = 0; i < declared_constructors.size(); i++){
@@ -1153,7 +1168,7 @@ bool add_constructor(Constructor *c) {
     if(is_constructor_declared(cs)) assert(false);
     declared_constructors.push_back(c);
     constructor_label_map.insert({cs, create_new_label()});
-    std::cout << "ADD CONSTRUCTOR : " << cs->to_string() << std::endl;
+    std::cout << "ADD CONSTRUCTOR : " << cs->to_string() << " " << declared_constructors.size() << std::endl;
     return true;
 }
 
@@ -1307,7 +1322,13 @@ void emit_initialize_primitive(Type *t) {
 //just default initializes all member variables
 void emit_initialize_struct(Type *t) {
     assert(t != nullptr);
-    assert(!is_type_primitive(t));
+
+    //check if we're actually trying to initialize a primitive
+    if(is_type_primitive(t)) {
+        emit_initialize_primitive(t);
+        return;
+    }
+
     StructLayout *sl = get_struct_layout(t);
 
     if(asm_debug) fout << indent() << "# initialize struct memory " << t->to_string() << "\n";

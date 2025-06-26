@@ -67,6 +67,7 @@ bool Program::is_well_formed() {
     fout << ".section .text\n";
 
     //for all templated structs, register their basetype, add them as templated structs
+    std::cout << "ADDING TEMPLATED STRUCTS" << std::endl;
     for(int i = 0; i < templated_structs.size(); i++){
         BaseType *sbt = dynamic_cast<BaseType*>(templated_structs[i]->struct_def->type);
         assert(sbt != nullptr);
@@ -81,6 +82,7 @@ bool Program::is_well_formed() {
     }
 
     //for all templated functions add them
+    std::cout << "ADDING TEMPLATED FUNCTIONS" << std::endl;
     for(int i = 0; i < templated_functions.size(); i++){
         if(!add_templated_function(templated_functions[i])) {
             std::cout << "Failed to add templated function : " << templated_functions[i]->function->resolve_function_signature()->to_string() << "\n";
@@ -89,6 +91,7 @@ bool Program::is_well_formed() {
     }
 
     //for all templated overloads add them
+    std::cout << "ADDING TEMPLATED OVERLOADS" << std::endl;
     for(int i = 0; i < templated_overloads.size(); i++){
         if(!add_templated_overload(templated_overloads[i])) {
             std::cout << "Failed to add templated overload : " << templated_overloads[i]->overload->resolve_operator_signature()->to_string() << "\n";
@@ -97,6 +100,7 @@ bool Program::is_well_formed() {
     }
 
     //for all structs, register them as types
+    std::cout << "ADDING STRUCTS" << std::endl;
     for(int i = 0; i < structs.size(); i++) {
         BaseType *sbt = dynamic_cast<BaseType*>(structs[i]->type);
         assert(sbt != nullptr);
@@ -111,6 +115,7 @@ bool Program::is_well_formed() {
     }
 
     // - are all structs well formed?
+    std::cout << "CHECKING STRUCTS WELL FORMED" << std::endl;
     for(int i = 0; i < structs.size(); i++){
         if(!structs[i]->is_well_formed()) {
             std::cout << "Struct not well formed : " << structs[i]->type->to_string() << "\n";
@@ -119,6 +124,7 @@ bool Program::is_well_formed() {
     }
 
     // - are all the templated structs well formed?
+    std::cout << "CHECKING TEMPLATED STRUCTS WELL FORMED" << std::endl;
     for(int i = 0; i < templated_structs.size(); i++){
         if(!templated_structs[i]->is_well_formed()) {
             std::cout << "Templated struct not well formed : " << templated_structs[i]->struct_def->type->to_string() << "\n";
@@ -127,6 +133,7 @@ bool Program::is_well_formed() {
     }
 
     // - are all the templated functions well formed?
+    std::cout << "CHECKING TEMPLATED FUNCTIONS WELL FORMED" << std::endl;
     for(int i = 0; i < templated_functions.size(); i++){
         if(!templated_functions[i]->is_well_formed()) {
             std::cout << "Templated function not well formed : " << templated_functions[i]->function->resolve_function_signature()->to_string() << "\n";
@@ -135,6 +142,7 @@ bool Program::is_well_formed() {
     }
 
     // - are all the templated overloads well formed?
+    std::cout << "CHECKING TEMPLATED OVERLOADS WELL FORMED" << std::endl;
     for(int i = 0; i < templated_overloads.size(); i++){
         if(!templated_overloads[i]->is_well_formed()) {
             std::cout << "Templated overload not well formed : " << templated_overloads[i]->overload->resolve_operator_signature()->to_string() << "\n";
@@ -143,6 +151,7 @@ bool Program::is_well_formed() {
     }
 
     // - are there any duplicate global function definitions?
+    std::cout << "ADDING FUNCTIONS" << std::endl;
     for(int i = 0; i < functions.size(); i++) {
         if(!add_function(functions[i])) {
             std::cout << "Failed to add global function : " << functions[i]->resolve_function_signature()->to_string() << "\n";
@@ -151,6 +160,7 @@ bool Program::is_well_formed() {
     }
 
     // - are there any duplicate overloads?
+    std::cout << "ADDING OVERLOADS" << std::endl;
     for(int i = 0; i < overloads.size(); i++){
         if(!add_operator_implementation(overloads[i])) {
             std::cout << "Failed to add overload : " << overloads[i]->resolve_operator_signature()->to_string() << "\n";
@@ -187,6 +197,7 @@ bool Program::is_well_formed() {
             enclosing_function = nullptr;
         }
         while(constructor_ptr < declared_constructors.size()) {
+            std::cout << "CONSTRUCTOR PTR : " << constructor_ptr << "\n";
             Constructor *c = declared_constructors[constructor_ptr ++];
             if(!c->is_well_formed()) {
                 return false;
