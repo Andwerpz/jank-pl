@@ -37,8 +37,9 @@ ws = " " | "\n" | "\t" | "\r" | "\f" | "\b"
 rws = < ws > ;                                  (* required whitespace *)
 ows = { ws } ;                                  (* optional whitespace *)
 
-type = base_type , [ "<" , ows , type , { ows , "," , ows , type } , ows , ">" ] , { "*" | "&" } ;
 base_type = alpha , { alpha | digit | "_" } ;
+templated_type = base_type , [ "<" , ows , templated_type , { ows , "," , ows , templated_type } , ows , ">" ] , { "*" } ;
+type = templated_type , [ "&" ] ;
 
 template_header = "template" , ows , "<" , ows , base_type , { ows , "," , ows , base_type } , ows , ">" ;
 

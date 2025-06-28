@@ -657,6 +657,8 @@ it's sitting somewhere in between, Overload is more like a function, while Overl
 
 So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
 
+ - remove model where all structs on the stack are just pointers. Actually push the structs onto the stack. 
+ - make struct memory layout tightly packed 
 
 some miscellaneous features:
  - continue, break (loop control statements)
@@ -665,12 +667,23 @@ some miscellaneous features:
  - floats
  - syntax error reporting, keep track of the deepest parse. 
  - reduce the amount of debug prints (enable using flags)
+ - function call resolution with partial ordering
+ - support member variable declaration like T[5] a; It's just shorthand for 5 Ts, and a should resolve to T* when used
+ - change int, float into i64 - i8, u64 - u8, f32. 
+
+implemented misc features:
  - replace type grammar with this:
 base_type = alpha , { alpha | digit | "_" } ;
 templated_type = base_type , [ "<" , ows , templated_type , { ows , "," , ows , templated_type } , ows , ">" ] , { "*" }
 type = templated_type , [ "&" ] ;
    I don't want reference types contained within templates, or pointed to. Reference should be the outer layer of a type. 
    Probably should enforce this semantically. 
+   So really, a type doesn't contain references, but we can have a reference to a type...
+   Actually, I don't see why we can't have type vector<int&>. After all, references are simply syntactic sugar for
+   pointers that get auto-dereferenced. But to make things simpler, I should probably prohibit this behaviour. 
+
+
+WRITE MORE TESTS!!
 
 
 struct nesting / namespaces:

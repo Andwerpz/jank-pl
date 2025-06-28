@@ -102,22 +102,6 @@ struct OverloadedOperator : public OperatorImplementation {
     OverloadedOperator(Overload *_overload);
 };
 
-//holds information on where all the stuff is supposed to go within the heap portion of the struct
-// - for every identifier, stores the relative offset within the struct
-// - also holds the total size of the heap portion in bytes
-struct StructLayout {
-    std::vector<MemberVariable*> member_variables;
-    std::unordered_map<std::string, int> offset_map;
-    int size;
-
-    StructLayout(std::vector<MemberVariable*> _member_variables, std::unordered_map<std::string, int> _offset_map, int _size);
-
-    int get_offset(Identifier *id);
-    Type* get_type(Identifier *id);
-    int get_size();         //total size of 'main data' portion of heap struct
-    int get_ptr_offset();   //offset from start of heap struct to pointer on heap
-};
-
 // -- UTIL FNDEFS --
 void hash_combine(size_t& seed, size_t value);
 std::string indent();
@@ -176,6 +160,7 @@ bool add_struct_layout(Type *t, StructLayout *sl);
 void emit_initialize_primitive(Type *t);
 void emit_initialize_struct(Type *t);
 bool can_initialize_struct(Type *t);
+int calc_sizeof(Type *t);
 Variable* emit_initialize_variable(Type* vt, Identifier *id, Expression *expr);
 void emit_dereference(Type *t);
 void emit_push(std::string reg, std::string desc);

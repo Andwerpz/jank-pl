@@ -1,8 +1,18 @@
 #include "Literal.h"
 #include "Type.h"
 #include "utils.h"
+#include <bit>
+#include <cstdint>
+#include <sstream>
+#include <iomanip>
+#include <iostream>
+#include <cstring>
 
 // -- CONSTRUCTOR --
+FloatLiteral::FloatLiteral(float _val) {
+    val = _val;
+}
+
 IntegerLiteral::IntegerLiteral(int _val) {
     val = _val;
 }
@@ -21,18 +31,23 @@ StringLiteral::StringLiteral(std::string _val) {
 
 // -- CONVERT --
 Literal* Literal::convert(parser::literal *l) {
-    if(l->is_a0) {  //integer literal
-        parser::literal_integer *lit = l->t0->t0;
+    if(l->is_a0) {
+        parser::literal_float *lit = l->t0->t0;
+        float val = std::stof(lit->to_string());
+        return new FloatLiteral(val);
+    }
+    else if(l->is_a1) {  //integer literal
+        parser::literal_integer *lit = l->t1->t0;
         return new IntegerLiteral(stoi(lit->to_string()));
     }
-    else if(l->is_a1) { //sizeof literal
-        parser::literal_sizeof *lit = l->t1->t0;
+    else if(l->is_a2) { //sizeof literal
+        parser::literal_sizeof *lit = l->t2->t0;
         Type *t = Type::convert(lit->t4);
         return new SizeofLiteral(t);
     }
-    else if(l->is_a2) { //char literal
+    else if(l->is_a3) { //char literal
         char val;
-        parser::literal_char *lit = l->t2->t0;
+        parser::literal_char *lit = l->t3->t0;
         parser::literal_char::a0 *c = lit->t1;
         if(c->is_b2) {    //escape
             parser::escape *e = c->t2->t0;  
@@ -43,8 +58,8 @@ Literal* Literal::convert(parser::literal *l) {
         }
         return new CharLiteral(val);
     }
-    else if(l->is_a3) { //string literal    
-        parser::literal_string *lit = l->t3->t0;
+    else if(l->is_a4) { //string literal    
+        parser::literal_string *lit = l->t4->t0;
         std::vector<parser::literal_string::a0*> chars = lit->t1;
         std::string val(chars.size(), ' ');
         for(int i = 0; i < chars.size(); i++){
@@ -65,6 +80,10 @@ Literal* Literal::convert(parser::literal *l) {
 }
 
 // -- RESOLVE TYPE --
+Type* FloatLiteral::resolve_type() {
+    return new BaseType("float");
+}
+
 Type* IntegerLiteral::resolve_type() {
     return new BaseType("int");
 }
@@ -82,6 +101,19 @@ Type* StringLiteral::resolve_type() {
 }
 
 // -- EMIT ASM --
+std::string float_to_hex_string(float f) {
+    uint32_t bits;
+    std::memcpy(&bits, &f, sizeof(bits));
+    
+    std::stringstream ss;
+    ss << "$0x" << std::hex << std::setw(8) << std::setfill('0') << bits;
+    return ss.str();
+}
+
+void FloatLiteral::emit_asm() {
+    fout << indent() << "mov " << float_to_hex_string(val) << ", %eax\n";
+}
+
 void IntegerLiteral::emit_asm() {
     fout << indent() << "mov $" << val << ", %rax\n";
 }
@@ -119,6 +151,10 @@ void StringLiteral::emit_asm() {
 }
 
 // -- HASH -- 
+size_t FloatLiteral::hash() {
+    return std::hash<float>{}(val);
+}
+
 size_t IntegerLiteral::hash() {
     return (size_t) val;
 }
@@ -136,6 +172,12 @@ size_t StringLiteral::hash() {
 }
 
 // -- EQUALS --
+bool FloatLiteral::equals(Literal *_other) {
+    if(dynamic_cast<FloatLiteral*>(_other) == nullptr) return false;
+    FloatLiteral *other = dynamic_cast<FloatLiteral*>(_other);
+    return val == other->val;
+}
+
 bool IntegerLiteral::equals(Literal *_other) {
     if(dynamic_cast<IntegerLiteral*>(_other) == nullptr) return false;
     IntegerLiteral *other = dynamic_cast<IntegerLiteral*>(_other);
@@ -165,6 +207,10 @@ bool StringLiteral::equals(Literal *_other) {
 }
 
 // -- MAKE COPY --
+Literal* FloatLiteral::make_copy() {
+    return new FloatLiteral(val);
+}
+
 Literal* IntegerLiteral::make_copy() {
     return new IntegerLiteral(val);
 }

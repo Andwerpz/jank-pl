@@ -8,4 +8,4 @@ literal_float = < digit > , "." , < digit > ;
 literal_char = "'" , ( alpha | digit | escape | symbol | " " ) , "'" ;
 literal_string = "\"" , { alpha | digit | escape | symbol | " " } , "\"" ;
 
-literal = literal_integer | literal_sizeof | literal_char | literal_string ;
+literal = literal_float | literal_integer | literal_sizeof | literal_char | literal_string ;

@@ -264,9 +264,11 @@ void reset_controller() {
     BaseType *p_int = new BaseType("int");
     BaseType *p_char = new BaseType("char");
     BaseType *p_void = new BaseType("void");
+    BaseType *p_float = new BaseType("float");
     add_primitive_basetype(p_int);
     add_primitive_basetype(p_char);
     add_primitive_basetype(p_void);
+    add_primitive_basetype(p_float);
 
     // - sys functions
     add_sys_function(new Function(p_void, new Identifier("sys_exit"), {p_int}));
@@ -1277,6 +1279,9 @@ void emit_initialize_primitive(Type *t) {
     else if(*t == BaseType("char")) {
         fout << indent() << "movb $0, (%rax)\n";
     }
+    else if(*t == BaseType("float")) {
+        fout << indent() << "movl $0, (%rax)\n";
+    }
     else if(dynamic_cast<PointerType*>(t) != nullptr) {
         fout << indent() << "movq $0, (%rax)\n";
     }
@@ -1330,6 +1335,7 @@ void emit_initialize_struct(Type *t) {
     }
 
     StructLayout *sl = get_struct_layout(t);
+    assert(sl != nullptr);
 
     if(asm_debug) fout << indent() << "# initialize struct memory " << t->to_string() << "\n";
 
@@ -1375,11 +1381,81 @@ void emit_initialize_struct(Type *t) {
     //now, %rax should hold location of heap ptr, %rbx holds location of actual struct start
 }
 
-//should call this in Constructor::resolve_called_constructor()
-bool can_initialize_struct(Type *t) {
-    //TODO
+//gets called in ConstructorCall::resolve_called_constructor()
+//should be a mirror of emit_initialize_struct(), but with some checking
+bool _can_initialize_struct(Type *t, std::vector<Type*>& init_stack) {
+    assert(t != nullptr);
+
+    // - is this type declared?
+    if(!is_type_declared(t)) {
+        std::cout << "Type is not declared : " << t->to_string() << "\n";
+        return false;
+    }
+
+    // - have we gone too deep?
+    int struct_init_depth_limit = 32;
+    if(init_stack.size() > struct_init_depth_limit) {
+        std::cout << "Struct initialization too deep (depth > " << struct_init_depth_limit << ")\n";
+        return false;
+    }
+
+    // - is this initialization infinite recursive?
+    // this check really isn't necessary, but it's nice to have some extra info
+    for(int i = 0; i < init_stack.size(); i++){
+        if(t->equals(init_stack[i])) {
+            std::cout << "Infinite recursive struct initialization : " << t->to_string() << " contains itself\n";
+            return false;
+        }
+    }
+    
+    // - we can always initialize primitives. 
+    if(is_type_primitive(t)) {
+        return true;
+    }
+
+    init_stack.push_back(t);
+
+    //get struct layout. If the type is declared and not a primitive, it must have a struct layout
+    StructLayout *sl = get_struct_layout(t);
+    assert(sl != nullptr);
+
+    for(int i = 0; i < sl->member_variables.size(); i++){
+        MemberVariable *mv = sl->member_variables[i];
+        assert(mv != nullptr);
+
+        // - we should be able to initialize all member variables
+        if(!_can_initialize_struct(mv->type, init_stack)) {
+            return false;
+        }
+    }
+
+    init_stack.pop_back();
+
+    //all checks passed
     return true;
 }
+
+bool can_initialize_struct(Type *t) {
+    std::vector<Type*> init_stack;
+    bool ans = _can_initialize_struct(t, init_stack);
+    assert(init_stack.size() == 0);
+    return ans;
+}
+
+int calc_sizeof(Type *t) {
+    if(is_type_primitive(t)) {
+        if(dynamic_cast<PointerType*>(t)) return 8;
+        else if(dynamic_cast<ReferenceType*>(t)) return 8;
+        else if(t->equals(new BaseType("int"))) return 8;
+        else if(t->equals(new BaseType("char"))) return 1;
+        else assert(false);
+    }
+
+    StructLayout *sl = get_struct_layout(t);
+    assert(sl != nullptr);
+    return sl->get_size();
+}
+
 
 //should be logically similar to is_declarable(), except this one emits a variable declaration 
 //every variable declaration must use this except for registering parameters at the beginning of function calls

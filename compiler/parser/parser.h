@@ -1,4 +1,4 @@
-// Date Generated : 06-24-2025 19:19:49
+// Date Generated : 06-26-2025 23:33:20
 #pragma once
 #include <vector>
 #include <string>
@@ -57,8 +57,9 @@ namespace parser {
     struct ws;
     struct rws;
     struct ows;
-    struct type;
     struct base_type;
+    struct templated_type;
+    struct type;
     struct template_header;
     struct identifier;
     struct declaration;
@@ -393,38 +394,46 @@ namespace parser {
         std::string to_string();
     };
 
-    // literal = literal_integer | literal_sizeof | literal_char | literal_string ;
+    // literal = literal_float | literal_integer | literal_sizeof | literal_char | literal_string ;
     struct literal {
         struct a0 {
-            literal_integer *t0;
-            a0(literal_integer *_t0) {
+            literal_float *t0;
+            a0(literal_float *_t0) {
                 t0 = _t0;
             }
             static a0* parse();
             std::string to_string();
         };
         struct a1 {
-            literal_sizeof *t0;
-            a1(literal_sizeof *_t0) {
+            literal_integer *t0;
+            a1(literal_integer *_t0) {
                 t0 = _t0;
             }
             static a1* parse();
             std::string to_string();
         };
         struct a2 {
-            literal_char *t0;
-            a2(literal_char *_t0) {
+            literal_sizeof *t0;
+            a2(literal_sizeof *_t0) {
                 t0 = _t0;
             }
             static a2* parse();
             std::string to_string();
         };
         struct a3 {
-            literal_string *t0;
-            a3(literal_string *_t0) {
+            literal_char *t0;
+            a3(literal_char *_t0) {
                 t0 = _t0;
             }
             static a3* parse();
+            std::string to_string();
+        };
+        struct a4 {
+            literal_string *t0;
+            a4(literal_string *_t0) {
+                t0 = _t0;
+            }
+            static a4* parse();
             std::string to_string();
         };
         bool is_a0 = false;
@@ -435,6 +444,8 @@ namespace parser {
         a2 *t2;
         bool is_a3 = false;
         a3 *t3;
+        bool is_a4 = false;
+        a4 *t4;
         literal(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
@@ -450,6 +461,10 @@ namespace parser {
         literal(a3 *_t3) {
             is_a3 = true;
             t3 = _t3;
+        }
+        literal(a4 *_t4) {
+            is_a4 = true;
+            t4 = _t4;
         }
         static literal* parse();
         std::string to_string();
@@ -3817,84 +3832,6 @@ namespace parser {
         std::string to_string();
     };
 
-    // type = base_type , [ "<" , ows , type , { ows , "," , ows , type } , ows , ">" ] , { "*" | "&" } ;
-    struct type {
-        struct a0 {
-            struct b0 {
-                ows *t0;
-                std::string t1;
-                ows *t2;
-                type *t3;
-                b0(ows *_t0, std::string _t1, ows *_t2, type *_t3) {
-                    t0 = _t0;
-                    t1 = _t1;
-                    t2 = _t2;
-                    t3 = _t3;
-                }
-                static b0* parse();
-                std::string to_string();
-            };
-            std::string t0;
-            ows *t1;
-            type *t2;
-            std::vector<b0*> t3;
-            ows *t4;
-            std::string t5;
-            a0(std::string _t0, ows *_t1, type *_t2, std::vector<b0*> _t3, ows *_t4, std::string _t5) {
-                t0 = _t0;
-                t1 = _t1;
-                t2 = _t2;
-                t3 = _t3;
-                t4 = _t4;
-                t5 = _t5;
-            }
-            static a0* parse();
-            std::string to_string();
-        };
-        struct a1 {
-            struct b0 {
-                std::string t0;
-                b0(std::string _t0) {
-                    t0 = _t0;
-                }
-                static b0* parse();
-                std::string to_string();
-            };
-            struct b1 {
-                std::string t0;
-                b1(std::string _t0) {
-                    t0 = _t0;
-                }
-                static b1* parse();
-                std::string to_string();
-            };
-            bool is_b0 = false;
-            b0 *t0;
-            bool is_b1 = false;
-            b1 *t1;
-            a1(b0 *_t0) {
-                is_b0 = true;
-                t0 = _t0;
-            }
-            a1(b1 *_t1) {
-                is_b1 = true;
-                t1 = _t1;
-            }
-            static a1* parse();
-            std::string to_string();
-        };
-        base_type *t0;
-        a0 *t1;
-        std::vector<a1*> t2;
-        type(base_type *_t0, a0 *_t1, std::vector<a1*> _t2) {
-            t0 = _t0;
-            t1 = _t1;
-            t2 = _t2;
-        }
-        static type* parse();
-        std::string to_string();
-    };
-
     // base_type = alpha , { alpha | digit | "_" } ;
     struct base_type {
         struct a0 {
@@ -3950,6 +3887,80 @@ namespace parser {
             t1 = _t1;
         }
         static base_type* parse();
+        std::string to_string();
+    };
+
+    // templated_type = base_type , [ "<" , ows , templated_type , { ows , "," , ows , templated_type } , ows , ">" ] , { "*" } ;
+    struct templated_type {
+        struct a0 {
+            struct b0 {
+                ows *t0;
+                std::string t1;
+                ows *t2;
+                templated_type *t3;
+                b0(ows *_t0, std::string _t1, ows *_t2, templated_type *_t3) {
+                    t0 = _t0;
+                    t1 = _t1;
+                    t2 = _t2;
+                    t3 = _t3;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            std::string t0;
+            ows *t1;
+            templated_type *t2;
+            std::vector<b0*> t3;
+            ows *t4;
+            std::string t5;
+            a0(std::string _t0, ows *_t1, templated_type *_t2, std::vector<b0*> _t3, ows *_t4, std::string _t5) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+                t4 = _t4;
+                t5 = _t5;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        struct a1 {
+            std::string t0;
+            a1(std::string _t0) {
+                t0 = _t0;
+            }
+            static a1* parse();
+            std::string to_string();
+        };
+        base_type *t0;
+        a0 *t1;
+        std::vector<a1*> t2;
+        templated_type(base_type *_t0, a0 *_t1, std::vector<a1*> _t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static templated_type* parse();
+        std::string to_string();
+    };
+
+    // type = templated_type , [ "&" ] ;
+    struct type {
+        struct a0 {
+            std::string t0;
+            a0(std::string _t0) {
+                t0 = _t0;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        templated_type *t0;
+        a0 *t1;
+        type(templated_type *_t0, a0 *_t1) {
+            t0 = _t0;
+            t1 = _t1;
+        }
+        static type* parse();
         std::string to_string();
     };
 

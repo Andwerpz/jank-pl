@@ -19,6 +19,17 @@ struct Literal {
     virtual Literal* make_copy() = 0;
 };
 
+struct FloatLiteral : public Literal {
+    float val;
+    FloatLiteral(float _val);
+
+    Type* resolve_type() override;
+    void emit_asm() override;
+    size_t hash() override;
+    bool equals(Literal *other) override;
+    Literal* make_copy() override;
+};
+
 struct IntegerLiteral : public Literal {
     int val;
     IntegerLiteral(int _val);

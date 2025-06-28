@@ -1,4 +1,4 @@
-// Date Generated : 06-24-2025 19:19:49
+// Date Generated : 06-26-2025 23:33:20
 #include "parser.h"
 
 namespace parser {
@@ -513,7 +513,7 @@ namespace parser {
 
     literal::a0* literal::a0::parse() {
         push_stack();
-        literal_integer *_t0 = literal_integer::parse();
+        literal_float *_t0 = literal_float::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new literal::a0(_t0);
@@ -527,7 +527,7 @@ namespace parser {
 
     literal::a1* literal::a1::parse() {
         push_stack();
-        literal_sizeof *_t0 = literal_sizeof::parse();
+        literal_integer *_t0 = literal_integer::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new literal::a1(_t0);
@@ -541,7 +541,7 @@ namespace parser {
 
     literal::a2* literal::a2::parse() {
         push_stack();
-        literal_char *_t0 = literal_char::parse();
+        literal_sizeof *_t0 = literal_sizeof::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new literal::a2(_t0);
@@ -555,7 +555,7 @@ namespace parser {
 
     literal::a3* literal::a3::parse() {
         push_stack();
-        literal_string *_t0 = literal_string::parse();
+        literal_char *_t0 = literal_char::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new literal::a3(_t0);
@@ -567,11 +567,26 @@ namespace parser {
         return ans;
     }
 
+    literal::a4* literal::a4::parse() {
+        push_stack();
+        literal_string *_t0 = literal_string::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal::a4(_t0);
+    }
+
+    std::string literal::a4::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
     literal* literal::parse() {
         if(auto x = literal::a0::parse()) return new literal(x);
         if(auto x = literal::a1::parse()) return new literal(x);
         if(auto x = literal::a2::parse()) return new literal(x);
         if(auto x = literal::a3::parse()) return new literal(x);
+        if(auto x = literal::a4::parse()) return new literal(x);
         return nullptr;
     }
 
@@ -580,6 +595,7 @@ namespace parser {
         if(is_a1) return t1->to_string();
         if(is_a2) return t2->to_string();
         if(is_a3) return t3->to_string();
+        if(is_a4) return t4->to_string();
         assert(false);
     }
 
@@ -4765,125 +4781,6 @@ namespace parser {
         return ans;
     }
 
-    type::a0::b0* type::a0::b0::parse() {
-        push_stack();
-        ows *_t0 = ows::parse();
-        if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t1 = next_chars(1);
-        if(_t1 != ",") {pop_stack(); return nullptr;}
-        ows *_t2 = ows::parse();
-        if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        type *_t3 = type::parse();
-        if(_t3 == nullptr) {pop_stack(); return nullptr;}
-        rm_stack();
-        return new type::a0::b0(_t0, _t1, _t2, _t3);
-    }
-
-    std::string type::a0::b0::to_string() {
-        std::string ans = "";
-        ans += t0->to_string();
-        ans += t1;
-        ans += t2->to_string();
-        ans += t3->to_string();
-        return ans;
-    }
-
-    type::a0* type::a0::parse() {
-        push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "<") {pop_stack(); return nullptr;}
-        ows *_t1 = ows::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        type *_t2 = type::parse();
-        if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        std::vector<type::a0::b0*> _t3;
-        while(true) {
-            type::a0::b0 *tmp = type::a0::b0::parse();
-            if(tmp == nullptr) break;
-            _t3.push_back(tmp);
-        }
-        ows *_t4 = ows::parse();
-        if(_t4 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t5 = next_chars(1);
-        if(_t5 != ">") {pop_stack(); return nullptr;}
-        rm_stack();
-        return new type::a0(_t0, _t1, _t2, _t3, _t4, _t5);
-    }
-
-    std::string type::a0::to_string() {
-        std::string ans = "";
-        ans += t0;
-        ans += t1->to_string();
-        ans += t2->to_string();
-        for(int i = 0; i < t3.size(); i++) ans += t3[i]->to_string();
-        ans += t4->to_string();
-        ans += t5;
-        return ans;
-    }
-
-    type::a1::b0* type::a1::b0::parse() {
-        push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "*") {pop_stack(); return nullptr;}
-        rm_stack();
-        return new type::a1::b0(_t0);
-    }
-
-    std::string type::a1::b0::to_string() {
-        std::string ans = "";
-        ans += t0;
-        return ans;
-    }
-
-    type::a1::b1* type::a1::b1::parse() {
-        push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "&") {pop_stack(); return nullptr;}
-        rm_stack();
-        return new type::a1::b1(_t0);
-    }
-
-    std::string type::a1::b1::to_string() {
-        std::string ans = "";
-        ans += t0;
-        return ans;
-    }
-
-    type::a1* type::a1::parse() {
-        if(auto x = type::a1::b0::parse()) return new type::a1(x);
-        if(auto x = type::a1::b1::parse()) return new type::a1(x);
-        return nullptr;
-    }
-
-    std::string type::a1::to_string() {
-        if(is_b0) return t0->to_string();
-        if(is_b1) return t1->to_string();
-        assert(false);
-    }
-
-    type* type::parse() {
-        push_stack();
-        base_type *_t0 = base_type::parse();
-        if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        type::a0 *_t1 = type::a0::parse();
-        std::vector<type::a1*> _t2;
-        while(true) {
-            type::a1 *tmp = type::a1::parse();
-            if(tmp == nullptr) break;
-            _t2.push_back(tmp);
-        }
-        rm_stack();
-        return new type(_t0, _t1, _t2);
-    }
-
-    std::string type::to_string() {
-        std::string ans = "";
-        ans += t0->to_string();
-        if(t1 != nullptr) ans += t1->to_string();
-        for(int i = 0; i < t2.size(); i++) ans += t2[i]->to_string();
-        return ans;
-    }
-
     base_type::a0::b0* base_type::a0::b0::parse() {
         push_stack();
         alpha *_t0 = alpha::parse();
@@ -4958,6 +4855,129 @@ namespace parser {
         std::string ans = "";
         ans += t0->to_string();
         for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
+    }
+
+    templated_type::a0::b0* templated_type::a0::b0::parse() {
+        push_stack();
+        ows *_t0 = ows::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t1 = next_chars(1);
+        if(_t1 != ",") {pop_stack(); return nullptr;}
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        templated_type *_t3 = templated_type::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new templated_type::a0::b0(_t0, _t1, _t2, _t3);
+    }
+
+    std::string templated_type::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1;
+        ans += t2->to_string();
+        ans += t3->to_string();
+        return ans;
+    }
+
+    templated_type::a0* templated_type::a0::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "<") {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        templated_type *_t2 = templated_type::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        std::vector<templated_type::a0::b0*> _t3;
+        while(true) {
+            templated_type::a0::b0 *tmp = templated_type::a0::b0::parse();
+            if(tmp == nullptr) break;
+            _t3.push_back(tmp);
+        }
+        ows *_t4 = ows::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t5 = next_chars(1);
+        if(_t5 != ">") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new templated_type::a0(_t0, _t1, _t2, _t3, _t4, _t5);
+    }
+
+    std::string templated_type::a0::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2->to_string();
+        for(int i = 0; i < t3.size(); i++) ans += t3[i]->to_string();
+        ans += t4->to_string();
+        ans += t5;
+        return ans;
+    }
+
+    templated_type::a1* templated_type::a1::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "*") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new templated_type::a1(_t0);
+    }
+
+    std::string templated_type::a1::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    templated_type* templated_type::parse() {
+        push_stack();
+        base_type *_t0 = base_type::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        templated_type::a0 *_t1 = templated_type::a0::parse();
+        std::vector<templated_type::a1*> _t2;
+        while(true) {
+            templated_type::a1 *tmp = templated_type::a1::parse();
+            if(tmp == nullptr) break;
+            _t2.push_back(tmp);
+        }
+        rm_stack();
+        return new templated_type(_t0, _t1, _t2);
+    }
+
+    std::string templated_type::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        if(t1 != nullptr) ans += t1->to_string();
+        for(int i = 0; i < t2.size(); i++) ans += t2[i]->to_string();
+        return ans;
+    }
+
+    type::a0* type::a0::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "&") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new type::a0(_t0);
+    }
+
+    std::string type::a0::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    type* type::parse() {
+        push_stack();
+        templated_type *_t0 = templated_type::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        type::a0 *_t1 = type::a0::parse();
+        rm_stack();
+        return new type(_t0, _t1);
+    }
+
+    std::string type::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        if(t1 != nullptr) ans += t1->to_string();
         return ans;
     }
 

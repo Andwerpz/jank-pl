@@ -9,6 +9,7 @@
 
 ConstructorCall::ConstructorCall(Type *_type, std::vector<Expression*> _argument_list) {
     assert(_type != nullptr);
+    assert(dynamic_cast<ReferenceType*>(_type) == nullptr);
     for(int i = 0; i < _argument_list.size(); i++) assert(_argument_list[i] != nullptr);
     type = _type;
     argument_list = _argument_list;
@@ -29,7 +30,10 @@ ConstructorCall* ConstructorCall::convert(parser::constructor_call *c) {
 
 Constructor* ConstructorCall::resolve_called_constructor() {
     // - can we even emit code to initialize this struct?
-    if(!can_initialize_struct(this->type)) return nullptr;
+    if(!can_initialize_struct(this->type)) {
+        std::cout << "Cannot initialize struct : " << type->to_string() << "\n";
+        return nullptr;
+    }
     
     return get_called_constructor(this);
 }

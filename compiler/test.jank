@@ -1,110 +1,13 @@
 
-void assert(int x) {
-    if(!x) {
-        puts_endl("assert failed");
-        sys_exit(1);
-    }
-}
-
-struct ostream {
-    ostream() {
-        // do nothing
-    }
-    ostream(ostream& other) {
-        // do nothing
-    }
-}
-
-ostream& operator<<(ostream& stream, int x) {
-    puti(x);
-    return stream;
-}
-
-ostream& operator<<(ostream& stream, char* s) {
-    puts(s);
-    return stream;
-}
-
-template<T>
-struct vector {
-    int cap;
-    int sz;
-    T* arr;
-
-    vector() {
-        this.cap = 1;
-        this.sz = 0;
-        this.arr = malloc(sizeof(T) * 1);
-    }
-    vector(vector& other) {
-        this.cap = other.cap;
-        this.sz = other.sz;
-        this.arr = malloc(sizeof(T) * this.cap);
-        for(int i = 0; i < this.cap; i++) this.arr[i] = other.arr[i];
-    }
-    vector(int n, T default) {
-        this.cap = n;
-        this.sz = n;
-        this.arr = malloc(sizeof(T) * n);
-        for(int i = 0; i < n; i++) this.arr[i] = default;
-    }
-}
-
-template<T>
-T& at(vector<T>& arr, int ind) {
-    return arr.arr[ind];
-}
-
-template<T>
-T& operator[](vector<T>& a, int ind) {
-    return a.arr[ind];
-}
-
-template<T, U>
-struct pair {
-    T first;
-    U second;
-
-    pair() {
-        this.first = new T();
-        this.second = new U();
-    }
-    pair(pair& other) {
-        this.first = other.first;
-        this.second = other.second;
-    }
-    pair(T _first, U _second) {
-        this.first = _first;
-        this.second = _second;
-    }
+void float_test() {
+    puts_endl("before float");
+    float f = 1.0;
+    puts_endl("after float");
 }
 
 int main() {
 
-    int n = 10;
-    ostream cout = new ostream();
-    vector<vector<int>> dp = new vector<vector<int>>(n, new vector<int>(n, 0));
-
-    pair<int, char*> p = new pair<int, char*>(5, "asdf");
-    pair<int, char*> p2 = p;
-    cout << p.first << " " << p.second << "\n";
-    cout << p2.first << " " << p2.second << "\n";
-
-    //dp[0][0] = 1;
-    at(dp, 0) = new vector<int>(n, 0);
-    at(dp[0], 0) = 1;
-    for(int i = 0; i < n; i++){
-        for(int j = 0; j < n; j++){
-            if(i != 0) dp[i][j] += dp[i - 1][j];
-            if(j != 0) dp[i][j] += dp[i][j - 1];
-        }
-    }
-    for(int i = 0; i < n; i++){
-        for(int j = 0; j < n; j++){
-            cout << dp[i][j] << " ";
-        }
-        cout << "\n";
-    }
+    float_test();
 
     return 0;
 }
