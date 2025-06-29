@@ -10,6 +10,7 @@
 #include "TemplateMapping.h"
 #include "OverloadCall.h"
 #include "StructLayout.h"
+#include "primitives.h"
 
 // -- CONSTRUCTOR --
 ExprPrimary::ExprPrimary(val_t _val) {
@@ -422,8 +423,8 @@ Type* ExprPostfix::resolve_type() {
         }
 
         //default behaviour
-        if(*et != BaseType("int")) {
-            std::cout << "Builtin indexing expression must resolve to int\n";
+        if(!et->equals(primitives::i64)) {
+            std::cout << "Builtin indexing expression must resolve to i64\n";
             return nullptr;
         }
         if(dynamic_cast<PointerType*>(lt) == nullptr) {

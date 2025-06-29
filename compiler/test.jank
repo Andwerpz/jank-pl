@@ -1,54 +1,29 @@
 
-void assert(int x) {
-    if(!x) {
-        puts_endl("assert failed");
-        sys_exit(1);
-    }
-}
+i64 main() {
 
-struct A {
-    int x;
-    int y;
-    A() {}
-    A(A& other) {}
-}
+    i8* hello_str = (i8*) malloc(6 * sizeof(i8));
+    hello_str[0] = 'h';
+    hello_str[1] = 'e';
+    hello_str[2] = 'l';
+    hello_str[3] = 'l';
+    hello_str[4] = 'o';
+    hello_str[5] = '\0';
 
-struct B {
-    int x;
-    A y;
-    int z;
-    B() {}
-    B(B& other) {}
-}
+    i8* space_str = (i8*) malloc(2 * sizeof(i8));
+    space_str[0] = ' ';
+    space_str[1] = '\0';
 
-struct C {
-    A x;
-    B y;
-    int z;
-    C() {}
-    C(C& other) {}
-}
+    i8* endl_str = (i8*) malloc(2 * sizeof(i8));
+    endl_str[0] = '\n';
+    endl_str[1] = '\0';
 
-int main() {
+    puts_endl(hello_str);
 
-    int n = sizeof(C);
-    int* arr = (int*) malloc(sizeof(C));
-    puts("sizeof C : ");
-    puti_endl(n);
-    assert(n % 8 == 0);
-    for(int i = 0; i < n / 8; i++){
-        arr[i] = i;
-    }
-
-    C* c = (C*) arr;
-    assert(c->x.x == 0);
-    assert(c->x.y == 1);
-    assert(c->y.x == 2);
-    assert(c->y.y.x == 3);
-    assert(c->y.y.y == 4);
-    assert(c->y.z == 5);
-    assert(c->z == 6);
-    puts_endl("test passed");
+    puts_endl("inline string test");
+    puts_endl("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ");
+    puts_endl("0123456789");
+    puts_endl("`~!@#$%^&*()-_=+{}[]|;:,<.>/?");
+    puts_endl("\"holy moly\" said steven. That\'s so skibidi ohio!!");
 
     return 0;
 }

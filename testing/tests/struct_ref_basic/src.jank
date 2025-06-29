@@ -1,23 +1,23 @@
 
 struct A {
-    int val;
+    i64 val;
 
     A() {
-        this.val = new int();
+        this.val = new i64();
     }
     A(A& other) {
         this.val = other.val;
     }
-    A(int _val) {
+    A(i64 _val) {
         this.val = _val;
     }
 }
 
-int main() {
+i64 main() {
 
-    int n = 10;
+    i64 n = 10;
     A* arr = (A*) malloc(sizeof(A) * n);
-    for(int i = 0; i < n; i++){
+    for(i64 i = 0; i < n; i++){
         arr[i] = new A(i);
     }
 
@@ -27,7 +27,7 @@ int main() {
     A* ptr = (A*) malloc(sizeof(A));
     *ptr = new A(100);
     arr[0] = *ptr;
-    for(int i = 0; i < n; i++){
+    for(i64 i = 0; i < n; i++){
         puti_endl(arr[i].val);
     }
 

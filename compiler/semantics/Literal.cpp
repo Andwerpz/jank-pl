@@ -8,6 +8,7 @@
 #include <iostream>
 #include <cstring>
 #include "TemplateMapping.h"
+#include "primitives.h"
 
 // -- CONSTRUCTOR --
 FloatLiteral::FloatLiteral(float _val) {
@@ -82,23 +83,23 @@ Literal* Literal::convert(parser::literal *l) {
 
 // -- RESOLVE TYPE --
 Type* FloatLiteral::resolve_type() {
-    return new BaseType("float");
+    assert(false);
 }
 
 Type* IntegerLiteral::resolve_type() {
-    return new BaseType("int");
+    return primitives::i64->make_copy();
 }
 
 Type* SizeofLiteral::resolve_type() {
-    return new BaseType("int");
+    return primitives::i64->make_copy();
 }
 
 Type* CharLiteral::resolve_type() {
-    return new BaseType("char");
+    return primitives::u8->make_copy();
 }
 
 Type* StringLiteral::resolve_type() {
-    return new PointerType(new BaseType("char"));
+    return new PointerType(primitives::u8->make_copy());
 }
 
 // -- EMIT ASM --
@@ -242,7 +243,7 @@ std::string SizeofLiteral::to_string() {
 }
 
 std::string CharLiteral::to_string() {
-    return "'" + std::string(val, 1) + "'";
+    return "'" + std::string(1, val) + "'";
 }
 
 std::string StringLiteral::to_string() {

@@ -43,8 +43,10 @@ TemplatedType::TemplatedType(BaseType *_base_type, std::vector<Type*> _template_
 
 // -- CALC SIZE --
 int BaseType::calc_size() {
-    if(name == "int") return 8;
-    else if(name == "char") return 1;
+    if(name == "i64" || name == "u64") return 8;
+    else if(name == "i32" || name == "u32") return 4;
+    else if(name == "i16" || name == "u16") return 2;
+    else if(name == "i8" || name == "u8") return 1;
     else {
         StructLayout *sl = get_struct_layout(this);
         if(sl == nullptr){ 

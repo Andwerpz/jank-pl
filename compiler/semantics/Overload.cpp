@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "TemplateMapping.h"
 #include "Identifier.h"
+#include "primitives.h"
 
 Overload::Overload(Type *_type, std::string _op, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
     assert(_type != nullptr);
@@ -67,7 +68,7 @@ bool Overload::is_well_formed() {
             return false;
         }
         // - is parameter type not void?
-        if(*(parameters[i]->type) == BaseType("void")) {
+        if(parameters[i]->type->equals(primitives::_void)) {
             std::cout << "Parameter can't have type void\n";
             return false;
         }
@@ -105,7 +106,7 @@ bool Overload::is_well_formed() {
 
      // - if type is not void, check for existence of return statement as last reachable statement
     // - constructors also don't have to have return statements, they're treated as void functions
-    if(*type != BaseType("void")) {
+    if(!type->equals(primitives::_void)) {
         // Note that if there is a statement before the last that is always returning, then any statement after
         // it is unreachable code, in which case we should print some warnings. 
         if(!body->is_always_returning()) {

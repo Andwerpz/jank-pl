@@ -14,6 +14,7 @@
 #include "ConstructorSignature.h"
 #include "Overload.h"
 #include "TemplatedOverload.h"
+#include "primitives.h"
 
 Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> _overloads, std::vector<TemplatedOverload*> _templated_overloads) {
     structs = _structs;
@@ -178,7 +179,7 @@ bool Program::is_well_formed() {
         }
     }
 
-    // - there must be a global function with function signature 'int main()'
+    // - there must be a global function with function signature 'i64 main()'
     {
         FunctionSignature *main_fs = new FunctionSignature(new Identifier("main"), {});
         Function *f = get_function(main_fs);
@@ -186,8 +187,8 @@ bool Program::is_well_formed() {
             std::cout << "Missing main function\n";
             return false;
         }
-        if(*(f->type) != BaseType("int")) {
-            std::cout << "main has wrong return type (must be int)\n";
+        if(!f->type->equals(primitives::i64)) {
+            std::cout << "main has wrong return type (must be i64)\n";
             return false;
         }
     }

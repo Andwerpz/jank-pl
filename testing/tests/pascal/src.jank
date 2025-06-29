@@ -1,17 +1,17 @@
 
-int main() {
-    int N = 10;
-    int** dp = (int**) malloc(N * sizeof(int*));
-    for(int i = 0; i < N; i = i + 1) dp[i] = (int*) malloc(N * sizeof(int));
+i64 main() {
+    i64 N = 10;
+    i64** dp = (i64**) malloc(N * sizeof(i64*));
+    for(i64 i = 0; i < N; i = i + 1) dp[i] = (i64*) malloc(N * sizeof(i64));
     dp[0][0] = 1;
-    for(int i = 0; i < N; i = i + 1) {
-        for(int j = 0; j < N; j = j + 1) {
+    for(i64 i = 0; i < N; i = i + 1) {
+        for(i64 j = 0; j < N; j = j + 1) {
             if(i != 0) dp[i][j] = dp[i][j] + dp[i - 1][j];
             if(j != 0) dp[i][j] = dp[i][j] + dp[i][j - 1];
         }
     }
-    for(int i = 0; i < N; i = i + 1) {
-        for(int j = 0; j < N; j = j + 1) {
+    for(i64 i = 0; i < N; i = i + 1) {
+        for(i64 j = 0; j < N; j = j + 1) {
             puti(dp[i][j]);
             puts(" ");
         }

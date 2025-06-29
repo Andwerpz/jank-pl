@@ -1,26 +1,26 @@
 
-int main() {
-    int x = 10;
-    int y = x;
+i64 main() {
+    i64 x = 10;
+    i64 y = x;
     return 0;
 }
 
-int foo(int arg1, int arg2) {
-    int y = 10;
-    int z = 100;
-    int k = 2;
+i64 foo(i64 arg1, i64 arg2) {
+    i64 y = 10;
+    i64 z = 100;
+    i64 k = 2;
     {
-        int i = 0;
-        int j = i + 1 + k;
+        i64 i = 0;
+        i64 j = i + 1 + k;
     }
     {
-        int i = 1;
-        int j = i + 3 * k;
+        i64 i = 1;
+        i64 j = i + 3 * k;
     }
     return z + y;
 }
 
-int bar(int arg2, int arg_3) {
-    int abc_def = foo(3, 4) + 20 * bar(foo(3, 4), arg2);
+i64 bar(i64 arg2, i64 arg_3) {
+    i64 abc_def = foo(3, 4) + 20 * bar(foo(3, 4), arg2);
     return abc_def * abc_def * (foo(abc_def, 20 + 10) + 10);
 }

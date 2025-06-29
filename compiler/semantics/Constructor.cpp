@@ -7,6 +7,7 @@
 #include "Identifier.h"
 #include "TemplateMapping.h"
 #include "Expression.h"
+#include "primitives.h"
 
 Constructor* Constructor::convert(parser::constructor *c) {
     Type *type = BaseType::convert(c->t0->t0);
@@ -93,7 +94,7 @@ bool StructConstructor::is_well_formed() {
             return false;
         }
         // - is parameter type not void?
-        if(*(parameters[i]->type) == BaseType("void")) {
+        if(parameters[i]->type->equals(primitives::_void)) {
             std::cout << "Parameter can't have type void\n";
             return false;
         }

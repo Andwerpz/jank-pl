@@ -15,6 +15,7 @@
 #include "Overload.h"
 #include "TemplatedOverload.h"
 #include "StructLayout.h"
+#include "primitives.h"
 
 Variable::Variable(Type *_type, Identifier *_id) {
     id = _id;
@@ -232,169 +233,17 @@ void reset_controller() {
     label_counter = 0;
     tmp_variable_counter = 0;
 
-    // - primitive types
-    BaseType *p_int = new BaseType("int");
-    BaseType *p_char = new BaseType("char");
-    BaseType *p_void = new BaseType("void");
-    BaseType *p_float = new BaseType("float");
-    add_primitive_basetype(p_int);
-    add_primitive_basetype(p_char);
-    add_primitive_basetype(p_void);
-    add_primitive_basetype(p_float);
+    primitives::init_primitives();
 
     // - sys functions
-    add_sys_function(new Function(p_void, new Identifier("sys_exit"), {p_int}));
+    add_sys_function(new Function(primitives::_void, new Identifier("sys_exit"), {primitives::i64}));
 
-    add_sys_function(new Function(new PointerType(p_void), new Identifier("malloc"), {p_int}));
-    add_sys_function(new Function(new PointerType(p_char), new Identifier("int_to_string"), {p_int}));
-    add_sys_function(new Function(p_void, new Identifier("puts"), {new PointerType(p_char)}));
-    add_sys_function(new Function(p_void, new Identifier("puts_endl"), {new PointerType(p_char)}));
-    add_sys_function(new Function(p_void, new Identifier("puti"), {p_int}));
-    add_sys_function(new Function(p_void, new Identifier("puti_endl"), {p_int}));
-
-    // - populate conversion map
-    conversion_map[new OperatorSignature("+", p_int)] = new BuiltinOperator(p_int, {});
-    conversion_map[new OperatorSignature("-", p_int)] = new BuiltinOperator(p_int, {"neg %rax"});
-    conversion_map[new OperatorSignature("~", p_int)] = new BuiltinOperator(p_int, {"not %rax"});
-    conversion_map[new OperatorSignature("!", p_int)] = new BuiltinOperator(p_int, {
-        "test %rax, %rax",
-        "sete %al",
-        "movzx %al, %rax",
-    });
-    conversion_map[new OperatorSignature("++", new ReferenceType(p_int))] = new BuiltinOperator(new ReferenceType(p_int), {
-        "incq (%rcx)",
-        "mov %rcx, %rax",
-    });
-    conversion_map[new OperatorSignature("--", new ReferenceType(p_int))] = new BuiltinOperator(new ReferenceType(p_int), {
-        "decq (%rcx)",
-        "mov %rcx, %rax",
-    });
-    conversion_map[new OperatorSignature(new ReferenceType(p_int), "++")] = new BuiltinOperator(p_int, {"incq (%rcx)"});
-    conversion_map[new OperatorSignature(new ReferenceType(p_int), "--")] = new BuiltinOperator(p_int, {"decq (%rcx)"});
-    conversion_map[new OperatorSignature(p_int, "+", p_int)] = new BuiltinOperator(p_int, {"add %rbx, %rax"});
-    conversion_map[new OperatorSignature(p_int, "-", p_int)] = new BuiltinOperator(p_int, {"sub %rbx, %rax"});
-    conversion_map[new OperatorSignature(p_int, "*", p_int)] = new BuiltinOperator(p_int, {"imul %rbx, %rax"});
-    conversion_map[new OperatorSignature(p_int, "/", p_int)] = new BuiltinOperator(p_int, {
-        "cqo",
-        "idiv %rbx",
-    });
-    conversion_map[new OperatorSignature(p_int, "%", p_int)] = new BuiltinOperator(p_int, {
-        "cqo",
-        "idiv %rbx",
-        "mov %rdx, %rax",
-    });
-    conversion_map[new OperatorSignature(p_int, "&", p_int)] = new BuiltinOperator(p_int, {"and %rbx, %rax"});
-    conversion_map[new OperatorSignature(p_int, "^", p_int)] = new BuiltinOperator(p_int, {"xor %rbx, %rax"});
-    conversion_map[new OperatorSignature(p_int, "|", p_int)] = new BuiltinOperator(p_int, {"or %rbx, %rax"});
-    conversion_map[new OperatorSignature(p_int, "&&", p_int)] = new BuiltinOperator(p_int, {
-        "test %rax, %rax",
-        "setne %al",
-        "movzx %al, %rax",
-        "test %rbx, %rbx",
-        "setne %bl",
-        "movzx %bl, %rbx",
-        "and %rbx, %rax",
-    });
-    conversion_map[new OperatorSignature(p_int, "||", p_int)] = new BuiltinOperator(p_int, {
-        "test %rax, %rax",
-        "setne %al",
-        "movzx %al, %rax",
-        "test %rbx, %rbx",
-        "setne %bl",
-        "movzx %bl, %rbx",
-        "or %rbx, %rax",
-    });
-    conversion_map[new OperatorSignature(p_int, "==", p_int)] = new BuiltinOperator(p_int, {
-        "cmp %rbx, %rax",
-        "sete %al",
-        "movzx %al, %rax",
-    });
-    conversion_map[new OperatorSignature(p_int, "!=", p_int)] = new BuiltinOperator(p_int, {
-        "cmp %rbx, %rax",
-        "setne %al",
-        "movzx %al, %rax",
-    });
-    conversion_map[new OperatorSignature(p_int, "<", p_int)] = new BuiltinOperator(p_int, {
-        "cmp %rbx, %rax",
-        "setl %al",
-        "movzx %al, %rax",
-    });
-    conversion_map[new OperatorSignature(p_int, ">", p_int)] = new BuiltinOperator(p_int, {
-        "cmp %rbx, %rax",
-        "setg %al",
-        "movzx %al, %rax",
-    });
-    conversion_map[new OperatorSignature(p_int, "<=", p_int)] = new BuiltinOperator(p_int, {
-        "cmp %rbx, %rax",
-        "setle %al",
-        "movzx %al, %rax",
-    });
-    conversion_map[new OperatorSignature(p_int, ">=", p_int)] = new BuiltinOperator(p_int, {
-        "cmp %rbx, %rax",
-        "setge %al",
-        "movzx %al, %rax",
-    });
-    conversion_map[new OperatorSignature(p_int, "<<", p_int)] = new BuiltinOperator(p_int, {
-        "push %rcx",
-        "mov %rbx, %rcx",
-        "sal %cl, %rax",
-        "pop %rcx",
-    });
-    conversion_map[new OperatorSignature(p_int, ">>", p_int)] = new BuiltinOperator(p_int, {
-        "push %rcx",
-        "mov %rbx, %rcx",
-        "sar %cl, %rax",
-        "pop %rcx",
-    });
-    conversion_map[new OperatorSignature(new ReferenceType(p_int), "+=", p_int)] = new BuiltinOperator(p_int, {
-        "add %rbx, %rax",
-        "mov %rax, (%rcx)",
-    });
-    conversion_map[new OperatorSignature(new ReferenceType(p_int), "-=", p_int)] = new BuiltinOperator(p_int, {
-        "sub %rbx, %rax",
-        "mov %rax, (%rcx)",
-    });
-    conversion_map[new OperatorSignature(new ReferenceType(p_int), "*=", p_int)] = new BuiltinOperator(p_int, {
-        "imul %rbx, %rax",
-        "mov %rax, (%rcx)",
-    });
-    conversion_map[new OperatorSignature(new ReferenceType(p_int), "/=", p_int)] = new BuiltinOperator(p_int, {
-        "cqo",
-        "idiv %rbx",
-        "mov %rax, (%rcx)",
-    });
-    conversion_map[new OperatorSignature(new ReferenceType(p_int), "%=", p_int)] = new BuiltinOperator(p_int, {
-        "cqo",
-        "idiv %rbx",
-        "mov %rdx, %rax",
-        "mov %rax, (%rcx)",
-    });
-    conversion_map[new OperatorSignature(new ReferenceType(p_int), "<<=", p_int)] = new BuiltinOperator(p_int, {
-        "push %rcx",
-        "mov %rbx, %rcx",
-        "sal %cl, %rax",
-        "pop %rcx",
-        "mov %rax, (%rcx)",
-    });
-    conversion_map[new OperatorSignature(new ReferenceType(p_int), ">>=", p_int)] = new BuiltinOperator(p_int, {
-        "push %rcx",
-        "mov %rbx, %rcx",
-        "sar %cl, %rax",
-        "pop %rcx",
-        "mov %rax, (%rcx)",
-    });
-    conversion_map[new OperatorSignature(new ReferenceType(p_int), "&=", p_int)] = new BuiltinOperator(p_int, {
-        "and %rbx, %rax",
-        "mov %rax, (%rcx)",
-    });
-    conversion_map[new OperatorSignature(new ReferenceType(p_int), "^=", p_int)] = new BuiltinOperator(p_int, {
-        "xor %rbx, %rax",
-        "mov %rax, (%rcx)",
-    });
-    conversion_map[new OperatorSignature(new ReferenceType(p_int), "|=", p_int)] = new BuiltinOperator(p_int, {
-        "or %rbx, %rax",
-        "mov %rax, (%rcx)",
-    });
+    add_sys_function(new Function(new PointerType(primitives::_void), new Identifier("malloc"), {primitives::i64}));
+    add_sys_function(new Function(new PointerType(primitives::_void), new Identifier("int_to_string"), {primitives::i64}));
+    add_sys_function(new Function(primitives::_void, new Identifier("puts"), {new PointerType(primitives::u8)}));
+    add_sys_function(new Function(primitives::_void, new Identifier("puts_endl"), {new PointerType(primitives::u8)}));
+    add_sys_function(new Function(primitives::_void, new Identifier("puti"), {primitives::i64}));
+    add_sys_function(new Function(primitives::_void, new Identifier("puti_endl"), {primitives::i64}));
 
 }
 
@@ -528,9 +377,10 @@ bool is_type_primitive(Type *t) {
 
 //expects %rax = array start, %rbx = array index
 //will put return value into %rax
+//always zero extends %rax
 void emit_retrieve_array(int sz) {
-    if(sz == 1) fout << indent() << "movb (%rax, %rbx, 1), %al\n";
-    else if(sz == 2) fout << indent() << "movw (%rax, %rbx, 2), %ax\n";
+    if(sz == 1) fout << indent() << "movzbl (%rax, %rbx, 1), %eax\n";
+    else if(sz == 2) fout << indent() << "movzwl (%rax, %rbx, 2), %eax\n";
     else if(sz == 4) fout << indent() << "movl (%rax, %rbx, 4), %eax\n";
     else if(sz == 8) fout << indent() << "movq (%rax, %rbx, 8), %rax\n";
     else {
@@ -570,9 +420,10 @@ void emit_write_array(int sz) {
 
 //expects %rax = address
 //will put return value into %rax
+//always zero extends %rax if the amount is less than 8 bytes
 void emit_mem_retrieve(int sz) {
-    if(sz == 1) fout << indent() << "movb (%rax), %al\n";
-    else if(sz == 2) fout << indent() << "movw (%rax), %ax\n";
+    if(sz == 1) fout << indent() << "movzbl (%rax), %al\n";
+    else if(sz == 2) fout << indent() << "movzwl (%rax), %ax\n";
     else if(sz == 4) fout << indent() << "movl (%rax), %eax\n";
     else if(sz == 8) fout << indent() << "movq (%rax), %rax\n";
     else {
@@ -656,7 +507,7 @@ OperatorImplementation* find_typecast_implementation(Type *from, Type *to) {
     if(*from == *to) {
         return new BuiltinOperator(to, {});     //do nothing
     }
-    Type* voidptr_t = new PointerType(new BaseType("void"));
+    Type* voidptr_t = new PointerType(primitives::_void->make_copy());
     // - from is a pointer, to is void*
     if(dynamic_cast<PointerType*>(from) != nullptr && *to == *voidptr_t) {
         return new BuiltinOperator(to, {});     //do nothing
@@ -669,12 +520,12 @@ OperatorImplementation* find_typecast_implementation(Type *from, Type *to) {
     if(dynamic_cast<PointerType*>(from) != nullptr && dynamic_cast<PointerType*>(to) != nullptr) {
         return new BuiltinOperator(to, {});     //do nothing
     }
-    // - from is a pointer, to is an int
-    if(dynamic_cast<PointerType*>(from) != nullptr && to->equals(new BaseType("int"))) {
+    // - from is a pointer, to is an i64
+    if(dynamic_cast<PointerType*>(from) != nullptr && to->equals(primitives::i64)) {
         return new BuiltinOperator(to, {});     //do nothing
     }
-    // - from is an int, to is a pointer
-    if(from->equals(new BaseType("int")) && dynamic_cast<PointerType*>(to) != nullptr) {
+    // - from is an i64, to is a pointer
+    if(from->equals(primitives::i64) && dynamic_cast<PointerType*>(to) != nullptr) {
         return new BuiltinOperator(to, {});     //do nothing
     }
 
@@ -1361,56 +1212,18 @@ void emit_malloc(int sz_bytes) {
 //expects memory address in %rax, places primitive into address, returns with memory address in %rax
 //expects memory to already have been allocated
 void emit_initialize_primitive(Type *t) {
-    if(*t == BaseType("int")) {
-        fout << indent() << "movq $0, (%rax)\n";
-    }
-    else if(*t == BaseType("char")) {
-        fout << indent() << "movb $0, (%rax)\n";
-    }
-    else if(*t == BaseType("float")) {
-        fout << indent() << "movl $0, (%rax)\n";
-    }
-    else if(dynamic_cast<PointerType*>(t) != nullptr) {
-        fout << indent() << "movq $0, (%rax)\n";
-    }
-    else if(dynamic_cast<ReferenceType*>(t) != nullptr) {
-        // a reference is just syntactic sugar for a pointer, so just 0 initialize it. 
-        fout << indent() << "movq $0, (%rax)\n";
-
-        // Type *rt = dynamic_cast<ReferenceType*>(t)->type;
-        // if(is_type_primitive(rt)) {
-        //     //save address to reference 
-        //     emit_push("%rax", "emit_initialize_primitve() : addr to primitive ref");
-
-        //     //allocate some memory for the referenced type
-        //     int sz = rt->calc_size();
-        //     emit_malloc(sz);
-
-        //     //initialize primitive at address
-        //     emit_initialize_primitive(rt);
-
-        //     //write address into reference
-        //     fout << indent() << "mov %rax, %rbx\n";
-        //     emit_pop("%rax", "emit_initialize_primitve() : addr to primitive ref");
-        //     fout << indent() << "movq %rbx, (%rax)\n";
-        // }
-        // else {
-        //     //save address to reference 
-        //     emit_push("%rax", "emit_initialize_primitve() : addr to struct ref");
-
-        //     //initialize struct
-        //     emit_initialize_struct(rt);
-
-        //     //write heap pointer address into reference
-        //     fout << indent() << "mov %rax, %rbx\n";
-        //     emit_pop("%rax", "emit_initialize_primitve() : addr to struct ref");
-        //     fout << indent() << "movq %rbx, (%rax)\n";
-        // }
-    }
-    else {
+    if(!is_type_primitive(t)) {
         std::cout << "Tried to initialize unrecognized primitive type : " << t->to_string() << std::endl;
         assert(false);
     }
+
+    //every primitive should be 0 initialized
+    int sz = t->calc_size();
+    if(sz == 1) fout << indent() << "movb $0, (%rax)\n";
+    else if(sz == 2) fout << indent() << "movw $0, (%rax)\n";
+    else if(sz == 4) fout << indent() << "movl $0, (%rax)\n";
+    else if(sz == 8) fout << indent() << "movq $0, (%rax)\n";
+    else assert(false);
 }
 
 //expects memory address in %rax, initializes struct, returns with memory address in %rax
@@ -1456,44 +1269,6 @@ void emit_initialize_struct(Type *t) {
     emit_pop("%rax", "emit_initialize_struct() :: save original %rax");
 
     if(asm_debug) fout << indent() << "# done initialize struct memory " << t->to_string() << "\n";
-
-    // //save actual struct loc for later
-    // //%rax is the pointer for the current location in the struct
-    // emit_push("%rax", "emit_initialize_struct() : struct base ptr");
-
-    // //initialize member variables
-    // for(int i = 0; i < sl->member_variables.size(); i++){
-    //     //initialize member variable
-    //     MemberVariable *mv = sl->member_variables[i];
-    //     int size = mv->type->calc_size();
-    //     if(is_type_primitive(mv->type)) {   //primitive
-    //         emit_initialize_primitive(mv->type);
-    //     }
-    //     else {  //struct
-    //         //invoke default constructor
-    //         emit_push("%rax", "emit_initialize_struct() : struct ptr");
-    //         ConstructorCall *cc = new ConstructorCall(mv->type->make_copy(), {});
-    //         assert(cc != nullptr);
-    //         cc->emit_asm();
-
-    //         //save reference to struct
-    //         fout << indent() << "mov %rax, %rbx\n";
-    //         emit_pop("%rax", "emit_initialize_struct() : struct ptr");
-    //         fout << indent() << "movq %rbx, (%rax)\n";
-    //     }
-
-    //     //increment pointer
-    //     fout << indent() << "add $" << size << ", %rax\n";
-    // }
-
-    // //initialize struct heap ptr
-    // emit_initialize_primitive(new PointerType(t));
-    // emit_pop("%rbx", "emit_initialize_struct() : struct base ptr");
-    // fout << indent() << "movq %rbx, (%rax)\n";
-
-    // if(asm_debug) fout << indent() << "# done initialize struct memory " << t->to_string() << "\n";
-
-    // //now, %rax should hold location of heap ptr, %rbx holds location of actual struct start
 }
 
 int calc_heap_size(Type *t) {
@@ -1519,7 +1294,7 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr) {
     std::cout << "Initialize variable : " << vt->to_string() << " " << id->name << std::endl;
 
     // - make sure vt is not void
-    if(*vt == BaseType("void")) {
+    if(vt->equals(primitives::_void)) {
         std::cout << "Cannot initialize a variable of type void\n";
         return nullptr;
     }

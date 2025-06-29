@@ -7,6 +7,7 @@
 #include "FunctionSignature.h"
 #include "utils.h"
 #include "Overload.h"
+#include "primitives.h"
 
 // -- CONSTRUCTOR --
 DeclarationStatement::DeclarationStatement(Declaration *_declaration) {
@@ -222,19 +223,19 @@ bool ReturnStatement::is_well_formed() {
         Expression *expr = opt_expr.value();
         et = expr->resolve_type();
     }
-    else et = new BaseType("void");
+    else et = primitives::_void->make_copy();
     if(et == nullptr) {
         std::cout << "Return expression does not resolve to type\n";
         return false;
     }
     // - are we trying to return something when the function is returning void?
-    if(*ft == BaseType("void") && *et != BaseType("void")) {
+    if(ft->equals(primitives::_void) && !et->equals(primitives::_void)) {
         std::cout << "Non-void return expression in void function\n";
         return false;
     }
     
     //see if we need to return something
-    if(*ft != BaseType("void")) {
+    if(!ft->equals(primitives::_void)) {
         assert(opt_expr.has_value());
         Expression *expr = opt_expr.value();
         Identifier *vid = new Identifier(create_new_tmp_variable_name());
@@ -275,10 +276,11 @@ bool ReturnStatement::is_well_formed() {
 }
 
 bool IfStatement::is_well_formed() {
-    // - do all expressions resolve to type 'int'?
+    // - do all expressions resolve to type 'i64'?
     for(int i = 0; i < exprs.size(); i++){
         Type *t = exprs[i]->resolve_type();
-        if(t == nullptr || *t != BaseType("int")) {
+        if(t == nullptr || !t->equals(primitives::i64)) {
+            std::cout << "If statement expression must resolve to type 'i64'\n";
             return false;
         }
     }
@@ -328,7 +330,8 @@ bool IfStatement::is_well_formed() {
 bool WhileStatement::is_well_formed() {
     // - does the expression resolve to type 'int'?
     Type *t = expr->resolve_type();
-    if(t == nullptr || *t != BaseType("int")) {
+    if(t == nullptr || !t->equals(primitives::i64)) {
+        std::cout << "While loop expression must resolve to type 'i64'\n";
         return false;
     }
 
@@ -374,8 +377,8 @@ bool ForStatement::is_well_formed() {
     // - does the conditional expression resolve to type 'int'?
     if(expr1.has_value()) {
         Type *t = expr1.value()->resolve_type();
-        if(t == nullptr || *t != BaseType("int")) {
-            std::cout << "For loop conditional expression must resolve to type int\n";
+        if(t == nullptr || !t->equals(primitives::i64)) {
+            std::cout << "For loop conditional expression must resolve to type 'i64'\n";
             return false;
         }
     }

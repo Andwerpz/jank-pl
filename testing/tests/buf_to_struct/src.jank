@@ -1,5 +1,5 @@
 
-void assert(int x) {
+void assert(i64 x) {
     if(!x) {
         puts_endl("assert failed");
         sys_exit(1);
@@ -7,8 +7,8 @@ void assert(int x) {
 }
 
 struct A {
-    int x;
-    int y;
+    i64 x;
+    i64 y;
 
     A() {
         
@@ -19,9 +19,9 @@ struct A {
 }
 
 struct B {
-    int x;
+    i64 x;
     A y;
-    int z;
+    i64 z;
     B() {
 
     }
@@ -33,7 +33,7 @@ struct B {
 struct C {
     A x;
     B y;
-    int z;
+    i64 z;
     C() {
 
     }
@@ -42,14 +42,14 @@ struct C {
     }
 }
 
-int main() {
+i64 main() {
 
-    int n = sizeof(C);
-    int* arr = (int*) malloc(sizeof(C));
+    i64 n = sizeof(C);
+    i64* arr = (i64*) malloc(sizeof(C));
     puts("sizeof C : ");
     puti_endl(n);
     assert(n % 8 == 0);
-    for(int i = 0; i < n / 8; i++){
+    for(i64 i = 0; i < n / 8; i++){
         arr[i] = i;
     }
 

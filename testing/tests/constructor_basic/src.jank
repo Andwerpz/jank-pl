@@ -1,5 +1,5 @@
 
-void assert(int x) {
+void assert(i64 x) {
     if(!x) {
         puts_endl("assert failed");
         sys_exit(1);
@@ -7,14 +7,14 @@ void assert(int x) {
 }
 
 struct A {
-    int val;
+    i64 val;
     A() {
         
     }
     A(A& other) {
         this.val = other.val;
     }
-    A(int _val) {
+    A(i64 _val) {
         this.val = _val;
     }
 }
@@ -33,7 +33,7 @@ struct B {
     }
 }
 
-int main() {
+i64 main() {
 
     A bar = new A(123);
     B foo = new B(new A(456));

@@ -1,20 +1,20 @@
 
-void assert(int x) {
+void assert(i64 x) {
     if(!x) {
         puts_endl("assert failed");
         sys_exit(1);
     }
 }
 
-void increment(int& val) {
+void increment(i64& val) {
     val ++;
 }
 
 void basic_tests() {
     //reference binding
     {
-        int x = 42;
-        int& ref = x;  
+        i64 x = 42;
+        i64& ref = x;  
         assert(x == 42 && ref == 42);
         
         ref = 10;      
@@ -23,9 +23,9 @@ void basic_tests() {
 
     //reference to reference
     {
-        int x = 100;
-        int& ref1 = x;
-        int& ref2 = ref1;
+        i64 x = 100;
+        i64& ref1 = x;
+        i64& ref2 = ref1;
         assert(x == ref1 && ref1 == ref2);
         
         ref2 = 200;
@@ -34,23 +34,23 @@ void basic_tests() {
     
     //function calls
     {
-        int x = 5;
+        i64 x = 5;
         increment(x);
         assert(x == 6);
     }
 
     //ref to array element
     {
-        int* arr = (int*) malloc(sizeof(int) * 5);
-        int& ref = arr[1]; 
+        i64* arr = (i64*) malloc(sizeof(i64) * 5);
+        i64& ref = arr[1]; 
         ref = 20;
         assert(arr[1] == 20);
     }
 
     //self assignment
     {
-        int x = 5;
-        int& ref = x;
+        i64 x = 5;
+        i64& ref = x;
         ref = ref + 1; 
         assert(x == 6);
     }
@@ -58,7 +58,7 @@ void basic_tests() {
     puts_endl("basic tests passed");
 }
 
-int main() {
+i64 main() {
 
     basic_tests();
     puts_endl("all tests passed");

@@ -1,5 +1,5 @@
 
-void assert(int x) {
+void assert(i64 x) {
     if(!x) {
         puts_endl("assert failed");
         sys_exit(1);
@@ -8,24 +8,24 @@ void assert(int x) {
 
 //assignment update, sum query segment tree
 struct segtree {
-    int n;
-    int* a;
+    i64 n;
+    i64* a;
 
     segtree() {}
-    segtree(int n) {
+    segtree(i64 n) {
         this.n = 2 * n;
-        this.a = (int*) malloc(sizeof(int) * 2 * n);
-        for(int i = 0; i < 2 * n; i++) this.a[i] = 0;
+        this.a = (i64*) malloc(sizeof(i64) * 2 * n);
+        for(i64 i = 0; i < 2 * n; i++) this.a[i] = 0;
     }
     segtree(segtree& other) {
         this.n = other.n;
-        this.a = (int*) malloc(sizeof(int) * this.n);
-        for(int i = 0; i < this.n; i++) this.a[i] = other.a[i];
+        this.a = (i64*) malloc(sizeof(i64) * this.n);
+        for(i64 i = 0; i < this.n; i++) this.a[i] = other.a[i];
     }
 
     //query sum of range [l, r)
-    int query(int l, int r) {
-        int ans = 0;
+    i64 query(i64 l, i64 r) {
+        i64 ans = 0;
         l = l + this.n;
         r = r + this.n;
         for(; l < r;) {
@@ -44,7 +44,7 @@ struct segtree {
     }
 
     //a[ind] = val
-    void modify(int ind, int val) {
+    void modify(i64 ind, i64 val) {
         ind = ind + this.n;
         this.a[ind] = val;
         ind = ind / 2;
@@ -55,30 +55,30 @@ struct segtree {
     }
 }
 
-//just a vector<int>
+//just a vector<i64>
 struct vector {
-    int sz;
-    int cap;
-    int* a;
+    i64 sz;
+    i64 cap;
+    i64* a;
 
     vector() {
         this.sz = 0;
         this.cap = 1;
-        this.a = (int*) malloc(sizeof(int) * 1);
+        this.a = (i64*) malloc(sizeof(i64) * 1);
     }
 
-    vector(int n) {
+    vector(i64 n) {
         this.sz = n;
         this.cap = n;
-        this.a = (int*) malloc(sizeof(int) * n);
-        for(int i = 0; i < n; i = i + 1) this.a[i] = 0;
+        this.a = (i64*) malloc(sizeof(i64) * n);
+        for(i64 i = 0; i < n; i = i + 1) this.a[i] = 0;
     }
 
     vector(vector& other) {
         this.sz = other.sz;
         this.cap = other.cap;
-        this.a = (int*) malloc(sizeof(int) * this.cap);
-        for(int i = 0; i < this.cap; i++) this.a[i] = other.a[i];
+        this.a = (i64*) malloc(sizeof(i64) * this.cap);
+        for(i64 i = 0; i < this.cap; i++) this.a[i] = other.a[i];
     }
 
     void pop_back() {
@@ -86,7 +86,7 @@ struct vector {
         this.sz = this.sz - 1;
     }
 
-    void push_back(int x) {
+    void push_back(i64 x) {
         if(this.sz == this.cap) this.grow();
         this.a[this.sz] = x;
         this.sz = this.sz + 1;
@@ -94,8 +94,8 @@ struct vector {
 
     void grow() {
         this.cap = this.cap * 2;
-        int* na = (int*) malloc(sizeof(int) * this.cap);
-        for(int i = 0; i < this.sz; i = i + 1) {
+        i64* na = (i64*) malloc(sizeof(i64) * this.cap);
+        for(i64 i = 0; i < this.sz; i = i + 1) {
             na[i] = this.a[i];
         }
         this.a = na;
@@ -105,18 +105,18 @@ struct vector {
     }
 }
 
-int& operator[](vector& arr, int ind) {
+i64& operator[](vector& arr, i64 ind) {
     return arr.a[ind];
 }
 
 //pseudorandom array
-int* gen_arr(int n) {
-    int* a = (int*) malloc(sizeof(int) * n);
-    int mod = 100007;
-    int ptr = 1;
-    int mult = 67;
-    int add = 103;
-    for(int i = 0; i < n; i = i + 1) {
+i64* gen_arr(i64 n) {
+    i64* a = (i64*) malloc(sizeof(i64) * n);
+    i64 mod = 100007;
+    i64 ptr = 1;
+    i64 mult = 67;
+    i64 add = 103;
+    for(i64 i = 0; i < n; i = i + 1) {
         ptr = (ptr * mult + add) % mod;
         a[i] = ptr;
     }
@@ -125,7 +125,7 @@ int* gen_arr(int n) {
 
 void vector_test() {
     vector a = new vector();
-    for(int i = 0; i < 1000000; i = i + 1) {
+    for(i64 i = 0; i < 1000000; i = i + 1) {
         a.push_back(i);
     }
     
@@ -133,21 +133,21 @@ void vector_test() {
 }
 
 void segt_test() {
-    int n = 500;
+    i64 n = 500;
     vector a = new vector(n);
     segtree b = new segtree(n);
     {
-        int* arr = gen_arr(n);
-        for(int i = 0; i < n; i = i + 1) {
+        i64* arr = gen_arr(n);
+        for(i64 i = 0; i < n; i = i + 1) {
             a[i] = arr[i];
             b.modify(i, arr[i]);
         }
     }
-    for(int i = 0; i < n; i = i + 1) {
-        for(int j = i + 1; j <= n; j = j + 1) {
-            int aans = 0;
-            int bans = b.query(i, j);
-            for(int k = i; k < j; k = k + 1) {
+    for(i64 i = 0; i < n; i = i + 1) {
+        for(i64 j = i + 1; j <= n; j = j + 1) {
+            i64 aans = 0;
+            i64 bans = b.query(i, j);
+            for(i64 k = i; k < j; k = k + 1) {
                 aans = aans + a[k];
             }
             assert(aans == bans);
@@ -157,7 +157,7 @@ void segt_test() {
     puts_endl("segt test pass");
 }
 
-int main() {
+i64 main() {
 
     vector_test();
     segt_test();

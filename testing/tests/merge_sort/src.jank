@@ -1,25 +1,25 @@
 
 
 //merge sort
-void sort(int* a, int n) {
+void sort(i64* a, i64 n) {
     if(n == 1) {
         return;
     }
-    int lsz = n / 2;
-    int rsz = n - lsz;
-    int* l = (int*) malloc(lsz * sizeof(int));
-    int* r = (int*) malloc(rsz * sizeof(int));
-    for(int i = 0; i < lsz; i = i + 1) {
+    i64 lsz = n / 2;
+    i64 rsz = n - lsz;
+    i64* l = (i64*) malloc(lsz * sizeof(i64));
+    i64* r = (i64*) malloc(rsz * sizeof(i64));
+    for(i64 i = 0; i < lsz; i = i + 1) {
         l[i] = a[i];
     }
-    for(int i = 0; i < rsz; i = i + 1){
+    for(i64 i = 0; i < rsz; i = i + 1){
         r[i] = a[i + lsz];
     }
     sort(l, lsz);
     sort(r, rsz);
-    int lptr = 0;
-    int rptr = 0;
-    for(int i = 0; i < n; i = i + 1) {
+    i64 lptr = 0;
+    i64 rptr = 0;
+    for(i64 i = 0; i < n; i = i + 1) {
         if(rptr == rsz) {
             a[i] = l[lptr];
             lptr = lptr + 1;
@@ -39,24 +39,24 @@ void sort(int* a, int n) {
     }
 }
 
-int main() {
-    int N = 1000;
-    int* a = (int*) malloc(N * sizeof(int));
+i64 main() {
+    i64 N = 1000;
+    i64* a = (i64*) malloc(N * sizeof(i64));
     
     //pseudorandom array
     {
-        int mod = 100007;
-        int ptr = 1;
-        int mult = 67;
-        int add = 103;
-        for(int i = 0; i < N; i = i + 1) {
+        i64 mod = 100007;
+        i64 ptr = 1;
+        i64 mult = 67;
+        i64 add = 103;
+        for(i64 i = 0; i < N; i = i + 1) {
             ptr = (ptr * mult + add) % mod;
             a[i] = ptr;
         }
     }
     
     sort(a, N);
-    for(int i = 0; i < N; i = i + 1) {
+    for(i64 i = 0; i < N; i = i + 1) {
         puti_endl(a[i]);
     }
 

@@ -1,5 +1,5 @@
 
-void assert(int x) {
+void assert(i64 x) {
     if(!x) {
         puts_endl("assert failed");
         sys_exit(1);
@@ -15,20 +15,20 @@ struct ostream {
     }
 }
 
-ostream& operator<<(ostream& stream, int x) {
+ostream& operator<<(ostream& stream, i64 x) {
     puti(x);
     return stream;
 }
 
-ostream& operator<<(ostream& stream, char* s) {
+ostream& operator<<(ostream& stream, u8* s) {
     puts(s);
     return stream;
 }
 
 template<T>
 struct vector {
-    int cap;
-    int sz;
+    i64 cap;
+    i64 sz;
     T* arr;
 
     vector() {
@@ -40,23 +40,23 @@ struct vector {
         this.cap = other.cap;
         this.sz = other.sz;
         this.arr = (T*) malloc(sizeof(T) * this.cap);
-        for(int i = 0; i < this.cap; i++) this.arr[i] = other.arr[i];
+        for(i64 i = 0; i < this.cap; i++) this.arr[i] = other.arr[i];
     }
-    vector(int n, T default) {
+    vector(i64 n, T default) {
         this.cap = n;
         this.sz = n;
         this.arr = (T*) malloc(sizeof(T) * n);
-        for(int i = 0; i < n; i++) this.arr[i] = default;
+        for(i64 i = 0; i < n; i++) this.arr[i] = default;
     }
 }
 
 template<T>
-T& at(vector<T>& arr, int ind) {
+T& at(vector<T>& arr, i64 ind) {
     return arr.arr[ind];
 }
 
 template<T>
-T& operator[](vector<T>& a, int ind) {
+T& operator[](vector<T>& a, i64 ind) {
     return a.arr[ind];
 }
 
@@ -79,28 +79,28 @@ struct pair {
     }
 }
 
-int main() {
+i64 main() {
 
-    int n = 10;
+    i64 n = 10;
     ostream cout = new ostream();
-    vector<vector<int>> dp = new vector<vector<int>>(n, new vector<int>(n, 0));
+    vector<vector<i64>> dp = new vector<vector<i64>>(n, new vector<i64>(n, 0));
 
-    pair<int, char*> p = new pair<int, char*>(5, "asdf");
-    pair<int, char*> p2 = p;
+    pair<i64, u8*> p = new pair<i64, u8*>(5, "asdf");
+    pair<i64, u8*> p2 = p;
     cout << p.first << " " << p.second << "\n";
     cout << p2.first << " " << p2.second << "\n";
 
     //dp[0][0] = 1;
-    at(dp, 0) = new vector<int>(n, 0);
+    at(dp, 0) = new vector<i64>(n, 0);
     at(dp[0], 0) = 1;
-    for(int i = 0; i < n; i++){
-        for(int j = 0; j < n; j++){
+    for(i64 i = 0; i < n; i++){
+        for(i64 j = 0; j < n; j++){
             if(i != 0) dp[i][j] += dp[i - 1][j];
             if(j != 0) dp[i][j] += dp[i][j - 1];
         }
     }
-    for(int i = 0; i < n; i++){
-        for(int j = 0; j < n; j++){
+    for(i64 i = 0; i < n; i++){
+        for(i64 j = 0; j < n; j++){
             cout << dp[i][j] << " ";
         }
         cout << "\n";
