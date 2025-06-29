@@ -1,7 +1,7 @@
 
 int main() {
 
-    char* hello_str = malloc(6 * sizeof(char));
+    char* hello_str = (char*) malloc(6 * sizeof(char));
     hello_str[0] = 'h';
     hello_str[1] = 'e';
     hello_str[2] = 'l';
@@ -9,11 +9,11 @@ int main() {
     hello_str[4] = 'o';
     hello_str[5] = '\0';
 
-    char* space_str = malloc(2 * sizeof(char));
+    char* space_str = (char*) malloc(2 * sizeof(char));
     space_str[0] = ' ';
     space_str[1] = '\0';
 
-    char* endl_str = malloc(2 * sizeof(char));
+    char* endl_str = (char*) malloc(2 * sizeof(char));
     endl_str[0] = '\n';
     endl_str[1] = '\0';
 

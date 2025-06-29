@@ -1,0 +1,66 @@
+
+void assert(int x) {
+    if(!x) {
+        puts_endl("assert failed");
+        sys_exit(1);
+    }
+}
+
+struct vec2 {
+    int x;
+    int y;
+
+    vec2() {
+        this.x = 0;
+        this.y = 0;
+    }
+    vec2(vec2& other) {
+        this.x = other.x;
+        this.y = other.y;
+    }
+    vec2(int _x, int _y) {
+        this.x = _x;
+        this.y = _y;
+    }
+}
+
+void test_basic_reference() {
+    int a = 42;
+    int* p = @a;
+    assert(*p == 42);
+    puts_endl("test basic pass");
+}
+
+void test_reference_array_element() {
+    int* arr = (int*) malloc(sizeof(int) * 3);
+    arr[0] = 10;
+    arr[1] = 20;
+    arr[2] = 30;
+    int* p = @arr[1];
+    assert(*p == 20);
+    *p = 50;
+    assert(arr[1] == 50);
+    puts_endl("test array pass");
+}
+
+void test_reference_struct_member() {
+    vec2 pt = new vec2(5, 6);
+    int* px = @pt.x;
+    int* py = @pt.y;
+    assert(*px == 5);
+    assert(*py == 6);
+    *px = 15;
+    *py = 16;
+    assert(pt.x == 15 && pt.y == 16);
+    puts_endl("test struct member pass");
+}
+
+int main() {
+
+    test_basic_reference();
+    test_reference_array_element();
+    test_reference_struct_member();
+    puts_endl("all tests passed");
+
+    return 0;
+}

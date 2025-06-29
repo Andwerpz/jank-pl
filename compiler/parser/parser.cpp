@@ -1,4 +1,4 @@
-// Date Generated : 06-26-2025 23:33:20
+// Date Generated : 06-28-2025 23:42:55
 #include "parser.h"
 
 namespace parser {
@@ -1236,6 +1236,40 @@ namespace parser {
         return ans;
     }
 
+    expr_unary::a0::b0::c7* expr_unary::a0::b0::c7::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "@") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_unary::a0::b0::c7(_t0);
+    }
+
+    std::string expr_unary::a0::b0::c7::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    expr_unary::a0::b0::c8* expr_unary::a0::b0::c8::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "(") {pop_stack(); return nullptr;}
+        type *_t1 = type::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(1);
+        if(_t2 != ")") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_unary::a0::b0::c8(_t0, _t1, _t2);
+    }
+
+    std::string expr_unary::a0::b0::c8::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2;
+        return ans;
+    }
+
     expr_unary::a0::b0* expr_unary::a0::b0::parse() {
         if(auto x = expr_unary::a0::b0::c0::parse()) return new expr_unary::a0::b0(x);
         if(auto x = expr_unary::a0::b0::c1::parse()) return new expr_unary::a0::b0(x);
@@ -1244,6 +1278,8 @@ namespace parser {
         if(auto x = expr_unary::a0::b0::c4::parse()) return new expr_unary::a0::b0(x);
         if(auto x = expr_unary::a0::b0::c5::parse()) return new expr_unary::a0::b0(x);
         if(auto x = expr_unary::a0::b0::c6::parse()) return new expr_unary::a0::b0(x);
+        if(auto x = expr_unary::a0::b0::c7::parse()) return new expr_unary::a0::b0(x);
+        if(auto x = expr_unary::a0::b0::c8::parse()) return new expr_unary::a0::b0(x);
         return nullptr;
     }
 
@@ -1255,6 +1291,8 @@ namespace parser {
         if(is_c4) return t4->to_string();
         if(is_c5) return t5->to_string();
         if(is_c6) return t6->to_string();
+        if(is_c7) return t7->to_string();
+        if(is_c8) return t8->to_string();
         assert(false);
     }
 

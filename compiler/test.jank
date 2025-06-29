@@ -1,13 +1,54 @@
 
-void float_test() {
-    puts_endl("before float");
-    float f = 1.0;
-    puts_endl("after float");
+void assert(int x) {
+    if(!x) {
+        puts_endl("assert failed");
+        sys_exit(1);
+    }
+}
+
+struct A {
+    int x;
+    int y;
+    A() {}
+    A(A& other) {}
+}
+
+struct B {
+    int x;
+    A y;
+    int z;
+    B() {}
+    B(B& other) {}
+}
+
+struct C {
+    A x;
+    B y;
+    int z;
+    C() {}
+    C(C& other) {}
 }
 
 int main() {
 
-    float_test();
+    int n = sizeof(C);
+    int* arr = (int*) malloc(sizeof(C));
+    puts("sizeof C : ");
+    puti_endl(n);
+    assert(n % 8 == 0);
+    for(int i = 0; i < n / 8; i++){
+        arr[i] = i;
+    }
+
+    C* c = (C*) arr;
+    assert(c->x.x == 0);
+    assert(c->x.y == 1);
+    assert(c->y.x == 2);
+    assert(c->y.y.x == 3);
+    assert(c->y.y.y == 4);
+    assert(c->y.z == 5);
+    assert(c->z == 6);
+    puts_endl("test passed");
 
     return 0;
 }

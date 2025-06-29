@@ -1,8 +1,8 @@
 
 int main() {
     int N = 10;
-    int** dp = malloc(N * sizeof(int*));
-    for(int i = 0; i < N; i = i + 1) dp[i] = malloc(N * sizeof(int));
+    int** dp = (int**) malloc(N * sizeof(int*));
+    for(int i = 0; i < N; i = i + 1) dp[i] = (int*) malloc(N * sizeof(int));
     dp[0][0] = 1;
     for(int i = 0; i < N; i = i + 1) {
         for(int j = 0; j < N; j = j + 1) {

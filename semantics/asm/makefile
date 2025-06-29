@@ -3,15 +3,15 @@
 # Tools
 ASM := as
 LD := ld
-ASMFLAGS := --64
-LDFLAGS := 
+ASMFLAGS := --64 -gstabs         # Add debug info
+LDFLAGS :=                       # You can add -no-pie here if needed
 
 # Files
 SRCS := $(wildcard *.asm)
 OBJS := $(SRCS:.asm=.o)
 TARGET := main.exe
 
-.PHONY: all clean
+.PHONY: all clean debug
 
 all: $(TARGET)
 
@@ -25,3 +25,7 @@ $(TARGET): $(OBJS)
 
 clean:
 	rm -f $(OBJS) $(TARGET)
+
+# Run in GDB
+debug: $(TARGET)
+	gdb ./$(TARGET)

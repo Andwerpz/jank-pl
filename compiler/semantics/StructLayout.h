@@ -12,15 +12,11 @@ struct Type;
 // - for every identifier, stores the relative offset within the struct
 // - also holds the total size of the heap portion in bytes
 struct StructLayout {
-    StructLayout *layout;
-    bool processed;
-
     std::vector<MemberVariable*> member_variables;
     std::vector<std::pair<Identifier*, int>> offset_map;
-    std::unordered_map<std::string, int> offset_map;
     int size;
 
-    StructLayout(StructDefinition *_layout);
+    StructLayout(std::vector<MemberVariable*> _member_variables, std::vector<std::pair<Identifier*, int>> _offset_map, int _size);
 
     int get_offset(Identifier *id);
     Type* get_type(Identifier *id);

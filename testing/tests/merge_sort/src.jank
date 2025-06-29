@@ -7,8 +7,8 @@ void sort(int* a, int n) {
     }
     int lsz = n / 2;
     int rsz = n - lsz;
-    int* l = malloc(lsz * sizeof(int));
-    int* r = malloc(rsz * sizeof(int));
+    int* l = (int*) malloc(lsz * sizeof(int));
+    int* r = (int*) malloc(rsz * sizeof(int));
     for(int i = 0; i < lsz; i = i + 1) {
         l[i] = a[i];
     }
@@ -41,7 +41,7 @@ void sort(int* a, int n) {
 
 int main() {
     int N = 1000;
-    int* a = malloc(N * sizeof(int));
+    int* a = (int*) malloc(N * sizeof(int));
     
     //pseudorandom array
     {

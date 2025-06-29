@@ -9,6 +9,7 @@ struct IntegerLiteral;
 struct SizeofLiteral;
 struct CharLiteral;
 struct StringLiteral;
+struct TemplateMapping;
 
 struct Literal {
     static Literal* convert(parser::literal *n);
@@ -17,6 +18,8 @@ struct Literal {
     virtual size_t hash() = 0;
     virtual bool equals(Literal *other) = 0;
     virtual Literal* make_copy() = 0;
+    virtual std::string to_string() = 0;
+    virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
 };
 
 struct FloatLiteral : public Literal {
@@ -28,6 +31,8 @@ struct FloatLiteral : public Literal {
     size_t hash() override;
     bool equals(Literal *other) override;
     Literal* make_copy() override;
+    std::string to_string() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct IntegerLiteral : public Literal {
@@ -39,6 +44,8 @@ struct IntegerLiteral : public Literal {
     size_t hash() override;
     bool equals(Literal *other) override;
     Literal* make_copy() override;
+    std::string to_string() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct SizeofLiteral : public Literal {
@@ -50,6 +57,8 @@ struct SizeofLiteral : public Literal {
     size_t hash() override;
     bool equals(Literal *other) override;
     Literal* make_copy() override;
+    std::string to_string() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct CharLiteral : public Literal {
@@ -61,6 +70,8 @@ struct CharLiteral : public Literal {
     size_t hash() override;
     bool equals(Literal *other) override;
     Literal* make_copy() override;
+    std::string to_string() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
 struct StringLiteral : public Literal {
@@ -72,5 +83,7 @@ struct StringLiteral : public Literal {
     size_t hash() override;
     bool equals(Literal *other) override;
     Literal* make_copy() override;
+    std::string to_string() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
 };
 

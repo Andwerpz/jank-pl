@@ -14,12 +14,12 @@ struct segtree {
     segtree() {}
     segtree(int n) {
         this.n = 2 * n;
-        this.a = malloc(sizeof(int) * 2 * n);
+        this.a = (int*) malloc(sizeof(int) * 2 * n);
         for(int i = 0; i < 2 * n; i++) this.a[i] = 0;
     }
     segtree(segtree& other) {
         this.n = other.n;
-        this.a = malloc(sizeof(int) * this.n);
+        this.a = (int*) malloc(sizeof(int) * this.n);
         for(int i = 0; i < this.n; i++) this.a[i] = other.a[i];
     }
 
@@ -64,20 +64,20 @@ struct vector {
     vector() {
         this.sz = 0;
         this.cap = 1;
-        this.a = malloc(sizeof(int) * 1);
+        this.a = (int*) malloc(sizeof(int) * 1);
     }
 
     vector(int n) {
         this.sz = n;
         this.cap = n;
-        this.a = malloc(sizeof(int) * n);
+        this.a = (int*) malloc(sizeof(int) * n);
         for(int i = 0; i < n; i = i + 1) this.a[i] = 0;
     }
 
     vector(vector& other) {
         this.sz = other.sz;
         this.cap = other.cap;
-        this.a = malloc(sizeof(int) * this.cap);
+        this.a = (int*) malloc(sizeof(int) * this.cap);
         for(int i = 0; i < this.cap; i++) this.a[i] = other.a[i];
     }
 
@@ -94,7 +94,7 @@ struct vector {
 
     void grow() {
         this.cap = this.cap * 2;
-        int* na = malloc(sizeof(int) * this.cap);
+        int* na = (int*) malloc(sizeof(int) * this.cap);
         for(int i = 0; i < this.sz; i = i + 1) {
             na[i] = this.a[i];
         }
@@ -111,7 +111,7 @@ int& operator[](vector& arr, int ind) {
 
 //pseudorandom array
 int* gen_arr(int n) {
-    int* a = malloc(sizeof(int) * n);
+    int* a = (int*) malloc(sizeof(int) * n);
     int mod = 100007;
     int ptr = 1;
     int mult = 67;

@@ -1,0 +1,35 @@
+
+struct A {
+    int val;
+
+    A() {
+        this.val = new int();
+    }
+    A(A& other) {
+        this.val = other.val;
+    }
+    A(int _val) {
+        this.val = _val;
+    }
+}
+
+int main() {
+
+    int n = 10;
+    A* arr = (A*) malloc(sizeof(A) * n);
+    for(int i = 0; i < n; i++){
+        arr[i] = new A(i);
+    }
+
+    A& ref = arr[1];
+    ref.val = 123;
+
+    A* ptr = (A*) malloc(sizeof(A));
+    *ptr = new A(100);
+    arr[0] = *ptr;
+    for(int i = 0; i < n; i++){
+        puti_endl(arr[i].val);
+    }
+
+    return 0;
+}

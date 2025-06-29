@@ -7,6 +7,7 @@
 #include <iomanip>
 #include <iostream>
 #include <cstring>
+#include "TemplateMapping.h"
 
 // -- CONSTRUCTOR --
 FloatLiteral::FloatLiteral(float _val) {
@@ -225,4 +226,47 @@ Literal* CharLiteral::make_copy() {
 
 Literal* StringLiteral::make_copy() {
     return new StringLiteral(val);
+}
+
+// -- TO STRING --
+std::string FloatLiteral::to_string() {
+    return std::to_string(val);
+}
+
+std::string IntegerLiteral::to_string() {
+    return std::to_string(val);
+}
+
+std::string SizeofLiteral::to_string() {
+    return "sizeof(" + type->to_string() + ")";
+}
+
+std::string CharLiteral::to_string() {
+    return "'" + std::string(val, 1) + "'";
+}
+
+std::string StringLiteral::to_string() {
+    return "\"" + val + "\"";
+}
+
+// -- REPLACE TEMPLATED TYPES --
+bool FloatLiteral::replace_templated_types(TemplateMapping *mapping) {
+    return true;
+}
+
+bool IntegerLiteral::replace_templated_types(TemplateMapping *mapping) {
+    return true;
+}
+
+bool SizeofLiteral::replace_templated_types(TemplateMapping *mapping) {
+    if(auto x = mapping->find_mapped_type(type)) {type = x; return true;}
+    else return type->replace_templated_types(mapping);
+}
+
+bool CharLiteral::replace_templated_types(TemplateMapping *mapping) {
+    return true;
+}
+
+bool StringLiteral::replace_templated_types(TemplateMapping *mapping) {
+    return true;
 }

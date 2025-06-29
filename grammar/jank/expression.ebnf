@@ -3,12 +3,9 @@
 #include "literal.ebnf" ;
 #include "struct.ebnf" ;
 
-(* TODO handle casting. This should be a prefix operator, like "(" , type , ")" *)
-(* TODO handle referencing (&) *)
-
 (* in order of precedence *)
 (* x[<expr>] x.<id> x-><id> x.<fn> x-><fn> x++ x-- *)
-(* +x -x ~x !x ++x --x <deref>x *)
+(* +x -x ~x !x ++x --x <deref>x @x (cast)x *)
 (* <mult> / % *)
 (* + - *)
 (* << >> *)
@@ -24,7 +21,7 @@
 
 expr_primary = literal | constructor_call | function_call | identifier | "(" , ows , expression , ows , ")" ;
 expr_postfix = expr_primary , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , function_call | "->" , ows , function_call | "." , ows , identifier | "->" , ows , identifier | "++" | "--" ) } ;
-expr_unary = ( "++" | "--" | "+" | "-" | "~" | "!" | "*" ) , ows , expr_unary | expr_postfix ;
+expr_unary = ( "++" | "--" | "+" | "-" | "~" | "!" | "*" | "@" | "(" , type , ")" ) , ows , expr_unary | expr_postfix ;
 expr_multiplicative = expr_unary , { ows , ( "*" | "/" | "%" ) , ows , expr_unary } ;
 expr_additive = expr_multiplicative , { ows , ( "+" | "-" ) , ows , expr_multiplicative } ;
 expr_shift = expr_additive , { ows , ( "<<" | ">>" ) , ows , expr_additive } ;

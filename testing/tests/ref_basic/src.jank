@@ -41,7 +41,7 @@ void basic_tests() {
 
     //ref to array element
     {
-        int* arr = malloc(sizeof(int) * 5);
+        int* arr = (int*) malloc(sizeof(int) * 5);
         int& ref = arr[1]; 
         ref = 20;
         assert(arr[1] == 20);

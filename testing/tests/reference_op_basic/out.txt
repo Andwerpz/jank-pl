@@ -1,0 +1,4 @@
+test basic pass
+test array pass
+test struct member pass
+all tests passed

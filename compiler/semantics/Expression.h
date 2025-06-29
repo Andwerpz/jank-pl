@@ -96,7 +96,7 @@ struct ExprBinary : ExprNode {
 };
 
 struct ExprPrefix : ExprNode {
-    using op_t = std::variant<std::string>;
+    using op_t = std::variant<std::string, Type*>;
     op_t op;
     ExprNode *right;
     ExprPrefix(op_t _op, ExprNode *_right);

@@ -123,6 +123,16 @@ bool Program::is_well_formed() {
         }
     }
 
+    // - can we construct a struct layout for all structs?
+    std::cout << "CONSTRUCT BASE STRUCT LAYOUTS" << std::endl;
+    for(int i = 0; i < structs.size(); i++){
+        Type *t = structs[i]->type;
+        if(!construct_struct_layout(t)) {
+            std::cout << "Unable to construct struct layout for type : " << t->to_string() << "\n";
+            return false;
+        }
+    }
+
     // - are all the templated structs well formed?
     std::cout << "CHECKING TEMPLATED STRUCTS WELL FORMED" << std::endl;
     for(int i = 0; i < templated_structs.size(); i++){

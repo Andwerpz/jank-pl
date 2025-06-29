@@ -2,6 +2,7 @@
 #include "utils.h"
 #include "TemplateMapping.h"
 #include "TemplateHeader.h"
+#include "StructLayout.h"
 
 Type* Type::remove_reference() {
     Type *ret = this->make_copy();
@@ -39,6 +40,38 @@ TemplatedType::TemplatedType(BaseType *_base_type, std::vector<Type*> _template_
     base_type = _base_type;
     template_types = _template_types;
 }
+
+// -- CALC SIZE --
+int BaseType::calc_size() {
+    if(name == "int") return 8;
+    else if(name == "char") return 1;
+    else {
+        StructLayout *sl = get_struct_layout(this);
+        if(sl == nullptr){ 
+            std::cout << "Could not find struct layout of BaseType : " << to_string() << std::endl;
+            assert(false);
+        }
+        return sl->get_size();
+    }
+}
+
+int PointerType::calc_size() {
+    return 8;
+}
+
+int ReferenceType::calc_size() {
+    return 8;
+}
+
+int TemplatedType::calc_size() {
+    StructLayout *sl = get_struct_layout(this);
+    if(sl == nullptr){ 
+        std::cout << "Could not find struct layout of TemplatedType : " << to_string() << std::endl;
+        assert(false);
+    }
+    return sl->get_size();
+}
+
 
 // -- EQUALS --
 bool BaseType::equals(const Type *other) const {

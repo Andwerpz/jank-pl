@@ -34,18 +34,18 @@ struct vector {
     vector() {
         this.cap = 1;
         this.sz = 0;
-        this.arr = malloc(sizeof(T) * 1);
+        this.arr = (T*) malloc(sizeof(T) * 1);
     }
     vector(vector& other) {
         this.cap = other.cap;
         this.sz = other.sz;
-        this.arr = malloc(sizeof(T) * this.cap);
+        this.arr = (T*) malloc(sizeof(T) * this.cap);
         for(int i = 0; i < this.cap; i++) this.arr[i] = other.arr[i];
     }
     vector(int n, T default) {
         this.cap = n;
         this.sz = n;
-        this.arr = malloc(sizeof(T) * n);
+        this.arr = (T*) malloc(sizeof(T) * n);
         for(int i = 0; i < n; i++) this.arr[i] = default;
     }
 }

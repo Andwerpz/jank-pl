@@ -14,6 +14,7 @@
 #include "TemplatedFunction.h"
 #include "Overload.h"
 #include "TemplatedOverload.h"
+#include "StructLayout.h"
 
 Variable::Variable(Type *_type, Identifier *_id) {
     id = _id;
@@ -105,35 +106,6 @@ OverloadedOperator::OverloadedOperator(Overload *_overload) : OperatorImplementa
     overload = _overload;
 }
 
-StructLayout::StructLayout(std::vector<MemberVariable*> _member_variables, std::unordered_map<std::string, int> _offset_map, int _size) {
-    member_variables = _member_variables;
-    offset_map = _offset_map;
-    size = _size;
-    assert(member_variables.size() == offset_map.size());
-}
-
-int StructLayout::get_offset(Identifier *id) {
-    assert(offset_map.count(id->name));
-    return offset_map[id->name];
-}
-
-Type* StructLayout::get_type(Identifier *id) {
-    for(int i = 0; i < member_variables.size(); i++){
-        if(*id == *(member_variables[i]->id)) {
-            return member_variables[i]->type;
-        }
-    }
-    return nullptr;
-}
-
-int StructLayout::get_size() {
-    return size;
-}
-
-int StructLayout::get_ptr_offset() {
-    return size;
-}
-
 //define hash and eq structs in anon
 namespace {
     struct TypeHash {
@@ -219,7 +191,7 @@ std::vector<TemplatedFunction*> declared_templated_functions;
 std::vector<TemplatedOverload*> declared_templated_overloads;
 std::vector<BaseType*> declared_basetypes;
 std::unordered_set<Type*, TypeHash, TypeEquals> primitive_base_types;
-std::unordered_map<Type*, StructLayout*, TypeHash, TypeEquals> struct_layout_map;
+std::vector<std::pair<Type*, StructLayout*>> struct_layout_map;
 std::unordered_map<FunctionSignature*, std::string, FunctionSignatureHash, FunctionSignatureEquals> function_label_map;
 std::unordered_map<ConstructorSignature*, std::string, ConstructorSignatureHash, ConstructorSignatureEquals> constructor_label_map;
 std::unordered_map<OperatorSignature*, std::string, OperatorSignatureHash, OperatorSignatureEquals> overload_label_map;
@@ -469,7 +441,7 @@ void dump_stack_desc() {
 
 void emit_push(std::string reg, std::string desc){
     stack_desc.push_back(desc);
-    fout << indent() << "push " << reg << "\n";
+    fout << indent() << "push " << reg << (asm_debug? "    # " + desc : "") <<"\n";
     local_offset -= 8;
 }
 
@@ -485,7 +457,7 @@ void emit_pop(std::string reg, std::string desc){
     }
     stack_desc.pop_back();
 
-    fout << indent() << "pop " << reg << "\n";
+    fout << indent() << "pop " << reg << (asm_debug? "    # " + desc : "") <<"\n";
     local_offset += 8;
 }
 
@@ -505,6 +477,7 @@ void emit_add_rsp(int amt, std::string desc){
         stack_desc.pop_back();
     }
 
+    if(asm_debug) fout << indent() << "# " << desc << "\n";
     fout << indent() << "add $" << amt << ", %rsp\n";
     local_offset += amt;
 }
@@ -541,6 +514,7 @@ void emit_sub_rsp(int amt, std::string desc) {
         stack_desc.push_back(desc);
     }
 
+    if(asm_debug) fout << indent() << "# " << desc << "\n";
     fout << indent() << "sub $" << amt << ", %rsp\n";
     local_offset -= amt;
 }
@@ -559,7 +533,10 @@ void emit_retrieve_array(int sz) {
     else if(sz == 2) fout << indent() << "movw (%rax, %rbx, 2), %ax\n";
     else if(sz == 4) fout << indent() << "movl (%rax, %rbx, 4), %eax\n";
     else if(sz == 8) fout << indent() << "movq (%rax, %rbx, 8), %rax\n";
-    else assert(false);
+    else {
+        std::cout << "Cannot retrieve from array with element of size : " << sz << std::endl;
+        assert(false);
+    }
 }
 
 //expects %rax = array start, %rbx = array index
@@ -569,7 +546,13 @@ void emit_address_array(int sz) {
     else if(sz == 2) fout << indent() << "lea (%rax, %rbx, 2), %rax\n";
     else if(sz == 4) fout << indent() << "lea (%rax, %rbx, 4), %rax\n";
     else if(sz == 8) fout << indent() << "lea (%rax, %rbx, 8), %rax\n";
-    else assert(false);
+    else {
+        emit_push("%rax", "emit_address_array() : save array start");
+        fout << indent() << "mov $" << sz << ", %rax\n";
+        fout << indent() << "imul %rax, %rbx\n";
+        emit_pop("%rax", "emit_address_array() : save array start");
+        fout << indent() << "add %rbx, %rax\n";
+    }
 }
 
 //expects %rax = array start, %rbx = array index, %rcx = value
@@ -579,7 +562,10 @@ void emit_write_array(int sz) {
     else if(sz == 2) fout << indent() << "movw %cx, (%rax, %rbx, 2)\n";
     else if(sz == 4) fout << indent() << "movl %ecx, (%rax, %rbx, 4)\n";
     else if(sz == 8) fout << indent() << "movq %rcx, (%rax, %rbx, 8)\n";
-    else assert(false);
+    else {
+        std::cout << "Cannot write array with element of size : " << sz << std::endl;
+        assert(false);
+    }
 }
 
 //expects %rax = address
@@ -589,7 +575,10 @@ void emit_mem_retrieve(int sz) {
     else if(sz == 2) fout << indent() << "movw (%rax), %ax\n";
     else if(sz == 4) fout << indent() << "movl (%rax), %eax\n";
     else if(sz == 8) fout << indent() << "movq (%rax), %rax\n";
-    else assert(false);
+    else {
+        std::cout << "Cannot retrieve element of size : " << sz << std::endl;
+        assert(false);
+    }   
 }
 
 //expects %rax = value, %rbx = mem address
@@ -599,7 +588,10 @@ void emit_mem_store(int sz) {
     else if(sz == 2) fout << indent() << "movw %ax, (%rbx)\n";
     else if(sz == 4) fout << indent() << "movl %eax, (%rbx)\n";
     else if(sz == 8) fout << indent() << "movq %rax, (%rbx)\n";
-    else assert(false);
+    else {
+        std::cout << "Cannot store element of size : " << sz << std::endl;
+        assert(false);
+    }
 }
 
 //returns true if we can create a new variable of type A with the given expression
@@ -662,16 +654,28 @@ OperatorImplementation* find_typecast_implementation(Type *from, Type *to) {
     //special cases
     // - from and to are the same type
     if(*from == *to) {
-        return new BuiltinOperator(to, {});    //do nothing
+        return new BuiltinOperator(to, {});     //do nothing
     }
     Type* voidptr_t = new PointerType(new BaseType("void"));
     // - from is a pointer, to is void*
     if(dynamic_cast<PointerType*>(from) != nullptr && *to == *voidptr_t) {
-        return new BuiltinOperator(to, {});    //do nothing
+        return new BuiltinOperator(to, {});     //do nothing
     }
     // - from is void*, to is a pointer
     if(*from == *voidptr_t && dynamic_cast<PointerType*>(to) != nullptr) {
-        return new BuiltinOperator(to, {});    //do nothing
+        return new BuiltinOperator(to, {});     //do nothing
+    }
+    // - from is a pointer, to is a pointer
+    if(dynamic_cast<PointerType*>(from) != nullptr && dynamic_cast<PointerType*>(to) != nullptr) {
+        return new BuiltinOperator(to, {});     //do nothing
+    }
+    // - from is a pointer, to is an int
+    if(dynamic_cast<PointerType*>(from) != nullptr && to->equals(new BaseType("int"))) {
+        return new BuiltinOperator(to, {});     //do nothing
+    }
+    // - from is an int, to is a pointer
+    if(from->equals(new BaseType("int")) && dynamic_cast<PointerType*>(to) != nullptr) {
+        return new BuiltinOperator(to, {});     //do nothing
     }
 
     //look through all conversions to see if we have an exact match
@@ -706,8 +710,6 @@ OperatorImplementation* find_operator_implementation(std::optional<Expression*> 
         add_operator_implementation(no);
     }
 
-    // std::cout << "Find operator implementation : " << op << "\n";
-    
     std::vector<OperatorImplementation*> viable;
     for(auto i = conversion_map.begin(); i != conversion_map.end(); i++){
         OperatorSignature *nkey = i->first;
@@ -721,7 +723,9 @@ OperatorImplementation* find_operator_implementation(std::optional<Expression*> 
         if(right.has_value() && !is_declarable(nkey->right.value(), right.value())) continue;
         viable.push_back(i->second);
     }
-    if(viable.size() != 1) return nullptr;
+    if(viable.size() != 1) {
+        return nullptr;
+    }
     return viable[0];
 }
 
@@ -866,14 +870,11 @@ Function* get_called_function(FunctionCall *fc) {
 
     //see if we can make some templated function out of fc
     //TODO check if some function call is ambiguous due to templating. 
-    std::cout << "TRYING TO CREATE TEMPLATED FUNCTION : " << fc->to_string() << "\n";
     for(int i = 0; i < declared_templated_functions.size(); i++){
         Function* nf = declared_templated_functions[i]->gen_function(fc);
         if(nf == nullptr) {
             continue;
         }
-
-        std::cout << "GENERATED NEW FUNCTION : " << nf->resolve_function_signature()->to_string() << "\n";
 
         //ok, we've generated a new function. Add it
         if(!add_function(nf)) {
@@ -1053,19 +1054,6 @@ bool add_struct_type(StructDefinition *sd) {
         }
     }
 
-    //construct StructLayout
-    std::unordered_map<std::string, int> offset_map;
-    int size = 0;
-    for(int i = 0; i < sd->member_variables.size(); i++){
-        MemberVariable *mv = sd->member_variables[i];
-        offset_map.insert({mv->id->name, size});
-        size += mv->type->calc_size();
-    }
-
-    //we should always be able to add sl to the controller
-    StructLayout *sl = new StructLayout(sd->member_variables, offset_map, size);
-    assert(add_struct_layout(t, sl));
-
     //resolve all templates in function signature and member variables
     if(!sd->look_for_templates()) {
         std::cout << "Unable to resolve all templates in " << t->to_string() << "\n";
@@ -1073,17 +1061,6 @@ bool add_struct_type(StructDefinition *sd) {
     }
 
     std::cout << "ADD TYPE : " << t->to_string() << "\n";
-
-    return true;
-}
-
-bool add_templated_struct_type(StructDefinition *sd) {
-    if(!add_struct_type(sd)) return false;
-
-    //also, make sure this is well formed
-    if(!sd->is_well_formed()) {
-        return false;
-    }
 
     return true;
 }
@@ -1133,15 +1110,32 @@ bool create_templated_type(TemplatedType *t) {
         TemplatedStructDefinition *tsd = declared_templated_structs[i];
         StructDefinition *sd = tsd->gen_struct_def(t);
         if(sd != nullptr) {
-            //add this type as declared
             assert(sd->type->equals(t));
-            if(!add_templated_struct_type(sd)) {
+
+            //add this type as declared
+            if(!add_struct_type(sd)) {
+                std::cout << "Unable to add templated type : " << t->to_string() << std::endl;
                 return false;
             }
+
+            //make sure this is well formed
+            if(!sd->is_well_formed()) {
+                std::cout << "Templated type is not well formed : " << t->to_string() << std::endl;
+                return false;
+            }
+
+            //construct struct layout for this type
+            if(!construct_struct_layout(sd->type)) {
+                std::cout << "Unable to construct struct layout for templated type : " << t->to_string() << std::endl;
+                return false;
+            }
+
             return true;
         }
     }
-    return true;
+
+    //couldn't generate it
+    return false;
 }
 
 bool add_function(Function *f){
@@ -1248,18 +1242,112 @@ void pop_declaration_stack() {
     }
 }
 
-StructLayout* get_struct_layout(Type *t) {
+bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_off) {
     assert(t != nullptr);
-    assert(struct_layout_map.count(t));
-    return struct_layout_map[t];
+
+    // - is this type declared?
+    if(!is_type_declared(t)) {
+        std::cout << "Type is not declared : " << t->to_string() << "\n";
+        return false;
+    }
+
+    // - have we gone too deep?
+    int struct_depth_limit = 32;
+    if(type_stack.size() > struct_depth_limit) {
+        std::cout << "Struct member nesting too deep (depth > " << struct_depth_limit << ")\n";
+        return false;
+    }
+
+    // - is this initialization infinite recursive?
+    // this check really isn't necessary, but it's nice to have some extra info
+    for(int i = 0; i < type_stack.size(); i++){
+        if(t->equals(type_stack[i])) {
+            std::cout << "Infinite recursive struct initialization : " << t->to_string() << " contains itself\n";
+            return false;
+        }
+    }
+    
+    // - handle primitives seperately
+    if(is_type_primitive(t)) {
+        byte_off += calc_heap_size(t);
+        return true;
+    }
+
+    // - see if we've already generated this struct layout
+    if(auto *sl = get_struct_layout(t)) {
+        byte_off += sl->get_size();
+        return true;
+    }
+
+    //get struct definition
+    StructDefinition *sd = get_struct_definition(t);
+    assert(sd != nullptr);
+
+    type_stack.push_back(t);
+
+    std::vector<MemberVariable*> member_variables;
+    std::vector<std::pair<Identifier*, int>> offset_map;
+    int size = 0;
+    int old_byte_off = byte_off;
+
+    for(int i = 0; i < sd->member_variables.size(); i++){
+        MemberVariable *mv = sd->member_variables[i];
+        assert(mv != nullptr);
+
+        // - we should be able to create struct layout for all member variables
+        if(!_construct_struct_layout(mv->type, type_stack, byte_off)) {
+            return false;
+        }
+
+        std::cout << "BYTE OFF : " << byte_off << "\n";
+
+        member_variables.push_back(mv->make_copy());
+        offset_map.push_back(std::make_pair(mv->id->make_copy(), size));
+        std::cout << "COFFSET : " << mv->id->name << " " << size << "\n";
+        size += byte_off - old_byte_off;
+        old_byte_off = byte_off;
+    }
+
+    type_stack.pop_back();
+
+    StructLayout *sl = new StructLayout(member_variables, offset_map, size);
+    assert(get_struct_layout(t) == nullptr);
+    struct_layout_map.push_back({t, sl});
+    assert(get_struct_layout(t) != nullptr);
+
+    std::cout << "FINISH CONSTRUCTING STRUCT LAYOUT : " << t->to_string() << "\n";
+    for(int i = 0; i < offset_map.size(); i++){
+        std::cout << offset_map[i].first->name << " " << offset_map[i].second << "\n";
+    }
+    std::cout << "TOT SIZE : " << size << "\n";
+
+    return true;
 }
 
-bool add_struct_layout(Type *t, StructLayout *sl) {
+bool construct_struct_layout(Type *t) {
+    std::vector<Type*> type_stack;
+    int byte_off = 0;
+    return _construct_struct_layout(t, type_stack, byte_off);
+}
+
+StructLayout* get_struct_layout(Type *t) {
     assert(t != nullptr);
-    assert(sl != nullptr);
-    assert(!struct_layout_map.count(t));
-    struct_layout_map.insert({t, sl});
-    return true;
+    std::cout << "TRY GET STRUCT LAYOUT : " << t->to_string() << "\n";
+    for(int i = 0; i < struct_layout_map.size(); i++){
+        std::cout << "I : " << i << " " << struct_layout_map[i].first->to_string() << " " << t->equals(struct_layout_map[i].first) << "\n";
+        if(struct_layout_map[i].first->equals(t)) {
+            return struct_layout_map[i].second;
+        }
+    }
+    return nullptr;
+}
+
+StructDefinition* get_struct_definition(Type *t) {
+    assert(t != nullptr);
+    for(int i = 0; i < declared_structs.size(); i++){
+        if(t->equals(declared_structs[i]->type)) return declared_structs[i];
+    }
+    return nullptr;
 }
 
 //allocates sz_bytes memory by calling malloc. Resulting address is in %rax
@@ -1286,35 +1374,38 @@ void emit_initialize_primitive(Type *t) {
         fout << indent() << "movq $0, (%rax)\n";
     }
     else if(dynamic_cast<ReferenceType*>(t) != nullptr) {
-        Type *rt = dynamic_cast<ReferenceType*>(t)->type;
-        if(is_type_primitive(rt)) {
-            //save address to reference 
-            emit_push("%rax", "emit_initialize_primitve() : addr to primitive ref");
+        // a reference is just syntactic sugar for a pointer, so just 0 initialize it. 
+        fout << indent() << "movq $0, (%rax)\n";
 
-            //allocate some memory for the referenced type
-            int sz = rt->calc_size();
-            emit_malloc(sz);
+        // Type *rt = dynamic_cast<ReferenceType*>(t)->type;
+        // if(is_type_primitive(rt)) {
+        //     //save address to reference 
+        //     emit_push("%rax", "emit_initialize_primitve() : addr to primitive ref");
 
-            //initialize primitive at address
-            emit_initialize_primitive(rt);
+        //     //allocate some memory for the referenced type
+        //     int sz = rt->calc_size();
+        //     emit_malloc(sz);
 
-            //write address into reference
-            fout << indent() << "mov %rax, %rbx\n";
-            emit_pop("%rax", "emit_initialize_primitve() : addr to primitive ref");
-            fout << indent() << "movq %rbx, (%rax)\n";
-        }
-        else {
-            //save address to reference 
-            emit_push("%rax", "emit_initialize_primitve() : addr to struct ref");
+        //     //initialize primitive at address
+        //     emit_initialize_primitive(rt);
 
-            //initialize struct
-            emit_initialize_struct(rt);
+        //     //write address into reference
+        //     fout << indent() << "mov %rax, %rbx\n";
+        //     emit_pop("%rax", "emit_initialize_primitve() : addr to primitive ref");
+        //     fout << indent() << "movq %rbx, (%rax)\n";
+        // }
+        // else {
+        //     //save address to reference 
+        //     emit_push("%rax", "emit_initialize_primitve() : addr to struct ref");
 
-            //write heap pointer address into reference
-            fout << indent() << "mov %rax, %rbx\n";
-            emit_pop("%rax", "emit_initialize_primitve() : addr to struct ref");
-            fout << indent() << "movq %rbx, (%rax)\n";
-        }
+        //     //initialize struct
+        //     emit_initialize_struct(rt);
+
+        //     //write heap pointer address into reference
+        //     fout << indent() << "mov %rax, %rbx\n";
+        //     emit_pop("%rax", "emit_initialize_primitve() : addr to struct ref");
+        //     fout << indent() << "movq %rbx, (%rax)\n";
+        // }
     }
     else {
         std::cout << "Tried to initialize unrecognized primitive type : " << t->to_string() << std::endl;
@@ -1322,9 +1413,8 @@ void emit_initialize_primitive(Type *t) {
     }
 }
 
-//allocates new memory on the heap then places the specified struct there
-//resulting heap pointer address is in %rax, actual struct address is in %rbx
-//just default initializes all member variables
+//expects memory address in %rax, initializes struct, returns with memory address in %rax
+//expects memory to already have been allocated
 void emit_initialize_struct(Type *t) {
     assert(t != nullptr);
 
@@ -1337,118 +1427,78 @@ void emit_initialize_struct(Type *t) {
     StructLayout *sl = get_struct_layout(t);
     assert(sl != nullptr);
 
-    if(asm_debug) fout << indent() << "# initialize struct memory " << t->to_string() << "\n";
+    if(asm_debug) fout << indent() << "# initialize struct " << t->to_string() << "\n";
+    
+    emit_push("%rax", "emit_initialize_struct() :: save original %rax");
 
-    //allocate the memory, +8 for the pointer on heap
-    emit_malloc(sl->get_size() + 8);
-
-    //save actual struct loc for later
-    //%rax is the pointer for the current location in the struct
-    emit_push("%rax", "emit_initialize_struct() : struct base ptr");
-
-    //initialize member variables
     for(int i = 0; i < sl->member_variables.size(); i++){
-        //initialize member variable
         MemberVariable *mv = sl->member_variables[i];
-        int size = mv->type->calc_size();
-        if(is_type_primitive(mv->type)) {   //primitive
+        int mv_size = calc_heap_size(mv->type);
+        if(is_type_primitive(mv->type)) {
             emit_initialize_primitive(mv->type);
         }
-        else {  //struct
-            //invoke default constructor
-            emit_push("%rax", "emit_initialize_struct() : struct ptr");
+        else {
+            //invoke struct default constructor
+            emit_push("%rax", "emit_initialize_struct() :: save %rax before constructor call");
+
+            //%rax already holds member struct memory address
             ConstructorCall *cc = new ConstructorCall(mv->type->make_copy(), {});
             assert(cc != nullptr);
-            cc->emit_asm();
+            cc->emit_asm(false);
 
-            //save reference to struct
-            fout << indent() << "mov %rax, %rbx\n";
-            emit_pop("%rax", "emit_initialize_struct() : struct ptr");
-            fout << indent() << "movq %rbx, (%rax)\n";
+            emit_pop("%rax", "emit_initialize_struct() :: save %rax before constructor call");
         }
-
-        //increment pointer
-        fout << indent() << "add $" << size << ", %rax\n";
+        
+        //increment %rax
+        fout << indent() << "add $" << mv_size << ", %rax\n";
     }
 
-    //initialize struct heap ptr
-    emit_initialize_primitive(new PointerType(t));
-    emit_pop("%rbx", "emit_initialize_struct() : struct base ptr");
-    fout << indent() << "movq %rbx, (%rax)\n";
+    emit_pop("%rax", "emit_initialize_struct() :: save original %rax");
 
     if(asm_debug) fout << indent() << "# done initialize struct memory " << t->to_string() << "\n";
 
-    //now, %rax should hold location of heap ptr, %rbx holds location of actual struct start
+    // //save actual struct loc for later
+    // //%rax is the pointer for the current location in the struct
+    // emit_push("%rax", "emit_initialize_struct() : struct base ptr");
+
+    // //initialize member variables
+    // for(int i = 0; i < sl->member_variables.size(); i++){
+    //     //initialize member variable
+    //     MemberVariable *mv = sl->member_variables[i];
+    //     int size = mv->type->calc_size();
+    //     if(is_type_primitive(mv->type)) {   //primitive
+    //         emit_initialize_primitive(mv->type);
+    //     }
+    //     else {  //struct
+    //         //invoke default constructor
+    //         emit_push("%rax", "emit_initialize_struct() : struct ptr");
+    //         ConstructorCall *cc = new ConstructorCall(mv->type->make_copy(), {});
+    //         assert(cc != nullptr);
+    //         cc->emit_asm();
+
+    //         //save reference to struct
+    //         fout << indent() << "mov %rax, %rbx\n";
+    //         emit_pop("%rax", "emit_initialize_struct() : struct ptr");
+    //         fout << indent() << "movq %rbx, (%rax)\n";
+    //     }
+
+    //     //increment pointer
+    //     fout << indent() << "add $" << size << ", %rax\n";
+    // }
+
+    // //initialize struct heap ptr
+    // emit_initialize_primitive(new PointerType(t));
+    // emit_pop("%rbx", "emit_initialize_struct() : struct base ptr");
+    // fout << indent() << "movq %rbx, (%rax)\n";
+
+    // if(asm_debug) fout << indent() << "# done initialize struct memory " << t->to_string() << "\n";
+
+    // //now, %rax should hold location of heap ptr, %rbx holds location of actual struct start
 }
 
-//gets called in ConstructorCall::resolve_called_constructor()
-//should be a mirror of emit_initialize_struct(), but with some checking
-bool _can_initialize_struct(Type *t, std::vector<Type*>& init_stack) {
-    assert(t != nullptr);
-
-    // - is this type declared?
-    if(!is_type_declared(t)) {
-        std::cout << "Type is not declared : " << t->to_string() << "\n";
-        return false;
-    }
-
-    // - have we gone too deep?
-    int struct_init_depth_limit = 32;
-    if(init_stack.size() > struct_init_depth_limit) {
-        std::cout << "Struct initialization too deep (depth > " << struct_init_depth_limit << ")\n";
-        return false;
-    }
-
-    // - is this initialization infinite recursive?
-    // this check really isn't necessary, but it's nice to have some extra info
-    for(int i = 0; i < init_stack.size(); i++){
-        if(t->equals(init_stack[i])) {
-            std::cout << "Infinite recursive struct initialization : " << t->to_string() << " contains itself\n";
-            return false;
-        }
-    }
-    
-    // - we can always initialize primitives. 
+int calc_heap_size(Type *t) {
     if(is_type_primitive(t)) {
-        return true;
-    }
-
-    init_stack.push_back(t);
-
-    //get struct layout. If the type is declared and not a primitive, it must have a struct layout
-    StructLayout *sl = get_struct_layout(t);
-    assert(sl != nullptr);
-
-    for(int i = 0; i < sl->member_variables.size(); i++){
-        MemberVariable *mv = sl->member_variables[i];
-        assert(mv != nullptr);
-
-        // - we should be able to initialize all member variables
-        if(!_can_initialize_struct(mv->type, init_stack)) {
-            return false;
-        }
-    }
-
-    init_stack.pop_back();
-
-    //all checks passed
-    return true;
-}
-
-bool can_initialize_struct(Type *t) {
-    std::vector<Type*> init_stack;
-    bool ans = _can_initialize_struct(t, init_stack);
-    assert(init_stack.size() == 0);
-    return ans;
-}
-
-int calc_sizeof(Type *t) {
-    if(is_type_primitive(t)) {
-        if(dynamic_cast<PointerType*>(t)) return 8;
-        else if(dynamic_cast<ReferenceType*>(t)) return 8;
-        else if(t->equals(new BaseType("int"))) return 8;
-        else if(t->equals(new BaseType("char"))) return 1;
-        else assert(false);
+        return t->calc_size();
     }
 
     StructLayout *sl = get_struct_layout(t);
@@ -1533,11 +1583,15 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr) {
             emit_initialize_primitive(vt);
         }
         else {
+            //allocate some memory
+            int sz = calc_heap_size(vt);
+            emit_malloc(sz);
+
             //initialize struct in memory
             emit_initialize_struct(vt);
 
             //push pointer to the stack
-            emit_push("%rbx", id->name);
+            emit_push("%rax", id->name);
         }
 
         //set stack offset
@@ -1556,17 +1610,31 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr) {
     return v;
 }
 
-//assumes reference address is in %rax
+//assumes reference type is in %rax
 //returns with value in %rax, address in %rcx
 void emit_dereference(Type *rt) {
     assert(rt != nullptr);
-    assert(dynamic_cast<ReferenceType*>(rt) != nullptr);
-
-    Type *t = dynamic_cast<ReferenceType*>(rt)->type;
-    assert(t != nullptr);
-    int sz = t->calc_size();
+    Type *t = nullptr;
+    if(auto _t = dynamic_cast<ReferenceType*>(rt)) {
+        t = _t->type;
+        
+    }
+    else if(auto _t = dynamic_cast<PointerType*>(rt)) {
+        t = _t->type;
+    }
+    else {
+        std::cout << "Can only emit dereference for pointer or reference type" << std::endl;
+        assert(false);
+    }
+    
+    assert(is_type_declared(t));
+    if(asm_debug) fout << indent() << "# dereferencing to type " << t->to_string() << "\n";
     fout << indent() << "mov %rax, %rcx\n";
-    emit_mem_retrieve(sz); 
+    if(is_type_primitive(t)) {
+        //we should only load stuff if the base type is a primitive. 
+        int sz = t->calc_size();
+        emit_mem_retrieve(sz); 
+    }
 }
 
 bool add_operator_implementation(OperatorSignature *os, OperatorImplementation *oi){

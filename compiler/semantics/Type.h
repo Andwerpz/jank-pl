@@ -10,6 +10,7 @@ struct Type {
     
     Type* remove_reference();
 
+    virtual int calc_size() = 0;
     virtual bool equals(const Type *other) const = 0;
     bool operator==(const Type& other) const;
     bool operator!=(const Type& other) const;
@@ -26,6 +27,7 @@ struct BaseType : public Type {
     BaseType(std::string _name);
     static BaseType* convert(parser::base_type *t);
 
+    int calc_size() override;
     bool equals(const Type *other) const override;
     size_t hash() const override;
     std::string to_string() override;
@@ -39,6 +41,7 @@ struct PointerType : public Type {
     Type *type;
     PointerType(Type *_type);
 
+    int calc_size() override;
     bool equals(const Type *other) const override;
     size_t hash() const override;
     std::string to_string() override;
@@ -52,6 +55,7 @@ struct ReferenceType : public Type {
     Type *type;
     ReferenceType(Type *_type);
 
+    int calc_size() override;
     bool equals(const Type *other) const override;
     size_t hash() const override;
     std::string to_string() override;
@@ -66,6 +70,7 @@ struct TemplatedType : public Type {
     std::vector<Type*> template_types;
     TemplatedType(BaseType *_base_type, std::vector<Type*> _template_types);
 
+    int calc_size() override;
     bool equals(const Type *other) const override;
     size_t hash() const override;
     std::string to_string() override;

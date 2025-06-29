@@ -1,4 +1,4 @@
-// Date Generated : 06-26-2025 23:33:20
+// Date Generated : 06-28-2025 23:42:55
 #pragma once
 #include <vector>
 #include <string>
@@ -874,7 +874,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // expr_unary = ( "++" | "--" | "+" | "-" | "~" | "!" | "*" ) , ows , expr_unary | expr_postfix ;
+    // expr_unary = ( "++" | "--" | "+" | "-" | "~" | "!" | "*" | "@" | "(" , type , ")" ) , ows , expr_unary | expr_postfix ;
     struct expr_unary {
         struct a0 {
             struct b0 {
@@ -934,6 +934,26 @@ namespace parser {
                     static c6* parse();
                     std::string to_string();
                 };
+                struct c7 {
+                    std::string t0;
+                    c7(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c7* parse();
+                    std::string to_string();
+                };
+                struct c8 {
+                    std::string t0;
+                    type *t1;
+                    std::string t2;
+                    c8(std::string _t0, type *_t1, std::string _t2) {
+                        t0 = _t0;
+                        t1 = _t1;
+                        t2 = _t2;
+                    }
+                    static c8* parse();
+                    std::string to_string();
+                };
                 bool is_c0 = false;
                 c0 *t0;
                 bool is_c1 = false;
@@ -948,6 +968,10 @@ namespace parser {
                 c5 *t5;
                 bool is_c6 = false;
                 c6 *t6;
+                bool is_c7 = false;
+                c7 *t7;
+                bool is_c8 = false;
+                c8 *t8;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -975,6 +999,14 @@ namespace parser {
                 b0(c6 *_t6) {
                     is_c6 = true;
                     t6 = _t6;
+                }
+                b0(c7 *_t7) {
+                    is_c7 = true;
+                    t7 = _t7;
+                }
+                b0(c8 *_t8) {
+                    is_c8 = true;
+                    t8 = _t8;
                 }
                 static b0* parse();
                 std::string to_string();

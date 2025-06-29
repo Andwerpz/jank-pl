@@ -85,6 +85,14 @@ bool StructDefinition::is_well_formed() {
             }
         }
     }
+    // - are all member variables not references?
+    for(int i = 0; i < member_variables.size(); i++){
+        Type *vt = member_variables[i]->type;
+        if(dynamic_cast<ReferenceType*>(vt)) {
+            std::cout << "Struct member variable cannot be reference type : " << vt->to_string() << "\n";
+            return false;
+        }
+    }
 
     // - are all the constructors actually constructing this type?
     for(int i = 0; i < constructors.size(); i++){

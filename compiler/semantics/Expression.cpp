@@ -9,6 +9,7 @@
 #include "ConstructorCall.h"
 #include "TemplateMapping.h"
 #include "OverloadCall.h"
+#include "StructLayout.h"
 
 // -- CONSTRUCTOR --
 ExprPrimary::ExprPrimary(val_t _val) {
@@ -104,7 +105,13 @@ ExprNode* ExprNode::convert(parser::expr_postfix *e) {
 
 ExprNode* ExprNode::convert(parser::expr_unary *e) {
     if(e->is_a0) {  //unary operator + unary expression
-        std::string op = e->t0->t0->to_string();
+        ExprPrefix::op_t op;
+        if(e->t0->t0->is_c8) {  //casting
+            op = Type::convert(e->t0->t0->t8->t1);
+        }
+        else {  //arithmetic operator
+            op = e->t0->t0->to_string();
+        }
         ExprNode *right = ExprNode::convert(e->t0->t2);
         return new ExprPrefix(op, right);
     }
@@ -327,9 +334,8 @@ Type* ExprBinary::resolve_type() {
                 std::cout << "Cannot assign to r-value\n";
                 return nullptr;
             }
-            OperatorImplementation *oe = find_typecast_implementation(rt, lt);
-            if(oe == nullptr) {
-                std::cout << "No direct conversion from " << rt->to_string() << " to " << lt->to_string() << "\n";
+            if(!lt->equals(rt)) {
+                std::cout << "Cannot assign " << lt->to_string() << " to " << rt->to_string() << "\n";
                 return nullptr;
             }
             return lt;
@@ -368,9 +374,31 @@ Type* ExprPrefix::resolve_type() {
             }
             return res;
         }
+        else if(str_op == "@") {
+            //right must be an l-value in order to reference
+            if(!right->is_lvalue()) {
+                std::cout << "Cannot create reference of r-value : " << right->to_string() << "\n";
+                return nullptr;
+            }
+
+            //should be able to always reference
+            return new PointerType(rt);
+        }
 
         std::cout << "Prefix operator " << str_op << " " << rt->to_string() << " does not exist\n";
         return nullptr;
+    }
+    else if(std::holds_alternative<Type*>(op)) {
+        Type *cast_t = std::get<Type*>(op);
+
+        //try to find cast operator implementation
+        OperatorImplementation *oi = find_typecast_implementation(rt, cast_t);
+        if(oi == nullptr) {
+            std::cout << "Cannot cast from " << rt->to_string() << " to " << cast_t->to_string() << "\n";
+            return nullptr;
+        }
+
+        return cast_t;
     }
     else assert(false);
 }
@@ -562,6 +590,11 @@ bool ExprPrefix::is_lvalue() {
 
         return false;
     }
+    else if(std::holds_alternative<Type*>(op)) {
+        Type *cast_t = std::get<Type*>(op);
+        //results from casts are always r-values
+        return false;
+    }
     else assert(false);
 }
 
@@ -669,25 +702,15 @@ void ExprBinary::elaborate(ExprNode*& self) {
             self = new ExprPrimary(oc);
             return;
         }
-
-        //wrap assignment of non-primitive l-values in copy constructor call
-        if(str_op == "=") {
-            Type *rt = right->resolve_type();
-            if(!is_type_primitive(rt) && right->is_lvalue()) {
-                ConstructorCall *copy = new ConstructorCall(rt->make_copy(), {new Expression(right)});
-                right = new ExprPrimary(copy);
-            }
-        }
     }
+    else assert(false);
 }
 
 void ExprPrefix::elaborate(ExprNode*& self) {
-    //when I implement casting, should turn casts into function calls
     right->elaborate(right);
 
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
-
 
         //convert overloads into overload calls
         OperatorImplementation *oe = find_operator_implementation(std::nullopt, str_op, right);
@@ -698,6 +721,13 @@ void ExprPrefix::elaborate(ExprNode*& self) {
             return;
         }
 
+        return;
+    }
+    else if(std::holds_alternative<Type*>(op)) {
+        Type *cast_t = std::get<Type*>(op);
+        Type *rt = right->resolve_type();
+
+        //for now, assume that all typecasts are builtin
         return;
     }
     else assert(false);
@@ -785,8 +815,17 @@ void ExprPrimary::emit_asm() {
         Variable *v = get_variable(id);
         assert(v != nullptr);
 
+        if(asm_debug) fout << indent() << "# load variable " << id->name << "\n";
         fout << indent() << "mov " << v->stack_offset << "(%rbp), %rax\n";  //value
-        fout << indent() << "lea " << v->stack_offset << "(%rbp), %rcx\n";  //address
+
+        //address. 
+        //For structs, they are supposed to be their main memory, so their address is the same as their value
+        if(is_type_primitive(v->type)) {
+            fout << indent() << "lea " << v->stack_offset << "(%rbp), %rcx\n";  //address
+        }
+        else {
+            fout << indent() << "mov " << v->stack_offset << "(%rbp), %rcx\n";  //address
+        }
 
         //if this is a reference, dereference it
         Type *vt = v->type;
@@ -857,25 +896,49 @@ void ExprBinary::emit_asm() {
             fout << label << ":\n";
         }
         else if(str_op == "=") {
-            //eval right r-value
-            right->emit_asm();
+            //this should be handled during elaboration
+            assert(lt->equals(rt));
 
-            //cast right into left
-            OperatorImplementation *oe = find_typecast_implementation(rt, lt);
-            assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
-            dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
+            if(is_type_primitive(lt)) {
+                //eval right r-value
+                right->emit_asm();
 
-            //save value
-            emit_push("%rax", "ExprBinary::emit_asm() : = save right");
+                //save value
+                emit_push("%rax", "ExprBinary::emit_asm() : = save right");
 
-            //evaluate left l-value
-            left->emit_asm();
+                //evaluate left l-value
+                left->emit_asm();
 
-            //move right value into left mem location
-            int sz = lt->calc_size();
-            fout << indent() << "mov %rcx, %rbx\n";
-            emit_pop("%rax", "ExprBinary::emit_asm() : = save right");
-            emit_mem_store(sz);
+                //move right value into left mem location
+                int sz = lt->calc_size();
+                fout << indent() << "mov %rcx, %rbx\n";
+                emit_pop("%rax", "ExprBinary::emit_asm() : = save right");
+                emit_mem_store(sz);
+            }
+            else {
+                //generate right struct
+                right->emit_asm();
+
+                //create temp struct reference variable 
+                push_declaration_stack();
+                if(asm_debug) fout << indent() << "# expression struct assignment tmp variable\n";
+                Identifier *id = new Identifier(create_new_tmp_variable_name());
+                Variable *v = add_variable(new ReferenceType(rt), id);
+                emit_push("%rax", id->name);
+                v->stack_offset = local_offset;
+
+                //generate left struct. %rax should now hold struct mem location
+                left->emit_asm();
+
+                //use copy constructor to overwrite left struct mem location
+                ConstructorCall *cc = new ConstructorCall(lt, {new Expression(new ExprPrimary(id))});
+                std::cout << "COPY CONSTRUCTOR : " << cc->to_string() << "\n";
+                assert(cc->resolve_called_constructor() != nullptr);
+                cc->emit_asm(false);
+
+                //clean up temp variables
+                pop_declaration_stack();
+            }
         }
         else {
             right->emit_asm();
@@ -905,13 +968,18 @@ void ExprPrefix::emit_asm() {
         std::string str_op = std::get<std::string>(op);
         assert(str_op != "(cast)"); //these should be handled seperately
         if(str_op == "*"){ 
-            if(dynamic_cast<PointerType*>(rt)) rt = dynamic_cast<PointerType*>(rt)->type;
-            else if(dynamic_cast<ReferenceType*>(rt)) rt = dynamic_cast<ReferenceType*>(rt)->type;
-            else assert(false);
-            
-            int sz = rt->calc_size();
-            fout << indent() << "mov %rax, %rcx\n";
-            emit_mem_retrieve(sz); 
+            assert(dynamic_cast<PointerType*>(rt) != nullptr);
+            emit_dereference(rt);
+            rt = dynamic_cast<PointerType*>(rt)->type;
+            assert(rt != nullptr);
+        }
+        else if(str_op == "@") {
+            assert(right->is_lvalue());
+            if(is_type_primitive(rt)) {
+                //only replace the value if it's a primitive type. 
+                //If it's a struct, then it's already equivalent to a pointer. 
+                fout << indent() << "mov %rcx, %rax\n";
+            }
         }
         else {
             OperatorImplementation *oe = find_operator_implementation(std::nullopt, str_op, right);
@@ -924,6 +992,14 @@ void ExprPrefix::emit_asm() {
                 emit_dereference(res);
             }
         }
+    }
+    else if(std::holds_alternative<Type*>(op)) {
+        Type *cast_t = std::get<Type*>(op);
+
+        //for now, assume all typecasts are builtin
+        OperatorImplementation *oi = find_typecast_implementation(rt, cast_t);
+        assert(dynamic_cast<BuiltinOperator*>(oi) != nullptr);
+        dynamic_cast<BuiltinOperator*>(oi)->emit_asm();
     }
     else assert(false);
 }
@@ -968,8 +1044,14 @@ void ExprPostfix::emit_asm() {
         //return array start
         emit_pop("%rax", "ExprPostfix::emit_asm() : [] %rax 2");
 
-        //retrieve array element data
-        emit_retrieve_array(sz);
+        if(is_type_primitive(lt)) {
+            //retrieve array element data
+            emit_retrieve_array(sz);
+        }
+        else {
+            //just return lvalue pointer to data
+            fout << indent() << "mov %rcx, %rax\n";
+        }
     }
     else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {
         std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
@@ -977,10 +1059,8 @@ void ExprPostfix::emit_asm() {
 
         //dereference
         if(p.first == "->") {
-            fout << indent() << "mov %rax, %rcx\n";
-            fout << indent() << "movq (%rax), %rax\n";
-
             assert(dynamic_cast<PointerType*>(lt) != nullptr);
+            emit_dereference(lt);
             lt = dynamic_cast<PointerType*>(lt)->type;
             assert(lt != nullptr);
         }
@@ -1006,12 +1086,12 @@ void ExprPostfix::emit_asm() {
 
         //dereference
         if(p.first == "->") {
-            fout << indent() << "mov %rax, %rcx\n";
-            fout << indent() << "movq (%rax), %rax\n";
-
+            if(asm_debug) fout << indent() << "# dereference via ->\n";
             assert(dynamic_cast<PointerType*>(lt) != nullptr);
+            emit_dereference(lt);
             lt = dynamic_cast<PointerType*>(lt)->type;
             assert(lt != nullptr);
+            if(asm_debug) fout << indent() << "# done dereference via ->\n";
         }
 
         //member variable access
@@ -1019,19 +1099,22 @@ void ExprPostfix::emit_asm() {
         assert(sl != nullptr);
         assert(sl->get_type(id) != nullptr);
 
-        std::cout << "TRY TO GET MEMBER VARIABLE : " << id->name << "\n";
-
+        Type *vt = sl->get_type(id);
         int offset = sl->get_offset(id);
-        int sz = lt->calc_size();
+        if(asm_debug) fout << indent() << "# accessing member variable " << id->name << ", offset : " << offset << "\n";
+        
+        std::cout << "TRY TO GET MEMBER VARIABLE : " << vt->to_string() << " " << id->name << "\n";
+
         fout << indent() << "lea " << offset << "(%rax), %rcx\n";
         fout << indent() << "lea " << offset << "(%rax), %rax\n";
-        emit_mem_retrieve(sz);  //now, %rax = member variable, %rcx = address of member variable
 
-        //if the return value is a reference, auto-dereference it
-        Type *vt = sl->get_type(id);
-        if(dynamic_cast<ReferenceType*>(vt)) {
-            emit_dereference(vt);
-        }
+        //only load the actual value into the register if the type is primitive
+        if(is_type_primitive(vt)) { 
+            emit_mem_retrieve(vt->calc_size());  //now, %rax = member variable, %rcx = address of member variable
+        }   
+
+        if(asm_debug) fout << indent() << "# done accessing member variable " << id->name << "\n";
+
     }
     else if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
@@ -1073,7 +1156,7 @@ std::string ExprPrimary::to_string() {
     }
     else if(std::holds_alternative<Literal*>(val)) {
         Literal *l = std::get<Literal*>(val);
-        return "<lit>";
+        return l->to_string();
     }
     else if(std::holds_alternative<Expression*>(val)) {
         Expression *e = std::get<Expression*>(val);
@@ -1098,6 +1181,10 @@ std::string ExprPrefix::to_string() {
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
         return str_op + right->to_string();
+    }
+    else if(std::holds_alternative<Type*>(op)) {
+        Type *cast_t = std::get<Type*>(op);
+        return "(" + cast_t->to_string() + ")" + right->to_string();
     }
     else assert(false);
 }
@@ -1176,6 +1263,10 @@ size_t ExprPrefix::hash() {
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
         hash_combine(hash, std::hash<std::string>()(str_op));
+    }
+    else if(std::holds_alternative<Type*>(op)) {
+        Type *cast_t = std::get<Type*>(op);
+        hash_combine(hash, cast_t->hash());
     }
     else assert(false);
     hash_combine(hash, right->hash());
@@ -1283,6 +1374,11 @@ bool ExprPrefix::equals(ExprNode* _other) {
         std::string str_op = std::get<std::string>(op);
         std::string ostr_op = std::get<std::string>(other->op);
         return str_op == ostr_op;
+    }
+    else if(std::holds_alternative<Type*>(op)) {
+        Type *cast_t = std::get<Type*>(op);
+        Type *ocast_t = std::get<Type*>(other->op);
+        return cast_t->equals(ocast_t);
     }
     else assert(false);
 }
@@ -1436,7 +1532,15 @@ ExprNode* ExprBinary::make_copy() {
 }
 
 ExprNode* ExprPrefix::make_copy() {
-    return new ExprPrefix(op, right->make_copy());
+    if(std::holds_alternative<std::string>(op)) {
+        std::string str_op = std::get<std::string>(op);
+        return new ExprPrefix(str_op, right->make_copy());
+    }
+    else if(std::holds_alternative<Type*>(op)) {
+        Type *cast_t = std::get<Type*>(op);
+        return new ExprPrefix(cast_t->make_copy(), right->make_copy());
+    }
+    else assert(false);
 }
 
 ExprNode* ExprPostfix::make_copy() {
@@ -1484,8 +1588,7 @@ bool ExprPrimary::replace_templated_types(TemplateMapping *mapping) {
     }
     else if(std::holds_alternative<Literal*>(val)) {
         Literal *l = std::get<Literal*>(val);
-        //do nothing
-        return true;
+        return l->replace_templated_types(mapping);
     }
     else if(std::holds_alternative<Expression*>(val)) {
         Expression *e = std::get<Expression*>(val);
@@ -1512,6 +1615,11 @@ bool ExprPrefix::replace_templated_types(TemplateMapping *mapping) {
     if(!right->replace_templated_types(mapping)) return false;
     if(std::holds_alternative<std::string>(op)) {
         //do nothing
+    }
+    else if(std::holds_alternative<Type*>(op)) {
+        Type *cast_t = std::get<Type*>(op);
+        if(!cast_t->replace_templated_types(mapping)) return false;
+        op = cast_t;
     }
     else assert(false);
     return true;
@@ -1593,6 +1701,10 @@ bool ExprPrefix::look_for_templates() {
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
         // do nothing
+    }
+    else if(std::holds_alternative<Type*>(op)) {
+        Type *cast_t = std::get<Type*>(op);
+        if(!cast_t->look_for_templates()) return false;
     }
     else assert(false);
     return true;
