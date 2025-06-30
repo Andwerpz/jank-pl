@@ -663,8 +663,7 @@ So, I still need to implement more generous function call resolution with partia
 some miscellaneous features:
  - continue, break (loop control statements)
  - global variables
- - importing other files 
- - floats
+ - importing other files
  - syntax error reporting, keep track of the deepest parse. 
  - reduce the amount of debug prints (enable using flags)
  - function call resolution with partial ordering
@@ -690,6 +689,7 @@ type = templated_type , [ "&" ] ;
  - cast operator
  - reference operator
  - change int, float into i64 - i8, u64 - u8, f32.
+ - floats
 
 
 Struct member functions should be called with 'this' as a pointer to the target struct. 

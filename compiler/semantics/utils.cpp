@@ -239,7 +239,7 @@ void reset_controller() {
     add_sys_function(new Function(primitives::_void, new Identifier("sys_exit"), {primitives::i64}));
 
     add_sys_function(new Function(new PointerType(primitives::_void), new Identifier("malloc"), {primitives::i64}));
-    add_sys_function(new Function(new PointerType(primitives::_void), new Identifier("int_to_string"), {primitives::i64}));
+    add_sys_function(new Function(new PointerType(primitives::u8), new Identifier("int_to_string"), {primitives::i64}));
     add_sys_function(new Function(primitives::_void, new Identifier("puts"), {new PointerType(primitives::u8)}));
     add_sys_function(new Function(primitives::_void, new Identifier("puts_endl"), {new PointerType(primitives::u8)}));
     add_sys_function(new Function(primitives::_void, new Identifier("puti"), {primitives::i64}));

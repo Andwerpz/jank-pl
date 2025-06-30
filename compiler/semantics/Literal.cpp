@@ -83,7 +83,7 @@ Literal* Literal::convert(parser::literal *l) {
 
 // -- RESOLVE TYPE --
 Type* FloatLiteral::resolve_type() {
-    assert(false);
+    return primitives::f32->make_copy();
 }
 
 Type* IntegerLiteral::resolve_type() {

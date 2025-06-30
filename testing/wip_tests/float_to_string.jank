@@ -8,7 +8,7 @@ i64 strlen(u8* str) {
     return ans;
 }
 
-u8* to_string_bad(f32 f) {
+u8* to_string(f32 f) {
     //preallocate some memory
     u8* str = (u8*) malloc(sizeof(u8) * 30);
 
@@ -40,12 +40,6 @@ u8* to_string_bad(f32 f) {
     return @str[str_start];
 }
 
-//jank reimplementation of ryu 
-
-u8* to_string(f32 f) {
-
-}
-
 i64 main() {
 
     f32 a = 1.0;
@@ -58,8 +52,9 @@ i64 main() {
 
     f32 epsilon = 0.000001;
 
-    puts_endl(to_string_bad(1234.0007));
-    puts_endl(to_string_bad(1000.000));
+    puts_endl(to_string(1234.0007));
+
+    puts_endl(to_string(1000.000));
 
     return 0;
 }
