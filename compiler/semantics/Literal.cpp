@@ -87,11 +87,11 @@ Type* FloatLiteral::resolve_type() {
 }
 
 Type* IntegerLiteral::resolve_type() {
-    return primitives::i64->make_copy();
+    return primitives::i32->make_copy();
 }
 
 Type* SizeofLiteral::resolve_type() {
-    return primitives::i64->make_copy();
+    return primitives::u64->make_copy();
 }
 
 Type* CharLiteral::resolve_type() {

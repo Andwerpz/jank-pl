@@ -236,14 +236,14 @@ void reset_controller() {
     primitives::init_primitives();
 
     // - sys functions
-    add_sys_function(new Function(primitives::_void, new Identifier("sys_exit"), {primitives::i64}));
+    add_sys_function(new Function(primitives::_void, new Identifier("sys_exit"), {primitives::i32}));
 
-    add_sys_function(new Function(new PointerType(primitives::_void), new Identifier("malloc"), {primitives::i64}));
-    add_sys_function(new Function(new PointerType(primitives::u8), new Identifier("int_to_string"), {primitives::i64}));
+    add_sys_function(new Function(new PointerType(primitives::_void), new Identifier("malloc"), {primitives::u64}));
+    add_sys_function(new Function(new PointerType(primitives::u8), new Identifier("int_to_string"), {primitives::i32}));
     add_sys_function(new Function(primitives::_void, new Identifier("puts"), {new PointerType(primitives::u8)}));
     add_sys_function(new Function(primitives::_void, new Identifier("puts_endl"), {new PointerType(primitives::u8)}));
-    add_sys_function(new Function(primitives::_void, new Identifier("puti"), {primitives::i64}));
-    add_sys_function(new Function(primitives::_void, new Identifier("puti_endl"), {primitives::i64}));
+    add_sys_function(new Function(primitives::_void, new Identifier("puti"), {primitives::i32}));
+    add_sys_function(new Function(primitives::_void, new Identifier("puti_endl"), {primitives::i32}));
 
 }
 
@@ -520,12 +520,12 @@ OperatorImplementation* find_typecast_implementation(Type *from, Type *to) {
     if(dynamic_cast<PointerType*>(from) != nullptr && dynamic_cast<PointerType*>(to) != nullptr) {
         return new BuiltinOperator(to, {});     //do nothing
     }
-    // - from is a pointer, to is an i64
-    if(dynamic_cast<PointerType*>(from) != nullptr && to->equals(primitives::i64)) {
+    // - from is a pointer, to is an u64
+    if(dynamic_cast<PointerType*>(from) != nullptr && to->equals(primitives::u64)) {
         return new BuiltinOperator(to, {});     //do nothing
     }
-    // - from is an i64, to is a pointer
-    if(from->equals(primitives::i64) && dynamic_cast<PointerType*>(to) != nullptr) {
+    // - from is an u64, to is a pointer
+    if(from->equals(primitives::u64) && dynamic_cast<PointerType*>(to) != nullptr) {
         return new BuiltinOperator(to, {});     //do nothing
     }
 
@@ -1354,8 +1354,8 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr) {
             emit_sub_rsp(8, id->name);
             fout << indent() << "lea (%rsp), %rax\n";
 
-            //this will initialize the primitive onto the stack
-            emit_initialize_primitive(vt);
+            //initialize the primitive on the stack
+            fout << indent() << "movq $0, (%rax)\n";  //just 0 initialize the entire 8 bytes
         }
         else {
             //allocate some memory

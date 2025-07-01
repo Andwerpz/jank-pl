@@ -276,11 +276,11 @@ bool ReturnStatement::is_well_formed() {
 }
 
 bool IfStatement::is_well_formed() {
-    // - do all expressions resolve to type 'i64'?
+    // - do all expressions resolve to nonvoid?
     for(int i = 0; i < exprs.size(); i++){
         Type *t = exprs[i]->resolve_type();
-        if(t == nullptr || !t->equals(primitives::i64)) {
-            std::cout << "If statement expression must resolve to type 'i64'\n";
+        if(t == nullptr || t->equals(primitives::_void)) {
+            std::cout << "If statement expression must resolve to type\n";
             return false;
         }
     }
@@ -328,10 +328,10 @@ bool IfStatement::is_well_formed() {
 }
 
 bool WhileStatement::is_well_formed() {
-    // - does the expression resolve to type 'int'?
+    // - does the expression resolve to nonvoid?
     Type *t = expr->resolve_type();
-    if(t == nullptr || !t->equals(primitives::i64)) {
-        std::cout << "While loop expression must resolve to type 'i64'\n";
+    if(t == nullptr || t->equals(primitives::_void)) {
+        std::cout << "While loop expression must resolve to nonvoid type\n";
         return false;
     }
 
@@ -374,11 +374,11 @@ bool ForStatement::is_well_formed() {
         }
     }
 
-    // - does the conditional expression resolve to type 'int'?
+    // - does the conditional expression resolve to nonvoid?
     if(expr1.has_value()) {
         Type *t = expr1.value()->resolve_type();
-        if(t == nullptr || !t->equals(primitives::i64)) {
-            std::cout << "For loop conditional expression must resolve to type 'i64'\n";
+        if(t == nullptr || t->equals(primitives::_void)) {
+            std::cout << "For loop conditional expression must resolve to type\n";
             return false;
         }
     }

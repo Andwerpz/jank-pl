@@ -179,7 +179,7 @@ bool Program::is_well_formed() {
         }
     }
 
-    // - there must be a global function with function signature 'i64 main()'
+    // - there must be a global function with function signature 'i32 main()'
     {
         FunctionSignature *main_fs = new FunctionSignature(new Identifier("main"), {});
         Function *f = get_function(main_fs);
@@ -187,8 +187,8 @@ bool Program::is_well_formed() {
             std::cout << "Missing main function\n";
             return false;
         }
-        if(!f->type->equals(primitives::i64)) {
-            std::cout << "main has wrong return type (must be i64)\n";
+        if(!f->type->equals(primitives::i32)) {
+            std::cout << "main has wrong return type (must be i32)\n";
             return false;
         }
     }

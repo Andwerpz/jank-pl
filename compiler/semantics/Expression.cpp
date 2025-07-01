@@ -423,8 +423,8 @@ Type* ExprPostfix::resolve_type() {
         }
 
         //default behaviour
-        if(!et->equals(primitives::i64)) {
-            std::cout << "Builtin indexing expression must resolve to i64\n";
+        if(find_typecast_implementation(et, primitives::u64) == nullptr) {
+            std::cout << "Builtin indexing expression must be convertible to u64\n";
             return nullptr;
         }
         if(dynamic_cast<PointerType*>(lt) == nullptr) {
@@ -1022,8 +1022,14 @@ void ExprPostfix::emit_asm() {
 
         //evaluate expression
         Expression *expr = std::get<Expression*>(op);
+        Type *et = expr->resolve_type();
         assert(expr != nullptr);
         expr->emit_asm();
+
+        //convert et to u64
+        BuiltinOperator *cast_op = dynamic_cast<BuiltinOperator*>(find_typecast_implementation(et, primitives::u64));
+        assert(cast_op != nullptr);
+        cast_op->emit_asm();
 
         //move expression value to %rbx
         fout << indent() << "mov %rax, %rbx\n";
