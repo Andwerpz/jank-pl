@@ -1,5 +1,7 @@
+#include <jstring>;
+#include <put>;
 
-void assert(i64 x) {
+void assert(i32 x) {
     if(!x) {
         puts_endl("assert failed");
         sys_exit(1);
@@ -7,8 +9,8 @@ void assert(i64 x) {
 }
 
 struct A {
-    i64 x;
-    i64 y;
+    i32 x;
+    i32 y;
 
     A() {
         
@@ -19,9 +21,9 @@ struct A {
 }
 
 struct B {
-    i64 x;
+    i32 x;
     A y;
-    i64 z;
+    i32 z;
     B() {
 
     }
@@ -33,7 +35,7 @@ struct B {
 struct C {
     A x;
     B y;
-    i64 z;
+    i32 z;
     C() {
 
     }
@@ -42,14 +44,14 @@ struct C {
     }
 }
 
-i64 main() {
+i32 main() {
 
-    i64 n = sizeof(C);
-    i64* arr = (i64*) malloc(sizeof(C));
+    i32 n = (i32) sizeof(C);
+    i32* arr = (i32*) malloc(sizeof(C));
     puts("sizeof C : ");
     puti_endl(n);
-    assert(n % 8 == 0);
-    for(i64 i = 0; i < n / 8; i++){
+    assert(n % 4 == 0);
+    for(i32 i = 0; i < n / 4; i++){
         arr[i] = i;
     }
 

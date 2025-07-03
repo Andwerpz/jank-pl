@@ -237,14 +237,9 @@ void reset_controller() {
 
     // - sys functions
     add_sys_function(new Function(primitives::_void, new Identifier("sys_exit"), {primitives::i32}));
-
-    add_sys_function(new Function(new PointerType(primitives::_void), new Identifier("malloc"), {primitives::u64}));
-    add_sys_function(new Function(new PointerType(primitives::u8), new Identifier("int_to_string"), {primitives::i32}));
-    add_sys_function(new Function(primitives::_void, new Identifier("puts"), {new PointerType(primitives::u8)}));
-    add_sys_function(new Function(primitives::_void, new Identifier("puts_endl"), {new PointerType(primitives::u8)}));
-    add_sys_function(new Function(primitives::_void, new Identifier("puti"), {primitives::i32}));
-    add_sys_function(new Function(primitives::_void, new Identifier("puti_endl"), {primitives::i32}));
-
+    add_sys_function(new Function(primitives::u64, new Identifier("sys_write"), {primitives::i32, new PointerType(primitives::_void), primitives::u64}));
+    add_sys_function(new Function(primitives::u64, new Identifier("sys_read"), {primitives::i32, new PointerType(primitives::_void), primitives::u64}));
+    add_sys_function(new Function(primitives::u64, new Identifier("sys_brk"), {primitives::u64}));
 }
 
 void hash_combine(size_t& seed, size_t value) {
@@ -1150,11 +1145,8 @@ bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_
             return false;
         }
 
-        std::cout << "BYTE OFF : " << byte_off << "\n";
-
         member_variables.push_back(mv->make_copy());
         offset_map.push_back(std::make_pair(mv->id->make_copy(), size));
-        std::cout << "COFFSET : " << mv->id->name << " " << size << "\n";
         size += byte_off - old_byte_off;
         old_byte_off = byte_off;
     }
@@ -1166,11 +1158,10 @@ bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_
     struct_layout_map.push_back({t, sl});
     assert(get_struct_layout(t) != nullptr);
 
-    std::cout << "FINISH CONSTRUCTING STRUCT LAYOUT : " << t->to_string() << "\n";
+    std::cout << "STRUCT LAYOUT : " << t->to_string() << " : " << size << "\n";
     for(int i = 0; i < offset_map.size(); i++){
         std::cout << offset_map[i].first->name << " " << offset_map[i].second << "\n";
     }
-    std::cout << "TOT SIZE : " << size << "\n";
 
     return true;
 }
@@ -1183,9 +1174,7 @@ bool construct_struct_layout(Type *t) {
 
 StructLayout* get_struct_layout(Type *t) {
     assert(t != nullptr);
-    std::cout << "TRY GET STRUCT LAYOUT : " << t->to_string() << "\n";
     for(int i = 0; i < struct_layout_map.size(); i++){
-        std::cout << "I : " << i << " " << struct_layout_map[i].first->to_string() << " " << t->equals(struct_layout_map[i].first) << "\n";
         if(struct_layout_map[i].first->equals(t)) {
             return struct_layout_map[i].second;
         }
@@ -1203,9 +1192,12 @@ StructDefinition* get_struct_definition(Type *t) {
 
 //allocates sz_bytes memory by calling malloc. Resulting address is in %rax
 void emit_malloc(int sz_bytes) {
+    FunctionSignature *malloc_signature = new FunctionSignature(new Identifier("malloc"), {primitives::u64});
+    std::string malloc_label = get_function_label(malloc_signature);
+
     fout << indent() << "mov $" << sz_bytes << ", %rax\n";
     emit_push("%rax", "emit_malloc() : malloc arg");
-    fout << indent() << "call malloc\n";
+    fout << indent() << "call " << malloc_label << "\n";
     emit_add_rsp(8, "emit_malloc() : malloc arg");
 }
 

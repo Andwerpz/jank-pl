@@ -26,6 +26,7 @@ struct FloatLiteral : public Literal {
     float val;
     FloatLiteral(float _val);
 
+    static FloatLiteral* convert(parser::literal_float *l);
     Type* resolve_type() override;
     void emit_asm() override;
     size_t hash() override;
@@ -39,6 +40,7 @@ struct IntegerLiteral : public Literal {
     int val;
     IntegerLiteral(int _val);
     
+    static IntegerLiteral* convert(parser::literal_integer *l);
     Type* resolve_type() override;
     void emit_asm() override;
     size_t hash() override;
@@ -51,7 +53,8 @@ struct IntegerLiteral : public Literal {
 struct SizeofLiteral : public Literal {
     Type *type;
     SizeofLiteral(Type *_type);
-
+    
+    static SizeofLiteral* convert(parser::literal_sizeof *l);
     Type* resolve_type() override;
     void emit_asm() override;
     size_t hash() override;
@@ -65,6 +68,7 @@ struct CharLiteral : public Literal {
     char val;
     CharLiteral(char _val);
 
+    static CharLiteral* convert(parser::literal_char *l);
     Type* resolve_type() override;
     void emit_asm() override;
     size_t hash() override;
@@ -78,6 +82,7 @@ struct StringLiteral : public Literal {
     std::string val;
     StringLiteral(std::string _val);
 
+    static StringLiteral* convert(parser::literal_string *l);
     Type* resolve_type() override;
     void emit_asm() override;
     size_t hash() override;

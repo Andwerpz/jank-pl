@@ -1,4 +1,4 @@
-// Date Generated : 06-28-2025 23:42:55
+// Date Generated : 07-01-2025 18:38:01
 #pragma once
 #include <vector>
 #include <string>
@@ -70,6 +70,7 @@ namespace parser {
     struct simple_statement;
     struct control_statement;
     struct compound_statement;
+    struct include;
     struct program;
 
     // function_definition = type , rws , identifier , ows , "(" , ows , parameter_list , ows , ")" ;
@@ -4526,7 +4527,61 @@ namespace parser {
         std::string to_string();
     };
 
-    // program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload ) } , ows ;
+    // include = "#include" , rws , ( literal_string | "<" , identifier , ">" ) , ows , ";" ;
+    struct include {
+        struct a0 {
+            struct b0 {
+                literal_string *t0;
+                b0(literal_string *_t0) {
+                    t0 = _t0;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            struct b1 {
+                std::string t0;
+                identifier *t1;
+                std::string t2;
+                b1(std::string _t0, identifier *_t1, std::string _t2) {
+                    t0 = _t0;
+                    t1 = _t1;
+                    t2 = _t2;
+                }
+                static b1* parse();
+                std::string to_string();
+            };
+            bool is_b0 = false;
+            b0 *t0;
+            bool is_b1 = false;
+            b1 *t1;
+            a0(b0 *_t0) {
+                is_b0 = true;
+                t0 = _t0;
+            }
+            a0(b1 *_t1) {
+                is_b1 = true;
+                t1 = _t1;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        std::string t0;
+        rws *t1;
+        a0 *t2;
+        ows *t3;
+        std::string t4;
+        include(std::string _t0, rws *_t1, a0 *_t2, ows *_t3, std::string _t4) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
+        }
+        static include* parse();
+        std::string to_string();
+    };
+
+    // program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload | include ) } , ows ;
     struct program {
         struct a0 {
             struct b0 {
@@ -4578,6 +4633,14 @@ namespace parser {
                     static c5* parse();
                     std::string to_string();
                 };
+                struct c6 {
+                    include *t0;
+                    c6(include *_t0) {
+                        t0 = _t0;
+                    }
+                    static c6* parse();
+                    std::string to_string();
+                };
                 bool is_c0 = false;
                 c0 *t0;
                 bool is_c1 = false;
@@ -4590,6 +4653,8 @@ namespace parser {
                 c4 *t4;
                 bool is_c5 = false;
                 c5 *t5;
+                bool is_c6 = false;
+                c6 *t6;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -4613,6 +4678,10 @@ namespace parser {
                 b0(c5 *_t5) {
                     is_c5 = true;
                     t5 = _t5;
+                }
+                b0(c6 *_t6) {
+                    is_c6 = true;
+                    t6 = _t6;
                 }
                 static b0* parse();
                 std::string to_string();

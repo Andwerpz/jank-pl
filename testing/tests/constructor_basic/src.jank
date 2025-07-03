@@ -1,5 +1,7 @@
+#include <jstring>;
+#include <put>;
 
-void assert(i64 x) {
+void assert(i32 x) {
     if(!x) {
         puts_endl("assert failed");
         sys_exit(1);
@@ -7,14 +9,14 @@ void assert(i64 x) {
 }
 
 struct A {
-    i64 val;
+    i32 val;
     A() {
         
     }
     A(A& other) {
         this.val = other.val;
     }
-    A(i64 _val) {
+    A(i32 _val) {
         this.val = _val;
     }
 }
@@ -33,7 +35,7 @@ struct B {
     }
 }
 
-i64 main() {
+i32 main() {
 
     A bar = new A(123);
     B foo = new B(new A(456));

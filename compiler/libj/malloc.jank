@@ -1,0 +1,18 @@
+
+// simple bump allocator
+// just increases the heap size every time we want to allocate more memory.
+
+void* sbrk(u64 inc) {
+    //find current break
+    u64 cur_brk = sys_brk((u64) 0);
+
+    //set new breakpoint inc bytes ahead
+    sys_brk(cur_brk + inc);
+
+    //return old breakpoint address
+    return (void*) cur_brk;
+}
+
+void* malloc(u64 sz) {
+    return sbrk(sz);
+}

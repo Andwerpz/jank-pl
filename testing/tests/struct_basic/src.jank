@@ -1,5 +1,7 @@
+#include <jstring>;
+#include <put>;
 
-void assert(i64 x) {
+void assert(i32 x) {
     if(!x) {
         puts_endl("assert failed");
         sys_exit(1);
@@ -7,8 +9,8 @@ void assert(i64 x) {
 }
 
 struct vec2 {
-    i64 x;
-    i64 y;
+    i32 x;
+    i32 y;
 
     vec2() {
         this.x = 0;
@@ -18,12 +20,12 @@ struct vec2 {
         this.x = other.x;
         this.y = other.y;
     }
-    vec2(i64 x, i64 y) {
+    vec2(i32 x, i32 y) {
         this.x = x;
         this.y = y;
     }
 
-    void pri64() {
+    void pri32() {
         puts("(");
         puti(this.x);
         puts(", ");
@@ -40,15 +42,15 @@ vec2 operator-(vec2 a, vec2 b) {
     return new vec2(a.x - b.x, a.y - b.y);
 }
 
-vec2 operator*(vec2 a, i64 s) {
+vec2 operator*(vec2 a, i32 s) {
     return new vec2(a.x * s, a.y * s);
 }
 
-vec2 operator/(vec2 a, i64 s) {
+vec2 operator/(vec2 a, i32 s) {
     return new vec2(a.x / s, a.y / s);
 }
 
-i64 operator==(vec2 a, vec2 b) {
+i32 operator==(vec2 a, vec2 b) {
     return a.x == b.x && a.y == b.y;
 }
 
@@ -61,7 +63,7 @@ struct ostream {
     }
 }
 
-ostream& operator<<(ostream& stream, i64 x) {
+ostream& operator<<(ostream& stream, i32 x) {
     puti(x);
     return stream;
 }
@@ -80,7 +82,7 @@ void vec2_test() {
         vec2 a = new vec2(1, 2);
         vec2 b = new vec2(3, 4);
         vec2 c = a + b;
-        c.pri64();
+        c.pri32();
         assert(c == new vec2(4, 6));
     }
 
@@ -91,7 +93,7 @@ void ostream_test() {
     ostream cout = new ostream();
 
     cout << "bello!!" << "\n";
-    i64 x = 100;
+    i32 x = 100;
     cout << "X : " << x << "\n";
 
     vec2 a = new vec2(69, 420);
@@ -103,7 +105,7 @@ void ostream_test() {
     puts_endl("ostream test passed");
 }
 
-i64 main() {
+i32 main() {
 
     vec2_test();
     ostream_test();

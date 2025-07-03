@@ -1,2 +1,2 @@
-sizeof C : 56
+sizeof C : 28
 test passed

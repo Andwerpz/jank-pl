@@ -1,27 +1,5 @@
-
-
-u8* to_string(u64 x) {
-    u8* str = (u8*) malloc((u64) 21);
-    i32 ptr = 20;
-    str[ptr --] = (u8) 0;
-    if(x == (u64) 0) {
-        str[ptr] = '0';
-        return @(str[ptr]);
-    }
-    while(x != (u64) 0) {
-        str[ptr --] = '0' + (u8) (x % (u64) 10);
-        x /= (u64) 10;
-    }
-    return @(str[ptr + 1]);
-}
-
-u64 strlen(u8* str) {
-    u64 ans = (u64) 0;
-    for(i32 i = 0; str[i] != '\0'; i++) {
-        ans ++;
-    }
-    return ans;
-}
+#include <jstring>;
+#include <put>;
 
 //use for sanity checking
 u8* to_string_bad(f32 f) {
@@ -34,7 +12,7 @@ u8* to_string_bad(f32 f) {
     i32 str_start = 0;
     {
         i32 a = (i32) f;
-        u8* int_str = int_to_string(a);
+        u8* int_str = to_string(a);
         u64 len = strlen(int_str);
         str_start = 15 - (i32) len;
         for(i32 i = 0; i < (i32) len; i++) {

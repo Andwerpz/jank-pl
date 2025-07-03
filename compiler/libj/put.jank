@@ -1,0 +1,18 @@
+#include <jstring>;
+
+void puts(u8* s) {
+    sys_write(1, (void*) s, strlen(s));
+}
+
+void puts_endl(u8* s) {
+    sys_write(1, (void*) s, strlen(s));
+    sys_write(1, (void*) "\n", (u64) 1);
+}
+
+void puti(i32 x) {
+    puts(to_string(x));
+}
+
+void puti_endl(i32 x) {
+    puts_endl(to_string(x));
+}

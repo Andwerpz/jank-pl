@@ -1,5 +1,7 @@
+#include <jstring>;
+#include <put>;
 
-void assert(i64 x) {
+void assert(i32 x) {
     if(!x) {
         puts_endl("assert failed");
         sys_exit(1);
@@ -7,8 +9,8 @@ void assert(i64 x) {
 }
 
 struct vec2 {
-    i64 x;
-    i64 y;
+    i32 x;
+    i32 y;
 
     vec2() {
         this.x = 0;
@@ -18,25 +20,25 @@ struct vec2 {
         this.x = other.x;
         this.y = other.y;
     }
-    vec2(i64 _x, i64 _y) {
+    vec2(i32 _x, i32 _y) {
         this.x = _x;
         this.y = _y;
     }
 }
 
 void test_basic_reference() {
-    i64 a = 42;
-    i64* p = @a;
+    i32 a = 42;
+    i32* p = @a;
     assert(*p == 42);
     puts_endl("test basic pass");
 }
 
 void test_reference_array_element() {
-    i64* arr = (i64*) malloc(sizeof(i64) * 3);
+    i32* arr = (i32*) malloc(sizeof(i32) * (u64) 3);
     arr[0] = 10;
     arr[1] = 20;
     arr[2] = 30;
-    i64* p = @arr[1];
+    i32* p = @arr[1];
     assert(*p == 20);
     *p = 50;
     assert(arr[1] == 50);
@@ -45,8 +47,8 @@ void test_reference_array_element() {
 
 void test_reference_struct_member() {
     vec2 pt = new vec2(5, 6);
-    i64* px = @pt.x;
-    i64* py = @pt.y;
+    i32* px = @pt.x;
+    i32* py = @pt.y;
     assert(*px == 5);
     assert(*py == 6);
     *px = 15;
@@ -55,7 +57,7 @@ void test_reference_struct_member() {
     puts_endl("test struct member pass");
 }
 
-i64 main() {
+i32 main() {
 
     test_basic_reference();
     test_reference_array_element();

@@ -2,6 +2,7 @@
 #include "function.ebnf" ;
 #include "struct.ebnf" ;
 #include "overload.ebnf" ;
+#include "literal.ebnf" ;
 
 (* I loooove dylan janky *)
 (*
@@ -64,5 +65,7 @@ control_statement = "if" , ows , "(" , ows ,  expression , ows , ")" , ows , sta
                   | "for" , ows , "(" , ows , [ declaration ] , ows , ";" , ows , [ expression ] , ows , ";" , ows , [ expression ] , ows , ")" , ows , statement ;
 compound_statement = "{" , ows , { statement , ows } , "}" ;
 
-program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload ) } , ows ;
+include = "#include" , rws , ( literal_string | "<" , identifier , ">" ) , ows , ";" ;
+
+program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload | include ) } , ows ;
 

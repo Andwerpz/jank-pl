@@ -1,25 +1,26 @@
-
+#include <jstring>;
+#include <put>;
 
 //merge sort
-void sort(i64* a, i64 n) {
+void sort(i32* a, i32 n) {
     if(n == 1) {
         return;
     }
-    i64 lsz = n / 2;
-    i64 rsz = n - lsz;
-    i64* l = (i64*) malloc(lsz * sizeof(i64));
-    i64* r = (i64*) malloc(rsz * sizeof(i64));
-    for(i64 i = 0; i < lsz; i = i + 1) {
+    i32 lsz = n / 2;
+    i32 rsz = n - lsz;
+    i32* l = (i32*) malloc((u64) lsz * sizeof(i32));
+    i32* r = (i32*) malloc((u64) rsz * sizeof(i32));
+    for(i32 i = 0; i < lsz; i = i + 1) {
         l[i] = a[i];
     }
-    for(i64 i = 0; i < rsz; i = i + 1){
+    for(i32 i = 0; i < rsz; i = i + 1){
         r[i] = a[i + lsz];
     }
     sort(l, lsz);
     sort(r, rsz);
-    i64 lptr = 0;
-    i64 rptr = 0;
-    for(i64 i = 0; i < n; i = i + 1) {
+    i32 lptr = 0;
+    i32 rptr = 0;
+    for(i32 i = 0; i < n; i = i + 1) {
         if(rptr == rsz) {
             a[i] = l[lptr];
             lptr = lptr + 1;
@@ -39,24 +40,24 @@ void sort(i64* a, i64 n) {
     }
 }
 
-i64 main() {
-    i64 N = 1000;
-    i64* a = (i64*) malloc(N * sizeof(i64));
+i32 main() {
+    i32 N = 1000;
+    i32* a = (i32*) malloc((u64) N * sizeof(i32));
     
     //pseudorandom array
     {
-        i64 mod = 100007;
-        i64 ptr = 1;
-        i64 mult = 67;
-        i64 add = 103;
-        for(i64 i = 0; i < N; i = i + 1) {
+        i32 mod = 100007;
+        i32 ptr = 1;
+        i32 mult = 67;
+        i32 add = 103;
+        for(i32 i = 0; i < N; i = i + 1) {
             ptr = (ptr * mult + add) % mod;
             a[i] = ptr;
         }
     }
     
     sort(a, N);
-    for(i64 i = 0; i < N; i = i + 1) {
+    for(i32 i = 0; i < N; i = i + 1) {
         puti_endl(a[i]);
     }
 

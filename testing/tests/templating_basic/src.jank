@@ -1,5 +1,7 @@
+#include <jstring>;
+#include <put>;
 
-void assert(i64 x) {
+void assert(i32 x) {
     if(!x) {
         puts_endl("assert failed");
         sys_exit(1);
@@ -15,7 +17,7 @@ struct ostream {
     }
 }
 
-ostream& operator<<(ostream& stream, i64 x) {
+ostream& operator<<(ostream& stream, i32 x) {
     puti(x);
     return stream;
 }
@@ -27,36 +29,36 @@ ostream& operator<<(ostream& stream, u8* s) {
 
 template<T>
 struct vector {
-    i64 cap;
-    i64 sz;
+    i32 cap;
+    i32 sz;
     T* arr;
 
     vector() {
         this.cap = 1;
         this.sz = 0;
-        this.arr = (T*) malloc(sizeof(T) * 1);
+        this.arr = (T*) malloc(sizeof(T) * (u64) 1);
     }
     vector(vector& other) {
         this.cap = other.cap;
         this.sz = other.sz;
-        this.arr = (T*) malloc(sizeof(T) * this.cap);
-        for(i64 i = 0; i < this.cap; i++) this.arr[i] = other.arr[i];
+        this.arr = (T*) malloc(sizeof(T) * (u64) this.cap);
+        for(i32 i = 0; i < this.cap; i++) this.arr[i] = other.arr[i];
     }
-    vector(i64 n, T default) {
+    vector(i32 n, T default) {
         this.cap = n;
         this.sz = n;
-        this.arr = (T*) malloc(sizeof(T) * n);
-        for(i64 i = 0; i < n; i++) this.arr[i] = default;
+        this.arr = (T*) malloc(sizeof(T) * (u64) n);
+        for(i32 i = 0; i < n; i++) this.arr[i] = default;
     }
 }
 
 template<T>
-T& at(vector<T>& arr, i64 ind) {
+T& at(vector<T>& arr, i32 ind) {
     return arr.arr[ind];
 }
 
 template<T>
-T& operator[](vector<T>& a, i64 ind) {
+T& operator[](vector<T>& a, i32 ind) {
     return a.arr[ind];
 }
 
@@ -79,28 +81,28 @@ struct pair {
     }
 }
 
-i64 main() {
+i32 main() {
 
-    i64 n = 10;
+    i32 n = 10;
     ostream cout = new ostream();
-    vector<vector<i64>> dp = new vector<vector<i64>>(n, new vector<i64>(n, 0));
+    vector<vector<i32>> dp = new vector<vector<i32>>(n, new vector<i32>(n, 0));
 
-    pair<i64, u8*> p = new pair<i64, u8*>(5, "asdf");
-    pair<i64, u8*> p2 = p;
+    pair<i32, u8*> p = new pair<i32, u8*>(5, "asdf");
+    pair<i32, u8*> p2 = p;
     cout << p.first << " " << p.second << "\n";
     cout << p2.first << " " << p2.second << "\n";
 
     //dp[0][0] = 1;
-    at(dp, 0) = new vector<i64>(n, 0);
+    at(dp, 0) = new vector<i32>(n, 0);
     at(dp[0], 0) = 1;
-    for(i64 i = 0; i < n; i++){
-        for(i64 j = 0; j < n; j++){
+    for(i32 i = 0; i < n; i++){
+        for(i32 j = 0; j < n; j++){
             if(i != 0) dp[i][j] += dp[i - 1][j];
             if(j != 0) dp[i][j] += dp[i][j - 1];
         }
     }
-    for(i64 i = 0; i < n; i++){
-        for(i64 j = 0; j < n; j++){
+    for(i32 i = 0; i < n; i++){
+        for(i32 j = 0; j < n; j++){
             cout << dp[i][j] << " ";
         }
         cout << "\n";

@@ -15,8 +15,13 @@
 #include "Overload.h"
 #include "TemplatedOverload.h"
 #include "primitives.h"
+#include "Include.h"
 
-Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> _overloads, std::vector<TemplatedOverload*> _templated_overloads) {
+Program::Program() {
+    // do nothing
+}
+
+Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> _overloads, std::vector<TemplatedOverload*> _templated_overloads, std::vector<Include*> _includes) {
     structs = _structs;
     functions = _functions;
     overloads = _overloads;
@@ -24,6 +29,8 @@ Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*>
     templated_structs = _templated_structs;
     templated_functions = _templated_functions;
     templated_overloads = _templated_overloads;
+
+    includes = _includes;
 }
 
 Program* Program::convert(parser::program *p) {
@@ -34,6 +41,8 @@ Program* Program::convert(parser::program *p) {
     std::vector<TemplatedStructDefinition*> templated_structs;
     std::vector<TemplatedFunction*> templated_functions;
     std::vector<TemplatedOverload*> templated_overloads;
+
+    std::vector<Include*> includes;
     for(int i = 0; i < p->t0.size(); i++){
         if(p->t0[i]->t1->is_c0) {   //function
             functions.push_back(Function::convert(p->t0[i]->t1->t0->t0));
@@ -53,9 +62,24 @@ Program* Program::convert(parser::program *p) {
         else if(p->t0[i]->t1->is_c5) {  //templated overload
             templated_overloads.push_back(TemplatedOverload::convert(p->t0[i]->t1->t5->t0));
         }
+        else if(p->t0[i]->t1->is_c6) {  //include
+            includes.push_back(Include::convert(p->t0[i]->t1->t6->t0));
+        }
         else assert(false);
     }
-    return new Program(structs, functions, templated_structs, templated_functions, overloads, templated_overloads);
+    return new Program(structs, functions, templated_structs, templated_functions, overloads, templated_overloads, includes);
+}
+
+void Program::add_all(Program *other) {
+    for(int i = 0; i < other->structs.size(); i++) structs.push_back(other->structs[i]);
+    for(int i = 0; i < other->functions.size(); i++) functions.push_back(other->functions[i]);
+    for(int i = 0; i < other->overloads.size(); i++) overloads.push_back(other->overloads[i]);
+
+    for(int i = 0; i < other->templated_structs.size(); i++) templated_structs.push_back(other->templated_structs[i]);
+    for(int i = 0; i < other->templated_functions.size(); i++) templated_functions.push_back(other->templated_functions[i]);
+    for(int i = 0; i < other->templated_overloads.size(); i++) templated_overloads.push_back(other->templated_overloads[i]);
+
+    for(int i = 0; i < other->includes.size(); i++) includes.push_back(other->includes[i]);
 }
 
 bool Program::is_well_formed() {
@@ -208,7 +232,6 @@ bool Program::is_well_formed() {
             enclosing_function = nullptr;
         }
         while(constructor_ptr < declared_constructors.size()) {
-            std::cout << "CONSTRUCTOR PTR : " << constructor_ptr << "\n";
             Constructor *c = declared_constructors[constructor_ptr ++];
             if(!c->is_well_formed()) {
                 return false;

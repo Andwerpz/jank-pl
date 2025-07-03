@@ -1,4 +1,4 @@
-// Date Generated : 06-28-2025 23:42:55
+// Date Generated : 07-01-2025 18:38:02
 #include "parser.h"
 
 namespace parser {
@@ -5773,6 +5773,78 @@ namespace parser {
         return ans;
     }
 
+    include::a0::b0* include::a0::b0::parse() {
+        push_stack();
+        literal_string *_t0 = literal_string::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new include::a0::b0(_t0);
+    }
+
+    std::string include::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    include::a0::b1* include::a0::b1::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "<") {pop_stack(); return nullptr;}
+        identifier *_t1 = identifier::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(1);
+        if(_t2 != ">") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new include::a0::b1(_t0, _t1, _t2);
+    }
+
+    std::string include::a0::b1::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2;
+        return ans;
+    }
+
+    include::a0* include::a0::parse() {
+        if(auto x = include::a0::b0::parse()) return new include::a0(x);
+        if(auto x = include::a0::b1::parse()) return new include::a0(x);
+        return nullptr;
+    }
+
+    std::string include::a0::to_string() {
+        if(is_b0) return t0->to_string();
+        if(is_b1) return t1->to_string();
+        assert(false);
+    }
+
+    include* include::parse() {
+        push_stack();
+        std::string _t0 = next_chars(8);
+        if(_t0 != "#include") {pop_stack(); return nullptr;}
+        rws *_t1 = rws::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        include::a0 *_t2 = include::a0::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t3 = ows::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t4 = next_chars(1);
+        if(_t4 != ";") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new include(_t0, _t1, _t2, _t3, _t4);
+    }
+
+    std::string include::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2->to_string();
+        ans += t3->to_string();
+        ans += t4;
+        return ans;
+    }
+
     program::a0::b0::c0* program::a0::b0::c0::parse() {
         push_stack();
         function *_t0 = function::parse();
@@ -5857,6 +5929,20 @@ namespace parser {
         return ans;
     }
 
+    program::a0::b0::c6* program::a0::b0::c6::parse() {
+        push_stack();
+        include *_t0 = include::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new program::a0::b0::c6(_t0);
+    }
+
+    std::string program::a0::b0::c6::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
     program::a0::b0* program::a0::b0::parse() {
         if(auto x = program::a0::b0::c0::parse()) return new program::a0::b0(x);
         if(auto x = program::a0::b0::c1::parse()) return new program::a0::b0(x);
@@ -5864,6 +5950,7 @@ namespace parser {
         if(auto x = program::a0::b0::c3::parse()) return new program::a0::b0(x);
         if(auto x = program::a0::b0::c4::parse()) return new program::a0::b0(x);
         if(auto x = program::a0::b0::c5::parse()) return new program::a0::b0(x);
+        if(auto x = program::a0::b0::c6::parse()) return new program::a0::b0(x);
         return nullptr;
     }
 
@@ -5874,6 +5961,7 @@ namespace parser {
         if(is_c3) return t3->to_string();
         if(is_c4) return t4->to_string();
         if(is_c5) return t5->to_string();
+        if(is_c6) return t6->to_string();
         assert(false);
     }
 

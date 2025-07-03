@@ -12,6 +12,7 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <queue>
+#include <set>
 
 #include "semantics/Program.h"
 #include "semantics/StructDefinition.h"
@@ -23,6 +24,7 @@
 #include "semantics/Parameter.h"
 #include "semantics/Constructor.h"
 #include "semantics/ConstructorSignature.h"
+#include "semantics/Include.h"
 
 #include "semantics/utils.h"
 
@@ -33,6 +35,9 @@
 #include <limits.h>
 #include <libgen.h>
 #include <sys/stat.h>
+
+std::string compiler_dir;
+std::string cwd_dir;
 
 std::string read_file(const std::string& filename) {
     std::ifstream file(filename); 
@@ -70,6 +75,14 @@ std::string extract_filename(std::string path) {
     return *(str_split(path, '/').rbegin());
 }
 
+std::string extract_folder_path(std::string path) {
+    for(int i = (int) path.size() - 1; i >= 0; i--){
+        if(path[i] == '/') return path.substr(0, i + 1);
+    }
+    //there is no '/', just return "./"
+    return "./";
+}
+
 std::string extract_stem(std::string filename) {
     for(int i = filename.size() - 1; i >= 0; i--) {
         if(filename[i] == '.') return filename.substr(0, i);
@@ -84,21 +97,71 @@ std::string extract_ext(std::string filename) {
     return "";
 }
 
+std::string cwd_rel_to_absolute(std::string path){
+    if(path[0] == '/') return path;
+    return cwd_dir + "/" + path;
+}
+
+std::string libj_to_absolute(std::string name) {
+    return compiler_dir + "/libj/" + name + ".jank";
+}
+
 int gen_asm(std::string src_path, char tmp_filename[]) {
-    Program *program = nullptr;
+    std::cout << "--- GATHERING FILES ---" << std::endl;
+    std::string program_str = "";
+    Program *program = new Program();
     {
-        std::cout << "CHECKING SYNTAX" << std::endl;
-        std::string code = read_file(src_path);
-        parser::set_s(code);
-        parser::program *p = parser::program::parse();
-        if(!parser::check_finished_parsing()) {
-            std::cout << "SYNTAX ERROR\n";
-            return 1;
+        std::queue<std::string> to_parse;
+        std::set<std::string> parsed_paths;
+
+        //include default libraries
+        std::vector<std::string> default_libj_includes = {
+            "malloc",
+        };  
+        for(std::string s : default_libj_includes) {
+            std::string npath = libj_to_absolute(s);
+            to_parse.push(npath);
+            parsed_paths.insert(npath);
         }
-        std::cout << "SYNTAX PASS" << std::endl;
-        std::cout << "CONVERTING ..." << std::endl;
-        program = Program::convert(p);
-    }
+
+        //base source file
+        to_parse.push(cwd_rel_to_absolute(src_path));
+        parsed_paths.insert(cwd_rel_to_absolute(src_path));
+
+        while(to_parse.size() != 0){
+            std::string cpath = to_parse.front();
+            to_parse.pop();
+            std::cout << cpath << std::endl;
+
+            std::string code = read_file(cpath);
+            program_str += code;
+
+            parser::set_s(code);
+            parser::program *pp = parser::program::parse();
+            if(!parser::check_finished_parsing()) {
+                std::cout << "SYNTAX ERROR\n";
+                return 1;
+            }
+
+            Program *np = Program::convert(pp);
+            program->add_all(np);
+
+            //grab all includes
+            for(int i = 0; i < np->includes.size(); i++){
+                Include *inc = np->includes[i];
+                std::string npath;
+                if(inc->is_library_include) npath = compiler_dir + "/libj/" + inc->path + ".jank";
+                else npath = cwd_rel_to_absolute(inc->path);
+
+                //check if we already parsed
+                if(parsed_paths.count(npath)) continue;
+
+                parsed_paths.insert(npath);
+                to_parse.push(npath);
+            }
+        }
+    }   
+    std::cout << "--- DONE GATHERING FILES ---" << std::endl;
 
     std::cout << "--- STRUCT DEFINITIONS ---" << std::endl;
     for(int i = 0; i < program->structs.size(); i++){
@@ -144,10 +207,6 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
     return 0;
 }
 
-std::string compiler_dir;
-
-
-
 int assemble(char src_path[], char res_path[]) {
     pid_t pid = fork();
     if(pid == 0) {
@@ -157,8 +216,6 @@ int assemble(char src_path[], char res_path[]) {
             "-nostartfiles", "-nostdlib",   //tell gcc that we're not compiling C assembly
             "-m64",         //64 bit mode?
             src_path,
-            (compiler_dir + "/asm/malloc.asm").c_str(),
-            (compiler_dir + "/asm/string.asm").c_str(),
             (compiler_dir + "/asm/syscall.asm").c_str(),
             "-o", res_path,
             (char*) NULL
@@ -201,9 +258,23 @@ int main(int argc, char* argv[]) {
         if (len != -1) {
             exe_path[len] = '\0';
             compiler_dir = dirname(exe_path);
+            std::cout << "COMPILER DIR : " << compiler_dir << "\n";
         }
         else {
             std::cout << "Could not find jjc path\n";
+            return 1;
+        }
+    }
+
+    //figure out current working directory
+    {
+        char cwd_path[PATH_MAX];
+        if (getcwd(cwd_path, sizeof(cwd_path)) != NULL) {
+            cwd_dir = std::string(cwd_path);
+            std::cout << "CWD : " << cwd_dir << "\n";
+        }
+        else {
+            std::cout << "Could not find cwd\n";
             return 1;
         }
     }
@@ -666,7 +737,6 @@ So, I still need to implement more generous function call resolution with partia
 some miscellaneous features:
  - continue, break (loop control statements)
  - global variables
- - importing other files
  - syntax error reporting, keep track of the deepest parse. 
  - reduce the amount of debug prints (enable using flags)
  - function call resolution with partial ordering
@@ -676,7 +746,6 @@ some miscellaneous features:
    shouldn't be treated the same as other operators. The input type has to exactly match, and the
    output type cannot be a reference type. 
  - autogenerated default and copy constructors. Just initialize everything to 0 and copy the struct memory blindly
- - anything that takes in a truth value should be able to accept anything. Just check if the register is 0. 
  - think about if I want auto type conversions on function calls, overloads, assignments, etc. Seems like it will make writing code much easier
 
 implemented misc features:
@@ -694,6 +763,8 @@ type = templated_type , [ "&" ] ;
  - reference operator
  - change int, float into i64 - i8, u64 - u8, f32.
  - floats
+ - importing other files
+ - anything that takes in a truth value should be able to accept anything. Just check if the register is 0.
 
 
 Struct member functions should be called with 'this' as a pointer to the target struct. 

@@ -1,0 +1,41 @@
+#include <malloc>;
+
+u64 strlen(u8* s) {
+    for(u64 i = (u64) 0; ; i++) if(s[i] == (u8) 0) return i;
+}
+
+u8* to_string(i32 x) {
+    if(x == 0) return "0";
+    i32 is_neg = x < 0;
+    if(is_neg) x *= -1;
+
+    // 1 for null terminator
+    // up to 10 for digits
+    // 1 for negative sign
+    u8* str = (u8*) malloc((u64) 12); 
+
+    i32 ptr = 11;
+    str[ptr --] = (u8) 0;
+    while(x != 0) {
+        str[ptr --] = (u8) ((i32) '0' + (x % 10));
+        x /= 10;
+    }
+    if(is_neg) str[ptr --] = '-';
+
+    return @(str[ptr + 1]);
+}
+
+u8* to_string(u64 x) {
+    u8* str = (u8*) malloc((u64) 21);
+    i32 ptr = 20;
+    str[ptr --] = (u8) 0;
+    if(x == (u64) 0) {
+        str[ptr] = '0';
+        return @(str[ptr]);
+    }
+    while(x != (u64) 0) {
+        str[ptr --] = '0' + (u8) (x % (u64) 10);
+        x /= (u64) 10;
+    }
+    return @(str[ptr + 1]);
+}

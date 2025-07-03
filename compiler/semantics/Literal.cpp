@@ -33,52 +33,72 @@ StringLiteral::StringLiteral(std::string _val) {
 
 // -- CONVERT --
 Literal* Literal::convert(parser::literal *l) {
-    if(l->is_a0) {
+    if(l->is_a0) {  //float literal
         parser::literal_float *lit = l->t0->t0;
-        float val = std::stof(lit->to_string());
-        return new FloatLiteral(val);
+        return FloatLiteral::convert(lit);
     }
     else if(l->is_a1) {  //integer literal
         parser::literal_integer *lit = l->t1->t0;
-        return new IntegerLiteral(stoi(lit->to_string()));
+        return IntegerLiteral::convert(lit);
     }
     else if(l->is_a2) { //sizeof literal
         parser::literal_sizeof *lit = l->t2->t0;
-        Type *t = Type::convert(lit->t4);
-        return new SizeofLiteral(t);
+        return SizeofLiteral::convert(lit);
     }
     else if(l->is_a3) { //char literal
-        char val;
         parser::literal_char *lit = l->t3->t0;
-        parser::literal_char::a0 *c = lit->t1;
-        if(c->is_b2) {    //escape
-            parser::escape *e = c->t2->t0;  
-            val = escape_to_char(e);
-        }
-        else {  //not escape
-            val = c->to_string()[0];
-        }
-        return new CharLiteral(val);
+        return CharLiteral::convert(lit);
     }
     else if(l->is_a4) { //string literal    
         parser::literal_string *lit = l->t4->t0;
-        std::vector<parser::literal_string::a0*> chars = lit->t1;
-        std::string val(chars.size(), ' ');
-        for(int i = 0; i < chars.size(); i++){
-            parser::literal_string::a0* c = chars[i];
-            char cchar;
-            if(c->is_b2) {  //escape
-                parser::escape *e = c->t2->t0;
-                cchar = escape_to_char(e);
-            }
-            else {
-                cchar = c->to_string()[0];
-            }
-            val[i] = cchar;
-        }
-        return new StringLiteral(val);
+        return StringLiteral::convert(lit);
     }   
     else assert(false);    
+}
+
+FloatLiteral* FloatLiteral::convert(parser::literal_float *lit) {
+    float val = std::stof(lit->to_string());
+    return new FloatLiteral(val);
+}
+
+IntegerLiteral* IntegerLiteral::convert(parser::literal_integer *lit) {
+    return new IntegerLiteral(stoi(lit->to_string()));
+}
+
+SizeofLiteral* SizeofLiteral::convert(parser::literal_sizeof *lit) {
+    Type *t = Type::convert(lit->t4);
+    return new SizeofLiteral(t);
+}
+
+CharLiteral* CharLiteral::convert(parser::literal_char *lit) {
+    char val;
+    parser::literal_char::a0 *c = lit->t1;
+    if(c->is_b2) {    //escape
+        parser::escape *e = c->t2->t0;  
+        val = escape_to_char(e);
+    }
+    else {  //not escape
+        val = c->to_string()[0];
+    }
+    return new CharLiteral(val);
+}
+
+StringLiteral* StringLiteral::convert(parser::literal_string *lit) {
+    std::vector<parser::literal_string::a0*> chars = lit->t1;
+    std::string val(chars.size(), ' ');
+    for(int i = 0; i < chars.size(); i++){
+        parser::literal_string::a0* c = chars[i];
+        char cchar;
+        if(c->is_b2) {  //escape
+            parser::escape *e = c->t2->t0;
+            cchar = escape_to_char(e);
+        }
+        else {
+            cchar = c->to_string()[0];
+        }
+        val[i] = cchar;
+    }
+    return new StringLiteral(val);
 }
 
 // -- RESOLVE TYPE --
