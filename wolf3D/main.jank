@@ -1,0 +1,9 @@
+#include <ostream>;
+#include <jstring>;
+
+i32 main() {
+
+    cout << "ASDF\n";
+
+    return 0;
+}

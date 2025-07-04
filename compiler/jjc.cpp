@@ -732,8 +732,8 @@ it's sitting somewhere in between, Overload is more like a function, while Overl
 So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
 
 some miscellaneous features:
- - for each function, keep track of what global variables, functions, overloads are available to that function. 
-   - This is determined by imports. 
+ - for each function, keep track of what global variables, structs, functions, overloads are available to that function. 
+   - This is determined by imports.
  - have some reserved keywords (break, continue, sizeof)
  - goto statement
  - make id_to_type() return a bool so that it doesn't fail an assert when a variable doesn't exist
