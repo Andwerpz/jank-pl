@@ -1315,7 +1315,6 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr, s
     assert(expr != nullptr);    //might want to later have a version that default declares types
 
     std::cout << "Initialize variable : " << vt->to_string() << " " << id->name << std::endl;
-    std::cout << "IS GLOBAL? : " << is_global << "\n";
 
     // - make sure vt is declared
     if(!is_type_declared(vt)) {

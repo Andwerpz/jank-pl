@@ -31,4 +31,12 @@ build/%.o: %.cpp
 clean:
 	rm -rf build $(TARGET)
 
+# Symlink the built compiler to /usr/local/bin/jjc
+install: $(TARGET)
+	sudo ln -sf $(abspath $(TARGET)) /usr/local/bin/jjc
+
+# Remove symlink to compiler
+uninstall:
+	sudo rm -f /usr/local/bin/jjc
+
 .PHONY: all clean

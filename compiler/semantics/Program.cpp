@@ -272,9 +272,9 @@ bool Program::is_well_formed() {
             std::string addr_str = std::to_string(i * 8) + "(%r15)";
             std::cout << "GLOBAL : " << type->to_string() << " " << id->name << "\n";
 
-            if(asm_debug) fout << "# initialize global variable : " << type->to_string() << " " << id->name << "\n";
+            if(asm_debug) fout << indent() << "# initialize global variable : " << type->to_string() << " " << id->name << "\n";
             Variable *v = emit_initialize_variable(type, id, expr, addr_str, true);
-            if(asm_debug) fout << "# done initialize global variable : " << type->to_string() << " " << id->name << "\n";
+            if(asm_debug) fout << indent() << "# done initialize global variable : " << type->to_string() << " " << id->name << "\n";
         
             if(v == nullptr) {
                 std::cout << "Failed to initialize global variable : " << type->to_string() << " " << id->name << "\n";
