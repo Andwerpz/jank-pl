@@ -16,12 +16,15 @@
 #include "TemplatedOverload.h"
 #include "primitives.h"
 #include "Include.h"
+#include "GlobalDeclaration.h"
+#include "Declaration.h"
+#include <algorithm>
 
 Program::Program() {
     // do nothing
 }
 
-Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> _overloads, std::vector<TemplatedOverload*> _templated_overloads, std::vector<Include*> _includes) {
+Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> _overloads, std::vector<TemplatedOverload*> _templated_overloads, std::vector<Include*> _includes, std::vector<GlobalDeclaration*> _global_declarations) {
     structs = _structs;
     functions = _functions;
     overloads = _overloads;
@@ -31,6 +34,8 @@ Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*>
     templated_overloads = _templated_overloads;
 
     includes = _includes;
+
+    global_declarations = _global_declarations;
 }
 
 Program* Program::convert(parser::program *p) {
@@ -43,6 +48,9 @@ Program* Program::convert(parser::program *p) {
     std::vector<TemplatedOverload*> templated_overloads;
 
     std::vector<Include*> includes;
+
+    std::vector<GlobalDeclaration*> global_declarations;
+
     for(int i = 0; i < p->t0.size(); i++){
         if(p->t0[i]->t1->is_c0) {   //function
             functions.push_back(Function::convert(p->t0[i]->t1->t0->t0));
@@ -65,9 +73,12 @@ Program* Program::convert(parser::program *p) {
         else if(p->t0[i]->t1->is_c6) {  //include
             includes.push_back(Include::convert(p->t0[i]->t1->t6->t0));
         }
+        else if(p->t0[i]->t1->is_c7) {  //global declaration
+            global_declarations.push_back(GlobalDeclaration::convert(p->t0[i]->t1->t7->t0));
+        }
         else assert(false);
     }
-    return new Program(structs, functions, templated_structs, templated_functions, overloads, templated_overloads, includes);
+    return new Program(structs, functions, templated_structs, templated_functions, overloads, templated_overloads, includes, global_declarations);
 }
 
 void Program::add_all(Program *other) {
@@ -80,6 +91,8 @@ void Program::add_all(Program *other) {
     for(int i = 0; i < other->templated_overloads.size(); i++) templated_overloads.push_back(other->templated_overloads[i]);
 
     for(int i = 0; i < other->includes.size(); i++) includes.push_back(other->includes[i]);
+    
+    for(int i = 0; i < other->global_declarations.size(); i++) global_declarations.push_back(other->global_declarations[i]);
 }
 
 bool Program::is_well_formed() {
@@ -217,6 +230,68 @@ bool Program::is_well_formed() {
         }
     }
 
+    // - initialize global variables
+    // need to set it up as if this were a function. 
+    {
+        std::cout << "INITIALIZING GLOBAL VARIABLES" << std::endl;
+
+        //create label
+        global_init_label = create_new_label();
+        fout << global_init_label << ":\n";
+
+        //setup stack frame
+        fout << indent() << "push %rbp\n";  //should not be managed by local_offset
+        fout << indent() << "mov %rsp, %rbp\n";
+        push_declaration_stack();
+
+        if(asm_debug) fout << indent() << "# start initialize global variables\n";
+
+        //resolve global declaration templates
+        std::cout << "GLOBAL AMT : " << global_declarations.size() << "\n";
+        for(int i = 0; i < global_declarations.size(); i++){
+            if(!global_declarations[i]->look_for_templates()) {
+                std::cout << "Unable to resolve templates in declaration of global variable " << global_declarations[i]->declaration->id->name << "\n";
+                return false;
+            }
+        }
+
+        //alloc memory 
+        emit_malloc(global_declarations.size() * 8);
+
+        //save global base pointer to %r15
+        fout << indent() << "mov %rax, %r15\n";
+
+        //sort by tier and initialize
+        std::sort(global_declarations.begin(), global_declarations.end(), [](GlobalDeclaration *a, GlobalDeclaration *b) -> bool {
+            return a->tier < b->tier;
+        });
+        for(int i = 0; i < global_declarations.size(); i++){
+            Type *type = global_declarations[i]->declaration->type;
+            Identifier *id = global_declarations[i]->declaration->id;
+            Expression *expr = global_declarations[i]->declaration->expr;
+            std::string addr_str = std::to_string(i * 8) + "(%r15)";
+            std::cout << "GLOBAL : " << type->to_string() << " " << id->name << "\n";
+
+            if(asm_debug) fout << "# initialize global variable : " << type->to_string() << " " << id->name << "\n";
+            Variable *v = emit_initialize_variable(type, id, expr, addr_str, true);
+            if(asm_debug) fout << "# done initialize global variable : " << type->to_string() << " " << id->name << "\n";
+        
+            if(v == nullptr) {
+                std::cout << "Failed to initialize global variable : " << type->to_string() << " " << id->name << "\n";
+                return false;
+            }
+        }
+
+        if(asm_debug) fout << indent() << "# done initialize global variables\n";
+
+        // void return 
+        pop_declaration_stack();
+        fout << indent() << "pop %rbp\n";   //should not be managed by local_offset
+        fout << indent() << "ret\n";
+
+        std::cout << "DONE INITIALIZE GLOBAL VARIABLES" << std::endl;
+    }
+
     // - check all functions and constructors, make sure they're well formed
     int function_ptr = 0;
     int constructor_ptr = 0;
@@ -250,7 +325,7 @@ bool Program::is_well_formed() {
     enclosing_program = nullptr;
 
     assert(declaration_stack.size() == 0);
-    assert(declared_variables.size() == 0);
+    assert(declared_variables.size() == global_declarations.size());
 
     return true;
 }

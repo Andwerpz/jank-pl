@@ -1024,13 +1024,16 @@ bool add_constructor(Constructor *c) {
     return true;
 }
 
-Variable* add_variable(Type *t, Identifier *id) {
+Variable* add_variable(Type *t, Identifier *id, bool is_global) {
     assert(t != nullptr && id != nullptr);
-    assert(declaration_stack.size() != 0);
-    if(is_identifier_used(id)) return nullptr;
+    if(!is_global) assert(declaration_stack.size() != 0);
+    if(is_identifier_used(id)) {
+        std::cout << "Cannot initialize " << t->to_string() << " " << id->name << " as identifier is already used\n";
+        return nullptr;
+    }
     Variable *v = new Variable(t, id);
     declared_variables.push_back(v);
-    declaration_stack.rbegin()->push_back(v);
+    if(!is_global) declaration_stack.rbegin()->push_back(v);
     return v;
 }
 
@@ -1141,7 +1144,7 @@ bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_
     
     // - handle primitives seperately
     if(is_type_primitive(t)) {
-        byte_off += calc_heap_size(t);
+        byte_off += t->calc_size();
         return true;
     }
 
@@ -1264,7 +1267,7 @@ void emit_initialize_struct(Type *t) {
 
     for(int i = 0; i < sl->member_variables.size(); i++){
         MemberVariable *mv = sl->member_variables[i];
-        int mv_size = calc_heap_size(mv->type);
+        int mv_size = mv->type->calc_size();
         if(is_type_primitive(mv->type)) {
             emit_initialize_primitive(mv->type);
         }
@@ -1289,27 +1292,30 @@ void emit_initialize_struct(Type *t) {
     if(asm_debug) fout << indent() << "# done initialize struct memory " << t->to_string() << "\n";
 }
 
-int calc_heap_size(Type *t) {
-    if(is_type_primitive(t)) {
-        return t->calc_size();
-    }
+//allocates the next stack slot and initializes the variable into it. 
+Variable* emit_initialize_stack_variable(Type *vt, Identifier *id, Expression *expr) {
+    //claim next stack slot
+    emit_sub_rsp(8, id->name);
+    std::string addr_str = std::to_string(local_offset) + "(%rbp)";
 
-    StructLayout *sl = get_struct_layout(t);
-    assert(sl != nullptr);
-    return sl->get_size();
+    //try to initialize variable
+    Variable *v = emit_initialize_variable(vt, id, expr, addr_str);
+
+    return v;
 }
-
 
 //should be logically similar to is_declarable(), except this one emits a variable declaration 
 //every variable declaration must use this except for registering parameters at the beginning of function calls
 //evaluates the expression and initializes the variable onto the top of the stack
 //if for some reason is unable to initialize the variable, returns nullptr
-Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr) { 
+//expects the address at addr_str to be already allocated
+Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr, std::string addr_str, bool is_global) { 
     assert(vt != nullptr);
     assert(id != nullptr);
     assert(expr != nullptr);    //might want to later have a version that default declares types
 
     std::cout << "Initialize variable : " << vt->to_string() << " " << id->name << std::endl;
+    std::cout << "IS GLOBAL? : " << is_global << "\n";
 
     // - make sure vt is declared
     if(!is_type_declared(vt)) {
@@ -1334,8 +1340,9 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr) {
 
     Type *et = expr->resolve_type();
     bool is_lvalue = expr->is_lvalue();
-    Variable *v = add_variable(vt, id);
+    Variable *v = add_variable(vt, id, is_global);
     assert(v != nullptr);
+    v->addr = addr_str;
 
     if(dynamic_cast<ReferenceType*>(vt) != nullptr) {
         vt = dynamic_cast<ReferenceType*>(vt)->type;
@@ -1354,14 +1361,8 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr) {
         //%rax = value, %rcx = addr
         expr->emit_asm();
 
-        //we want addr
-        fout << indent() << "mov %rcx, %rax\n";
-
-        //push to stack
-        emit_push("%rax", id->name);
-
-        //set stack offset
-        v->stack_offset = local_offset;
+        //save addr into given addr
+        fout << indent() << "movq %rcx, " << addr_str << "\n";
     }
     else {
         //split declaration into the 'declaration' and 'assignment'
@@ -1373,27 +1374,20 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr) {
 
         //'declaration'
         if(is_type_primitive(vt)) {
-            //claim next stack address
-            emit_sub_rsp(8, id->name);
-            fout << indent() << "lea (%rsp), %rax\n";
-
-            //initialize the primitive on the stack
-            fout << indent() << "movq $0, (%rax)\n";  //just 0 initialize the entire 8 bytes
+            //just 0 initialize the primitive
+            fout << indent() << "movq $0, " << addr_str << "\n";
         }
         else {
             //allocate some memory
-            int sz = calc_heap_size(vt);
+            int sz = vt->calc_size();
             emit_malloc(sz);
 
             //initialize struct in memory
             emit_initialize_struct(vt);
 
-            //push pointer to the stack
-            emit_push("%rax", id->name);
+            //save pointer to addr
+            fout << indent() << "movq %rax, " << addr_str << "\n";
         }
-
-        //set stack offset
-        v->stack_offset = local_offset;
 
         //'assignment'
         //right now, expr = b. We want expr = (a = b)

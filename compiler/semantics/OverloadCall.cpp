@@ -37,12 +37,12 @@ void OverloadCall::emit_asm() {
     int param_ptr = 0;
     if(left.has_value()) {
         Identifier *id = new Identifier(create_new_tmp_variable_name());
-        Variable *v = emit_initialize_variable(o->parameters[param_ptr ++]->type, id, new Expression(left.value()));
+        Variable *v = emit_initialize_stack_variable(o->parameters[param_ptr ++]->type, id, new Expression(left.value()));
         assert(v != nullptr);
     }
     if(right.has_value()) {
         Identifier *id = new Identifier(create_new_tmp_variable_name());
-        Variable *v = emit_initialize_variable(o->parameters[param_ptr ++]->type, id, new Expression(right.value()));
+        Variable *v = emit_initialize_stack_variable(o->parameters[param_ptr ++]->type, id, new Expression(right.value()));
         assert(v != nullptr);
     }
 

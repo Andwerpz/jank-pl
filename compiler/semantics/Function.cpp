@@ -7,6 +7,11 @@
 #include "Parameter.h"
 #include "TemplateMapping.h"
 #include "primitives.h"
+#include "GlobalDeclaration.h"
+#include "Program.h"
+#include "Declaration.h"
+#include "Expression.h"
+#include <algorithm>
 
 Function::Function(std::optional<Type*> _enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
     enclosing_type = _enclosing_type;
@@ -84,8 +89,6 @@ bool Function::is_well_formed() {
         return false;
     }
 
-    push_declaration_stack();
-
     bool is_main = FunctionSignature(new Identifier("main"), {}) == *(fs);
 
     //print function label
@@ -105,6 +108,13 @@ bool Function::is_well_formed() {
     //setup function stack frame
     fout << indent() << "push %rbp\n";  //should not be managed by local_offset
     fout << indent() << "mov %rsp, %rbp\n";
+
+    //if this is main, jump to global variable initialization
+    if(is_main) {
+        fout << indent() << "call " << global_init_label << "\n";
+    }
+
+    push_declaration_stack();
     
     for(int i = 0; i < parameters.size(); i++){
         // - does parameter correspond to existing type?
@@ -139,7 +149,7 @@ bool Function::is_well_formed() {
             std::cout << "Unable to add variable : " << vt << " " << vid << "\n";
             return false;
         }
-        v->stack_offset = local_offset;
+        v->addr = std::to_string(local_offset) + "(%rbp)";
         local_offset -= 8;
     }
     for(int i = 0; i < parameters.size(); i++){
@@ -148,7 +158,7 @@ bool Function::is_well_formed() {
             std::cout << "Unable to add variable : " << parameters[i]->type->to_string() << " " << parameters[i]->id->name << "\n";
             return false;
         }
-        v->stack_offset = local_offset;
+        v->addr = std::to_string(local_offset) + "(%rbp)";
         local_offset -= 8;
     }
 

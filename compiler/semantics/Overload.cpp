@@ -88,7 +88,7 @@ bool Overload::is_well_formed() {
             std::cout << "Unable to add variable : " << parameters[i]->type->to_string() << " " << parameters[i]->id->name << "\n";
             return false;
         }
-        v->stack_offset = local_offset;
+        v->addr = std::to_string(local_offset) + "(%rbp)";
         local_offset -= 8;
     }
 

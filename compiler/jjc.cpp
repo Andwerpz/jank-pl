@@ -731,25 +731,12 @@ it's sitting somewhere in between, Overload is more like a function, while Overl
 
 So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
 
- - remove model where all structs on the stack are just pointers. Actually push the structs onto the stack. 
- - make struct memory layout tightly packed 
-
 some miscellaneous features:
+ - for each function, keep track of what global variables, functions, overloads are available to that function. 
+   - This is determined by imports. 
  - have some reserved keywords (break, continue, sizeof)
  - goto statement
- - global variables
-   - the order in which we initialize global variables should not matter. 
-   - we can achieve this by not registering global variables as variables until we initialize all of them. 
-   - but we might want some global variables to depend on others, like 'cout' might depend on 'STDOUT'
-   - we can introduce 'tiers'. We initialize all globals of one tier before moving onto the next one. 
-     so now, the ordering in which we initialize global variables within a tier should not matter. 
-   - the issue is how can I nicely keep track of the tiers. Maybe have it such that all the tiers below 0 are used by
-     stdlib, and anything > 0 is fair game for user programs. 
-   - perhaps can have syntax like this:
-'''
-[-2] i32 STDOUT = 1;
-[-1] ostream cout = new ostream(STDOUT);
-'''
+ - make id_to_type() return a bool so that it doesn't fail an assert when a variable doesn't exist
  - extension to inline assembly: have a way to print out the address of any local (or global) variable. 
  - typedefs. Just have them be pretty much resolved template variables
  - syntax error reporting, keep track of the deepest parse. 
@@ -785,6 +772,13 @@ type = templated_type , [ "&" ] ;
    - keep a stack to maintain the nearest exit label of the loop we're in
    - also need to keep track of how many local variables we need to deallocate
    - these should be control statements, so they shouldn't have to deallocate any temp stuff
+ - global variables
+   - the order in which we initialize global variables should not matter. 
+   - we can achieve this by not registering global variables as variables until we initialize all of them. 
+   - but we might want some global variables to depend on others, like 'cout' might depend on 'STDOUT'
+   - we can introduce 'tiers'. We initialize all globals of one tier before moving onto the next one. 
+     so now, the ordering in which we initialize global variables within a tier should not matter. 
+
 
 
 Struct member functions should be called with 'this' as a pointer to the target struct. 

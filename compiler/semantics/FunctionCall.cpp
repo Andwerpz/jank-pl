@@ -71,7 +71,7 @@ void FunctionCall::emit_asm() {
     for(int i = 0; i < argument_list.size(); i++){
         fout << indent() << "# function call member variable : " << f->parameters[i]->id->name << "\n";
         Identifier *id = new Identifier(create_new_tmp_variable_name());
-        Variable *v = emit_initialize_variable(f->parameters[i]->type, id, argument_list[i]);
+        Variable *v = emit_initialize_stack_variable(f->parameters[i]->type, id, argument_list[i]);
         assert(v != nullptr);
     }
 

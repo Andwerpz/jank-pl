@@ -283,14 +283,14 @@ bool ReturnStatement::is_well_formed() {
         push_declaration_stack();
 
         // - can the expression return type be assigned to the return type of enclosing function?
-        Variable *v = emit_initialize_variable(ft, vid, expr);
+        Variable *v = emit_initialize_stack_variable(ft, vid, expr);
         if(v == nullptr) {
             std::cout << "Return expression cannot be cast to function return type, " << et->to_string() << " -> " << ft->to_string() << "\n";
             return false;
         }
 
         //put value of declared variable into %rax
-        fout << indent() << "mov " << v->stack_offset << "(%rbp), %rax\n";
+        fout << indent() << "mov " << v->addr << ", %rax\n";
 
         //clean up temp variable
         pop_declaration_stack();

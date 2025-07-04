@@ -74,7 +74,7 @@ void ConstructorCall::emit_asm(bool alloc_new) {
             }
 
             //malloc the required memory
-            int heap_sz = calc_heap_size(type);
+            int heap_sz = type->calc_size();
             emit_malloc(heap_sz);
         }
 
@@ -92,9 +92,12 @@ void ConstructorCall::emit_asm(bool alloc_new) {
         assert(c->parameters.size() == argument_list.size());
         for(int i = 0; i < argument_list.size(); i++){
             Identifier *id = new Identifier(create_new_tmp_variable_name());
-            Variable *v = emit_initialize_variable(c->parameters[i]->type, id, argument_list[i]);
+            Variable *v = emit_initialize_stack_variable(c->parameters[i]->type, id, argument_list[i]);
             assert(v != nullptr);
         }
+
+        std::cout << "STACK DESC RIGHT BEFORE CALL CONSTRUCTOR\n";
+        dump_stack_desc();
 
         //call constructor
         std::string label = get_constructor_label(c->resolve_constructor_signature());
@@ -102,6 +105,8 @@ void ConstructorCall::emit_asm(bool alloc_new) {
 
         //clean up argument temp variables
         pop_declaration_stack();
+
+        dump_stack_desc();
 
         //clean up target struct argument
         emit_add_rsp(8, "ConstructorCall::emit_asm() : target struct");
@@ -122,7 +127,7 @@ void ConstructorCall::emit_asm(bool alloc_new) {
         assert(c->parameters.size() == argument_list.size());
         for(int i = 0; i < argument_list.size(); i++){
             Identifier *id = new Identifier(create_new_tmp_variable_name());
-            Variable *v = emit_initialize_variable(c->parameters[i]->type, id, argument_list[i]);
+            Variable *v = emit_initialize_stack_variable(c->parameters[i]->type, id, argument_list[i]);
             assert(v != nullptr);
         }
 

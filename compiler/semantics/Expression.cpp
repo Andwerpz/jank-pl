@@ -817,15 +817,15 @@ void ExprPrimary::emit_asm() {
         assert(v != nullptr);
 
         if(asm_debug) fout << indent() << "# load variable " << id->name << "\n";
-        fout << indent() << "mov " << v->stack_offset << "(%rbp), %rax\n";  //value
+        fout << indent() << "mov " << v->addr << ", %rax\n";  //value
 
         //address. 
         //For structs, they are supposed to be their main memory, so their address is the same as their value
         if(is_type_primitive(v->type)) {
-            fout << indent() << "lea " << v->stack_offset << "(%rbp), %rcx\n";  //address
+            fout << indent() << "lea " << v->addr << ", %rcx\n";  //address
         }
         else {
-            fout << indent() << "mov " << v->stack_offset << "(%rbp), %rcx\n";  //address
+            fout << indent() << "mov " << v->addr << ", %rcx\n";  //address
         }
 
         //if this is a reference, dereference it
@@ -926,7 +926,7 @@ void ExprBinary::emit_asm() {
                 Identifier *id = new Identifier(create_new_tmp_variable_name());
                 Variable *v = add_variable(new ReferenceType(rt), id);
                 emit_push("%rax", id->name);
-                v->stack_offset = local_offset;
+                v->addr = std::to_string(local_offset) + "(%rbp)";
 
                 //generate left struct. %rax should now hold struct mem location
                 left->emit_asm();

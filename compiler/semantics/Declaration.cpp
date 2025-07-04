@@ -21,10 +21,11 @@ Declaration* Declaration::convert(parser::declaration *d) {
 
 bool Declaration::is_well_formed() {
     if(asm_debug) fout << indent() << "# initialize local variable : " << type->to_string() << " " << id->name << "\n";
-    Variable *v = emit_initialize_variable(type, id, expr);
+    Variable *v = emit_initialize_stack_variable(type, id, expr);
     if(asm_debug) fout << indent() << "# done initialize local variable : " << type->to_string() << " " << id->name << "\n";
 
     if(v == nullptr) {
+        std::cout << "Failed to initialize variable : " << type->to_string() << " " << id->name << "\n";
         return false;
     }
 

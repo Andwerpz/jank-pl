@@ -56,7 +56,7 @@ namespace {
 struct Variable {
     Type *type;
     Identifier *id;
-    int stack_offset;  
+    std::string addr;   //should hold something like "-8(%rbp)" or "24(%r15)"
     Variable(Type *_type, Identifier *_id);
 };
 
@@ -158,7 +158,7 @@ bool create_templated_type(TemplatedType *t);
 bool add_function(Function *f);
 bool add_sys_function(Function *f);
 bool add_constructor(Constructor *c);
-Variable* add_variable(Type *t, Identifier *id);
+Variable* add_variable(Type *t, Identifier *id, bool is_global = false);
 void remove_function(Function *f);
 void remove_variable(Identifier *id);
 void remove_constructor(Constructor *c);
@@ -171,9 +171,10 @@ StructLayout* get_struct_layout(Type *t);
 StructDefinition* get_struct_definition(Type *t);
 void emit_initialize_primitive(Type *t);
 void emit_initialize_struct(Type *t);
-int calc_heap_size(Type *t);
-Variable* emit_initialize_variable(Type* vt, Identifier *id, Expression *expr);
+Variable* emit_initialize_stack_variable(Type *vt, Identifier *id, Expression *expr);
+Variable* emit_initialize_variable(Type* vt, Identifier *id, Expression *expr, std::string addr_str, bool is_global = false);
 void emit_dereference(Type *t);
+void dump_stack_desc();
 void emit_push(std::string reg, std::string desc);
 void emit_pop(std::string reg, std::string desc);
 void emit_add_rsp(int amt, std::string desc);
@@ -210,6 +211,7 @@ inline bool asm_debug = true;
 //to pop anything, you need to provide a description, and it will only work if the descriptions match
 inline std::vector<std::string> stack_desc;  
 
+inline std::string global_init_label;
 inline int local_offset;   //tracks the value %rsp - %rbp
 
 void reset_controller();

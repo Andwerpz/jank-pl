@@ -4,83 +4,52 @@
 #include <ostream>;
 #include <assert>;
 
-void test_basic() {
-    // simple for break test
-    {
-        i32 sum = 0;
-        for(i32 i = 0; i < 10; i++){
-            if(i == 5) break;
-            sum += i;
-        }
-        assert(sum == 10);
-    }
+[0] i32 basic = 10;
+[0] i32 cntr = 0;
 
-    // simple for continue test
-    {
-        i32 sum = 0;
-        for(i32 i = 0; i < 10; i++){
-            if(i % 2 == 0) continue;
-            sum += i;
-        }
-        assert(sum == 25);
-    }
+[0] u64 arrsz = (u64) 100;
+[1] vector<i32> arr = new vector<i32>(arrsz, 0);
 
-    // simple while break test
-    {
-        i32 sum = 0;
-        i32 ptr = 0;
-        while(ptr < 10) {
-            if(ptr == 6) break;
-            sum += ptr;
-            ptr ++;
-        }   
-        assert(sum == 15);
-    }
-
-    // simple while continue test
-    {
-        i32 sum = 0;
-        i32 ptr = 0;
-        while(ptr < 10){
-            if(ptr % 2 == 0) {
-                ptr ++;
-                continue;
-            }
-            sum += ptr;
-            ptr ++;
-        }
-        assert(sum == 25);
-    }
-
-    puts_endl("test basic passed");
+void foo() {
+    cntr ++;
 }
 
-void test_nested() {
-    // continue finds innermost loop
+void bar() {
+    cntr ++;
+}
+
+void test_basic() {
+    //check that global variables can be mutated
     {
-        i32 cnt = 0;
-        i32 skipped = 0;
-        for(i32 i = 0; i < 10; i++){
-            for(i32 j = 0; j < 10; j++){
-                if(j == 5) {
-                    skipped ++;
-                    continue;
-                }
-                cnt ++;
-            }
-        }
-        assert(cnt == 90);
-        assert(skipped == 10);
+        basic += 20;
+        assert(basic == 30);
     }
 
-    puts_endl("test nested passed");
+    //check if global variables are available in multiple functions
+    {
+        foo();
+        foo();
+        bar();
+        assert(cntr == 3);
+    }
+
+    //check that structs and templates work properly
+    {
+        for(i32 i = 0; i < (i32) arrsz; i++){
+            arr[i] = i * i;
+        }
+        for(i32 i = 0; i < (i32) arrsz; i++){
+            assert(arr[i] == i * i);
+        }
+    }
+
+    cout << "test basic passed\n";
 }
 
 i32 main() {
 
     test_basic();
-    test_nested();
-    puts_endl("all tests passed");
+    cout << "all tests passed\n";
 
     return 0;
 }

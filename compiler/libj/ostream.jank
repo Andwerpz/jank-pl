@@ -1,11 +1,17 @@
 #include <put>;
 #include <jstring>;
 
+[-2] i32 STDIN = 0;
+[-2] i32 STDOUT = 1;
+[-2] i32 STDERR = 2;
+
+[-1] ostream cout = new ostream(STDOUT);
+
 struct ostream {
     i32 fd;
 
     ostream() {
-        this.fd = 1;    //STDOUT
+        this.fd = STDOUT;
     }
 
     ostream(ostream& other) {
