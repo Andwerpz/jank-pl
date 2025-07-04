@@ -1,4 +1,4 @@
-// Date Generated : 07-01-2025 18:38:01
+// Date Generated : 07-03-2025 20:05:33
 #pragma once
 #include <vector>
 #include <string>
@@ -71,6 +71,7 @@ namespace parser {
     struct control_statement;
     struct compound_statement;
     struct include;
+    struct global_declaration;
     struct program;
 
     // function_definition = type , rws , identifier , ows , "(" , ows , parameter_list , ows , ")" ;
@@ -4277,7 +4278,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // simple_statement = "return" , [ rws , expression ] , ows , ";" | declaration , ows , ";" | expression , ows , ";" ;
+    // simple_statement = "return" , [ rws , expression ] , ows , ";" | "break" , ows , ";" | "continue" , ows , ";" | declaration , ows , ";" | expression , ows , ";" | "asm!" , ows , "(" , ows , literal_string , ows , ")" , ows , ";" ;
     struct simple_statement {
         struct a0 {
             struct b0 {
@@ -4304,10 +4305,10 @@ namespace parser {
             std::string to_string();
         };
         struct a1 {
-            declaration *t0;
+            std::string t0;
             ows *t1;
             std::string t2;
-            a1(declaration *_t0, ows *_t1, std::string _t2) {
+            a1(std::string _t0, ows *_t1, std::string _t2) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -4316,15 +4317,63 @@ namespace parser {
             std::string to_string();
         };
         struct a2 {
-            expression *t0;
+            std::string t0;
             ows *t1;
             std::string t2;
-            a2(expression *_t0, ows *_t1, std::string _t2) {
+            a2(std::string _t0, ows *_t1, std::string _t2) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
             }
             static a2* parse();
+            std::string to_string();
+        };
+        struct a3 {
+            declaration *t0;
+            ows *t1;
+            std::string t2;
+            a3(declaration *_t0, ows *_t1, std::string _t2) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+            }
+            static a3* parse();
+            std::string to_string();
+        };
+        struct a4 {
+            expression *t0;
+            ows *t1;
+            std::string t2;
+            a4(expression *_t0, ows *_t1, std::string _t2) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+            }
+            static a4* parse();
+            std::string to_string();
+        };
+        struct a5 {
+            std::string t0;
+            ows *t1;
+            std::string t2;
+            ows *t3;
+            literal_string *t4;
+            ows *t5;
+            std::string t6;
+            ows *t7;
+            std::string t8;
+            a5(std::string _t0, ows *_t1, std::string _t2, ows *_t3, literal_string *_t4, ows *_t5, std::string _t6, ows *_t7, std::string _t8) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+                t4 = _t4;
+                t5 = _t5;
+                t6 = _t6;
+                t7 = _t7;
+                t8 = _t8;
+            }
+            static a5* parse();
             std::string to_string();
         };
         bool is_a0 = false;
@@ -4333,6 +4382,12 @@ namespace parser {
         a1 *t1;
         bool is_a2 = false;
         a2 *t2;
+        bool is_a3 = false;
+        a3 *t3;
+        bool is_a4 = false;
+        a4 *t4;
+        bool is_a5 = false;
+        a5 *t5;
         simple_statement(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
@@ -4344,6 +4399,18 @@ namespace parser {
         simple_statement(a2 *_t2) {
             is_a2 = true;
             t2 = _t2;
+        }
+        simple_statement(a3 *_t3) {
+            is_a3 = true;
+            t3 = _t3;
+        }
+        simple_statement(a4 *_t4) {
+            is_a4 = true;
+            t4 = _t4;
+        }
+        simple_statement(a5 *_t5) {
+            is_a5 = true;
+            t5 = _t5;
         }
         static simple_statement* parse();
         std::string to_string();
@@ -4581,7 +4648,51 @@ namespace parser {
         std::string to_string();
     };
 
-    // program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload | include ) } , ows ;
+    // global_declaration = "[" , ows , [ "-" ] , < digit > , ows , "]" , ows , declaration , ows , ";" ;
+    struct global_declaration {
+        struct a0 {
+            std::string t0;
+            a0(std::string _t0) {
+                t0 = _t0;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        struct a1 {
+            digit *t0;
+            a1(digit *_t0) {
+                t0 = _t0;
+            }
+            static a1* parse();
+            std::string to_string();
+        };
+        std::string t0;
+        ows *t1;
+        a0 *t2;
+        std::vector<a1*> t3;
+        ows *t4;
+        std::string t5;
+        ows *t6;
+        declaration *t7;
+        ows *t8;
+        std::string t9;
+        global_declaration(std::string _t0, ows *_t1, a0 *_t2, std::vector<a1*> _t3, ows *_t4, std::string _t5, ows *_t6, declaration *_t7, ows *_t8, std::string _t9) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
+            t5 = _t5;
+            t6 = _t6;
+            t7 = _t7;
+            t8 = _t8;
+            t9 = _t9;
+        }
+        static global_declaration* parse();
+        std::string to_string();
+    };
+
+    // program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload | include | global_declaration ) } , ows ;
     struct program {
         struct a0 {
             struct b0 {
@@ -4641,6 +4752,14 @@ namespace parser {
                     static c6* parse();
                     std::string to_string();
                 };
+                struct c7 {
+                    global_declaration *t0;
+                    c7(global_declaration *_t0) {
+                        t0 = _t0;
+                    }
+                    static c7* parse();
+                    std::string to_string();
+                };
                 bool is_c0 = false;
                 c0 *t0;
                 bool is_c1 = false;
@@ -4655,6 +4774,8 @@ namespace parser {
                 c5 *t5;
                 bool is_c6 = false;
                 c6 *t6;
+                bool is_c7 = false;
+                c7 *t7;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -4682,6 +4803,10 @@ namespace parser {
                 b0(c6 *_t6) {
                     is_c6 = true;
                     t6 = _t6;
+                }
+                b0(c7 *_t7) {
+                    is_c7 = true;
+                    t7 = _t7;
                 }
                 static b0* parse();
                 std::string to_string();

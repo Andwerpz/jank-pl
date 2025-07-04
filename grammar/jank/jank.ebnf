@@ -5,10 +5,6 @@
 #include "literal.ebnf" ;
 
 (* I loooove dylan janky *)
-(*
-TODO
- - global variables
-*)
 
 alpha   = "A" | "B" | "C" | "D" | "E" | "F" | "G"
         | "H" | "I" | "J" | "K" | "L" | "M" | "N"
@@ -58,8 +54,11 @@ statement = simple_statement
           | control_statement
           | compound_statement ;
 simple_statement = "return" , [ rws , expression ] , ows , ";"
+                 | "break" , ows , ";" 
+                 | "continue" , ows , ";" 
                  | declaration , ows , ";" 
-                 | expression , ows , ";" ;
+                 | expression , ows , ";" 
+                 | "asm!" , ows , "(" , ows , literal_string , ows , ")" , ows , ";" ;
 control_statement = "if" , ows , "(" , ows ,  expression , ows , ")" , ows , statement , [ rws , "else" , rws , statement ]
                   | "while" , ows , "(" , ows , expression , ows , ")" , ows , statement 
                   | "for" , ows , "(" , ows , [ declaration ] , ows , ";" , ows , [ expression ] , ows , ";" , ows , [ expression ] , ows , ")" , ows , statement ;
@@ -67,5 +66,7 @@ compound_statement = "{" , ows , { statement , ows } , "}" ;
 
 include = "#include" , rws , ( literal_string | "<" , identifier , ">" ) , ows , ";" ;
 
-program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload | include ) } , ows ;
+global_declaration = "[" , ows , [ "-" ] , < digit > , ows , "]" , ows , declaration , ows , ";" ;
+
+program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload | include | global_declaration ) } , ows ;
 

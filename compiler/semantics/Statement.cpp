@@ -8,6 +8,7 @@
 #include "utils.h"
 #include "Overload.h"
 #include "primitives.h"
+#include "Literal.h"
 
 // -- CONSTRUCTOR --
 DeclarationStatement::DeclarationStatement(Declaration *_declaration) {
@@ -21,6 +22,18 @@ ExpressionStatement::ExpressionStatement(Expression *_expr) {
 ReturnStatement::ReturnStatement(Expression* expr) {
     if(expr == nullptr) opt_expr = std::nullopt;
     else opt_expr = expr;
+}
+
+ASMStatement::ASMStatement(std::string _asm_str) {
+    asm_str = _asm_str;
+}
+
+BreakStatement::BreakStatement() {
+    //do nothing
+}
+
+ContinueStatement::ContinueStatement() {
+    //do nothing
 }
 
 IfStatement::IfStatement(std::vector<Expression*> _exprs, std::vector<Statement*> _statements, Statement *_else_statement) {
@@ -74,13 +87,23 @@ SimpleStatement* SimpleStatement::convert(parser::simple_statement *s) {
         }
         return new ReturnStatement(expr);
     }
-    else if(s->is_a1) {  //declaration
-        Declaration *declaration = Declaration::convert(s->t1->t0);
+    else if(s->is_a1) { //break 
+        return new BreakStatement();
+    }
+    else if(s->is_a2) { //continue
+        return new ContinueStatement();
+    }
+    else if(s->is_a3) {  //declaration
+        Declaration *declaration = Declaration::convert(s->t3->t0);
         return new DeclarationStatement(declaration);
     }
-    else if(s->is_a2) { //expression
-        Expression *expr = Expression::convert(s->t2->t0);
+    else if(s->is_a4) { //expression
+        Expression *expr = Expression::convert(s->t4->t0);
         return new ExpressionStatement(expr);
+    }
+    else if(s->is_a5) { //inline asm
+        std::string asm_str = StringLiteral::convert(s->t5->t4)->val;
+        return new ASMStatement(asm_str);
     }
     else assert(false);
 }
@@ -150,6 +173,19 @@ bool ReturnStatement::is_always_returning() {
     return true;
 }
 
+bool ASMStatement::is_always_returning() {
+    //not really accurate, but undefined behaviour is up to the user
+    return false;
+}
+
+bool BreakStatement::is_always_returning() {
+    return false;
+}
+
+bool ContinueStatement::is_always_returning() {
+    return false;
+}
+
 bool IfStatement::is_always_returning() {
     //every statement must return 
     for(int i = 0; i < statements.size(); i++){
@@ -170,6 +206,11 @@ bool ForStatement::is_always_returning() {
 bool CompoundStatement::is_always_returning() {
     //for now, don't worry about unreachable code
     for(int i = 0; i < statements.size(); i++){
+        //if this is a break or continue statement, the rest of this block doesn't matter
+        if(dynamic_cast<BreakStatement*>(statements[i])) return false;
+        if(dynamic_cast<ContinueStatement*>(statements[i])) return false;
+
+        //otherwise, see if it's always returning. 
         if(statements[i]->is_always_returning()) return true;
     }
     return false;
@@ -275,6 +316,62 @@ bool ReturnStatement::is_well_formed() {
     return true;
 }
 
+bool ASMStatement::is_well_formed() {
+    //let the assembler decide
+    fout << indent() << asm_str << "\n";
+    return true;
+}
+
+bool BreakStatement::is_well_formed() {
+    // - are we inside a loop?
+    if(loop_stack.size() == 0) {
+        std::cout << "Break statement must be inside a loop\n";
+        return false;
+    }
+
+    //grab the loop context
+    LoopContext *lc = *(loop_stack.rbegin());
+    assert(lc != nullptr);
+
+    //clean up local variables
+    int dl = lc->declaration_layer;
+    int tot_sz = 0;
+    for(int i = (int) declaration_stack.size() - 1; i > dl; i--) {
+        tot_sz += declaration_stack[i].size() * 8;
+    }
+    fout << indent() << "add $" << tot_sz << ", %rsp\n";    //should not be managed by local_offset
+
+    //jump to loop end label
+    fout << indent() << "jmp " << lc->end_label << "\n";
+
+    return true;
+}
+
+bool ContinueStatement::is_well_formed() {
+    // - are we inside a loop?
+    if(loop_stack.size() == 0) {
+        std::cout << "Break statement must be inside a loop\n";
+        return false;
+    }
+
+    //grab the loop context
+    LoopContext *lc = *(loop_stack.rbegin());
+    assert(lc != nullptr);
+
+    //clean up local variables
+    int dl = lc->declaration_layer;
+    int tot_sz = 0;
+    for(int i = (int) declaration_stack.size() - 1; i > dl; i--) {
+        tot_sz += declaration_stack[i].size() * 8;
+    }
+    fout << indent() << "add $" << tot_sz << ", %rsp\n";    //should not be managed by local_offset
+
+    //jump to loop assignment label
+    fout << indent() << "jmp " << lc->assignment_label << "\n";
+
+    return true;
+}
+
 bool IfStatement::is_well_formed() {
     // - do all expressions resolve to nonvoid?
     for(int i = 0; i < exprs.size(); i++){
@@ -338,7 +435,9 @@ bool WhileStatement::is_well_formed() {
     if(asm_debug) fout << indent() << "# while loop start\n";
 
     std::string loop_start_label = create_new_label();
+    std::string loop_assignment_label = create_new_label();
     std::string loop_end_label = create_new_label();
+    push_loop_stack(loop_start_label, loop_assignment_label, loop_end_label);
     fout << loop_start_label << ":\n";
 
     //check loop condition
@@ -351,10 +450,14 @@ bool WhileStatement::is_well_formed() {
         return false;
     }
 
+    //loop variable assignment (just for continue)
+    fout << loop_assignment_label << ":\n";
+
     //jump to start of loop
     fout << indent() << "jmp " << loop_start_label << "\n";
 
     //end of loop
+    pop_loop_stack(loop_start_label, loop_assignment_label, loop_end_label);
     fout << loop_end_label << ":\n";
 
     if(asm_debug) fout << indent() << "# while loop end\n";
@@ -392,7 +495,9 @@ bool ForStatement::is_well_formed() {
 
     //start of loop
     std::string loop_start_label = create_new_label();
+    std::string loop_assignment_label = create_new_label();
     std::string loop_end_label = create_new_label();
+    push_loop_stack(loop_start_label, loop_assignment_label, loop_end_label);
     fout << loop_start_label << ":\n";
 
     //check loop condition
@@ -408,12 +513,14 @@ bool ForStatement::is_well_formed() {
     }
 
     //loop variable assignment
+    fout << loop_assignment_label << ":\n";
     if(expr2.has_value()) expr2.value()->emit_asm();
 
     //jump to start of loop
     fout << indent() << "jmp " << loop_start_label << "\n";
 
     //end of loop
+    pop_loop_stack(loop_start_label, loop_assignment_label, loop_end_label);
     fout << loop_end_label << ":\n";
 
     if(asm_debug) fout << indent() << "# for loop end\n";
@@ -449,6 +556,18 @@ Statement* ReturnStatement::make_copy() {
     Expression *_expr = nullptr;
     if(opt_expr.has_value()) _expr = opt_expr.value()->make_copy();
     return new ReturnStatement(_expr);
+}
+
+Statement* ASMStatement::make_copy() {
+    return new ASMStatement(asm_str);
+}
+
+Statement* BreakStatement::make_copy(){
+    return new BreakStatement();
+}
+
+Statement* ContinueStatement::make_copy() {
+    return new ContinueStatement();
 }
 
 Statement* IfStatement::make_copy() {
@@ -508,6 +627,18 @@ bool ReturnStatement::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
+bool ASMStatement::replace_templated_types(TemplateMapping *mapping) {
+    return true;    //do nothing
+}
+
+bool BreakStatement::replace_templated_types(TemplateMapping *mapping) {
+    return true;    //do nothing
+}
+
+bool ContinueStatement::replace_templated_types(TemplateMapping *mapping) {
+    return true;    //do nothing
+}
+
 bool IfStatement::replace_templated_types(TemplateMapping *mapping) {
     for(int i = 0; i < exprs.size(); i++){
         if(!exprs[i]->replace_templated_types(mapping)) return false;
@@ -552,6 +683,18 @@ bool ExpressionStatement::look_for_templates() {
 bool ReturnStatement::look_for_templates() {
     if(opt_expr.has_value()) if(!opt_expr.value()->look_for_templates()) return false;
     return true;
+}
+
+bool ASMStatement::look_for_templates() {
+    return true;    //do nothing
+}
+
+bool BreakStatement::look_for_templates() {
+    return true;    //do nothing
+}
+
+bool ContinueStatement::look_for_templates() {
+    return true;    //do nothing
 }
 
 bool IfStatement::look_for_templates() {

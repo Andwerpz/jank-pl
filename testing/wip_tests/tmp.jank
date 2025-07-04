@@ -1,67 +1,86 @@
+#include <put>;
+#include <jstring>;
+#include <vector>;
+#include <ostream>;
+#include <assert>;
 
-void assert(int x) {
-    if(!x) {
-        puts_endl("assert failed");
-        sys_exit(1);
+void test_basic() {
+    // simple for break test
+    {
+        i32 sum = 0;
+        for(i32 i = 0; i < 10; i++){
+            if(i == 5) break;
+            sum += i;
+        }
+        assert(sum == 10);
     }
+
+    // simple for continue test
+    {
+        i32 sum = 0;
+        for(i32 i = 0; i < 10; i++){
+            if(i % 2 == 0) continue;
+            sum += i;
+        }
+        assert(sum == 25);
+    }
+
+    // simple while break test
+    {
+        i32 sum = 0;
+        i32 ptr = 0;
+        while(ptr < 10) {
+            if(ptr == 6) break;
+            sum += ptr;
+            ptr ++;
+        }   
+        assert(sum == 15);
+    }
+
+    // simple while continue test
+    {
+        i32 sum = 0;
+        i32 ptr = 0;
+        while(ptr < 10){
+            if(ptr % 2 == 0) {
+                ptr ++;
+                continue;
+            }
+            sum += ptr;
+            ptr ++;
+        }
+        assert(sum == 25);
+    }
+
+    puts_endl("test basic passed");
 }
 
-struct A {
-    int x;
-    int y;
+void test_nested() {
+    // continue finds innermost loop
+    {
+        i32 cnt = 0;
+        i32 skipped = 0;
+        for(i32 i = 0; i < 10; i++){
+            for(i32 j = 0; j < 10; j++){
+                if(j == 5) {
+                    skipped ++;
+                    continue;
+                }
+                cnt ++;
+            }
+        }
+        assert(cnt == 90);
+        assert(skipped == 10);
+    }
 
-    A() {
-        
-    }
-    A(A& other) {
-       
-    }
+    puts_endl("test nested passed");
 }
 
-struct B {
-    int x;
-    A y;
-    int z;
-    B() {
+i32 main() {
 
-    }
-    B(B& other) {
-
-    }
-}
-
-struct C {
-    A x;
-    B y;
-    int z;
-    C() {
-
-    }
-    C(C& other) {
-
-    }
-}
-
-int main() {
-
-    int n = sizeof(C);
-    int* arr = (int*) malloc(sizeof(C));
-    puts("sizeof C : ");
-    puti_endl(n);
-    assert(n % 8 == 0);
-    for(int i = 0; i < n / 8; i++){
-        arr[i] = i;
-    }
-
-    C* c = (C*) arr;
-    assert(c->x.x == 0);
-    assert(c->x.y == 1);
-    assert(c->y.x == 2);
-    assert(c->y.y.x == 3);
-    assert(c->y.y.y == 4);
-    assert(c->y.z == 5);
-    assert(c->z == 6);
-    puts_endl("test passed");
+    test_basic();
+    test_nested();
+    puts_endl("all tests passed");
 
     return 0;
 }

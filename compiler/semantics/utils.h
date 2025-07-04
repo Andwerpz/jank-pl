@@ -35,6 +35,7 @@ struct OperatorImplementation;
 struct BuiltinOperator;
 struct FunctionOperator;
 struct StructLayout;
+struct LoopContext;
 
 // -- HASHING STRUCTS --
 namespace {
@@ -57,6 +58,15 @@ struct Variable {
     Identifier *id;
     int stack_offset;  
     Variable(Type *_type, Identifier *_id);
+};
+
+//used by break and continue to know where to jump to and how many things to cleanup
+struct LoopContext {
+    std::string start_label;
+    std::string assignment_label;
+    std::string end_label;
+    int declaration_layer;
+    LoopContext(std::string _start_label, std::string assignment_label, std::string _end_label, int _declaration_layer);
 };
 
 struct OperatorSignature {
@@ -154,6 +164,8 @@ void remove_variable(Identifier *id);
 void remove_constructor(Constructor *c);
 void push_declaration_stack();
 void pop_declaration_stack();
+void push_loop_stack(std::string start_label, std::string assignment_label, std::string end_label);   //call these when the loop variables are on the top of the declaration stack
+void pop_loop_stack(std::string start_label, std::string assignment_label, std::string end_label);
 bool construct_struct_layout(Type *t);
 StructLayout* get_struct_layout(Type *t);   
 StructDefinition* get_struct_definition(Type *t);
@@ -187,7 +199,8 @@ inline std::vector<StructDefinition*> declared_structs;
 inline std::vector<Overload*> declared_overloads;
 inline std::vector<Constructor*> declared_constructors;
 inline std::vector<Variable*> declared_variables;
-inline std::stack<std::vector<Variable*>> declaration_stack;   //every 'layer' of the declaration stack should be contiguous on the stack
+inline std::vector<std::vector<Variable*>> declaration_stack;   //every 'layer' of the declaration stack should be contiguous on the stack
+inline std::vector<LoopContext*> loop_stack;
 
 //add some helpful (?) comments in the generated asm. 
 inline bool asm_debug = true;

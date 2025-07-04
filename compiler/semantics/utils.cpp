@@ -22,6 +22,13 @@ Variable::Variable(Type *_type, Identifier *_id) {
     type = _type;
 }
 
+LoopContext::LoopContext(std::string _start_label, std::string _assignment_label, std::string _end_label, int _declaration_layer) {
+    start_label = _start_label;
+    assignment_label = _assignment_label;
+    end_label = _end_label;
+    declaration_layer = _declaration_layer;
+}
+
 OperatorSignature::OperatorSignature(Type *_left, std::string _op, Type *_right) {
     assert(_left != nullptr);
     assert(_right != nullptr);
@@ -224,7 +231,7 @@ void reset_controller() {
     constructor_label_map.clear();
     
     declared_variables.clear();
-    while(declaration_stack.size()) declaration_stack.pop();
+    while(declaration_stack.size()) declaration_stack.pop_back();
     conversion_map.clear();
 
     local_offset = 0;
@@ -931,18 +938,21 @@ bool add_templated_struct(TemplatedStructDefinition *t) {
     assert(t != nullptr);
     if(is_templated_struct_declared(t)) return false;
     declared_templated_structs.push_back(t);
+    std::cout << "ADD TEMPLATED STRUCT : " << t->struct_def->type->to_string() << "\n";
     return true;
 }
 
 bool add_templated_function(TemplatedFunction *f) {
     assert(f != nullptr);
     declared_templated_functions.push_back(f);
+    std::cout << "ADD TEMPLATED FUNCTION : " << f->function->resolve_function_signature()->to_string() << "\n";
     return true;
 }
 
 bool add_templated_overload(TemplatedOverload *o) {
     assert(o != nullptr);
     declared_templated_overloads.push_back(o);
+    std::cout << "ADD TEMPLATED OVERLOAD : " << o->overload->resolve_operator_signature()->to_string() << "\n";
     return true;
 }   
 
@@ -1020,7 +1030,7 @@ Variable* add_variable(Type *t, Identifier *id) {
     if(is_identifier_used(id)) return nullptr;
     Variable *v = new Variable(t, id);
     declared_variables.push_back(v);
-    declaration_stack.top().push_back(v);
+    declaration_stack.rbegin()->push_back(v);
     return v;
 }
 
@@ -1066,14 +1076,14 @@ void remove_constructor(Constructor *c) {
 }
 
 void push_declaration_stack() {
-    declaration_stack.push(std::vector<Variable*>(0));
+    declaration_stack.push_back(std::vector<Variable*>(0));
 }
 
 void pop_declaration_stack() {
     assert(declaration_stack.size() != 0);
 
-    std::vector<Variable*> top = declaration_stack.top();
-    declaration_stack.pop();
+    std::vector<Variable*> top = *(declaration_stack.rbegin());
+    declaration_stack.pop_back();
     if(declaration_stack.size() > 0) {
         //this is not the function parameter layer, adjust %rsp
         std::vector<std::string> desc_list;
@@ -1086,6 +1096,22 @@ void pop_declaration_stack() {
     for(int i = 0; i < top.size(); i++){
         remove_variable(top[i]->id);
     }
+}
+
+void push_loop_stack(std::string start_label, std::string assignment_label, std::string end_label) {
+    assert(declaration_stack.size() != 0);
+    int declaration_layer = declaration_stack.size() - 1;
+    LoopContext *lc = new LoopContext(start_label, assignment_label, end_label, declaration_layer);
+    loop_stack.push_back(lc);
+}
+
+void pop_loop_stack(std::string start_label, std::string assignment_label, std::string end_label) {
+    assert(loop_stack.size() != 0);
+    LoopContext *lc = *(loop_stack.rbegin());
+    loop_stack.pop_back();
+    assert(lc->start_label == start_label);
+    assert(lc->assignment_label == assignment_label);
+    assert(lc->end_label == end_label);
 }
 
 bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_off) {
@@ -1285,6 +1311,11 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr) {
 
     std::cout << "Initialize variable : " << vt->to_string() << " " << id->name << std::endl;
 
+    // - make sure vt is declared
+    if(!is_type_declared(vt)) {
+        std::cout << "Type " << vt->to_string() << " is not declared\n";
+        return nullptr;
+    }
     // - make sure vt is not void
     if(vt->equals(primitives::_void)) {
         std::cout << "Cannot initialize a variable of type void\n";

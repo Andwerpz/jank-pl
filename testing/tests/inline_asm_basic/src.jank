@@ -1,0 +1,15 @@
+#include <put>;
+#include <jstring>;
+#include <vector>;
+#include <ostream>;
+
+i32 main() {
+
+    i32 x = 10;
+    asm!("lea -8(%rbp), %rax");
+    asm!("mov $20, %rbx");
+    asm!("movq %rbx, (%rax)");
+    puti_endl(x);
+
+    return 0;
+}

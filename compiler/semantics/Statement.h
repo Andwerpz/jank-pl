@@ -55,6 +55,34 @@ struct ReturnStatement : public SimpleStatement {
     bool look_for_templates() override;
 };
 
+struct ASMStatement : public SimpleStatement {
+    std::string asm_str;
+    ASMStatement(std::string _asm_str);
+    bool is_well_formed() override;
+    bool is_always_returning() override;
+    Statement* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
+    bool look_for_templates() override;
+};
+
+struct BreakStatement : public SimpleStatement {
+    BreakStatement();
+    bool is_well_formed() override;
+    bool is_always_returning() override;
+    Statement* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
+    bool look_for_templates() override;
+};
+
+struct ContinueStatement : public SimpleStatement {
+    ContinueStatement();
+    bool is_well_formed() override;
+    bool is_always_returning() override;
+    Statement* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
+    bool look_for_templates() override;
+};
+
 struct ControlStatement : public Statement {
     static ControlStatement* convert(parser::control_statement *s);
     virtual bool is_well_formed() = 0;
