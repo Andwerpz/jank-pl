@@ -116,6 +116,7 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
 
         //include default libraries
         std::vector<std::string> default_libj_includes = {
+            "syscall",
             "malloc",
         };  
         for(std::string s : default_libj_includes) {
@@ -732,6 +733,7 @@ it's sitting somewhere in between, Overload is more like a function, while Overl
 So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
 
 some miscellaneous features:
+ - add a 'syscall()' builtin expression primary that can take in a bunch of arguments and emit code to do the syscall. 
  - change syntax of typecasting from '(type)' to '$type'
    - some expressions with the old syntax are ambiguous during parsing such as '(foo) * bar'
  - should not share the same identifier table for functions and variables. 

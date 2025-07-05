@@ -1,12 +1,10 @@
 #include <ostream>;
+#include <time>;
 
 i32 main() {
 
-    i32 cnt = 0;
     while(1) {
-        cout << 0.0 << "\n";
-        cnt ++;
-        cout << "CNT : " << cnt << "\n";
+        cout << get_sys_time_ns() << "\n";
     }
 
     return 0;

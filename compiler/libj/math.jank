@@ -26,7 +26,7 @@ f32 floor(f32 x) {
     if(x < 0.0 && (f32) i != x) {
         i -= (i64) 1;
     }
-    return (f32) x;
+    return (f32) i;
 }
 
 f32 ceil(f32 x) {
@@ -34,7 +34,7 @@ f32 ceil(f32 x) {
     if(x > 0.0 && (f32) i != x) {
         i += (i64) 1;
     }
-    return (f32) x;
+    return (f32) i;
 }
 
 //returns a % b

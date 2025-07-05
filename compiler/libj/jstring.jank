@@ -1,5 +1,4 @@
 #include <malloc>;
-#include <ostream>;
 
 u64 strlen(u8* s) {
     for(u64 i = (u64) 0; ; i++) if(s[i] == (u8) 0) return i;

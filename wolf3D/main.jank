@@ -4,6 +4,7 @@
 #include <vector>;
 #include <math>;
 #include <random>;
+#include <time>;
 
 [0] Screen g_screen = new Screen();
 
@@ -16,6 +17,7 @@ struct Screen {
     u64 width;
     u64 height;
     u8* screen_buf;
+    u64 clear_sz;
 
     Screen() {
         //this.width = (u64) 192;
@@ -24,7 +26,18 @@ struct Screen {
         this.width = (u64) 96;
         this.height = (u64) 27;
 
-        this.screen_buf = (u8*) malloc((this.width + (u64) 1) * this.height);
+        this.clear_sz = (u64) 7;
+        this.screen_buf = (u8*) malloc(this.clear_sz + (this.width + (u64) 1) * this.height);
+        //this.screen_buf[0] = (u8) 27;
+        //this.screen_buf[1] = '[';
+        //this.screen_buf[2] = 'H';
+        this.screen_buf[0] = (u8) 27;
+        this.screen_buf[1] = '[';
+        this.screen_buf[2] = '2';
+        this.screen_buf[3] = 'J';
+        this.screen_buf[4] = (u8) 27;
+        this.screen_buf[5] = '[';
+        this.screen_buf[6] = 'H';
         for(i32 i = 0; i < (i32) this.height; i++){
             this[i][this.width] = '\n';
         }
@@ -34,6 +47,7 @@ struct Screen {
     Screen(Screen& other) {
         this.width = other.width;
         this.height = other.height;
+        this.clear_sz = other.clear_sz;
         this.screen_buf = other.screen_buf;
     }
 
@@ -46,17 +60,25 @@ struct Screen {
     }
 
     void render() {
-        u8* clear_str = "x[2Jx[H";
-        clear_str[0] = (u8) 27;
-        clear_str[4] = (u8) 27;
-        sys_write(STDOUT, (void*) clear_str, strlen(clear_str));
-        sys_write(STDOUT, (void*) this.screen_buf, (this.width + (u64) 1) * this.height);
+        sys_write(STDOUT, (void*) this.screen_buf, this.clear_sz + (this.width + (u64) 1) * this.height);
     }
 }
 
 u8* operator[](Screen& s, i32 ind) {
     assert(ind >= 0 && ind < (i32) s.height);
-    return @(s.screen_buf[(u64) ind * (s.width + (u64) 1)]);
+    return @(s.screen_buf[s.clear_sz + (u64) ind * (s.width + (u64) 1)]);
+}
+
+void enter_alt_screen() {
+    u8* enter_str = "x[?1049h";
+    enter_str[0] = (u8) 27;
+    sys_write(STDOUT, (void*) enter_str, strlen(enter_str));
+}
+
+void exit_alt_screen() {
+    u8* exit_str = "x[?1049l";
+    exit_str[0] = (u8) 27;
+    sys_write(STDOUT, (void*) exit_str, strlen(exit_str));
 }
 
 struct vec2 {
@@ -231,6 +253,8 @@ void print_map() {
 
 i32 main() {
 
+    enter_alt_screen();
+
     for(i32 i = 0; i < g_map_height; i++){
         for(i32 j = 0; j < g_map_width; j++){
             i32 dtw = min(min(i, g_map_height - 1 - i), min(j, g_map_width - 1 - j));
@@ -255,7 +279,19 @@ i32 main() {
     vec2 ppos = new vec2((f32) g_map_width, (f32) g_map_height);
     ppos /= 2.0;
     f32 prot = 0.0;
+
+    //timing
+    u64 target_fps = (u64) 60;
+    u64 frame_ns = (u64) 1000000000 / target_fps;
+    u64 next_frame_ns = get_sys_time_ns();
+
     while(1) {
+        //just busywait until it's time to draw the next frame
+        if(get_sys_time_ns() < next_frame_ns) {
+            continue;
+        }
+        next_frame_ns += frame_ns;
+
         //fire off all screen rays
         f32 screen_width = 0.5;
         f32 screen_dist = 0.5;
@@ -263,10 +299,9 @@ i32 main() {
         vec2 cdir = new vec2(1.0, 0.0);
         cdir.rotateCCW(prot);
 
-        ppos = cdir * 3.0;
+        ppos = cdir * 2.5;
         ppos.rotateCCW(-PI);
         ppos += (new vec2((f32) g_map_width, (f32) g_map_height)) * 0.5;
-        
 
         g_screen.clear();
 
@@ -292,22 +327,16 @@ i32 main() {
             }
         }
         g_screen.render();
+
         cout << "PROT : " << prot << "\n";
         cout << "INCAMT : " << incamt << "\n";
-        {
-            vec2 tmp_dir = new vec2(1.0, 0.0);
-            tmp_dir.rotateCCW(prot);
-            cout << "DIR : " << tmp_dir << "\n";
-        }
+        cout << "CDIR : " << cdir << "\n";
         cout << "PPOS : " << ppos << "\n";
-        prot += 0.001;
-
-       
+        //cout << floor(ppos.x) << " " << ceil(ppos.x) << "\n";
+        prot += 0.0025;  
     }
 
-    cout << to_string(-PI / 2.0) << "\n";
-    cout << to_string(sin(-PI / 2.0)) << "\n";
-    cout << to_string(cos(PI)) << "\n";
+    exit_alt_screen();
 
     return 0;
 }
