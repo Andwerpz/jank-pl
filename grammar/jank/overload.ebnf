@@ -1,14 +1,14 @@
 #include "jank.ebnf" ;
 
-(* TODO should add compound assignment operators as overloadable *)
+(* TODO figure out to do with user defined casts *)
 
 overloadable_operator = "++x" | "--x" | "x++" | "x--" |
                         "*x" |
+                        "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" |
                         "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" |
                         "==" | "!=" | "<" | "<=" | ">" | ">=" |
                         "[]" | 
-                        "=" |
-                        "(cast)" ;
+                        "=" ;
 
 overload_definition = type , rws , "operator" , overloadable_operator , ows , "(" , ows , parameter_list , ows , ")" ;
 overload = overload_definition , ows , compound_statement ;

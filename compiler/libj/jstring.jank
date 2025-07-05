@@ -1,4 +1,5 @@
 #include <malloc>;
+#include <ostream>;
 
 u64 strlen(u8* s) {
     for(u64 i = (u64) 0; ; i++) if(s[i] == (u8) 0) return i;
@@ -38,4 +39,85 @@ u8* to_string(u64 x) {
         x /= (u64) 10;
     }
     return @(str[ptr + 1]);
+}
+
+//jank implementation of float to string
+//each float consists of
+// - 1 sign bit
+// - 8 exponent bits
+// - 23 mantissa bits (+1 implied bit) 
+
+//normally, the value represented is equal to
+// (-1)^sign + 2^(exp - 127) * (1 + mantissa / 2^23)
+//except for when exp == 0, then the value is 
+// (-1)^sign + 2^(-126) * (mantissa / 2^23)
+//and when exp == 255, the value is 
+// (-1)^sign * inf
+
+//so my idea is to construct the base 2 representation of the float, this is exact. 
+//can then represent the integer portion exactly using decimal,
+//represent the fractional portion approximately by using bigint addition
+//currently doesn't have bigint addition, so can only accurately print floats of magnitude up to 2^60
+//also doesn't account for denormalization, NaN, inf. 
+u8* to_string(f32 f) {
+    u32 fbits = * (u32*) (@f);
+
+    u32 sgn = (fbits & (u32) (1 << 31));
+    u32 exp = (fbits & (u32) (((1 << 8) - 1) << 23));
+    u32 mantissa = (fbits & (u32) ((1 << 23) - 1));
+
+    sgn >>= (u32) 31;
+    exp >>= (u32) 23;
+    mantissa >>= (u32) 0;
+    mantissa |= (u32) (1 << 23);    //implied bit
+
+    //generate exact base2 representation 
+    u8* base2 = (u8*) malloc((u64) 512);
+    for(i32 i = 0; i < 512; i++){
+        base2[i] = (u8) 0;
+    }
+
+    u64 zind = (u64) 255;
+    for(u32 i = (u32) 0; i < (u32) 24; i++){
+        u64 ind = zind + (u64) exp - (u64) 127 + (u64) i - (u64) 23;
+        if(mantissa & (u32) (1 << (i32) i)) base2[ind] = (u8) 1;
+    }
+
+    //generate int portion
+    u64 int_por = (u64) 0;
+    for(i32 i = 0; i < 60; i++){
+        if(base2[i + (i32) zind]) int_por += ((u64) 1 << (u64) i);
+    }
+
+    //generate fractional portion
+    i32 frac_precision = 13;
+    u64 frac_por = (u64) 0;
+    u64 pow2 = (u64) 1;
+    for(i32 i = 0; i < frac_precision; i++){
+        pow2 *= (u64) 10;
+    }
+    pow2 /= (u64) 2;
+    for(i32 i = (i32) zind - 1; i >= 0; i--){
+        if(base2[i]) frac_por += pow2;
+        pow2 /= (u64) 2;
+    }
+
+    u8* int_str = to_string(int_por);
+    u8* frac_str = to_string(frac_por);
+
+    i32 int_len = (i32) strlen(int_str);
+    i32 frac_len = (i32) strlen(frac_str);
+    i32 len = int_len + frac_precision + 1;
+    if(sgn) len += 1;
+
+    u8* out_str = (u8*) malloc((u64) (len + 1));
+    i32 ptr = 0;
+    if(sgn) out_str[ptr ++] = '-';
+    for(i32 i = 0; i < int_len; i++) out_str[ptr ++] = int_str[i];
+    out_str[ptr ++] = '.';
+    for(i32 i = 0; i < frac_precision - frac_len; i++) out_str[ptr ++] = '0';
+    for(i32 i = 0; i < frac_len; i++) out_str[ptr ++] = frac_str[i];
+    out_str[ptr ++] = (u8) 0;
+    
+    return out_str;
 }

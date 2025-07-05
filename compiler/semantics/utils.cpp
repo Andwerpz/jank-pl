@@ -247,6 +247,7 @@ void reset_controller() {
     add_sys_function(new Function(primitives::u64, new Identifier("sys_write"), {primitives::i32, new PointerType(primitives::_void), primitives::u64}));
     add_sys_function(new Function(primitives::u64, new Identifier("sys_read"), {primitives::i32, new PointerType(primitives::_void), primitives::u64}));
     add_sys_function(new Function(primitives::u64, new Identifier("sys_brk"), {primitives::u64}));
+    add_sys_function(new Function(primitives::u64, new Identifier("sys_getrandom"), {new PointerType(primitives::_void), primitives::u64, primitives::u64}));
 }
 
 void hash_combine(size_t& seed, size_t value) {

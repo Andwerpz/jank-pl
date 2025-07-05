@@ -1,4 +1,4 @@
-// Date Generated : 07-03-2025 20:05:33
+// Date Generated : 07-05-2025 10:42:47
 #include "parser.h"
 
 namespace parser {
@@ -2344,8 +2344,8 @@ namespace parser {
 
     overloadable_operator::a5* overloadable_operator::a5::parse() {
         push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "+") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(2);
+        if(_t0 != "+=") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a5(_t0);
     }
@@ -2358,8 +2358,8 @@ namespace parser {
 
     overloadable_operator::a6* overloadable_operator::a6::parse() {
         push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "-") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(2);
+        if(_t0 != "-=") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a6(_t0);
     }
@@ -2372,8 +2372,8 @@ namespace parser {
 
     overloadable_operator::a7* overloadable_operator::a7::parse() {
         push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "*") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(2);
+        if(_t0 != "*=") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a7(_t0);
     }
@@ -2386,8 +2386,8 @@ namespace parser {
 
     overloadable_operator::a8* overloadable_operator::a8::parse() {
         push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "/") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(2);
+        if(_t0 != "/=") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a8(_t0);
     }
@@ -2400,8 +2400,8 @@ namespace parser {
 
     overloadable_operator::a9* overloadable_operator::a9::parse() {
         push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "%") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(2);
+        if(_t0 != "%=") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a9(_t0);
     }
@@ -2414,8 +2414,8 @@ namespace parser {
 
     overloadable_operator::a10* overloadable_operator::a10::parse() {
         push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "&") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(2);
+        if(_t0 != "&=") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a10(_t0);
     }
@@ -2428,8 +2428,8 @@ namespace parser {
 
     overloadable_operator::a11* overloadable_operator::a11::parse() {
         push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "|") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(2);
+        if(_t0 != "|=") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a11(_t0);
     }
@@ -2442,8 +2442,8 @@ namespace parser {
 
     overloadable_operator::a12* overloadable_operator::a12::parse() {
         push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "^") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(2);
+        if(_t0 != "^=") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a12(_t0);
     }
@@ -2456,8 +2456,8 @@ namespace parser {
 
     overloadable_operator::a13* overloadable_operator::a13::parse() {
         push_stack();
-        std::string _t0 = next_chars(2);
-        if(_t0 != "<<") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(3);
+        if(_t0 != "<<=") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a13(_t0);
     }
@@ -2470,8 +2470,8 @@ namespace parser {
 
     overloadable_operator::a14* overloadable_operator::a14::parse() {
         push_stack();
-        std::string _t0 = next_chars(2);
-        if(_t0 != ">>") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(3);
+        if(_t0 != ">>=") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a14(_t0);
     }
@@ -2484,8 +2484,8 @@ namespace parser {
 
     overloadable_operator::a15* overloadable_operator::a15::parse() {
         push_stack();
-        std::string _t0 = next_chars(2);
-        if(_t0 != "==") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(1);
+        if(_t0 != "+") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a15(_t0);
     }
@@ -2498,8 +2498,8 @@ namespace parser {
 
     overloadable_operator::a16* overloadable_operator::a16::parse() {
         push_stack();
-        std::string _t0 = next_chars(2);
-        if(_t0 != "!=") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(1);
+        if(_t0 != "-") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a16(_t0);
     }
@@ -2513,7 +2513,7 @@ namespace parser {
     overloadable_operator::a17* overloadable_operator::a17::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
-        if(_t0 != "<") {pop_stack(); return nullptr;}
+        if(_t0 != "*") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a17(_t0);
     }
@@ -2526,8 +2526,8 @@ namespace parser {
 
     overloadable_operator::a18* overloadable_operator::a18::parse() {
         push_stack();
-        std::string _t0 = next_chars(2);
-        if(_t0 != "<=") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(1);
+        if(_t0 != "/") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a18(_t0);
     }
@@ -2541,7 +2541,7 @@ namespace parser {
     overloadable_operator::a19* overloadable_operator::a19::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
-        if(_t0 != ">") {pop_stack(); return nullptr;}
+        if(_t0 != "%") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a19(_t0);
     }
@@ -2554,8 +2554,8 @@ namespace parser {
 
     overloadable_operator::a20* overloadable_operator::a20::parse() {
         push_stack();
-        std::string _t0 = next_chars(2);
-        if(_t0 != ">=") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(1);
+        if(_t0 != "&") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a20(_t0);
     }
@@ -2568,8 +2568,8 @@ namespace parser {
 
     overloadable_operator::a21* overloadable_operator::a21::parse() {
         push_stack();
-        std::string _t0 = next_chars(2);
-        if(_t0 != "[]") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(1);
+        if(_t0 != "|") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a21(_t0);
     }
@@ -2583,7 +2583,7 @@ namespace parser {
     overloadable_operator::a22* overloadable_operator::a22::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
-        if(_t0 != "=") {pop_stack(); return nullptr;}
+        if(_t0 != "^") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a22(_t0);
     }
@@ -2596,13 +2596,139 @@ namespace parser {
 
     overloadable_operator::a23* overloadable_operator::a23::parse() {
         push_stack();
-        std::string _t0 = next_chars(6);
-        if(_t0 != "(cast)") {pop_stack(); return nullptr;}
+        std::string _t0 = next_chars(2);
+        if(_t0 != "<<") {pop_stack(); return nullptr;}
         rm_stack();
         return new overloadable_operator::a23(_t0);
     }
 
     std::string overloadable_operator::a23::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a24* overloadable_operator::a24::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != ">>") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a24(_t0);
+    }
+
+    std::string overloadable_operator::a24::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a25* overloadable_operator::a25::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "==") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a25(_t0);
+    }
+
+    std::string overloadable_operator::a25::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a26* overloadable_operator::a26::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "!=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a26(_t0);
+    }
+
+    std::string overloadable_operator::a26::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a27* overloadable_operator::a27::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "<") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a27(_t0);
+    }
+
+    std::string overloadable_operator::a27::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a28* overloadable_operator::a28::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "<=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a28(_t0);
+    }
+
+    std::string overloadable_operator::a28::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a29* overloadable_operator::a29::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != ">") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a29(_t0);
+    }
+
+    std::string overloadable_operator::a29::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a30* overloadable_operator::a30::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != ">=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a30(_t0);
+    }
+
+    std::string overloadable_operator::a30::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a31* overloadable_operator::a31::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "[]") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a31(_t0);
+    }
+
+    std::string overloadable_operator::a31::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    overloadable_operator::a32* overloadable_operator::a32::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new overloadable_operator::a32(_t0);
+    }
+
+    std::string overloadable_operator::a32::to_string() {
         std::string ans = "";
         ans += t0;
         return ans;
@@ -2633,6 +2759,15 @@ namespace parser {
         if(auto x = overloadable_operator::a21::parse()) return new overloadable_operator(x);
         if(auto x = overloadable_operator::a22::parse()) return new overloadable_operator(x);
         if(auto x = overloadable_operator::a23::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a24::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a25::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a26::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a27::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a28::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a29::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a30::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a31::parse()) return new overloadable_operator(x);
+        if(auto x = overloadable_operator::a32::parse()) return new overloadable_operator(x);
         return nullptr;
     }
 
@@ -2661,6 +2796,15 @@ namespace parser {
         if(is_a21) return t21->to_string();
         if(is_a22) return t22->to_string();
         if(is_a23) return t23->to_string();
+        if(is_a24) return t24->to_string();
+        if(is_a25) return t25->to_string();
+        if(is_a26) return t26->to_string();
+        if(is_a27) return t27->to_string();
+        if(is_a28) return t28->to_string();
+        if(is_a29) return t29->to_string();
+        if(is_a30) return t30->to_string();
+        if(is_a31) return t31->to_string();
+        if(is_a32) return t32->to_string();
         assert(false);
     }
 
@@ -4478,6 +4622,20 @@ namespace parser {
         return ans;
     }
 
+    line_comment::a0::b6* line_comment::a0::b6::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "\\") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new line_comment::a0::b6(_t0);
+    }
+
+    std::string line_comment::a0::b6::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
     line_comment::a0* line_comment::a0::parse() {
         if(auto x = line_comment::a0::b0::parse()) return new line_comment::a0(x);
         if(auto x = line_comment::a0::b1::parse()) return new line_comment::a0(x);
@@ -4485,6 +4643,7 @@ namespace parser {
         if(auto x = line_comment::a0::b3::parse()) return new line_comment::a0(x);
         if(auto x = line_comment::a0::b4::parse()) return new line_comment::a0(x);
         if(auto x = line_comment::a0::b5::parse()) return new line_comment::a0(x);
+        if(auto x = line_comment::a0::b6::parse()) return new line_comment::a0(x);
         return nullptr;
     }
 
@@ -4495,6 +4654,7 @@ namespace parser {
         if(is_b3) return t3->to_string();
         if(is_b4) return t4->to_string();
         if(is_b5) return t5->to_string();
+        if(is_b6) return t6->to_string();
         assert(false);
     }
 

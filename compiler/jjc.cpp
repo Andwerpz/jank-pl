@@ -732,6 +732,10 @@ it's sitting somewhere in between, Overload is more like a function, while Overl
 So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
 
 some miscellaneous features:
+ - change syntax of typecasting from '(type)' to '$type'
+   - some expressions with the old syntax are ambiguous during parsing such as '(foo) * bar'
+ - should not share the same identifier table for functions and variables. 
+   - it should be known after parsing which is which. 
  - for each function, keep track of what global variables, structs, functions, overloads are available to that function. 
    - This is determined by imports.
  - have some reserved keywords (break, continue, sizeof)

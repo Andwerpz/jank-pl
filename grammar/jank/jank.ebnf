@@ -21,7 +21,7 @@ symbol = "[" | "]" | "{" | "}" | "(" | ")" | "<" | ">"                  (* any s
        | "*" | "?" | ":" | "!" | "@" | "#" | "$" | "%"
        | "^" | "&" | "/" | "~" | "`" ;
 
-line_comment = "//" , { alpha | digit | symbol | "\"" | "'" | " " } , "\n" ;
+line_comment = "//" , { alpha | digit | symbol | "\"" | "'" | " " | "\\" } , "\n" ;
 multiline_comment = "/*" , { alpha | digit | " " | "\n" } , "*/" ;
 
 (* 

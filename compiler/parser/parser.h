@@ -1,4 +1,4 @@
-// Date Generated : 07-03-2025 20:05:33
+// Date Generated : 07-05-2025 10:42:47
 #pragma once
 #include <vector>
 #include <string>
@@ -1704,7 +1704,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // overloadable_operator = "++x" | "--x" | "x++" | "x--" | "*x" | "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "[]" | "=" | "(cast)" ;
+    // overloadable_operator = "++x" | "--x" | "x++" | "x--" | "*x" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "[]" | "=" ;
     struct overloadable_operator {
         struct a0 {
             std::string t0;
@@ -1898,6 +1898,78 @@ namespace parser {
             static a23* parse();
             std::string to_string();
         };
+        struct a24 {
+            std::string t0;
+            a24(std::string _t0) {
+                t0 = _t0;
+            }
+            static a24* parse();
+            std::string to_string();
+        };
+        struct a25 {
+            std::string t0;
+            a25(std::string _t0) {
+                t0 = _t0;
+            }
+            static a25* parse();
+            std::string to_string();
+        };
+        struct a26 {
+            std::string t0;
+            a26(std::string _t0) {
+                t0 = _t0;
+            }
+            static a26* parse();
+            std::string to_string();
+        };
+        struct a27 {
+            std::string t0;
+            a27(std::string _t0) {
+                t0 = _t0;
+            }
+            static a27* parse();
+            std::string to_string();
+        };
+        struct a28 {
+            std::string t0;
+            a28(std::string _t0) {
+                t0 = _t0;
+            }
+            static a28* parse();
+            std::string to_string();
+        };
+        struct a29 {
+            std::string t0;
+            a29(std::string _t0) {
+                t0 = _t0;
+            }
+            static a29* parse();
+            std::string to_string();
+        };
+        struct a30 {
+            std::string t0;
+            a30(std::string _t0) {
+                t0 = _t0;
+            }
+            static a30* parse();
+            std::string to_string();
+        };
+        struct a31 {
+            std::string t0;
+            a31(std::string _t0) {
+                t0 = _t0;
+            }
+            static a31* parse();
+            std::string to_string();
+        };
+        struct a32 {
+            std::string t0;
+            a32(std::string _t0) {
+                t0 = _t0;
+            }
+            static a32* parse();
+            std::string to_string();
+        };
         bool is_a0 = false;
         a0 *t0;
         bool is_a1 = false;
@@ -1946,6 +2018,24 @@ namespace parser {
         a22 *t22;
         bool is_a23 = false;
         a23 *t23;
+        bool is_a24 = false;
+        a24 *t24;
+        bool is_a25 = false;
+        a25 *t25;
+        bool is_a26 = false;
+        a26 *t26;
+        bool is_a27 = false;
+        a27 *t27;
+        bool is_a28 = false;
+        a28 *t28;
+        bool is_a29 = false;
+        a29 *t29;
+        bool is_a30 = false;
+        a30 *t30;
+        bool is_a31 = false;
+        a31 *t31;
+        bool is_a32 = false;
+        a32 *t32;
         overloadable_operator(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
@@ -2041,6 +2131,42 @@ namespace parser {
         overloadable_operator(a23 *_t23) {
             is_a23 = true;
             t23 = _t23;
+        }
+        overloadable_operator(a24 *_t24) {
+            is_a24 = true;
+            t24 = _t24;
+        }
+        overloadable_operator(a25 *_t25) {
+            is_a25 = true;
+            t25 = _t25;
+        }
+        overloadable_operator(a26 *_t26) {
+            is_a26 = true;
+            t26 = _t26;
+        }
+        overloadable_operator(a27 *_t27) {
+            is_a27 = true;
+            t27 = _t27;
+        }
+        overloadable_operator(a28 *_t28) {
+            is_a28 = true;
+            t28 = _t28;
+        }
+        overloadable_operator(a29 *_t29) {
+            is_a29 = true;
+            t29 = _t29;
+        }
+        overloadable_operator(a30 *_t30) {
+            is_a30 = true;
+            t30 = _t30;
+        }
+        overloadable_operator(a31 *_t31) {
+            is_a31 = true;
+            t31 = _t31;
+        }
+        overloadable_operator(a32 *_t32) {
+            is_a32 = true;
+            t32 = _t32;
         }
         static overloadable_operator* parse();
         std::string to_string();
@@ -3536,7 +3662,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // line_comment = "//" , { alpha | digit | symbol | "\"" | "'" | " " } , "\n" ;
+    // line_comment = "//" , { alpha | digit | symbol | "\"" | "'" | " " | "\\" } , "\n" ;
     struct line_comment {
         struct a0 {
             struct b0 {
@@ -3587,6 +3713,14 @@ namespace parser {
                 static b5* parse();
                 std::string to_string();
             };
+            struct b6 {
+                std::string t0;
+                b6(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b6* parse();
+                std::string to_string();
+            };
             bool is_b0 = false;
             b0 *t0;
             bool is_b1 = false;
@@ -3599,6 +3733,8 @@ namespace parser {
             b4 *t4;
             bool is_b5 = false;
             b5 *t5;
+            bool is_b6 = false;
+            b6 *t6;
             a0(b0 *_t0) {
                 is_b0 = true;
                 t0 = _t0;
@@ -3622,6 +3758,10 @@ namespace parser {
             a0(b5 *_t5) {
                 is_b5 = true;
                 t5 = _t5;
+            }
+            a0(b6 *_t6) {
+                is_b6 = true;
+                t6 = _t6;
             }
             static a0* parse();
             std::string to_string();

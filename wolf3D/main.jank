@@ -1,9 +1,313 @@
 #include <ostream>;
 #include <jstring>;
+#include <assert>;
+#include <vector>;
+#include <math>;
+#include <random>;
+
+[0] Screen g_screen = new Screen();
+
+struct Screen {
+    //note that vscode terminal characters have a 1:2 aspect ratio, so stuff appears 
+    //around twice as tall as they should be. 
+
+    //note that I insert a newline at the end of every row, so that's an extra character you shouldn't overwrite. 
+
+    u64 width;
+    u64 height;
+    u8* screen_buf;
+
+    Screen() {
+        //this.width = (u64) 192;
+        //this.height = (u64) 54;
+
+        this.width = (u64) 96;
+        this.height = (u64) 27;
+
+        this.screen_buf = (u8*) malloc((this.width + (u64) 1) * this.height);
+        for(i32 i = 0; i < (i32) this.height; i++){
+            this[i][this.width] = '\n';
+        }
+        this.clear();
+    }
+
+    Screen(Screen& other) {
+        this.width = other.width;
+        this.height = other.height;
+        this.screen_buf = other.screen_buf;
+    }
+
+    void clear() {
+        for(i32 i = 0; i < (i32) this.height; i++) {
+            for(i32 j = 0; j < (i32) this.width; j++) {
+                this[i][j] = ' ';
+            }
+        }
+    }
+
+    void render() {
+        u8* clear_str = "x[2Jx[H";
+        clear_str[0] = (u8) 27;
+        clear_str[4] = (u8) 27;
+        sys_write(STDOUT, (void*) clear_str, strlen(clear_str));
+        sys_write(STDOUT, (void*) this.screen_buf, (this.width + (u64) 1) * this.height);
+    }
+}
+
+u8* operator[](Screen& s, i32 ind) {
+    assert(ind >= 0 && ind < (i32) s.height);
+    return @(s.screen_buf[(u64) ind * (s.width + (u64) 1)]);
+}
+
+struct vec2 {
+    f32 x;
+    f32 y;
+
+    vec2() {
+        this.x = 0.0;
+        this.y = 0.0;
+    }
+
+    vec2(vec2& other) {
+        this.x = other.x;
+        this.y = other.y;
+    }
+
+    vec2(f32 _x, f32 _y) {
+        this.x = _x;
+        this.y = _y;
+    }
+
+    f32 length_sq() {
+        return this.x * this.x + this.y * this.y;
+    }
+
+    f32 length() {
+        return sqrt(this.length_sq());
+    }
+
+    void normalize() {
+        f32 len = this.length();
+        this.x /= len;
+        this.y /= len;
+    }
+
+    void rotateCCW(f32 theta) {
+        f32 nx = cos(theta) * this.x - sin(theta) * this.y;
+        f32 ny = sin(theta) * this.x + cos(theta) * this.y;
+        this.x = nx;
+        this.y = ny;
+    }   
+}
+
+ostream& operator<<(ostream& stream, vec2 v) {
+    stream << "(" << to_string(v.x) << ", " << to_string(v.y) << ")";
+    return stream;
+}
+
+vec2 operator+(vec2 a, vec2 b) {
+    return new vec2(a.x + b.x, a.y + b.y);
+}
+
+vec2& operator+=(vec2& a, vec2 b) {
+    a = a + b;
+    return a;
+}
+
+vec2 operator-(vec2 a, vec2 b) {
+    return new vec2(a.x - b.x, a.y - b.y);
+}
+
+vec2& operator-=(vec2& a, vec2 b) {
+    a = a - b;
+    return a;
+}
+
+vec2 operator*(vec2 a, f32 s) {
+    return new vec2(a.x * s, a.y * s);
+}
+
+vec2& operator*=(vec2& a, f32 s) {
+    a = a * s;
+    return a;
+}
+
+vec2 operator/(vec2 a, f32 s) {
+    return new vec2(a.x / s, a.y / s);
+}
+
+vec2& operator/=(vec2& a, f32 s){
+    a = a / s;
+    return a;
+}
+
+f32 dot(vec2 a, vec2 b) {
+    return a.x * b.x + a.y * b.y;
+}
+
+i32 min(i32 x, i32 y) {
+    if(x < y) return x;
+    return y;
+}
+
+[0] i32 g_map_height = 21;
+[0] i32 g_map_width = 21;
+[1] vector<vector<i32>> g_map = new vector<vector<i32>>(g_map_height, new vector<i32>(g_map_width, 0));
+[0] f32 epsilon = 0.0001;
+
+struct HitInfo {
+    vec2 pos;
+    i32 is_xhit;
+
+    HitInfo() {
+
+    }
+
+    HitInfo(vec2 _pos, i32 _is_xhit) {
+        this.pos = _pos;
+        this.is_xhit = _is_xhit;
+    }
+
+    HitInfo(HitInfo& other) {
+        this.pos = other.pos;
+        this.is_xhit = other.is_xhit;
+    }
+}
+
+HitInfo calc_hit_info(vec2 pos, vec2 dir) {
+    HitInfo ans = new HitInfo();
+    i32 is_xmove = 0;
+    while(1) {
+        //check if we're inside a wall
+        i32 row = (i32) pos.y;
+        i32 col = (i32) pos.x;
+        if(row < 0 || col < 0 || row >= g_map_height || col >= g_map_width || g_map[row][col] == 1) {
+            ans = new HitInfo(pos, is_xmove);
+            break;
+        }
+
+        //walk to the next wall
+        f32 xdist = 100000.0;
+        f32 ydist = 100000.0;
+        if(dir.x < 0.0) {
+            f32 nx = ceil(pos.x - 1.0);
+            xdist = (nx - pos.x) / dir.x;
+        }
+        else if(dir.x > 0.0) {
+            f32 nx = floor(pos.x + 1.0);
+            xdist = (nx - pos.x) / dir.x;
+        }   
+
+        if(dir.y < 0.0){
+            f32 ny = ceil(pos.y - 1.0);
+            ydist = (ny - pos.y) / dir.y;
+        }
+        else if(dir.y > 0.0) {
+            f32 ny = floor(pos.y + 1.0);
+            ydist = (ny - pos.y) / dir.y;
+        }   
+
+        //update position. Add epsilon to shove new pos inside wall
+        if(xdist < ydist) {
+            pos += dir * (xdist + epsilon);
+            is_xmove = 1;
+        }
+        else {
+            pos += dir * (ydist + epsilon);
+            is_xmove = 0;
+        }
+    }
+    return ans;
+}
+
+void print_map() {
+    for(i32 i = 0; i < g_map_height; i++){
+        for(i32 j = 0; j < g_map_width; j++){
+            cout << g_map[i][j] << " ";
+        }
+        cout << "\n";
+    }
+}
 
 i32 main() {
 
-    cout << "ASDF\n";
+    for(i32 i = 0; i < g_map_height; i++){
+        for(i32 j = 0; j < g_map_width; j++){
+            i32 dtw = min(min(i, g_map_height - 1 - i), min(j, g_map_width - 1 - j));
+            if(dtw == 0) {
+                g_map[i][j] = 1;
+            }
+            else if(dtw <= 2) {
+                if(rand_i32() < 50000) g_map[i][j] = 1;
+            }
+            else if(dtw <= 4) {
+                if(rand_i32() < 30000) g_map[i][j] = 1;
+            }
+            else if(dtw <= 7) {
+                if(rand_i32() < 10000) g_map[i][j] = 1;
+            }
+        }
+    }
+
+    g_map[10][10] = 1;
+
+    //initial player position
+    vec2 ppos = new vec2((f32) g_map_width, (f32) g_map_height);
+    ppos /= 2.0;
+    f32 prot = 0.0;
+    while(1) {
+        //fire off all screen rays
+        f32 screen_width = 0.5;
+        f32 screen_dist = 0.5;
+        f32 incamt = screen_width / (f32) ((i32) g_screen.width - 1);
+        vec2 cdir = new vec2(1.0, 0.0);
+        cdir.rotateCCW(prot);
+
+        ppos = cdir * 3.0;
+        ppos.rotateCCW(-PI);
+        ppos += (new vec2((f32) g_map_width, (f32) g_map_height)) * 0.5;
+        
+
+        g_screen.clear();
+
+        for(i32 i = 0; i < (i32) g_screen.width; i++){
+            vec2 start = new vec2(screen_dist, screen_width / 2.0);
+            vec2 incdir = new vec2(0.0, -1.0);
+            
+            start.rotateCCW(prot);
+            incdir.rotateCCW(prot);
+
+            vec2 ray_dir = start + incdir * (incamt * (f32) i);
+            ray_dir.normalize();
+
+            HitInfo hit = calc_hit_info(ppos, ray_dir);
+            f32 hit_dist = dot(cdir, hit.pos - ppos);
+
+            i32 wall_height = (i32) ((f32) (i64) g_screen.height / 2.0 / hit_dist);
+            for(i32 j = 0; j < (i32) g_screen.height; j++){
+                if(abs(j - (i32) (g_screen.height / (u64) 2)) <= wall_height) {
+                    if(hit.is_xhit) g_screen[j][i] = '#';
+                    else g_screen[j][i] = '.';
+                }
+            }
+        }
+        g_screen.render();
+        cout << "PROT : " << prot << "\n";
+        cout << "INCAMT : " << incamt << "\n";
+        {
+            vec2 tmp_dir = new vec2(1.0, 0.0);
+            tmp_dir.rotateCCW(prot);
+            cout << "DIR : " << tmp_dir << "\n";
+        }
+        cout << "PPOS : " << ppos << "\n";
+        prot += 0.001;
+
+       
+    }
+
+    cout << to_string(-PI / 2.0) << "\n";
+    cout << to_string(sin(-PI / 2.0)) << "\n";
+    cout << to_string(cos(PI)) << "\n";
 
     return 0;
 }

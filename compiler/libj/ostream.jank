@@ -41,3 +41,8 @@ ostream& operator<<(ostream& stream, u64 x) {
     stream.write_to_fd(to_string(x));
     return stream;
 }
+
+ostream& operator<<(ostream& stream, f32 x) {
+    stream.write_to_fd(to_string(x));
+    return stream;
+}

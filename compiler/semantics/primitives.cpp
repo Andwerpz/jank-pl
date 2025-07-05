@@ -667,12 +667,19 @@ namespace primitives {
             "movl %eax, (%rcx)",
         }));
 
-        // == < > <= >= 
+        // == != < > <= >= 
         add_operator_implementation(new OperatorSignature(f32, "==", f32), new BuiltinOperator(i32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "ucomiss %xmm1, %xmm0",
             "sete %al",
+            "movzx %al, %rax",
+        }));
+        add_operator_implementation(new OperatorSignature(f32, "!=", f32), new BuiltinOperator(i32, {
+            "movd %eax, %xmm0",
+            "movd %ebx, %xmm1",
+            "ucomiss %xmm1, %xmm0",
+            "setne %al",
             "movzx %al, %rax",
         }));
         add_operator_implementation(new OperatorSignature(f32, "<", f32), new BuiltinOperator(i32, {

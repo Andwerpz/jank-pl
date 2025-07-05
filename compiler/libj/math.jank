@@ -1,0 +1,100 @@
+#include <jstring>;
+#include <ostream>;
+
+[-1] f32 PI = 3.1415927;
+
+f32 sqrt(f32 x) {
+    f32 out = 0.0;
+    asm!("movd 16(%rbp), %xmm0");
+    asm!("sqrtss %xmm0, %xmm0");
+    asm!("movd %xmm0, -8(%rbp)");
+    return out;
+}
+
+i32 sign(f32 x) {
+    if(x < 0.0) return -1;
+    else if(x > 0.0) return 1;
+    else return 0;
+}
+
+f32 trunc(f32 x) {
+    return (f32) (i64) x;
+}
+
+f32 floor(f32 x) {
+    i64 i = (i64) x;
+    if(x < 0.0 && (f32) i != x) {
+        i -= (i64) 1;
+    }
+    return (f32) x;
+}
+
+f32 ceil(f32 x) {
+    i64 i = (i64) x;
+    if(x > 0.0 && (f32) i != x) {
+        i += (i64) 1;
+    }
+    return (f32) x;
+}
+
+//returns a % b
+//is signed
+f32 fmod(f32 a, f32 b) {
+    assert(b != 0.0);
+    return a - trunc(a / b) * b;
+}
+
+f32 sin(f32 x) {
+    //shrink x to range [-PI, PI]
+    x = fmod(x, 2.0 * PI);
+
+    if(x > PI) x -= 2.0 * PI;
+    if(x < -PI) x += 2.0 * PI;
+
+    // use sine's odd symmetry
+    f32 _sign = 1.0;
+    if (x < 0.0) {
+        _sign = -1.0;
+        x = -x;
+    }
+
+    // shrink to [-PI / 2, PI / 2] 
+    if (x > PI / 2.0) {
+        x = PI - x;
+    }
+
+    //apply taylor series approximation
+    f32 ans = x - (x * x * x / 6.0) + (x * x * x * x * x / 120.0) - (x * x * x * x * x * x * x / 5040.0);
+    return _sign * ans;
+}
+
+f32 cos(f32 x) {
+    // reduce x to [-PI, PI]
+    x = fmod(x, 2.0 * PI);
+    if(x > PI) x -= 2.0 * PI;
+    if(x < -PI) x += 2.0 * PI;
+
+    // reduce x to [-PI / 2, PI / 2]
+    f32 _sign = 1.0;
+    if (x > PI / 2.0) {
+        x = PI - x;
+        _sign = -1.0;
+    } else if (x < -PI / 2.0) {
+        x = -PI - x;
+        _sign = -1.0;
+    }
+
+    //apply taylor series approximation
+    f32 res = 1.0 - (x * x / 2.0) + (x * x * x * x / 24.0) - (x * x * x * x * x * x / 720.0);
+    return _sign * res;
+}
+
+f32 abs(f32 x) {
+    if(x < 0.0) x *= -1.0;
+    return x;
+}
+
+i32 abs(i32 x) {
+    if(x < 0) x *= -1;
+    return x;
+}

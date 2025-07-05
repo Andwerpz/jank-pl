@@ -689,9 +689,6 @@ void ExprPrimary::elaborate(ExprNode*& self) {
 }
 
 void ExprBinary::elaborate(ExprNode*& self) {
-    left->elaborate(left);
-    right->elaborate(right);
-    
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
 
@@ -705,11 +702,13 @@ void ExprBinary::elaborate(ExprNode*& self) {
         }
     }
     else assert(false);
+
+    //if we haven't replaced ourself, elaborate children
+    left->elaborate(left);
+    right->elaborate(right);
 }
 
 void ExprPrefix::elaborate(ExprNode*& self) {
-    right->elaborate(right);
-
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
 
@@ -732,11 +731,12 @@ void ExprPrefix::elaborate(ExprNode*& self) {
         return;
     }
     else assert(false);
+
+    //if we haven't replaced ourself, elaborate children
+    right->elaborate(right);
 }
 
 void ExprPostfix::elaborate(ExprNode*& self) { 
-    left->elaborate(left);
-
     if(std::holds_alternative<Expression*>(op)) {   //indexing
         Expression *expr = std::get<Expression*>(op);
         assert(expr->resolve_type() != nullptr);
@@ -769,6 +769,9 @@ void ExprPostfix::elaborate(ExprNode*& self) {
         }
     }
     else assert(false);
+
+    //if we haven't replaced ourself, elaborate children
+    left->elaborate(left);
 }
 
 void Expression::elaborate() {

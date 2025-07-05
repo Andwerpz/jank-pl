@@ -53,3 +53,18 @@ sys_brk:
     pop %rbp
     ret
 
+# u64 getrandom(void* buf, u64 buf_len, u64 flags)
+# fills the buffer pointed to by buf with up to buf_len random bytes
+# apparently on default settings, it's guaranteed that 256 bytes will get written. 
+.global sys_getrandom
+sys_getrandom:
+    push %rbp
+    mov %rsp, %rbp
+    mov $318, %rax
+    mov 32(%rbp), %rdi
+    mov 24(%rbp), %rsi
+    mov 16(%rbp), %rdx
+    syscall
+    pop %rbp
+    ret
+

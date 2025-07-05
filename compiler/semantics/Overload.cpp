@@ -135,7 +135,9 @@ OperatorSignature* Overload::resolve_operator_signature() const {
     if( op == "+" || op == "-" || op == "*" || op == "/" || op == "%" || 
         op == "&" || op == "|" || op == "^" || op == "<<" || op == ">>" ||
         op == "==" || op == "!=" || op == "<" || op == "<=" || op == ">" || 
-        op == ">=" || op == "=") {
+        op == ">=" || op == "=" || op == "+=" || op == "-=" || op == "*=" ||
+        op == "/=" || op == "%=" || op == "&=" || op == "|=" || op == "^=" ||
+        op == "<<=" || op == ">>=") {
         //binary operator
         if(this->parameters.size() != 2) return nullptr;
         Type *left = this->parameters[0]->type, *right = this->parameters[1]->type;
