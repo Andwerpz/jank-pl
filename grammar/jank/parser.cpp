@@ -1,4 +1,4 @@
-// Date Generated : 07-05-2025 10:42:47
+// Date Generated : 07-06-2025 15:15:04
 #include "parser.h"
 
 namespace parser {
@@ -511,6 +511,62 @@ namespace parser {
         return ans;
     }
 
+    literal_syscall* literal_syscall::parse() {
+        push_stack();
+        std::string _t0 = next_chars(7);
+        if(_t0 != "syscall") {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(1);
+        if(_t2 != "(") {pop_stack(); return nullptr;}
+        ows *_t3 = ows::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        literal_integer *_t4 = literal_integer::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t5 = ows::parse();
+        if(_t5 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t6 = next_chars(1);
+        if(_t6 != ",") {pop_stack(); return nullptr;}
+        ows *_t7 = ows::parse();
+        if(_t7 == nullptr) {pop_stack(); return nullptr;}
+        type *_t8 = type::parse();
+        if(_t8 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t9 = ows::parse();
+        if(_t9 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t10 = next_chars(1);
+        if(_t10 != ",") {pop_stack(); return nullptr;}
+        ows *_t11 = ows::parse();
+        if(_t11 == nullptr) {pop_stack(); return nullptr;}
+        argument_list *_t12 = argument_list::parse();
+        if(_t12 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t13 = ows::parse();
+        if(_t13 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t14 = next_chars(1);
+        if(_t14 != ")") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_syscall(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9, _t10, _t11, _t12, _t13, _t14);
+    }
+
+    std::string literal_syscall::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2;
+        ans += t3->to_string();
+        ans += t4->to_string();
+        ans += t5->to_string();
+        ans += t6;
+        ans += t7->to_string();
+        ans += t8->to_string();
+        ans += t9->to_string();
+        ans += t10;
+        ans += t11->to_string();
+        ans += t12->to_string();
+        ans += t13->to_string();
+        ans += t14;
+        return ans;
+    }
+
     literal::a0* literal::a0::parse() {
         push_stack();
         literal_float *_t0 = literal_float::parse();
@@ -581,12 +637,27 @@ namespace parser {
         return ans;
     }
 
+    literal::a5* literal::a5::parse() {
+        push_stack();
+        literal_syscall *_t0 = literal_syscall::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal::a5(_t0);
+    }
+
+    std::string literal::a5::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
     literal* literal::parse() {
         if(auto x = literal::a0::parse()) return new literal(x);
         if(auto x = literal::a1::parse()) return new literal(x);
         if(auto x = literal::a2::parse()) return new literal(x);
         if(auto x = literal::a3::parse()) return new literal(x);
         if(auto x = literal::a4::parse()) return new literal(x);
+        if(auto x = literal::a5::parse()) return new literal(x);
         return nullptr;
     }
 
@@ -596,6 +667,7 @@ namespace parser {
         if(is_a2) return t2->to_string();
         if(is_a3) return t3->to_string();
         if(is_a4) return t4->to_string();
+        if(is_a5) return t5->to_string();
         assert(false);
     }
 
@@ -1253,20 +1325,17 @@ namespace parser {
     expr_unary::a0::b0::c8* expr_unary::a0::b0::c8::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
-        if(_t0 != "(") {pop_stack(); return nullptr;}
+        if(_t0 != "$") {pop_stack(); return nullptr;}
         type *_t1 = type::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t2 = next_chars(1);
-        if(_t2 != ")") {pop_stack(); return nullptr;}
         rm_stack();
-        return new expr_unary::a0::b0::c8(_t0, _t1, _t2);
+        return new expr_unary::a0::b0::c8(_t0, _t1);
     }
 
     std::string expr_unary::a0::b0::c8::to_string() {
         std::string ans = "";
         ans += t0;
         ans += t1->to_string();
-        ans += t2;
         return ans;
     }
 

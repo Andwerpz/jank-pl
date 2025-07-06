@@ -7,5 +7,6 @@ literal_integer = < digit > ;
 literal_float = < digit > , "." , < digit > ;
 literal_char = "'" , ( alpha | digit | escape | symbol | " " ) , "'" ;
 literal_string = "\"" , { alpha | digit | escape | symbol | " " } , "\"" ;
+literal_syscall = "syscall" , ows , "(" , ows , literal_integer , ows , "," , ows , type , ows , "," , ows , argument_list , ows , ")" ;
 
-literal = literal_float | literal_integer | literal_sizeof | literal_char | literal_string ;
+literal = literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall ;

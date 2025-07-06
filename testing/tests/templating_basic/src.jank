@@ -1,12 +1,6 @@
 #include <jstring>;
 #include <put>;
-
-void assert(i32 x) {
-    if(!x) {
-        puts_endl("assert failed");
-        sys_exit(1);
-    }
-}
+#include <assert>;
 
 struct ostream {
     ostream() {
@@ -36,18 +30,18 @@ struct vector {
     vector() {
         this.cap = 1;
         this.sz = 0;
-        this.arr = (T*) malloc(sizeof(T) * (u64) 1);
+        this.arr = $T* malloc(sizeof(T) * $u64 1);
     }
     vector(vector& other) {
         this.cap = other.cap;
         this.sz = other.sz;
-        this.arr = (T*) malloc(sizeof(T) * (u64) this.cap);
+        this.arr = $T* malloc(sizeof(T) * $u64 this.cap);
         for(i32 i = 0; i < this.cap; i++) this.arr[i] = other.arr[i];
     }
     vector(i32 n, T default) {
         this.cap = n;
         this.sz = n;
-        this.arr = (T*) malloc(sizeof(T) * (u64) n);
+        this.arr = $T* malloc(sizeof(T) * $u64 n);
         for(i32 i = 0; i < n; i++) this.arr[i] = default;
     }
 }

@@ -1,9 +1,10 @@
 #include <jstring>;
 #include <put>;
+#include <assert>;
 
 i32 main() {
 
-    u8* hello_str = (u8*) malloc((u64) 6 * sizeof(u8));
+    u8* hello_str = $u8* malloc($u64 6 * sizeof(u8));
     hello_str[0] = 'h';
     hello_str[1] = 'e';
     hello_str[2] = 'l';
@@ -11,11 +12,11 @@ i32 main() {
     hello_str[4] = 'o';
     hello_str[5] = '\0';
 
-    u8* space_str = (u8*) malloc((u64) 2 * sizeof(u8));
+    u8* space_str = $u8* malloc($u64 2 * sizeof(u8));
     space_str[0] = ' ';
     space_str[1] = '\0';
 
-    u8* endl_str = (u8*) malloc((u64) 2 * sizeof(u8));
+    u8* endl_str = $u8* malloc($u64 2 * sizeof(u8));
     endl_str[0] = '\n';
     endl_str[1] = '\0';
 

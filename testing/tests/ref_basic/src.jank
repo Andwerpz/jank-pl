@@ -1,12 +1,6 @@
 #include <jstring>;
 #include <put>;
-
-void assert(i32 x) {
-    if(!x) {
-        puts_endl("assert failed");
-        sys_exit(1);
-    }
-}
+#include <assert>;
 
 void increment(i32& val) {
     val ++;
@@ -43,7 +37,7 @@ void basic_tests() {
 
     //ref to array element
     {
-        i32* arr = (i32*) malloc(sizeof(i32) * (u64) 5);
+        i32* arr = $i32* malloc(sizeof(i32) * $u64 5);
         i32& ref = arr[1]; 
         ref = 20;
         assert(arr[1] == 20);

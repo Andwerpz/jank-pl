@@ -7,50 +7,50 @@ struct vector {
     T* arr;
 
     vector() {
-        this.cap = (u64) 1;
-        this.sz = (u64) 0;
-        this.arr = (T*) malloc(sizeof(T) * this.cap);
+        this.cap = $u64 1;
+        this.sz = $u64 0;
+        this.arr = $T* malloc(sizeof(T) * this.cap);
     }
 
     vector(vector& other) {
         this.cap = other.cap;
         this.sz = other.sz;
-        this.arr = (T*) malloc(sizeof(T) * this.cap);
-        for(u64 i = (u64) 0; i < this.sz; i++) this.arr[i] = other.arr[i];
+        this.arr = $T* malloc(sizeof(T) * this.cap);
+        for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] = other.arr[i];
     }
 
     vector(u64 n, T default) {
         this.cap = n;
         this.sz = n;
-        this.arr = (T*) malloc(sizeof(T) * this.cap);
-        for(u64 i = (u64) 0; i < this.sz; i++) this.arr[i] = default;
+        this.arr = $T* malloc(sizeof(T) * this.cap);
+        for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] = default;
     }
 
     vector(i32 n, T default) {
-        this.cap = (u64) n;
-        this.sz = (u64) n;
-        this.arr = (T*) malloc(sizeof(T) * this.cap);
-        for(u64 i = (u64) 0; i < this.sz; i++) this.arr[i] = default;
+        this.cap = $u64 n;
+        this.sz = $u64 n;
+        this.arr = $T* malloc(sizeof(T) * this.cap);
+        for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] = default;
     }
 
     void grow() {
-        this.cap = this.cap * (u64) 2;
-        T* narr = (T*) malloc(sizeof(T) * this.cap);
-        for(u64 i = (u64) 0; i < this.sz; i++) {
+        this.cap = this.cap * $u64 2;
+        T* narr = $T* malloc(sizeof(T) * this.cap);
+        for(u64 i = $u64 0; i < this.sz; i++) {
             narr[i] = this.arr[i];
         }
         this.arr = narr;
     }
 
     void pop_back() {
-        if(this.sz == (u64) 0) return;
-        this.sz = this.sz - (u64) 1;
+        if(this.sz == $u64 0) return;
+        this.sz = this.sz - $u64 1;
     }
 
     void push_back(T x) {
         if(this.sz == this.cap) this.grow();
         this.arr[this.sz] = x;
-        this.sz = this.sz + (u64) 1;
+        this.sz = this.sz + $u64 1;
     }
 
     u64 size() {

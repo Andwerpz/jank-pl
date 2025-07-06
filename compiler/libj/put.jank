@@ -1,12 +1,12 @@
 #include <jstring>;
 
 void puts(u8* s) {
-    sys_write(1, (void*) s, strlen(s));
+    sys_write(1, $void* s, strlen(s));
 }
 
 void puts_endl(u8* s) {
-    sys_write(1, (void*) s, strlen(s));
-    sys_write(1, (void*) "\n", (u64) 1);
+    sys_write(1, $void* s, strlen(s));
+    sys_write(1, $void* "\n", $u64 1);
 }
 
 void puti(i32 x) {

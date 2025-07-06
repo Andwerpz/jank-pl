@@ -1,4 +1,3 @@
-#include <put>;
 #include <jstring>;
 
 [-2] i32 STDIN = 0;
@@ -23,12 +22,20 @@ struct ostream {
     }
 
     void write_to_fd(u8* str) {
-        sys_write(this.fd, (void*) str, strlen(str));
+        sys_write(this.fd, $void* str, strlen(str));
     }
 }
 
 ostream& operator<<(ostream& stream, u8* s) {
     stream.write_to_fd(s);
+    return stream;
+}
+
+ostream& operator<<(ostream& stream, u8 c) {
+    u8* str = $u8* malloc($u64 2);
+    str[0] = c;
+    str[1] = '\0';
+    stream.write_to_fd(str);
     return stream;
 }
 

@@ -970,7 +970,6 @@ void ExprPrefix::emit_asm() {
 
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
-        assert(str_op != "(cast)"); //these should be handled seperately
         if(str_op == "*"){ 
             assert(dynamic_cast<PointerType*>(rt) != nullptr);
             emit_dereference(rt);
@@ -1194,7 +1193,7 @@ std::string ExprPrefix::to_string() {
     }
     else if(std::holds_alternative<Type*>(op)) {
         Type *cast_t = std::get<Type*>(op);
-        return "(" + cast_t->to_string() + ")" + right->to_string();
+        return "$" + cast_t->to_string() + " " + right->to_string();
     }
     else assert(false);
 }

@@ -1,5 +1,6 @@
 #include <jstring>;
 #include <ostream>;
+#include <assert>;
 
 [-1] f32 PI = 3.1415927;
 
@@ -18,23 +19,23 @@ i32 sign(f32 x) {
 }
 
 f32 trunc(f32 x) {
-    return (f32) (i64) x;
+    return $f32 $i64 x;
 }
 
 f32 floor(f32 x) {
-    i64 i = (i64) x;
-    if(x < 0.0 && (f32) i != x) {
-        i -= (i64) 1;
+    i64 i = $i64 x;
+    if(x < 0.0 && $f32 i != x) {
+        i -= $i64 1;
     }
-    return (f32) i;
+    return $f32 i;
 }
 
 f32 ceil(f32 x) {
-    i64 i = (i64) x;
-    if(x > 0.0 && (f32) i != x) {
-        i += (i64) 1;
+    i64 i = $i64 x;
+    if(x > 0.0 && $f32 i != x) {
+        i += $i64 1;
     }
-    return (f32) i;
+    return $f32 i;
 }
 
 //returns a % b

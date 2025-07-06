@@ -10,6 +10,7 @@ struct SizeofLiteral;
 struct CharLiteral;
 struct StringLiteral;
 struct TemplateMapping;
+struct Expression;
 
 struct Literal {
     static Literal* convert(parser::literal *n);
@@ -92,3 +93,18 @@ struct StringLiteral : public Literal {
     bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
+struct SyscallLiteral : public Literal {
+    int syscall_id;
+    std::vector<Expression*> arguments;
+    Type *type;
+    SyscallLiteral(int _syscall_id, std::vector<Expression*> _arguments, Type *_type);
+
+    static SyscallLiteral* convert(parser::literal_syscall *l);
+    Type* resolve_type() override;
+    void emit_asm() override;
+    size_t hash() override;
+    bool equals(Literal *other) override;
+    Literal* make_copy() override;
+    std::string to_string() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
+};

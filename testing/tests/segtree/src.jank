@@ -1,12 +1,6 @@
 #include <jstring>;
 #include <put>;
-
-void assert(i32 x) {
-    if(!x) {
-        puts_endl("assert failed");
-        sys_exit(1);
-    }
-}
+#include <assert>;
 
 //assignment update, sum query segment tree
 struct segtree {
@@ -16,12 +10,12 @@ struct segtree {
     segtree() {}
     segtree(i32 n) {
         this.n = 2 * n;
-        this.a = (i32*) malloc(sizeof(i32) * (u64) 2 * (u64) n);
+        this.a = $i32* malloc(sizeof(i32) * $u64 2 * $u64 n);
         for(i32 i = 0; i < 2 * n; i++) this.a[i] = 0;
     }
     segtree(segtree& other) {
         this.n = other.n;
-        this.a = (i32*) malloc(sizeof(i32) * (u64) this.n);
+        this.a = $i32* malloc(sizeof(i32) * $u64 this.n);
         for(i32 i = 0; i < this.n; i++) this.a[i] = other.a[i];
     }
 
@@ -66,20 +60,20 @@ struct vector {
     vector() {
         this.sz = 0;
         this.cap = 1;
-        this.a = (i32*) malloc(sizeof(i32) * (u64) 1);
+        this.a = $i32* malloc(sizeof(i32) * $u64 1);
     }
 
     vector(i32 n) {
         this.sz = n;
         this.cap = n;
-        this.a = (i32*) malloc(sizeof(i32) * (u64) n);
+        this.a = $i32* malloc(sizeof(i32) * $u64 n);
         for(i32 i = 0; i < n; i = i + 1) this.a[i] = 0;
     }
 
     vector(vector& other) {
         this.sz = other.sz;
         this.cap = other.cap;
-        this.a = (i32*) malloc(sizeof(i32) * (u64) this.cap);
+        this.a = $i32* malloc(sizeof(i32) * $u64 this.cap);
         for(i32 i = 0; i < this.cap; i++) this.a[i] = other.a[i];
     }
 
@@ -96,7 +90,7 @@ struct vector {
 
     void grow() {
         this.cap = this.cap * 2;
-        i32* na = (i32*) malloc(sizeof(i32) * (u64) this.cap);
+        i32* na = $i32* malloc(sizeof(i32) * $u64 this.cap);
         for(i32 i = 0; i < this.sz; i = i + 1) {
             na[i] = this.a[i];
         }
@@ -113,7 +107,7 @@ i32& operator[](vector& arr, i32 ind) {
 
 //pseudorandom array
 i32* gen_arr(i32 n) {
-    i32* a = (i32*) malloc(sizeof(i32) * (u64) n);
+    i32* a = $i32* malloc(sizeof(i32) * $u64 n);
     i32 mod = 100007;
     i32 ptr = 1;
     i32 mult = 67;

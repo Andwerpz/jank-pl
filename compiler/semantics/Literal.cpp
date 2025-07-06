@@ -9,6 +9,8 @@
 #include <cstring>
 #include "TemplateMapping.h"
 #include "primitives.h"
+#include "Expression.h"
+#include "Identifier.h"
 
 // -- CONSTRUCTOR --
 FloatLiteral::FloatLiteral(float _val) {
@@ -29,6 +31,12 @@ CharLiteral::CharLiteral(char _val) {
 
 StringLiteral::StringLiteral(std::string _val) {
     val = _val;
+}
+
+SyscallLiteral::SyscallLiteral(int _syscall_id, std::vector<Expression*> _arguments, Type *_type) {
+    syscall_id = _syscall_id;
+    arguments = _arguments;
+    type = _type;
 }
 
 // -- CONVERT --
@@ -53,6 +61,10 @@ Literal* Literal::convert(parser::literal *l) {
         parser::literal_string *lit = l->t4->t0;
         return StringLiteral::convert(lit);
     }   
+    else if(l->is_a5) { //sizeof literal
+        parser::literal_syscall *lit = l->t5->t0;
+        return SyscallLiteral::convert(lit);
+    }
     else assert(false);    
 }
 
@@ -101,6 +113,23 @@ StringLiteral* StringLiteral::convert(parser::literal_string *lit) {
     return new StringLiteral(val);
 }
 
+SyscallLiteral* SyscallLiteral::convert(parser::literal_syscall *lit) {
+    IntegerLiteral *ilit = IntegerLiteral::convert(lit->t4);
+    int syscall_id = ilit->val;
+    std::vector<Expression*> arguments;
+    {
+        parser::argument_list *arglist = lit->t12;
+        if(arglist->t0 != nullptr) {
+            arguments.push_back(Expression::convert(arglist->t0->t0));
+            for(int i = 0; i < arglist->t0->t1.size(); i++){
+                arguments.push_back(Expression::convert(arglist->t0->t1[i]->t3));
+            }
+        }
+    }
+    Type *type = Type::convert(lit->t8);  
+    return new SyscallLiteral(syscall_id, arguments, type);
+}
+
 // -- RESOLVE TYPE --
 Type* FloatLiteral::resolve_type() {
     return primitives::f32->make_copy();
@@ -120,6 +149,31 @@ Type* CharLiteral::resolve_type() {
 
 Type* StringLiteral::resolve_type() {
     return new PointerType(primitives::u8->make_copy());
+}
+
+Type* SyscallLiteral::resolve_type() {
+    // - all syscall ids are >= 0. 
+    if(syscall_id < 0) {
+        std::cout << "Syscall id has to be >= 0\n";
+        return nullptr;
+    }
+
+    // - number of arguments must be <= 6
+    if(arguments.size() > 6) {
+        std::cout << "Syscall number of arguments must be <= 6\n";
+        return nullptr;
+    }
+
+    // - do all of the arguments resolve to a type?
+    for(int i = 0; i < arguments.size(); i++){
+        if(arguments[i]->resolve_type() == nullptr){
+            std::cout << "Syscall argument does not resolve to type\n";
+            return nullptr;
+        }
+    }
+
+    //assume that the return type is correct
+    return type->make_copy();
 }
 
 // -- EMIT ASM --
@@ -172,6 +226,43 @@ void StringLiteral::emit_asm() {
     emit_pop("%rax", "StringLiteral::emit_asm() : string start");
 }
 
+void SyscallLiteral::emit_asm() {
+    if(asm_debug) fout << indent() << "# syscall : " << syscall_id << "\n";
+
+    //gather all arguments into tmp variables
+    push_declaration_stack();
+    std::vector<Variable*> argv;
+    for(int i = 0; i < arguments.size(); i++){
+        Identifier *id = new Identifier(create_new_tmp_variable_name());
+        Type *vt = arguments[i]->resolve_type();
+        assert(vt != nullptr);
+        Variable *v = emit_initialize_stack_variable(vt, id, arguments[i]);
+        argv.push_back(v);
+    }
+    assert(argv.size() == arguments.size());
+
+    //insert syscall id into %rax
+    assert(syscall_id >= 0);
+    fout << indent() << "mov $" << syscall_id << ", %rax\n";
+
+    //insert arguments into argument registers
+    assert(arguments.size() <= 6);
+    if(arguments.size() >= 1) fout << indent() << "movq " << argv[0]->addr << ", %rdi\n";
+    if(arguments.size() >= 2) fout << indent() << "movq " << argv[1]->addr << ", %rsi\n";
+    if(arguments.size() >= 3) fout << indent() << "movq " << argv[2]->addr << ", %rdx\n";
+    if(arguments.size() >= 4) fout << indent() << "movq " << argv[3]->addr << ", %r10\n";
+    if(arguments.size() >= 5) fout << indent() << "movq " << argv[4]->addr << ", %r8\n";
+    if(arguments.size() >= 6) fout << indent() << "movq " << argv[5]->addr << ", %r9\n";
+
+    //do syscall
+    fout << indent() << "syscall\n";
+
+    //cleanup tmp variables
+    pop_declaration_stack();
+
+    if(asm_debug) fout << indent() << "# done syscall : " << syscall_id << "\n";
+}
+
 // -- HASH -- 
 size_t FloatLiteral::hash() {
     return std::hash<float>{}(val);
@@ -191,6 +282,16 @@ size_t CharLiteral::hash() {
 
 size_t StringLiteral::hash() {
     return std::hash<std::string>()(val);
+}
+
+size_t SyscallLiteral::hash() {
+    size_t hash = 0;
+    hash_combine(hash, syscall_id);
+    for(int i = 0; i < arguments.size(); i++){
+        hash_combine(hash, arguments[i]->hash());
+    }
+    hash_combine(hash, type->hash());
+    return hash;
 }
 
 // -- EQUALS --
@@ -228,6 +329,19 @@ bool StringLiteral::equals(Literal *_other) {
     return val == other->val;
 }
 
+bool SyscallLiteral::equals(Literal *_other) {
+    if(dynamic_cast<SyscallLiteral*>(_other) == nullptr) return false;
+    SyscallLiteral *other = dynamic_cast<SyscallLiteral*>(_other);
+
+    if(syscall_id != other->syscall_id) return false;
+    if(arguments.size() != other->arguments.size()) return false;
+    for(int i = 0; i < arguments.size(); i++){
+        if(!arguments[i]->equals(other->arguments[i])) return false;
+    }
+    if(!type->equals(other->type)) return false;
+    return true;
+}
+
 // -- MAKE COPY --
 Literal* FloatLiteral::make_copy() {
     return new FloatLiteral(val);
@@ -247,6 +361,12 @@ Literal* CharLiteral::make_copy() {
 
 Literal* StringLiteral::make_copy() {
     return new StringLiteral(val);
+}
+
+Literal* SyscallLiteral::make_copy() {
+    std::vector<Expression*> _arguments;
+    for(int i = 0; i < arguments.size(); i++) _arguments.push_back(arguments[i]->make_copy());
+    return new SyscallLiteral(syscall_id, _arguments, type->make_copy());
 }
 
 // -- TO STRING --
@@ -270,6 +390,17 @@ std::string StringLiteral::to_string() {
     return "\"" + val + "\"";
 }
 
+std::string SyscallLiteral::to_string() {
+    std::string ret = "syscall(" + std::to_string(syscall_id) + ", ";
+    for(int i = 0; i < arguments.size(); i++){
+        ret += arguments[i]->to_string();
+        if(i != arguments.size() - 1) ret += ", ";
+    }
+    ret += type->to_string();
+    ret += ")";
+    return ret;
+}
+
 // -- REPLACE TEMPLATED TYPES --
 bool FloatLiteral::replace_templated_types(TemplateMapping *mapping) {
     return true;
@@ -289,5 +420,13 @@ bool CharLiteral::replace_templated_types(TemplateMapping *mapping) {
 }
 
 bool StringLiteral::replace_templated_types(TemplateMapping *mapping) {
+    return true;
+}
+
+bool SyscallLiteral::replace_templated_types(TemplateMapping *mapping) {
+    for(int i = 0; i < arguments.size(); i++) {
+        if(!arguments[i]->replace_templated_types(mapping)) return false;
+    }
+    if(!type->replace_templated_types(mapping)) return false;
     return true;
 }

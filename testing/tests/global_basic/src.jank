@@ -7,7 +7,7 @@
 [0] i32 basic = 10;
 [0] i32 cntr = 0;
 
-[0] u64 arrsz = (u64) 100;
+[0] u64 arrsz = $u64 100;
 [1] vector<i32> arr = new vector<i32>(arrsz, 0);
 
 void foo() {
@@ -35,10 +35,10 @@ void test_basic() {
 
     //check that structs and templates work properly
     {
-        for(i32 i = 0; i < (i32) arrsz; i++){
+        for(i32 i = 0; i < $i32 arrsz; i++){
             arr[i] = i * i;
         }
-        for(i32 i = 0; i < (i32) arrsz; i++){
+        for(i32 i = 0; i < $i32 arrsz; i++){
             assert(arr[i] == i * i);
         }
     }

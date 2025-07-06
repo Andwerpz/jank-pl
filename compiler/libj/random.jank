@@ -1,9 +1,9 @@
 
 //returns a random integer in range [0, 65536)
 i32 rand_i32() {
-    u8* buf = (u8*) malloc(sizeof(i32));
-    buf[2] = (u8) 0;
-    buf[3] = (u8) 0;
-    sys_getrandom((void*) buf, (u64) 2, (u64) 0);
-    return *((i32*) buf);
+    u8* buf = $u8* malloc(sizeof(i32));
+    buf[2] = $u8 0;
+    buf[3] = $u8 0;
+    sys_getrandom($void* buf, $u64 2, $u64 0);
+    return *($i32* buf);
 }

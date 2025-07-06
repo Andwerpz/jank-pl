@@ -1,47 +1,26 @@
 #include <time>;
 
 void sys_exit(i32 status) {
-    asm!("mov $60, %rax");
-    asm!("mov 16(%rbp), %rdi");
-    asm!("syscall");
+    syscall(60, void, status);
 }
 
 // writes 'count' bytes from 'buf' to 'fd'
 // on success, returns the number of bytes written
 // on failure, returns -1
 u64 sys_write(i32 fd, void* buf, u64 count) {
-    u64 ret = (u64) 0;
-    asm!("mov $1, %rax");
-    asm!("mov 32(%rbp), %rdi");
-    asm!("mov 24(%rbp), %rsi");
-    asm!("mov 16(%rbp), %rdx");
-    asm!("syscall");
-    asm!("movq %rax, -8(%rbp)");
-    return ret;
+    return syscall(1, u64, fd, buf, count);
 }
 
 // tries to read 'count' bytes from 'fd' to 'buf'. 
 // returns the actual amount of bytes read and increments the file pointer
 u64 sys_read(i32 fd, void* buf, u64 count) {
-    u64 ret = (u64) 0;
-    asm!("mov $0, %rax");
-    asm!("mov 32(%rbp), %rdi");
-    asm!("mov 24(%rbp), %rsi");
-    asm!("mov 16(%rbp), %rdx");
-    asm!("syscall");
-    asm!("movq %rax, -8(%rbp)");
-    return ret;
+    return syscall(0, u64, fd, buf, count);
 }
 
 // sets the end of the data segment to the address specified
 // brk(0) returns the current end of the data segment
 u64 sys_brk(u64 addr) {
-    u64 ret = (u64) 0;
-    asm!("mov $12, %rax");
-    asm!("mov 16(%rbp), %rdi");
-    asm!("syscall");
-    asm!("movq %rax, -8(%rbp)");
-    return ret;
+    return syscall(12, u64, addr);
 }
 
 // fills the buffer pointed to by buf with up to buf_len random bytes
@@ -49,24 +28,11 @@ u64 sys_brk(u64 addr) {
 // on success it returns the number of bytes written into the buffer
 // on error, it returns -1
 u64 sys_getrandom(void* buf, u64 buf_len, u64 flags) {
-    u64 ret = (u64) 0;
-    asm!("mov $318, %rax");
-    asm!("mov 32(%rbp), %rdi");
-    asm!("mov 24(%rbp), %rsi");
-    asm!("mov 16(%rbp), %rdx");
-    asm!("syscall");
-    asm!("movq %rax, -8(%rbp)");
-    return ret;
+    return syscall(318, u64, buf, buf_len, flags);
 }
 
 // fills the provided timespec struct with the current time in clock 'clock_id'. 
 // returns 0 on success, -1 on error. 
 i32 sys_clock_gettime(u64 clock_id, timespec* tp) {
-    i32 ret = 0;
-    asm!("mov $228, %rax");
-    asm!("mov 24(%rbp), %rdi");
-    asm!("mov 16(%rbp), %rsi");
-    asm!("syscall");
-    asm!("movq %rax, -8(%rbp)");
-    return ret;
+    return syscall(228, i32, clock_id, tp);
 }

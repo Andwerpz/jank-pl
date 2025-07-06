@@ -2,16 +2,16 @@
 
 // look here for rest of defs : 
 // https://codebrowser.dev/glibc/glibc/sysdeps/unix/sysv/linux/bits/time.h.html
-[-1] u64 CLOCK_REALTIME = (u64) 0;            // Identifier for system-wide realtime clock.
-[-1] u64 CLOCK_MONOTONIC = (u64) 1;           // Monotonic system-wide clock.
+[-1] u64 CLOCK_REALTIME = $u64 0;            // Identifier for system-wide realtime clock.
+[-1] u64 CLOCK_MONOTONIC = $u64 1;           // Monotonic system-wide clock.
 
 struct timespec {
     i64 tv_sec;
     i64 tv_nsec;
 
     timespec() {
-        this.tv_sec = (i64) 0;
-        this.tv_nsec = (i64) 0;
+        this.tv_sec = $i64 0;
+        this.tv_nsec = $i64 0;
     }
 
     timespec(timespec& other) {
@@ -23,5 +23,5 @@ struct timespec {
 u64 get_sys_time_ns() {
     timespec ts = new timespec();
     sys_clock_gettime(CLOCK_REALTIME, @ts);
-    return (u64) ts.tv_sec * (u64) 1000000000 + (u64) ts.tv_nsec;
+    return $u64 ts.tv_sec * $u64 1000000000 + $u64 ts.tv_nsec;
 }

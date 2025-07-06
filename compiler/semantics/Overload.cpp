@@ -143,14 +143,13 @@ OperatorSignature* Overload::resolve_operator_signature() const {
         Type *left = this->parameters[0]->type, *right = this->parameters[1]->type;
         return new OperatorSignature(left, op, right);
     }
-    else if(op == "++x" || op == "--x" || op == "*x" || op == "(cast)") {
+    else if(op == "++x" || op == "--x" || op == "*x") {
         //prefix operator
         if(this->parameters.size() != 1) return nullptr;
         Type *right = this->parameters[0]->type;
         if(op == "++x") return new OperatorSignature("++", right);
         else if(op == "--x") return new OperatorSignature("--", right);
         else if(op == "*x") return new OperatorSignature("*x", right);
-        else if(op == "(cast)") return new OperatorSignature(right, this->type);
         else assert(false);
     }
     else if(op == "x++" || op == "x--") {
@@ -167,6 +166,7 @@ OperatorSignature* Overload::resolve_operator_signature() const {
         Type *left = this->parameters[0]->type, *et = this->parameters[1]->type;
         return new OperatorSignature(left, "[]", et);
     }
+    //TODO handle '$' (casting operator)
     else assert(false);
 }
 

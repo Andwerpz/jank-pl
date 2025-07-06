@@ -1,12 +1,6 @@
 #include <jstring>;
 #include <put>;
-
-void assert(i32 x) {
-    if(!x) {
-        puts_endl("assert failed");
-        sys_exit(1);
-    }
-}
+#include <assert>;
 
 struct A {
     i32 x;
@@ -46,8 +40,8 @@ struct C {
 
 i32 main() {
 
-    i32 n = (i32) sizeof(C);
-    i32* arr = (i32*) malloc(sizeof(C));
+    i32 n = $i32 sizeof(C);
+    i32* arr = $i32* malloc(sizeof(C));
     puts("sizeof C : ");
     puti_endl(n);
     assert(n % 4 == 0);
@@ -55,7 +49,7 @@ i32 main() {
         arr[i] = i;
     }
 
-    C* c = (C*) arr;
+    C* c = $C* arr;
     assert(c->x.x == 0);
     assert(c->x.y == 1);
     assert(c->y.x == 2);

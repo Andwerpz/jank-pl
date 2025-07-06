@@ -53,7 +53,7 @@ OperatorSignature::OperatorSignature(Type *_left, std::string _op) {
 
 OperatorSignature::OperatorSignature(Type *from, Type *to) {
     left = from;
-    op = "(cast)";
+    op = "$";
     right = to;
 }
 
@@ -209,7 +209,6 @@ int label_counter;
 int tmp_variable_counter;
 
 void reset_controller() {
-    // - reset semantic controller
     enclosing_function = nullptr;
     enclosing_program = nullptr;
     declared_types.clear();
@@ -241,7 +240,6 @@ void reset_controller() {
     tmp_variable_counter = 0;
 
     primitives::init_primitives();
-
 }
 
 void hash_combine(size_t& seed, size_t value) {
@@ -547,7 +545,7 @@ OperatorImplementation* find_operator_implementation(std::optional<Expression*> 
     if(left.has_value()) assert(left.value() != nullptr);
     if(right.has_value()) assert(right.value() != nullptr);
     //this should not be the casting operator
-    assert(op != "(cast)");
+    assert(op != "$");
 
     //try to construct templated overload
     for(int i = 0; i < declared_templated_overloads.size(); i++){
@@ -870,17 +868,6 @@ Variable* get_variable(Identifier *id) {
     return nullptr;
 }
 
-//checks against all variables, functions
-bool is_identifier_used(Identifier *id) {
-    for(int i = 0; i < declared_functions.size(); i++){
-        if(*id == *(declared_functions[i]->id)) return true;
-    }
-    for(int i = 0; i < declared_variables.size(); i++){
-        if(*id == *(declared_variables[i]->id)) return true;
-    }
-    return false;
-}
-
 bool add_struct_type(StructDefinition *sd) {
     assert(sd != nullptr);
     Type *t = sd->type;
@@ -1022,8 +1009,8 @@ bool add_constructor(Constructor *c) {
 Variable* add_variable(Type *t, Identifier *id, bool is_global) {
     assert(t != nullptr && id != nullptr);
     if(!is_global) assert(declaration_stack.size() != 0);
-    if(is_identifier_used(id)) {
-        std::cout << "Cannot initialize " << t->to_string() << " " << id->name << " as identifier is already used\n";
+    if(is_variable_declared(id)) {
+        std::cout << "Cannot redeclare " << t->to_string() << " " << id->name << "\n";
         return nullptr;
     }
     Variable *v = new Variable(t, id);
@@ -1321,9 +1308,9 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr, s
         std::cout << "Cannot initialize a variable of type void\n";
         return nullptr;
     }
-    // - is the identifier available?
-    if(is_identifier_used(id)) {
-        std::cout << "Identifier already used : " << id->name << "\n";
+    // - is the variable already declared?
+    if(is_variable_declared(id)) {
+        std::cout << "Cannot redeclare variable : " << vt->to_string() << " " << id->name << "\n";
         return nullptr;
     }
     // - does the expression resolve to a type?

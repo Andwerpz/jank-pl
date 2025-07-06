@@ -147,7 +147,6 @@ std::string get_function_label(FunctionSignature *fs);
 std::string get_constructor_label(ConstructorSignature *cs);
 std::string get_overload_label(OperatorSignature *os);
 Variable* get_variable(Identifier *id);
-bool is_identifier_used(Identifier *id);
 bool add_struct_type(StructDefinition *sd);
 bool add_primitive_basetype(BaseType *t);   //these don't constitute all the primitive types, you can have derived primitive types (like pointer)
 bool add_basetype(BaseType *t);

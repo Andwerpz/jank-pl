@@ -1,12 +1,6 @@
 #include <jstring>;
 #include <put>;
-
-void assert(i32 x) {
-    if(!x) {
-        puts_endl("assert failed");
-        sys_exit(1);
-    }
-}
+#include <assert>;
 
 struct vec2 {
     i32 x;
@@ -34,7 +28,7 @@ void test_basic_reference() {
 }
 
 void test_reference_array_element() {
-    i32* arr = (i32*) malloc(sizeof(i32) * (u64) 3);
+    i32* arr = $i32* malloc(sizeof(i32) * $u64 3);
     arr[0] = 10;
     arr[1] = 20;
     arr[2] = 30;

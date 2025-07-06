@@ -3,8 +3,8 @@
 
 i32 main() {
     i32 N = 10;
-    i32** dp = (i32**) malloc((u64) N * sizeof(i32*));
-    for(i32 i = 0; i < N; i = i + 1) dp[i] = (i32*) malloc((u64) N * sizeof(i32));
+    i32** dp = $i32** malloc($u64 N * sizeof(i32*));
+    for(i32 i = 0; i < N; i = i + 1) dp[i] = $i32* malloc($u64 N * sizeof(i32));
     dp[0][0] = 1;
     for(i32 i = 0; i < N; i = i + 1) {
         for(i32 j = 0; j < N; j = j + 1) {

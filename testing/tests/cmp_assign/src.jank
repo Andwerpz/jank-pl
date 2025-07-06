@@ -1,5 +1,6 @@
 #include <jstring>;
 #include <put>;
+#include <assert>;
 
 //we should treat any compound assignment operator as it's own operator. 
 //for example, don't elaborate
@@ -11,13 +12,6 @@
 //we can just treat the assignment operator '=' as a special case, and leave the compound
 //assignment operators as normal binary operators. The auto typecasting will be conferred onto
 //them via operator overload lookup
-
-void assert(i32 x) {
-    if(!x) {
-        puts_endl("assert failed");
-        sys_exit(1);
-    }
-}
 
 i32 foo() {
     i32 x = 4;
@@ -102,7 +96,7 @@ void arr_test() {
     */
 
     i32 n = 3;
-    i32* a = (i32*) malloc(sizeof(i32) * (u64) n);
+    i32* a = $i32* malloc(sizeof(i32) * $u64 n);
     for(i32 i = 0; i < n; i++) a[i] = 0;
     i32 x = 0;
     a[x++] += 1;

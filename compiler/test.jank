@@ -1,5 +1,9 @@
 #include <ostream>;
+#include <math>;
+#include <put>;
+#include <random>;
 #include <time>;
+#include <vector>;
 
 i32 main() {
 

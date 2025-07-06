@@ -1,4 +1,4 @@
-// Date Generated : 07-05-2025 10:42:47
+// Date Generated : 07-06-2025 15:15:04
 #pragma once
 #include <vector>
 #include <string>
@@ -22,6 +22,7 @@ namespace parser {
     struct literal_float;
     struct literal_char;
     struct literal_string;
+    struct literal_syscall;
     struct literal;
     struct member_variable_declaration;
     struct constructor_definition;
@@ -396,7 +397,45 @@ namespace parser {
         std::string to_string();
     };
 
-    // literal = literal_float | literal_integer | literal_sizeof | literal_char | literal_string ;
+    // literal_syscall = "syscall" , ows , "(" , ows , literal_integer , ows , "," , ows , type , ows , "," , ows , argument_list , ows , ")" ;
+    struct literal_syscall {
+        std::string t0;
+        ows *t1;
+        std::string t2;
+        ows *t3;
+        literal_integer *t4;
+        ows *t5;
+        std::string t6;
+        ows *t7;
+        type *t8;
+        ows *t9;
+        std::string t10;
+        ows *t11;
+        argument_list *t12;
+        ows *t13;
+        std::string t14;
+        literal_syscall(std::string _t0, ows *_t1, std::string _t2, ows *_t3, literal_integer *_t4, ows *_t5, std::string _t6, ows *_t7, type *_t8, ows *_t9, std::string _t10, ows *_t11, argument_list *_t12, ows *_t13, std::string _t14) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
+            t5 = _t5;
+            t6 = _t6;
+            t7 = _t7;
+            t8 = _t8;
+            t9 = _t9;
+            t10 = _t10;
+            t11 = _t11;
+            t12 = _t12;
+            t13 = _t13;
+            t14 = _t14;
+        }
+        static literal_syscall* parse();
+        std::string to_string();
+    };
+
+    // literal = literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall ;
     struct literal {
         struct a0 {
             literal_float *t0;
@@ -438,6 +477,14 @@ namespace parser {
             static a4* parse();
             std::string to_string();
         };
+        struct a5 {
+            literal_syscall *t0;
+            a5(literal_syscall *_t0) {
+                t0 = _t0;
+            }
+            static a5* parse();
+            std::string to_string();
+        };
         bool is_a0 = false;
         a0 *t0;
         bool is_a1 = false;
@@ -448,6 +495,8 @@ namespace parser {
         a3 *t3;
         bool is_a4 = false;
         a4 *t4;
+        bool is_a5 = false;
+        a5 *t5;
         literal(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
@@ -467,6 +516,10 @@ namespace parser {
         literal(a4 *_t4) {
             is_a4 = true;
             t4 = _t4;
+        }
+        literal(a5 *_t5) {
+            is_a5 = true;
+            t5 = _t5;
         }
         static literal* parse();
         std::string to_string();
@@ -876,7 +929,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // expr_unary = ( "++" | "--" | "+" | "-" | "~" | "!" | "*" | "@" | "(" , type , ")" ) , ows , expr_unary | expr_postfix ;
+    // expr_unary = ( "++" | "--" | "+" | "-" | "~" | "!" | "*" | "@" | "$" , type ) , ows , expr_unary | expr_postfix ;
     struct expr_unary {
         struct a0 {
             struct b0 {
@@ -947,11 +1000,9 @@ namespace parser {
                 struct c8 {
                     std::string t0;
                     type *t1;
-                    std::string t2;
-                    c8(std::string _t0, type *_t1, std::string _t2) {
+                    c8(std::string _t0, type *_t1) {
                         t0 = _t0;
                         t1 = _t1;
-                        t2 = _t2;
                     }
                     static c8* parse();
                     std::string to_string();
