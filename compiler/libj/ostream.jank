@@ -8,17 +8,20 @@
 
 struct ostream {
     i32 fd;
+    u8* scratch_buf;
 
     ostream() {
         this.fd = STDOUT;
-    }
-
-    ostream(ostream& other) {
-        this.fd = other.fd;
+        this.scratch_buf = $u8* malloc($u64 128);
     }
 
     ostream(i32 _fd) {
         this.fd = _fd;
+        this.scratch_buf = $u8* malloc($u64 128);
+    }
+
+    ostream(ostream& other) {
+        this.fd = other.fd;
     }
 
     void write_to_fd(u8* str) {

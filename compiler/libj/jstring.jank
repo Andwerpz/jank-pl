@@ -4,6 +4,14 @@ u64 strlen(u8* s) {
     for(u64 i = $u64 0; ; i++) if(s[i] == $u8 0) return i;
 }
 
+//to_string(T x, u8* buf) should write the string to the beginning of the buffer 
+// and return how many bytes were written (excluding '\0')
+
+u64 to_string(i32 x, u8* buf) {
+    //TODO
+    return $u64 0;
+}
+
 u8* to_string(i32 x) {
     if(x == 0) return "0";
     i32 is_neg = x < 0;

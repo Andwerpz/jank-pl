@@ -736,7 +736,16 @@ some miscellaneous features:
  - after implementing free, add struct destructors. 
    - currently, I assume that cleaning up the local variable declaration stack does not affect any
      of the registers. This will no longer be true after implementing struct destructors. 
-   - examples where I use this assumption are in FunctionCall::emit_asm() and SyscallLiteral::emit_asm()
+   - examples where I use this assumption are in FunctionCall::emit_asm() and SyscallLiteral::emit_asm() 
+     - perhaps can do 2 phase declaration stack popping. First phase 
+   - variables should get destructed when they go out of scope. Should modify pop_declaration_stack() to do this. 
+   - will also have to think about how to free temp variables. 
+     - primitives (i32, f32, etc.) are simple and don't need destruction
+     - overloaded operators and constructor calls are already wrapped in function calls during the elaboration phase
+     - therefore, any temporary structs produced within subexpressions will have been bound to named temporaries or returned 
+       from an overload/constructor, which means the only destructible temporary I need to explicitly handle is the final 
+       value on the right-hand side of an assignment if it is an rvalue struct
+   - use mmap and munmap syscalls to implement malloc and free. 
  - have some reserved keywords (break, continue, sizeof)
  - goto statement
  - make id_to_type() return a bool so that it doesn't fail an assert when a variable doesn't exist
