@@ -1,25 +1,7 @@
 #include <jstring>;
 #include <put>;
 #include <assert>;
-
-struct ostream {
-    ostream() {
-        // do nothing
-    }
-    ostream(ostream& other) {
-        // do nothing
-    }
-}
-
-ostream& operator<<(ostream& stream, i32 x) {
-    puti(x);
-    return stream;
-}
-
-ostream& operator<<(ostream& stream, u8* s) {
-    puts(s);
-    return stream;
-}
+#include <ostream>;
 
 template<T>
 struct vector {
@@ -57,7 +39,6 @@ vector<i32>& operator[](vector<vector<i32>>& a, i32 ind) {
 i32 main() {
 
     i32 n = 10;
-    ostream cout = new ostream();
     vector<vector<i32>> dp = new vector<vector<i32>>(n, new vector<i32>(n, 0));
 
     dp[0][0] = 1;

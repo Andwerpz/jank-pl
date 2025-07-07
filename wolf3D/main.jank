@@ -299,7 +299,7 @@ i32 main() {
         vec2 cdir = new vec2(1.0, 0.0);
         cdir.rotateCCW(prot);
 
-        ppos = cdir * 2.0;
+        ppos = cdir * 2.2;
         ppos.rotateCCW(-PI);
         ppos += (new vec2($f32 g_map_width, $f32 g_map_height)) * 0.5;
 
@@ -327,6 +327,8 @@ i32 main() {
             }
         }
         g_screen.render();
+
+        cout << "MEM USAGE : " << (MEM_USED >> ($u64 20)) << " MB\n";
 
         //cout << "PROT : " << prot << "\n";
         //cout << "INCAMT : " << incamt << "\n";

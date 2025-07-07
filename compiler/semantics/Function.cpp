@@ -89,7 +89,7 @@ bool Function::is_well_formed() {
         return false;
     }
 
-    bool is_main = FunctionSignature(new Identifier("main"), {}) == *(fs);
+    bool is_main = this->is_main();
 
     //print function label
     //if function signature is main(), substitute main for _start
@@ -105,14 +105,67 @@ bool Function::is_well_formed() {
         fout << label << ":\n";
     }
 
+    //if this is main, initialize global variables
+    if(is_main) {
+        std::cout << "INITIALIZING GLOBAL VARIABLES" << std::endl;
+
+        if(asm_debug) fout << indent() << "# start initialize global variables\n";
+
+        //resolve global declaration templates
+        std::vector<GlobalDeclaration*> global_declarations = enclosing_program->global_declarations;
+        std::cout << "GLOBAL AMT : " << global_declarations.size() << "\n";
+        for(int i = 0; i < global_declarations.size(); i++){
+            if(!global_declarations[i]->look_for_templates()) {
+                std::cout << "Unable to resolve templates in declaration of global variable " << global_declarations[i]->declaration->id->name << "\n";
+                return false;
+            }
+        }
+
+        //save global base pointer to %r15
+        fout << indent() << "mov %rsp, %r15\n";
+
+        //reserve enough memory. This should not be managed by local_offset
+        fout << indent() << "sub $" << global_declarations.size() * 8 << ", %rsp\n";
+
+        //setup fake stack frame. We need to do this because pop_declaration_stack() will not actually
+        //move %rsp if it's the last element on the stack. 
+        push_declaration_stack();
+
+        //%rbp should start by pointing towards %rsp for proper local variable behaviour
+        fout << indent() << "mov %rsp, %rbp\n";
+
+        //sort by tier and initialize
+        std::sort(global_declarations.begin(), global_declarations.end(), [](GlobalDeclaration *a, GlobalDeclaration *b) -> bool {
+            return a->tier < b->tier;
+        });
+        for(int i = 0; i < global_declarations.size(); i++){
+            Type *type = global_declarations[i]->declaration->type;
+            Identifier *id = global_declarations[i]->declaration->id;
+            Expression *expr = global_declarations[i]->declaration->expr;
+            std::string addr_str = std::to_string(i * 8) + "(%r15)";
+            std::cout << "GLOBAL : " << type->to_string() << " " << id->name << "\n";
+
+            if(asm_debug) fout << indent() << "# initialize global variable : " << type->to_string() << " " << id->name << "\n";
+            Variable *v = emit_initialize_variable(type, id, expr, addr_str, true);
+            if(asm_debug) fout << indent() << "# done initialize global variable : " << type->to_string() << " " << id->name << "\n";
+        
+            if(v == nullptr) {
+                std::cout << "Failed to initialize global variable : " << type->to_string() << " " << id->name << "\n";
+                return false;
+            }
+        }
+
+        if(asm_debug) fout << indent() << "# done initialize global variables\n";
+
+        // remove fake stack frame
+        pop_declaration_stack();
+
+        std::cout << "DONE INITIALIZE GLOBAL VARIABLES" << std::endl;
+    }
+
     //setup function stack frame
     fout << indent() << "push %rbp\n";  //should not be managed by local_offset
     fout << indent() << "mov %rsp, %rbp\n";
-
-    //if this is main, jump to global variable initialization
-    if(is_main) {
-        fout << indent() << "call " << global_init_label << "\n";
-    }
 
     push_declaration_stack();
     
@@ -236,4 +289,10 @@ bool Function::look_for_templates() {
     for(int i = 0; i < parameters.size(); i++) if(!parameters[i]->look_for_templates()) return false;
     if(!body->look_for_templates()) return false;
     return true;
+}
+
+bool Function::is_main() {
+    FunctionSignature *fs = resolve_function_signature();
+    assert(fs != nullptr);
+    return fs->equals(new FunctionSignature(new Identifier("main"), {}));
 }

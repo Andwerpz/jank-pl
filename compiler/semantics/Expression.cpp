@@ -1456,7 +1456,10 @@ void ExprPrimary::id_to_type() {
 
         //retrieve identifier type and replace
         Type *t = find_variable_type(id);
-        assert(t != nullptr);
+        if(t == nullptr) {
+            std::cout << "Could not find type of variable : " << id->name << "\n";
+            assert(false);
+        }
         val = t;
     }
     else if(std::holds_alternative<Literal*>(val)) {

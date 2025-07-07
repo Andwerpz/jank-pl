@@ -213,6 +213,7 @@ int assemble(char src_path[], char res_path[]) {
     if(pid == 0) {
         execlp(
             "gcc", "gcc", 
+            "-g",               //debug metadata
             "-x", "assembler",  //gcc expects .s files to be assembly. 
             "-nostartfiles", "-nostdlib",   //tell gcc that we're not compiling C assembly
             "-m64",         //64 bit mode?

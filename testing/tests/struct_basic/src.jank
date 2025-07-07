@@ -1,6 +1,7 @@
 #include <jstring>;
 #include <put>;
 #include <assert>;
+#include <ostream>;
 
 struct vec2 {
     i32 x;
@@ -48,25 +49,6 @@ i32 operator==(vec2 a, vec2 b) {
     return a.x == b.x && a.y == b.y;
 }
 
-struct ostream {
-    ostream() {
-        // do nothing
-    }
-    ostream(ostream& other) {
-        // do nothing
-    }
-}
-
-ostream& operator<<(ostream& stream, i32 x) {
-    puti(x);
-    return stream;
-}
-
-ostream& operator<<(ostream& stream, u8* s) {
-    puts(s);
-    return stream;
-}
-
 ostream& operator<<(ostream& stream, vec2 v) {
     return stream << "(" << v.x << ", " << v.y << ")";
 }
@@ -84,7 +66,6 @@ void vec2_test() {
 }
 
 void ostream_test() {
-    ostream cout = new ostream();
 
     cout << "bello!!" << "\n";
     i32 x = 100;

@@ -1,15 +1,8 @@
 #include <ostream>;
-#include <math>;
-#include <put>;
-#include <random>;
-#include <time>;
-#include <vector>;
 
 i32 main() {
 
-    while(1) {
-        cout << get_sys_time_ns() << "\n";
-    }
+    cout << "TEST\n";
 
     return 0;
 }

@@ -36,3 +36,19 @@ u64 sys_getrandom(void* buf, u64 buf_len, u64 flags) {
 i32 sys_clock_gettime(u64 clock_id, timespec* tp) {
     return syscall(228, i32, clock_id, tp);
 }
+
+// tells the kernel to map 'len' bytes of memory. 
+// If the addr field is non-zero, kernel takes it as a hint as to where to map the memory
+// prot_flags are permission flags for the mapped memory
+// map_flags are other options. 
+// for normal process memory mapping, fd and offset are not needed. 
+// on success returns the address, on failure returns $void* $u64 -1
+void* sys_mmap(void* addr, u64 len, u64 prot_flags, u64 map_flags, i32 fd, u64 offset) {
+    return syscall(9, void*, addr, len, prot_flags, map_flags, fd, offset);
+}
+
+// tells the kernel to free 'len' bytes of memory starting from 'addr'. 
+// on success returns 0, on failure returns -1
+i32 sys_munmap(void* addr, u64 len) {
+    return syscall(11, i32, addr, len);
+}

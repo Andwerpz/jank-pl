@@ -230,67 +230,11 @@ bool Program::is_well_formed() {
         }
     }
 
-    // - initialize global variables
-    // need to set it up as if this were a function. 
-    {
-        std::cout << "INITIALIZING GLOBAL VARIABLES" << std::endl;
-
-        //create label
-        global_init_label = create_new_label();
-        fout << global_init_label << ":\n";
-
-        //setup stack frame
-        fout << indent() << "push %rbp\n";  //should not be managed by local_offset
-        fout << indent() << "mov %rsp, %rbp\n";
-        push_declaration_stack();
-
-        if(asm_debug) fout << indent() << "# start initialize global variables\n";
-
-        //resolve global declaration templates
-        std::cout << "GLOBAL AMT : " << global_declarations.size() << "\n";
-        for(int i = 0; i < global_declarations.size(); i++){
-            if(!global_declarations[i]->look_for_templates()) {
-                std::cout << "Unable to resolve templates in declaration of global variable " << global_declarations[i]->declaration->id->name << "\n";
-                return false;
-            }
-        }
-
-        //alloc memory 
-        emit_malloc(global_declarations.size() * 8);
-
-        //save global base pointer to %r15
-        fout << indent() << "mov %rax, %r15\n";
-
-        //sort by tier and initialize
-        std::sort(global_declarations.begin(), global_declarations.end(), [](GlobalDeclaration *a, GlobalDeclaration *b) -> bool {
-            return a->tier < b->tier;
-        });
-        for(int i = 0; i < global_declarations.size(); i++){
-            Type *type = global_declarations[i]->declaration->type;
-            Identifier *id = global_declarations[i]->declaration->id;
-            Expression *expr = global_declarations[i]->declaration->expr;
-            std::string addr_str = std::to_string(i * 8) + "(%r15)";
-            std::cout << "GLOBAL : " << type->to_string() << " " << id->name << "\n";
-
-            if(asm_debug) fout << indent() << "# initialize global variable : " << type->to_string() << " " << id->name << "\n";
-            Variable *v = emit_initialize_variable(type, id, expr, addr_str, true);
-            if(asm_debug) fout << indent() << "# done initialize global variable : " << type->to_string() << " " << id->name << "\n";
-        
-            if(v == nullptr) {
-                std::cout << "Failed to initialize global variable : " << type->to_string() << " " << id->name << "\n";
-                return false;
-            }
-        }
-
-        if(asm_debug) fout << indent() << "# done initialize global variables\n";
-
-        // void return 
-        pop_declaration_stack();
-        fout << indent() << "pop %rbp\n";   //should not be managed by local_offset
-        fout << indent() << "ret\n";
-
-        std::cout << "DONE INITIALIZE GLOBAL VARIABLES" << std::endl;
-    }
+    //make sure i32 main() is the first function to be checked. 
+    //This is so that the global variables get initialized before anything else
+    std::sort(declared_functions.begin(), declared_functions.end(), [](Function *a, Function *b) -> bool {
+        return a->is_main() > b->is_main();
+    });
 
     // - check all functions and constructors, make sure they're well formed
     int function_ptr = 0;
