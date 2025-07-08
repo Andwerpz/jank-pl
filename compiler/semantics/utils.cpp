@@ -16,6 +16,8 @@
 #include "TemplatedOverload.h"
 #include "StructLayout.h"
 #include "primitives.h"
+#include "Destructor.h"
+#include "DestructorCall.h"
 
 Variable::Variable(Type *_type, Identifier *_id) {
     id = _id;
@@ -202,6 +204,7 @@ std::unordered_set<Type*, TypeHash, TypeEquals> primitive_base_types;
 std::vector<std::pair<Type*, StructLayout*>> struct_layout_map;
 std::unordered_map<FunctionSignature*, std::string, FunctionSignatureHash, FunctionSignatureEquals> function_label_map;
 std::unordered_map<ConstructorSignature*, std::string, ConstructorSignatureHash, ConstructorSignatureEquals> constructor_label_map;
+std::unordered_map<Type*, std::string, TypeHash, TypeEquals> destructor_label_map;
 std::unordered_map<OperatorSignature*, std::string, OperatorSignatureHash, OperatorSignatureEquals> overload_label_map;
 std::unordered_map<OperatorSignature*, OperatorImplementation*, OperatorSignatureHash, OperatorSignatureEquals> conversion_map;  
 
@@ -228,6 +231,9 @@ void reset_controller() {
 
     declared_constructors.clear();
     constructor_label_map.clear();
+
+    declared_destructors.clear();
+    destructor_label_map.clear();
     
     declared_variables.clear();
     while(declaration_stack.size()) declaration_stack.pop_back();
@@ -699,6 +705,16 @@ bool is_constructor_declared(ConstructorSignature *cs) {
     return false;
 }
 
+bool is_destructor_declared(Type *t) {
+    assert(t != nullptr);
+    for(int i = 0; i < declared_destructors.size(); i++){
+        if(t->equals(declared_destructors[i]->type)) {
+            return true;
+        }
+    }
+    return false;
+}
+
 Function* get_function(FunctionSignature *fs) {
     for(int i = 0; i < declared_functions.size(); i++){
         if(*fs == *(declared_functions[i]->resolve_function_signature())) {
@@ -841,6 +857,20 @@ Constructor* get_called_constructor(ConstructorCall *cc) {
     return viable[0];
 }
 
+//just look for a destructor of the same type
+Destructor* get_called_destructor(DestructorCall *dc) {
+    assert(dc != nullptr);
+
+    for(int i = 0; i < declared_destructors.size(); i++){
+        if(dc->type->equals(declared_destructors[i]->type)) {
+            return declared_destructors[i];
+        }
+    }
+
+    std::cout << "Unable to find destructor for type : " << dc->type->to_string() << "\n";
+    return nullptr;
+}
+
 std::string get_function_label(FunctionSignature *fs) {
     assert(fs != nullptr);
     assert(function_label_map.count(fs));
@@ -851,6 +881,12 @@ std::string get_constructor_label(ConstructorSignature *cs) {
     assert(cs != nullptr);
     assert(constructor_label_map.count(cs));
     return constructor_label_map[cs];
+}
+
+std::string get_destructor_label(Type *t) {
+    assert(t != nullptr);
+    assert(destructor_label_map.count(t));
+    return destructor_label_map[t];
 }
 
 std::string get_overload_label(OperatorSignature *os) {
@@ -880,12 +916,22 @@ bool add_struct_type(StructDefinition *sd) {
         Function *f = sd->functions[i];
         if(!add_function(f)) {
             std::cout << "Failed to add struct member function : " << f->resolve_function_signature()->to_string() << "\n";
+            return false;
         } 
     }
     for(int i = 0; i < sd->constructors.size(); i++) {
         Constructor *c = sd->constructors[i];
         if(!add_constructor(c)) {
             std::cout << "Failed to add struct constructor : " << c->resolve_constructor_signature()->to_string() << "\n";
+            return false;
+        }
+    }
+
+    //add destructor 
+    for(int i = 0; i < sd->destructors.size(); i++){
+        if(!add_destructor(sd->destructors[i])) {
+            std::cout << "Failed to add destructor : " << t->to_string() << "\n";
+            return false;
         }
     }
 
@@ -1006,6 +1052,16 @@ bool add_constructor(Constructor *c) {
     return true;
 }
 
+bool add_destructor(Destructor *d) {
+    assert(d != nullptr);
+    Type *t = d->type;
+    if(is_destructor_declared(t)) return false;
+    declared_destructors.push_back(d);
+    destructor_label_map.insert({t, create_new_label()});
+    std::cout << "ADD DESTRUCTOR : " << t->to_string() << std::endl;
+    return true;
+}
+
 Variable* add_variable(Type *t, Identifier *id, bool is_global) {
     assert(t != nullptr && id != nullptr);
     if(!is_global) assert(declaration_stack.size() != 0);
@@ -1060,17 +1116,59 @@ void remove_constructor(Constructor *c) {
     declared_constructors.erase(declared_constructors.begin() + ind);
 }
 
+void remove_destructor(Destructor *d) {
+    assert(d != nullptr);
+    int ind = -1;
+    for(int i = 0; i < declared_destructors.size(); i++){
+        if(d->equals(declared_destructors[i])) {
+            ind = i;
+            break;
+        }
+    }
+    assert(ind != -1);
+    destructor_label_map.erase(d->type);
+    declared_constructors.erase(declared_constructors.begin() + ind);
+}
+
 void push_declaration_stack() {
     declaration_stack.push_back(std::vector<Variable*>(0));
 }
 
+//cleans up one layer of the declaration stack
+//destructs any non-primitive variables
+//specifically saves registers %rax, %rcx
 void pop_declaration_stack() {
     assert(declaration_stack.size() != 0);
 
     std::vector<Variable*> top = *(declaration_stack.rbegin());
     declaration_stack.pop_back();
+
+    //if this is not the function parameter layer, adjust %rsp
     if(declaration_stack.size() > 0) {
-        //this is not the function parameter layer, adjust %rsp
+        //save %rax, %rcx
+        emit_push("%rax", "pop_declaration_stack() : save %rax");
+        emit_push("%rcx", "pop_declaration_stack() : save %rcx");
+
+        //destruct any non-primitive variables
+        for(int i = 0; i < top.size(); i++){
+            Type *t = top[i]->type;
+            if(!is_type_primitive(t)) {
+                DestructorCall *dc = new DestructorCall(t);
+                assert(dc->resolve_type() != nullptr);
+
+                //put addr to struct in %rax
+                fout << indent() << "movq " << top[i]->addr << ", %rax\n";
+
+                //call destructor
+                dc->emit_asm();
+            }
+        }   
+
+        //retrieve %rax, %rcx
+        emit_pop("%rcx", "pop_declaration_stack() : save %rcx");
+        emit_pop("%rax", "pop_declaration_stack() : save %rax");
+        
+        //adjust %rsp
         std::vector<std::string> desc_list;
         for(int i = 0; i < top.size(); i++){
             desc_list.push_back(top[i]->id->name);
@@ -1203,6 +1301,8 @@ StructDefinition* get_struct_definition(Type *t) {
 
 //allocates sz_bytes memory by calling malloc. Resulting address is in %rax
 void emit_malloc(int sz_bytes) {
+    assert(sz_bytes >= 0);
+
     FunctionSignature *malloc_signature = new FunctionSignature(new Identifier("malloc"), {primitives::u64});
     std::string malloc_label = get_function_label(malloc_signature);
 
@@ -1210,6 +1310,22 @@ void emit_malloc(int sz_bytes) {
     emit_push("%rax", "emit_malloc() : malloc arg");
     fout << indent() << "call " << malloc_label << "\n";
     emit_add_rsp(8, "emit_malloc() : malloc arg");
+}
+
+//frees sz_bytes memory at address provided by %rax
+//resulting free status is in %rax
+void emit_free(int sz_bytes) {
+    assert(sz_bytes >= 0);
+
+    FunctionSignature *free_signature = new FunctionSignature(new Identifier("free"), {new PointerType(primitives::_void), primitives::u64});
+    std::string free_label = get_function_label(free_signature);
+
+    emit_push("%rax", "emit_free() : free addr");
+    fout << indent() << "mov $" << sz_bytes << ", %rax\n";
+    emit_push("%rax", "emit_free() : free sz_bytes");
+    fout << indent() << "call " << free_label << "\n";
+    std::vector<std::string> stk_strs = {"emit_free() : free addr", "emit_free() : free sz_bytes"};
+    emit_add_rsp(16, stk_strs);
 }
 
 //expects memory address in %rax, places primitive into address, returns with memory address in %rax
@@ -1390,7 +1506,6 @@ void emit_dereference(Type *rt) {
     Type *t = nullptr;
     if(auto _t = dynamic_cast<ReferenceType*>(rt)) {
         t = _t->type;
-        
     }
     else if(auto _t = dynamic_cast<PointerType*>(rt)) {
         t = _t->type;

@@ -2,7 +2,12 @@
 
 i32 main() {
 
-    cout << "TEST\n";
+    u8* buf = $u8* malloc($u64 10000);
+    free($void* buf, $u64 10000);
+
+    while(1) {
+        cout << "TIME : " << get_sys_time_ns() << "\n";
+    }
 
     return 0;
 }

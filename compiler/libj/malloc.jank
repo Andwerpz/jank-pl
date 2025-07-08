@@ -18,7 +18,8 @@ void* _malloc(u64 sz) {
     return sbrk(sz);
 }
 
-//mmap allocator. Essentially pushing the task of memory management to the OS. We can now free using munmap. 
+//mmap allocator. Essentially pushing the task of memory management to the OS. We can now free using munmap.
+//the downside is that the resolution of our allocs becomes 4KB.  
 
 //need to set a very high priority on global variables that are required for malloc as we'll segfault
 //if these variables are unset when trying to initialize something else that requires malloc

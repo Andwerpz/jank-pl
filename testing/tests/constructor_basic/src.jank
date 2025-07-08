@@ -13,6 +13,7 @@ struct A {
     A(i32 _val) {
         this.val = _val;
     }
+    ~A() {}
 }
 
 struct B {
@@ -27,6 +28,7 @@ struct B {
         puts_endl("construct B with A");
         this.foo = _foo;
     }
+    ~B() {}
 }
 
 i32 main() {

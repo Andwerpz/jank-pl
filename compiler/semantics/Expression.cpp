@@ -824,6 +824,7 @@ void ExprPrimary::emit_asm() {
 
         //address. 
         //For structs, they are supposed to be their main memory, so their address is the same as their value
+        //since struct T* is the same as T, T& is also the same as T (it's just we auto dereference T&)
         if(is_type_primitive(v->type)) {
             fout << indent() << "lea " << v->addr << ", %rcx\n";  //address
         }

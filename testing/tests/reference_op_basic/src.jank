@@ -18,6 +18,7 @@ struct vec2 {
         this.x = _x;
         this.y = _y;
     }
+    ~vec2() {}
 }
 
 void test_basic_reference() {

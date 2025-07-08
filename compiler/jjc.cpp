@@ -736,9 +736,10 @@ So, I still need to implement more generous function call resolution with partia
 some miscellaneous features:
  - after implementing free, add struct destructors. 
    - currently, I assume that cleaning up the local variable declaration stack does not affect any
-     of the registers. This will no longer be true after implementing struct destructors. 
+     of the registers. This will no longer be true after implementing struct destructors.
    - examples where I use this assumption are in FunctionCall::emit_asm() and SyscallLiteral::emit_asm() 
-     - perhaps can do 2 phase declaration stack popping. First phase 
+     - perhaps can make it so that pop_declaration_stack() specifically saves %rax, %rcx. This is enough for 
+       expression evaluation to still work. 
    - variables should get destructed when they go out of scope. Should modify pop_declaration_stack() to do this. 
    - will also have to think about how to free temp variables. 
      - primitives (i32, f32, etc.) are simple and don't need destruction
@@ -746,6 +747,8 @@ some miscellaneous features:
      - therefore, any temporary structs produced within subexpressions will have been bound to named temporaries or returned 
        from an overload/constructor, which means the only destructible temporary I need to explicitly handle is the final 
        value on the right-hand side of an assignment if it is an rvalue struct
+     - actually, I don't even need to specifically handle these temp variables at all, as in the '=' operator, I bind 
+       the temp variable to a named temporary reference, so if I just handle cleaning up named variables then I should be fine. 
    - use mmap and munmap syscalls to implement malloc and free. 
  - have some reserved keywords (break, continue, sizeof)
  - goto statement

@@ -24,6 +24,10 @@ struct ostream {
         this.fd = other.fd;
     }
 
+    ~ostream() {
+        free($void* this.scratch_buf, $u64 128);
+    }
+
     void write_to_fd(u8* str) {
         sys_write(this.fd, $void* str, strlen(str));
     }

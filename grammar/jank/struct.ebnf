@@ -7,5 +7,7 @@ constructor_definition = base_type , ows , "(" , ows , parameter_list , ows , ")
 constructor = constructor_definition , ows , compound_statement ;
 constructor_call = "new" , rws , type , ows , "(" , ows , argument_list , ows , ")" ;
 
-struct_definition = "struct" , ows , base_type , ows , "{" , ows , { ( member_variable_declaration | function | constructor ) , ows } , "}" ;
+destructor = "~" , base_type , ows , "()" , ows , compound_statement ;
+
+struct_definition = "struct" , ows , base_type , ows , "{" , ows , { ( member_variable_declaration | function | constructor | destructor ) , ows } , "}" ;
 templated_struct_definition = template_header , ows , struct_definition ;

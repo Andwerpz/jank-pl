@@ -4,18 +4,22 @@ struct pair {
     T first;
     U second;
 
-    struct pair() {
+    pair() {
         this.first = new T();
         this.second = new U();
     }
 
-    struct pair(pair& other) {
+    pair(pair& other) {
         this.first = new T(other.first);
         this.second = new U(other.second);
     }
 
-    struct pair(T& _first, U& _second) {
+    pair(T& _first, U& _second) {
         this.first = new T(_first);
         this.second = new U(_second);
+    }
+
+    ~pair() {
+        
     }
 }

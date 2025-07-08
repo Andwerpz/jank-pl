@@ -33,12 +33,18 @@ struct vector {
         for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] = default;
     }
 
+    ~vector() {
+        free($void* this.arr, this.cap);
+    }
+
     void grow() {
+        u64 old_cap = this.cap;
         this.cap = this.cap * $u64 2;
         T* narr = $T* malloc(sizeof(T) * this.cap);
         for(u64 i = $u64 0; i < this.sz; i++) {
             narr[i] = this.arr[i];
         }
+        free($void* this.arr, old_cap);
         this.arr = narr;
     }
 

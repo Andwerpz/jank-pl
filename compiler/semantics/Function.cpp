@@ -188,14 +188,14 @@ bool Function::is_well_formed() {
         return false;
     }
     
-    //if has enclosing type, register self as variable (Type* this)
+    //if has enclosing type, register self as variable (Type& this)
     local_offset = 8 + 8 * parameters.size();
     if(enclosing_type.has_value()) {
         //adjust local offset for 'extra variable'
         local_offset += 8;
 
-        //register self as variable (Type this)
-        Type *vt = enclosing_type.value();
+        //register self as variable (Type& this)
+        Type *vt = new ReferenceType(enclosing_type.value());
         Identifier *vid = new Identifier("this");
         Variable* v = add_variable(vt, vid);
         if(v == nullptr) {

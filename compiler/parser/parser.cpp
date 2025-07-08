@@ -1,4 +1,4 @@
-// Date Generated : 07-06-2025 15:15:04
+// Date Generated : 07-07-2025 20:08:39
 #include "parser.h"
 
 namespace parser {
@@ -784,6 +784,35 @@ namespace parser {
         return ans;
     }
 
+    destructor* destructor::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "~") {pop_stack(); return nullptr;}
+        base_type *_t1 = base_type::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t3 = next_chars(2);
+        if(_t3 != "()") {pop_stack(); return nullptr;}
+        ows *_t4 = ows::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        compound_statement *_t5 = compound_statement::parse();
+        if(_t5 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new destructor(_t0, _t1, _t2, _t3, _t4, _t5);
+    }
+
+    std::string destructor::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2->to_string();
+        ans += t3;
+        ans += t4->to_string();
+        ans += t5->to_string();
+        return ans;
+    }
+
     struct_definition::a0::b0::c0* struct_definition::a0::b0::c0::parse() {
         push_stack();
         member_variable_declaration *_t0 = member_variable_declaration::parse();
@@ -826,10 +855,25 @@ namespace parser {
         return ans;
     }
 
+    struct_definition::a0::b0::c3* struct_definition::a0::b0::c3::parse() {
+        push_stack();
+        destructor *_t0 = destructor::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new struct_definition::a0::b0::c3(_t0);
+    }
+
+    std::string struct_definition::a0::b0::c3::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
     struct_definition::a0::b0* struct_definition::a0::b0::parse() {
         if(auto x = struct_definition::a0::b0::c0::parse()) return new struct_definition::a0::b0(x);
         if(auto x = struct_definition::a0::b0::c1::parse()) return new struct_definition::a0::b0(x);
         if(auto x = struct_definition::a0::b0::c2::parse()) return new struct_definition::a0::b0(x);
+        if(auto x = struct_definition::a0::b0::c3::parse()) return new struct_definition::a0::b0(x);
         return nullptr;
     }
 
@@ -837,6 +881,7 @@ namespace parser {
         if(is_c0) return t0->to_string();
         if(is_c1) return t1->to_string();
         if(is_c2) return t2->to_string();
+        if(is_c3) return t3->to_string();
         assert(false);
     }
 

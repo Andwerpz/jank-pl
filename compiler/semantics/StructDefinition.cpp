@@ -8,6 +8,7 @@
 #include "Constructor.h"
 #include "ConstructorSignature.h"
 #include "TemplateMapping.h"
+#include "Destructor.h"
 
 MemberVariable::MemberVariable(Type *_type, Identifier *_id) {
     type = _type;
@@ -35,11 +36,12 @@ bool MemberVariable::look_for_templates(){
 }
 
 
-StructDefinition::StructDefinition(Type *_type, std::vector<MemberVariable*> _member_variables, std::vector<Function*> _functions, std::vector<Constructor*> _constructors) {
+StructDefinition::StructDefinition(Type *_type, std::vector<MemberVariable*> _member_variables, std::vector<Function*> _functions, std::vector<Constructor*> _constructors, std::vector<Destructor*> _destructors) {
     type = _type;
     member_variables = _member_variables;
     functions = _functions;
     constructors = _constructors;
+    destructors = _destructors;
 
     assert(_type != nullptr);
 }
@@ -49,6 +51,7 @@ StructDefinition* StructDefinition::convert(parser::struct_definition *s) {
     std::vector<MemberVariable*> member_variables;
     std::vector<Function*> functions;
     std::vector<Constructor*> constructors;
+    std::vector<Destructor*> destructors;
     for(int i = 0; i < s->t6.size(); i++){
         if(s->t6[i]->t0->is_c0) {   //member variable declaration
             member_variables.push_back(MemberVariable::convert(s->t6[i]->t0->t0->t0));
@@ -61,9 +64,12 @@ StructDefinition* StructDefinition::convert(parser::struct_definition *s) {
         else if(s->t6[i]->t0->is_c2) {  //constructor
             constructors.push_back(Constructor::convert(s->t6[i]->t0->t2->t0));
         }
+        else if(s->t6[i]->t0->is_c3) {  //destructor
+            destructors.push_back(Destructor::convert(s->t6[i]->t0->t3->t0));
+        }
         else assert(false);
     }
-    return new StructDefinition(type, member_variables, functions, constructors);
+    return new StructDefinition(type, member_variables, functions, constructors, destructors);
 }
 
 bool StructDefinition::is_well_formed() {
@@ -118,6 +124,20 @@ bool StructDefinition::is_well_formed() {
             return false;
         }
     }
+
+    // - are all the destructors actually destructing this type?
+    for(int i = 0; i < destructors.size(); i++){
+        if(!type->equals(destructors[i]->type)) {
+            std::cout << "Destructor in " << type->to_string() << " is of wrong type : " << destructors[i]->type->to_string() << "\n";
+            return false;
+        }
+    }
+
+    // - is there exactly 1 destructor?
+    if(destructors.size() != 1) {
+        std::cout << "There must be exactly one destructor for struct " << type->to_string() << "\n";
+        return false;
+    }
     
     return true;
 }
@@ -127,6 +147,7 @@ StructDefinition* StructDefinition::make_copy() {
     std::vector<MemberVariable*> _member_variables;
     std::vector<Function*> _functions;
     std::vector<Constructor*> _constructors;
+    std::vector<Destructor*> _destructors;
     for(int i = 0; i < member_variables.size(); i++){
         _member_variables.push_back(member_variables[i]->make_copy());
     }
@@ -136,7 +157,10 @@ StructDefinition* StructDefinition::make_copy() {
     for(int i = 0; i < constructors.size(); i++){
         _constructors.push_back(constructors[i]->make_copy());
     }
-    return new StructDefinition(_type, _member_variables, _functions, _constructors);
+    for(int i = 0; i < destructors.size(); i++){
+        _destructors.push_back(destructors[i]->make_copy());
+    }
+    return new StructDefinition(_type, _member_variables, _functions, _constructors, _destructors);
 }
 
 bool StructDefinition::replace_templated_types(TemplateMapping *mapping) {
@@ -151,6 +175,9 @@ bool StructDefinition::replace_templated_types(TemplateMapping *mapping) {
     for(int i = 0; i < constructors.size(); i++){
         if(!constructors[i]->replace_templated_types(mapping)) return false;
     }
+    for(int i = 0; i < destructors.size(); i++){
+        if(!destructors[i]->replace_templated_types(mapping)) return false;
+    }
     return true;
 }
 
@@ -159,5 +186,6 @@ bool StructDefinition::look_for_templates() {
     for(int i = 0; i < member_variables.size(); i++) if(!member_variables[i]->look_for_templates()) return false;
     for(int i = 0; i < functions.size(); i++) if(!functions[i]->look_for_templates()) return false;
     for(int i = 0; i < constructors.size(); i++) if(!constructors[i]->look_for_templates()) return false;
+    for(int i = 0; i < destructors.size(); i++) if(!destructors[i]->look_for_templates()) return false;
     return true;
 }

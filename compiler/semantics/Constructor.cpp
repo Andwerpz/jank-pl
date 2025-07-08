@@ -106,14 +106,14 @@ bool StructConstructor::is_well_formed() {
         return false;
     }
 
-    //register self as variable (Type* this)
+    //register self as variable (Type& this)
     local_offset = 8 + 8 * parameters.size();
     {
         //adjust local offset for 'extra variable'
         local_offset += 8;
 
-        //register self as variable (Type this)
-        Type *vt = this->type->make_copy();
+        //register self as variable (Type& this)
+        Type *vt = new ReferenceType(this->type->make_copy());
         Identifier *vid = new Identifier("this");
         Variable* v = add_variable(vt, vid);
         if(v == nullptr) {

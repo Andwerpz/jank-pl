@@ -19,6 +19,7 @@
 #include "GlobalDeclaration.h"
 #include "Declaration.h"
 #include <algorithm>
+#include "Destructor.h"
 
 Program::Program() {
     // do nothing
@@ -240,6 +241,7 @@ bool Program::is_well_formed() {
     int function_ptr = 0;
     int constructor_ptr = 0;
     int overload_ptr = 0;
+    int destructor_ptr = 0;
     while(function_ptr < declared_functions.size() || constructor_ptr < declared_constructors.size() || overload_ptr < declared_overloads.size()) {
         while(function_ptr < declared_functions.size()) {
             Function *f = declared_functions[function_ptr ++];
@@ -263,6 +265,12 @@ bool Program::is_well_formed() {
                 return false;
             }
             enclosing_overload = nullptr;
+        }
+        while(destructor_ptr < declared_destructors.size()) {
+            Destructor *d = declared_destructors[destructor_ptr ++];
+            if(!d->is_well_formed()) {
+                return false;
+            }
         }
     }
 

@@ -96,9 +96,6 @@ void ConstructorCall::emit_asm(bool alloc_new) {
             assert(v != nullptr);
         }
 
-        std::cout << "STACK DESC RIGHT BEFORE CALL CONSTRUCTOR\n";
-        dump_stack_desc();
-
         //call constructor
         std::string label = get_constructor_label(c->resolve_constructor_signature());
         fout << indent() << "call " << label << "\n";

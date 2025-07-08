@@ -18,6 +18,10 @@ struct timespec {
         this.tv_sec = other.tv_sec;
         this.tv_nsec = other.tv_nsec;
     }
+
+    ~timespec() {
+        
+    }
 }
 
 u64 get_sys_time_ns() {

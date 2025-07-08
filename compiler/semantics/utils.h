@@ -28,6 +28,8 @@ struct Program;
 struct TemplatedFunction;
 struct Overload;
 struct TemplatedOverload;
+struct Destructor;
+struct DestructorCall;
 
 struct Variable;
 struct OperatorSignature;
@@ -140,11 +142,14 @@ bool is_function_declared(FunctionSignature *fs);
 bool is_sys_function(FunctionSignature *fs);
 bool is_variable_declared(Identifier *id);
 bool is_constructor_declared(ConstructorSignature *cs);
+bool is_destructor_declared(Type *t);
 Function* get_function(FunctionSignature *fs);  
 Function* get_called_function(FunctionCall *fc);
 Constructor* get_called_constructor(ConstructorCall *cc);
+Destructor* get_called_destructor(DestructorCall *dc);
 std::string get_function_label(FunctionSignature *fs);
 std::string get_constructor_label(ConstructorSignature *cs);
+std::string get_destructor_label(Type *t);
 std::string get_overload_label(OperatorSignature *os);
 Variable* get_variable(Identifier *id);
 bool add_struct_type(StructDefinition *sd);
@@ -157,10 +162,12 @@ bool create_templated_type(TemplatedType *t);
 bool add_function(Function *f);
 bool add_sys_function(Function *f);
 bool add_constructor(Constructor *c);
+bool add_destructor(Destructor *d);
 Variable* add_variable(Type *t, Identifier *id, bool is_global = false);
 void remove_function(Function *f);
 void remove_variable(Identifier *id);
 void remove_constructor(Constructor *c);
+void remove_destructor(Destructor *d);
 void push_declaration_stack();
 void pop_declaration_stack();
 void push_loop_stack(std::string start_label, std::string assignment_label, std::string end_label);   //call these when the loop variables are on the top of the declaration stack
@@ -184,6 +191,7 @@ bool add_operator_implementation(Overload *o);
 void remove_operator_implementation(OperatorSignature *os, OperatorImplementation *oi);
 void remove_operator_implementation(Overload *o);
 void emit_malloc(int sz_bytes);
+void emit_free(int sz_bytes);
 
 // -- CONTROLLER --
 //should probably move this stuff into its own file
@@ -198,6 +206,7 @@ inline std::vector<Function*> declared_functions;
 inline std::vector<StructDefinition*> declared_structs;
 inline std::vector<Overload*> declared_overloads;
 inline std::vector<Constructor*> declared_constructors;
+inline std::vector<Destructor*> declared_destructors;
 inline std::vector<Variable*> declared_variables;
 inline std::vector<std::vector<Variable*>> declaration_stack;   //every 'layer' of the declaration stack should be contiguous on the stack
 inline std::vector<LoopContext*> loop_stack;

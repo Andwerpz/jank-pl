@@ -1,4 +1,4 @@
-// Date Generated : 07-06-2025 15:15:04
+// Date Generated : 07-07-2025 20:08:39
 #pragma once
 #include <vector>
 #include <string>
@@ -28,6 +28,7 @@ namespace parser {
     struct constructor_definition;
     struct constructor;
     struct constructor_call;
+    struct destructor;
     struct struct_definition;
     struct templated_struct_definition;
     struct expr_primary;
@@ -603,7 +604,27 @@ namespace parser {
         std::string to_string();
     };
 
-    // struct_definition = "struct" , ows , base_type , ows , "{" , ows , { ( member_variable_declaration | function | constructor ) , ows } , "}" ;
+    // destructor = "~" , base_type , ows , "()" , ows , compound_statement ;
+    struct destructor {
+        std::string t0;
+        base_type *t1;
+        ows *t2;
+        std::string t3;
+        ows *t4;
+        compound_statement *t5;
+        destructor(std::string _t0, base_type *_t1, ows *_t2, std::string _t3, ows *_t4, compound_statement *_t5) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
+            t5 = _t5;
+        }
+        static destructor* parse();
+        std::string to_string();
+    };
+
+    // struct_definition = "struct" , ows , base_type , ows , "{" , ows , { ( member_variable_declaration | function | constructor | destructor ) , ows } , "}" ;
     struct struct_definition {
         struct a0 {
             struct b0 {
@@ -631,12 +652,22 @@ namespace parser {
                     static c2* parse();
                     std::string to_string();
                 };
+                struct c3 {
+                    destructor *t0;
+                    c3(destructor *_t0) {
+                        t0 = _t0;
+                    }
+                    static c3* parse();
+                    std::string to_string();
+                };
                 bool is_c0 = false;
                 c0 *t0;
                 bool is_c1 = false;
                 c1 *t1;
                 bool is_c2 = false;
                 c2 *t2;
+                bool is_c3 = false;
+                c3 *t3;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -648,6 +679,10 @@ namespace parser {
                 b0(c2 *_t2) {
                     is_c2 = true;
                     t2 = _t2;
+                }
+                b0(c3 *_t3) {
+                    is_c3 = true;
+                    t3 = _t3;
                 }
                 static b0* parse();
                 std::string to_string();

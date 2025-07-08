@@ -246,9 +246,10 @@ bool ExpressionStatement::is_well_formed() {
 }
 
 bool ReturnStatement::is_well_formed() {
-    // - if we are not in a function or overload right now (constructor), make sure this is a void return
+    // - if we are not in a function or overload right now (constructor / destructor), make sure this is a void return
     if(enclosing_function == nullptr && enclosing_overload == nullptr) {
         if(opt_expr.has_value()) {
+            std::cout << "Constructor / Destructor return cannot be non-void\n";
             return false;
         }
         return true;
