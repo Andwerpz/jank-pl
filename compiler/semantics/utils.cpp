@@ -1134,40 +1134,52 @@ void push_declaration_stack() {
     declaration_stack.push_back(std::vector<Variable*>(0));
 }
 
+//if do_free == true, also frees allocated structs on this layer
+//just emits frees, should not actually affect the controller
+//this should only be called outside of pop_declaration_stack() in return, break, and continue. 
+//specifically saves registers %rax, %rcx
+void emit_cleanup_declaration_stack_layer(int layer_ind) {
+    assert(layer_ind > 0 && layer_ind < declaration_stack.size());
+    std::vector<Variable*> layer = declaration_stack[layer_ind];
+    
+    //save %rax, %rcx
+    emit_push("%rax", "emit_cleanup_declaration_stack_layer() : save %rax");
+    emit_push("%rcx", "emit_cleanup_declaration_stack_layer() : save %rcx");
+
+    //destruct any non-primitive variables
+    for(int i = 0; i < layer.size(); i++){
+        Type *t = layer[i]->type;
+        if(!is_type_primitive(t)) {
+            DestructorCall *dc = new DestructorCall(t);
+            assert(dc->resolve_type() != nullptr);
+
+            //put addr to struct in %rax
+            fout << indent() << "movq " << layer[i]->addr << ", %rax\n";
+
+            //call destructor
+            dc->emit_asm();
+        }
+    }   
+
+    //retrieve %rax, %rcx
+    emit_pop("%rcx", "emit_cleanup_declaration_stack_layer() : save %rcx");
+    emit_pop("%rax", "emit_cleanup_declaration_stack_layer() : save %rax");
+}
+
 //cleans up one layer of the declaration stack
 //destructs any non-primitive variables
-//specifically saves registers %rax, %rcx
-void pop_declaration_stack() {
+//do_free = false should only be the case from return. (we can't free the return value)
+void pop_declaration_stack(bool do_free) {
     assert(declaration_stack.size() != 0);
 
+    //retrieve layer to be removed
     std::vector<Variable*> top = *(declaration_stack.rbegin());
-    declaration_stack.pop_back();
 
     //if this is not the function parameter layer, adjust %rsp
-    if(declaration_stack.size() > 0) {
-        //save %rax, %rcx
-        emit_push("%rax", "pop_declaration_stack() : save %rax");
-        emit_push("%rcx", "pop_declaration_stack() : save %rcx");
+    if(declaration_stack.size() > 1) {
+        //free heap allocated structs. 
+        if(do_free) emit_cleanup_declaration_stack_layer(declaration_stack.size() - 1);
 
-        //destruct any non-primitive variables
-        for(int i = 0; i < top.size(); i++){
-            Type *t = top[i]->type;
-            if(!is_type_primitive(t)) {
-                DestructorCall *dc = new DestructorCall(t);
-                assert(dc->resolve_type() != nullptr);
-
-                //put addr to struct in %rax
-                fout << indent() << "movq " << top[i]->addr << ", %rax\n";
-
-                //call destructor
-                dc->emit_asm();
-            }
-        }   
-
-        //retrieve %rax, %rcx
-        emit_pop("%rcx", "pop_declaration_stack() : save %rcx");
-        emit_pop("%rax", "pop_declaration_stack() : save %rax");
-        
         //adjust %rsp
         std::vector<std::string> desc_list;
         for(int i = 0; i < top.size(); i++){
@@ -1175,10 +1187,14 @@ void pop_declaration_stack() {
         }
         emit_add_rsp(top.size() * 8, desc_list);
     }
-    
+
+    //unregister variables as declared
     for(int i = 0; i < top.size(); i++){
         remove_variable(top[i]->id);
     }
+
+    //remove layer
+    declaration_stack.pop_back();
 }
 
 void push_loop_stack(std::string start_label, std::string assignment_label, std::string end_label) {
@@ -1375,7 +1391,7 @@ void emit_initialize_struct(Type *t) {
 
             //%rax already holds member struct memory address
             ConstructorCall *cc = new ConstructorCall(mv->type->make_copy(), {});
-            assert(cc != nullptr);
+            assert(cc->resolve_type()->equals(mv->type));
             cc->emit_asm(false);
 
             emit_pop("%rax", "emit_initialize_struct() :: save %rax before constructor call");
@@ -1479,8 +1495,10 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr, s
             int sz = vt->calc_size();
             emit_malloc(sz);
 
-            //initialize struct in memory
-            emit_initialize_struct(vt);
+            //call default constructor 
+            ConstructorCall *cc = new ConstructorCall(vt, {});
+            assert(cc->resolve_type()->equals(vt));
+            cc->emit_asm();
 
             //save pointer to addr
             fout << indent() << "movq %rax, " << addr_str << "\n";

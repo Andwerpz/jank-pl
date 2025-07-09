@@ -34,7 +34,7 @@ struct vector {
     }
 
     ~vector() {
-        free($void* this.arr, this.cap);
+        free($void* this.arr, this.cap * sizeof(T));
     }
 
     void grow() {
@@ -44,7 +44,7 @@ struct vector {
         for(u64 i = $u64 0; i < this.sz; i++) {
             narr[i] = this.arr[i];
         }
-        free($void* this.arr, old_cap);
+        free($void* this.arr, old_cap * sizeof(T));
         this.arr = narr;
     }
 

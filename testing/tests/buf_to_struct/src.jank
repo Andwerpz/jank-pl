@@ -6,36 +6,27 @@ struct A {
     i32 x;
     i32 y;
 
-    A() {
-        
-    }
-    A(A& other) {
-       
-    }
+    A() {}
+    A(A& other) {}
+    ~A() {}
 }
 
 struct B {
     i32 x;
     A y;
     i32 z;
-    B() {
-
-    }
-    B(B& other) {
-
-    }
+    B() {}
+    B(B& other) {}
+    ~B() {}
 }
 
 struct C {
     A x;
     B y;
     i32 z;
-    C() {
-
-    }
-    C(C& other) {
-
-    }
+    C() {}
+    C(C& other) {}
+    ~C() {}
 }
 
 i32 main() {

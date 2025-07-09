@@ -49,6 +49,7 @@ Type* ConstructorCall::resolve_type() {
 }
 
 //if alloc_new is false, assumes memory address is in %rax
+//calls emit_initialize_struct() on given memory
 //should return with %rax holding initialized type
 void ConstructorCall::emit_asm(bool alloc_new) {
     if(asm_debug) fout << indent() << "# calling constructor : " << type->to_string() << "\n";
@@ -102,8 +103,6 @@ void ConstructorCall::emit_asm(bool alloc_new) {
 
         //clean up argument temp variables
         pop_declaration_stack();
-
-        dump_stack_desc();
 
         //clean up target struct argument
         emit_add_rsp(8, "ConstructorCall::emit_asm() : target struct");

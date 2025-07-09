@@ -11,6 +11,8 @@
 #include "OverloadCall.h"
 #include "StructLayout.h"
 #include "primitives.h"
+#include "DestructorCall.h"
+#include "Destructor.h"
 
 // -- CONSTRUCTOR --
 ExprPrimary::ExprPrimary(val_t _val) {
@@ -567,7 +569,7 @@ bool ExprBinary::is_lvalue() {
         }
         
         //default behaviour
-        return false;
+        return true;
     }   
     else assert(false);
 }
@@ -782,6 +784,7 @@ void Expression::elaborate() {
     std::cout << "ELABORATING : " << to_string() << std::endl;
     has_elaborated = true;
     expr_node->elaborate(expr_node);
+    std::cout << "DONE ELABORATING : " << to_string() << std::endl;
 }
 
 // -- EMIT_ASM -- 
@@ -935,15 +938,50 @@ void ExprBinary::emit_asm() {
                 //generate left struct. %rax should now hold struct mem location
                 left->emit_asm();
 
+                //destruct left struct without dealloccing
+                emit_push("%rax", "ExprBinary::emit_asm() : save left addr before destruct");
+                {
+                    DestructorCall *dc = new DestructorCall(lt);
+                    assert(dc->resolve_type() != nullptr);
+
+                    //%rax should already hold addr, call destructor
+                    dc->emit_asm(false);
+                }
+                emit_pop("%rax", "ExprBinary::emit_asm() : save left addr before destruct");
+
                 //use copy constructor to overwrite left struct mem location
                 ConstructorCall *cc = new ConstructorCall(lt, {new Expression(new ExprPrimary(id))});
-                std::cout << "COPY CONSTRUCTOR : " << cc->to_string() << "\n";
                 assert(cc->resolve_called_constructor() != nullptr);
-                cc->emit_asm(false);
+                cc->emit_asm(false);    //%rax should now hold struct mem location
+
+                //if the right struct is not an lvalue, deallocate it
+                //This is not handled by pop_declaration_stack() as the temp variable is of reference type
+                if(!right->is_lvalue()){
+                    //save left mem addr
+                    emit_push("%rax", "ExprBinary::emit_asm() : save struct addr during right dealloc");
+                    
+                    DestructorCall *dc = new DestructorCall(rt);
+                    assert(dc->resolve_type() != nullptr);
+        
+                    //put addr to struct in %rax
+                    fout << indent() << "movq " << v->addr << ", %rax\n";
+        
+                    //call destructor
+                    dc->emit_asm();
+                    
+                    //retrieve left mem addr
+                    emit_pop("%rax", "ExprBinary::emit_asm() : save struct addr during right dealloc");
+                }
 
                 //clean up temp variables
                 pop_declaration_stack();
+
+                //%rax should hold address, copy it over to %rcx
+                fout << indent() << "mov %rax, %rcx\n";
             }
+
+            //the value of left after the assignment should be in %rax
+            //the address of left should be in %rcx
         }
         else {
             right->emit_asm();

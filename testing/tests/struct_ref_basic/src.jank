@@ -13,6 +13,7 @@ struct A {
     A(i32 _val) {
         this.val = _val;
     }
+    ~A() {}
 }
 
 i32 main() {

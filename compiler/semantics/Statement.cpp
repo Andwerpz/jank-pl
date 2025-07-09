@@ -294,11 +294,14 @@ bool ReturnStatement::is_well_formed() {
         fout << indent() << "mov " << v->addr << ", %rax\n";
 
         //clean up temp variable
-        pop_declaration_stack();
+        pop_declaration_stack(false);
     }
 
     //clean up local variables
-    if(declared_variables.size() != 0) {
+    for(int i = (int) declaration_stack.size() - 1; i >= 1; i--) {  //free heap structs
+        emit_cleanup_declaration_stack_layer(i);
+    }
+    if(local_offset != 0) { //reset %rsp
         fout << indent() << "add $" << -local_offset << ", %rsp\n"; //should not be managed by local_offset
     }
 
@@ -338,6 +341,9 @@ bool BreakStatement::is_well_formed() {
     int dl = lc->declaration_layer;
     int tot_sz = 0;
     for(int i = (int) declaration_stack.size() - 1; i > dl; i--) {
+        //free heap structs
+        emit_cleanup_declaration_stack_layer(i);
+
         tot_sz += declaration_stack[i].size() * 8;
     }
     fout << indent() << "add $" << tot_sz << ", %rsp\n";    //should not be managed by local_offset
@@ -363,6 +369,9 @@ bool ContinueStatement::is_well_formed() {
     int dl = lc->declaration_layer;
     int tot_sz = 0;
     for(int i = (int) declaration_stack.size() - 1; i > dl; i--) {
+        //free heap structs
+        emit_cleanup_declaration_stack_layer(i);
+
         tot_sz += declaration_stack[i].size() * 8;
     }
     fout << indent() << "add $" << tot_sz << ", %rsp\n";    //should not be managed by local_offset

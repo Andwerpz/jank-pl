@@ -19,8 +19,9 @@ struct vec2 {
         this.x = x;
         this.y = y;
     }
+    ~vec2() {}
 
-    void pri32() {
+    void print() {
         puts("(");
         puti(this.x);
         puts(", ");
@@ -58,7 +59,7 @@ void vec2_test() {
         vec2 a = new vec2(1, 2);
         vec2 b = new vec2(3, 4);
         vec2 c = a + b;
-        c.pri32();
+        c.print();
         assert(c == new vec2(4, 6));
     }
 

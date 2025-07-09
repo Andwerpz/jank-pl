@@ -9,14 +9,17 @@ struct segtree {
 
     segtree() {}
     segtree(i32 n) {
-        this.n = 2 * n;
+        this.n = n;
         this.a = $i32* malloc(sizeof(i32) * $u64 2 * $u64 n);
         for(i32 i = 0; i < 2 * n; i++) this.a[i] = 0;
     }
     segtree(segtree& other) {
         this.n = other.n;
-        this.a = $i32* malloc(sizeof(i32) * $u64 this.n);
-        for(i32 i = 0; i < this.n; i++) this.a[i] = other.a[i];
+        this.a = $i32* malloc(sizeof(i32) * $u64 2 * $u64 this.n);
+        for(i32 i = 0; i < 2 * this.n; i++) this.a[i] = other.a[i];
+    }
+    ~segtree() {
+        free($void* this.a, $u64 2 * $u64 this.n * sizeof(i32));
     }
 
     //query sum of range [l, r)
@@ -41,6 +44,7 @@ struct segtree {
 
     //a[ind] = val
     void modify(i32 ind, i32 val) {
+        //malloc($u64 1);
         ind = ind + this.n;
         this.a[ind] = val;
         ind = ind / 2;
@@ -77,6 +81,10 @@ struct vector {
         for(i32 i = 0; i < this.cap; i++) this.a[i] = other.a[i];
     }
 
+    ~vector() {
+        free($void* this.a, sizeof(i32) * $u64 this.cap);
+    }
+
     void pop_back() {
         if(this.sz == 0) return;
         this.sz = this.sz - 1;
@@ -89,12 +97,14 @@ struct vector {
     }
 
     void grow() {
+        i32 old_cap = this.cap;
         this.cap = this.cap * 2;
         i32* na = $i32* malloc(sizeof(i32) * $u64 this.cap);
         for(i32 i = 0; i < this.sz; i = i + 1) {
             na[i] = this.a[i];
         }
         this.a = na;
+        free($void* this.a, sizeof(i32) * $u64 old_cap);
 
         puts("grow : ");
         puti_endl(this.cap);

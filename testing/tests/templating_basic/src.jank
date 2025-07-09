@@ -26,6 +26,9 @@ struct vector {
         this.arr = $T* malloc(sizeof(T) * $u64 n);
         for(i32 i = 0; i < n; i++) this.arr[i] = default;
     }
+    ~vector() {
+        free($void* this.arr, sizeof(T) * $u64 this.cap);
+    }
 }
 
 template<T>
@@ -54,6 +57,9 @@ struct pair {
     pair(T _first, U _second) {
         this.first = _first;
         this.second = _second;
+    }
+    ~pair() {
+
     }
 }
 

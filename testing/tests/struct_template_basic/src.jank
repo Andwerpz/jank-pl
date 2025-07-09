@@ -26,6 +26,9 @@ struct vector {
         this.arr = $T* malloc(sizeof(T) * $u64 n);
         for(i32 i = 0; i < n; i++) this.arr[i] = default;
     }
+    ~vector() {
+        free($void* this.arr, $u64 this.cap * sizeof(T));
+    }
 }
 
 i32& operator[](vector<i32>& a, i32 ind) {

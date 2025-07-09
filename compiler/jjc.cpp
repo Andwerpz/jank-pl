@@ -734,6 +734,8 @@ it's sitting somewhere in between, Overload is more like a function, while Overl
 So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
 
 some miscellaneous features:
+ - make string literals point to rodata instead of allocating more memory every time. 
+   - should maybe consider implementing const? so a string literal would be of type const u8*
  - after implementing free, add struct destructors. 
    - currently, I assume that cleaning up the local variable declaration stack does not affect any
      of the registers. This will no longer be true after implementing struct destructors.
@@ -750,6 +752,7 @@ some miscellaneous features:
      - actually, I don't even need to specifically handle these temp variables at all, as in the '=' operator, I bind 
        the temp variable to a named temporary reference, so if I just handle cleaning up named variables then I should be fine. 
    - use mmap and munmap syscalls to implement malloc and free. 
+   - okok, now we just have to clean up unused r-values from expressions.
  - have some reserved keywords (break, continue, sizeof)
  - goto statement
  - make id_to_type() return a bool so that it doesn't fail an assert when a variable doesn't exist

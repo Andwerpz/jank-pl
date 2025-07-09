@@ -1,0 +1,3425 @@
+.section .text
+# main()
+.global _start
+_start:
+    # start initialize global variables
+    mov %rsp, %r15
+    sub $128, %rsp
+    mov %rsp, %rbp
+    # initialize global variable : u64 PROT_NONE
+    movq $0, 0(%r15)
+    mov $0, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable PROT_NONE
+    mov 0(%r15), %rax
+    lea 0(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize global variable : u64 PROT_NONE
+    # initialize global variable : u64 PROT_READ
+    movq $0, 8(%r15)
+    mov $1, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable PROT_READ
+    mov 8(%r15), %rax
+    lea 8(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize global variable : u64 PROT_READ
+    # initialize global variable : u64 PROT_WRITE
+    movq $0, 16(%r15)
+    mov $2, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable PROT_WRITE
+    mov 16(%r15), %rax
+    lea 16(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize global variable : u64 PROT_WRITE
+    # initialize global variable : u64 PROT_EXEC
+    movq $0, 24(%r15)
+    mov $4, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable PROT_EXEC
+    mov 24(%r15), %rax
+    lea 24(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize global variable : u64 PROT_EXEC
+    # initialize global variable : u64 MAP_PRIVATE
+    movq $0, 32(%r15)
+    mov $1, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    mov $1, %rax
+    movsxd %eax, %rax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    push %rcx
+    mov %rbx, %rcx
+    shl %cl, %rax
+    pop %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable MAP_PRIVATE
+    mov 32(%r15), %rax
+    lea 32(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize global variable : u64 MAP_PRIVATE
+    # initialize global variable : u64 MAP_ANONYMOUS
+    movq $0, 40(%r15)
+    mov $5, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    mov $1, %rax
+    movsxd %eax, %rax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    push %rcx
+    mov %rbx, %rcx
+    shl %cl, %rax
+    pop %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable MAP_ANONYMOUS
+    mov 40(%r15), %rax
+    lea 40(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize global variable : u64 MAP_ANONYMOUS
+    # initialize global variable : void* nullptr
+    movq $0, 48(%r15)
+    mov $0, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable nullptr
+    mov 48(%r15), %rax
+    lea 48(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize global variable : void* nullptr
+    # initialize global variable : u64 PAGE_SIZE
+    movq $0, 56(%r15)
+    mov $4096, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable PAGE_SIZE
+    mov 56(%r15), %rax
+    lea 56(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize global variable : u64 PAGE_SIZE
+    # initialize global variable : u64 MEM_USED
+    movq $0, 64(%r15)
+    mov $0, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable MEM_USED
+    mov 64(%r15), %rax
+    lea 64(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize global variable : u64 MEM_USED
+    # initialize global variable : i32 STDIN
+    movq $0, 72(%r15)
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable STDIN
+    mov 72(%r15), %rax
+    lea 72(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize global variable : i32 STDIN
+    # initialize global variable : i32 STDOUT
+    movq $0, 80(%r15)
+    mov $1, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable STDOUT
+    mov 80(%r15), %rax
+    lea 80(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize global variable : i32 STDOUT
+    # initialize global variable : i32 STDERR
+    movq $0, 88(%r15)
+    mov $2, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable STDERR
+    mov 88(%r15), %rax
+    lea 88(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize global variable : i32 STDERR
+    # initialize global variable : u64 CLOCK_REALTIME
+    movq $0, 96(%r15)
+    mov $0, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable CLOCK_REALTIME
+    mov 96(%r15), %rax
+    lea 96(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize global variable : u64 CLOCK_REALTIME
+    # initialize global variable : u64 CLOCK_MONOTONIC
+    movq $0, 104(%r15)
+    mov $1, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable CLOCK_MONOTONIC
+    mov 104(%r15), %rax
+    lea 104(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize global variable : u64 CLOCK_MONOTONIC
+    # initialize global variable : ostream cout
+    mov $12, %rax
+    push %rax    # emit_malloc() : malloc arg
+    call L18
+    # emit_malloc() : malloc arg
+    add $8, %rsp
+    # initialize struct ostream
+    push %rax    # emit_initialize_struct() :: save original %rax
+    movl $0, (%rax)
+    add $4, %rax
+    movq $0, (%rax)
+    add $8, %rax
+    pop %rax    # emit_initialize_struct() :: save original %rax
+    # done initialize struct memory ostream
+    movq %rax, 112(%r15)
+    # calling constructor : ostream
+    mov $12, %rax
+    push %rax    # emit_malloc() : malloc arg
+    call L18
+    # emit_malloc() : malloc arg
+    add $8, %rsp
+    # initialize struct ostream
+    push %rax    # emit_initialize_struct() :: save original %rax
+    movl $0, (%rax)
+    add $4, %rax
+    movq $0, (%rax)
+    add $8, %rax
+    pop %rax    # emit_initialize_struct() :: save original %rax
+    # done initialize struct memory ostream
+    push %rax    # ConstructorCall::emit_asm() : target struct return ref %rax
+    push %rax    # ConstructorCall::emit_asm() : target struct
+    # TMP:0
+    sub $8, %rsp
+    movq $0, -24(%rbp)
+    # load variable STDOUT
+    mov 80(%r15), %rax
+    lea 80(%r15), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:0
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    call L5
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    # ConstructorCall::emit_asm() : target struct
+    add $8, %rsp
+    pop %rax    # ConstructorCall::emit_asm() : target struct return ref %rax
+    # expression struct assignment tmp variable
+    push %rax    # TMP:1
+    # load variable cout
+    mov 112(%r15), %rax
+    mov 112(%r15), %rcx
+    # calling constructor : ostream
+    # initialize struct ostream
+    push %rax    # emit_initialize_struct() :: save original %rax
+    movl $0, (%rax)
+    add $4, %rax
+    movq $0, (%rax)
+    add $8, %rax
+    pop %rax    # emit_initialize_struct() :: save original %rax
+    # done initialize struct memory ostream
+    push %rax    # ConstructorCall::emit_asm() : target struct return ref %rax
+    push %rax    # ConstructorCall::emit_asm() : target struct
+    # TMP:2
+    sub $8, %rsp
+    # load variable TMP:1
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    # dereferencing to type ostream
+    mov %rax, %rcx
+    movq %rcx, -32(%rbp)
+    call L6
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    # ConstructorCall::emit_asm() : target struct
+    add $8, %rsp
+    pop %rax    # ConstructorCall::emit_asm() : target struct return ref %rax
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    # done initialize global variable : ostream cout
+    # initialize global variable : u8* jstring_f32_base2
+    movq $0, 120(%r15)
+    # calling function : malloc
+    # function call member variable : sz
+    # TMP:3
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    mov $512, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:3
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L18
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable jstring_f32_base2
+    mov 120(%r15), %rax
+    lea 120(%r15), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize global variable : u8* jstring_f32_base2
+    # done initialize global variables
+    push %rbp
+    mov %rsp, %rbp
+    # initialize local variable : i32 x
+    # x
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    mov $10, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable x
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 x
+    lea -8(%rbp), %rax
+    mov $20, %rbx
+    movq %rbx, (%rax)
+    # calling function : puti_endl
+    # function call member variable : x
+    # TMP:4
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    # load variable x
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:4
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    call L25
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    # TMP:5
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:5
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    mov -16(%rbp), %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax
+    call sys_exit
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+
+# free(void*, u64)
+L19:
+    push %rbp
+    mov %rsp, %rbp
+    # load variable PAGE_SIZE
+    mov 56(%r15), %rax
+    lea 56(%r15), %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable PAGE_SIZE
+    mov 56(%r15), %rax
+    lea 56(%r15), %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    mov $1, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable PAGE_SIZE
+    mov 56(%r15), %rax
+    lea 56(%r15), %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable sz
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %rbx, %rax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    sub %rbx, %rax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cqo
+    div %rbx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    mul %rbx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable sz
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # if statement start
+    # load variable MEM_USED
+    mov 64(%r15), %rax
+    lea 64(%r15), %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable sz
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %rbx, %rax
+    seta %al
+    movzx %al, %rax
+    cmp $0, %rax
+    jne L36
+    jmp L37
+L36:
+    # calling overload : 
+    # TMP:6
+    sub $8, %rsp
+    # load variable cout
+    mov 112(%r15), %rax
+    mov 112(%r15), %rcx
+    movq %rcx, -8(%rbp)
+    # TMP:7
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    mov $48, %rax
+    push %rax    # emit_malloc() : malloc arg
+    call L18
+    # emit_malloc() : malloc arg
+    add $8, %rsp
+    push %rax    # StringLiteral::emit_asm() : string start
+    mov %rax, %rbx
+    movb $102, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $114, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $101, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $101, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $32, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $102, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $97, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $105, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $108, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $101, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $100, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $44, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $32, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $116, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $114, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $121, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $105, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $110, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $103, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $32, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $116, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $111, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $32, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $100, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $101, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $97, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $108, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $108, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $111, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $99, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $32, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $116, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $111, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $111, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $32, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $109, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $117, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $99, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $104, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $32, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $109, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $101, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $109, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $111, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $114, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $121, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $10, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $0, %al
+    movb %al, (%rbx)
+    pop %rax    # StringLiteral::emit_asm() : string start
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:7
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L31
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $16, %rsp
+    # dereferencing to type ostream
+    mov %rax, %rcx
+    # calling function : sys_exit
+    # function call member variable : status
+    # TMP:8
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    mov $1, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:8
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    call L8
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+    jmp L37
+L37:
+    # if statement end
+    # load variable sz
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable MEM_USED
+    mov 64(%r15), %rax
+    lea 64(%r15), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    sub %rbx, %rax
+    movq %rax, (%rcx)
+    # initialize local variable : i32 status
+    # status
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    # calling function : sys_munmap
+    # function call member variable : addr
+    # TMP:9
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    # load variable addr
+    mov 24(%rbp), %rax
+    lea 24(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:9
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # function call member variable : len
+    # TMP:10
+    sub $8, %rsp
+    movq $0, -24(%rbp)
+    # load variable sz
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:10
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L15
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $16, %rsp
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable status
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 status
+    # if statement start
+    mov $1, %rax
+    neg %eax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable status
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %ebx, %eax
+    sete %al
+    movzx %al, %rax
+    cmp $0, %rax
+    jne L38
+    jmp L39
+L38:
+    # calling overload : 
+    # TMP:11
+    sub $8, %rsp
+    # calling overload : 
+    # TMP:12
+    sub $8, %rsp
+    # calling overload : 
+    # TMP:13
+    sub $8, %rsp
+    # calling overload : 
+    # TMP:14
+    sub $8, %rsp
+    # calling overload : 
+    # TMP:15
+    sub $8, %rsp
+    # load variable cout
+    mov 112(%r15), %rax
+    mov 112(%r15), %rcx
+    movq %rcx, -48(%rbp)
+    # TMP:16
+    sub $8, %rsp
+    movq $0, -56(%rbp)
+    mov $15, %rax
+    push %rax    # emit_malloc() : malloc arg
+    call L18
+    # emit_malloc() : malloc arg
+    add $8, %rsp
+    push %rax    # StringLiteral::emit_asm() : string start
+    mov %rax, %rbx
+    movb $102, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $114, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $101, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $101, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $32, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $102, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $97, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $105, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $108, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $101, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $100, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $32, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $58, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $32, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $0, %al
+    movb %al, (%rbx)
+    pop %rax    # StringLiteral::emit_asm() : string start
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:16
+    mov -56(%rbp), %rax
+    lea -56(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L31
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $16, %rsp
+    # dereferencing to type ostream
+    mov %rax, %rcx
+    movq %rcx, -40(%rbp)
+    # TMP:17
+    sub $8, %rsp
+    movq $0, -48(%rbp)
+    # load variable addr
+    mov 24(%rbp), %rax
+    lea 24(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:17
+    mov -48(%rbp), %rax
+    lea -48(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L34
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $16, %rsp
+    # dereferencing to type ostream
+    mov %rax, %rcx
+    movq %rcx, -32(%rbp)
+    # TMP:18
+    sub $8, %rsp
+    movq $0, -40(%rbp)
+    mov $2, %rax
+    push %rax    # emit_malloc() : malloc arg
+    call L18
+    # emit_malloc() : malloc arg
+    add $8, %rsp
+    push %rax    # StringLiteral::emit_asm() : string start
+    mov %rax, %rbx
+    movb $32, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $0, %al
+    movb %al, (%rbx)
+    pop %rax    # StringLiteral::emit_asm() : string start
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:18
+    mov -40(%rbp), %rax
+    lea -40(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L31
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $16, %rsp
+    # dereferencing to type ostream
+    mov %rax, %rcx
+    movq %rcx, -24(%rbp)
+    # TMP:19
+    sub $8, %rsp
+    movq $0, -32(%rbp)
+    # load variable sz
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:19
+    mov -32(%rbp), %rax
+    lea -32(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L34
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $16, %rsp
+    # dereferencing to type ostream
+    mov %rax, %rcx
+    movq %rcx, -16(%rbp)
+    # TMP:20
+    sub $8, %rsp
+    movq $0, -24(%rbp)
+    mov $2, %rax
+    push %rax    # emit_malloc() : malloc arg
+    call L18
+    # emit_malloc() : malloc arg
+    add $8, %rsp
+    push %rax    # StringLiteral::emit_asm() : string start
+    mov %rax, %rbx
+    movb $10, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $0, %al
+    movb %al, (%rbx)
+    pop %rax    # StringLiteral::emit_asm() : string start
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:20
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L31
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $16, %rsp
+    # dereferencing to type ostream
+    mov %rax, %rcx
+    # calling function : sys_exit
+    # function call member variable : status
+    # TMP:21
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    mov $1, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:21
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    call L8
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+    jmp L39
+L39:
+    # if statement end
+    # TMP:22
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    # load variable status
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:22
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    mov -16(%rbp), %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    pop %rbp
+    ret
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+
+# to_string(f32)
+L30:
+    push %rbp
+    mov %rsp, %rbp
+    # initialize local variable : u32 fbits
+    # fbits
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    # load variable f
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    mov %rcx, %rax
+    # dereferencing to type u32
+    mov %rax, %rcx
+    movl (%rax), %eax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable fbits
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : u32 fbits
+    # initialize local variable : u32 sgn
+    # sgn
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    mov $31, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    mov $1, %rax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    push %rcx
+    mov %rbx, %rcx
+    sal %cl, %eax
+    pop %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable fbits
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    and %rbx, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable sgn
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : u32 sgn
+    # initialize local variable : u32 exp
+    # exp
+    sub $8, %rsp
+    movq $0, -24(%rbp)
+    mov $23, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    mov $1, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    mov $8, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    mov $1, %rax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    push %rcx
+    mov %rbx, %rcx
+    sal %cl, %eax
+    pop %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    sub %ebx, %eax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    push %rcx
+    mov %rbx, %rcx
+    sal %cl, %eax
+    pop %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable fbits
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    and %rbx, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable exp
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : u32 exp
+    # initialize local variable : u32 mantissa
+    # mantissa
+    sub $8, %rsp
+    movq $0, -32(%rbp)
+    mov $1, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    mov $23, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    mov $1, %rax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    push %rcx
+    mov %rbx, %rcx
+    sal %cl, %eax
+    pop %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    sub %ebx, %eax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable fbits
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    and %rbx, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable mantissa
+    mov -32(%rbp), %rax
+    lea -32(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : u32 mantissa
+    mov $31, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable sgn
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    push %rcx
+    mov %rbx, %rcx
+    shr %cl, %eax
+    pop %rcx
+    movl %eax, (%rcx)
+    mov $23, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable exp
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    push %rcx
+    mov %rbx, %rcx
+    shr %cl, %eax
+    pop %rcx
+    movl %eax, (%rcx)
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable mantissa
+    mov -32(%rbp), %rax
+    lea -32(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    push %rcx
+    mov %rbx, %rcx
+    shr %cl, %eax
+    pop %rcx
+    movl %eax, (%rcx)
+    mov $23, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    mov $1, %rax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    push %rcx
+    mov %rbx, %rcx
+    sal %cl, %eax
+    pop %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable mantissa
+    mov -32(%rbp), %rax
+    lea -32(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    or %rbx, %rax
+    movl %eax, (%rcx)
+    # initialize local variable : u8* base2
+    # base2
+    sub $8, %rsp
+    movq $0, -40(%rbp)
+    # load variable jstring_f32_base2
+    mov 120(%r15), %rax
+    lea 120(%r15), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable base2
+    mov -40(%rbp), %rax
+    lea -40(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize local variable : u8* base2
+    # for loop start
+    # initialize local variable : i32 i
+    # i
+    sub $8, %rsp
+    movq $0, -48(%rbp)
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable i
+    mov -48(%rbp), %rax
+    lea -48(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 i
+L40:
+    mov $512, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable i
+    mov -48(%rbp), %rax
+    lea -48(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %ebx, %eax
+    setl %al
+    movzx %al, %rax
+    cmp $0, %rax
+    je L42
+    mov $0, %rax
+    movzbq %al, %rax
+
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable base2
+    mov -40(%rbp), %rax
+    lea -40(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable i
+    mov -48(%rbp), %rax
+    lea -48(%rbp), %rcx
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movb %al, (%rbx)
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+L41:
+    # load variable i
+    mov -48(%rbp), %rax
+    lea -48(%rbp), %rcx
+    incl (%rcx)
+    jmp L40
+L42:
+    # for loop end
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    # initialize local variable : u64 zind
+    # zind
+    sub $8, %rsp
+    movq $0, -48(%rbp)
+    mov $255, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable zind
+    mov -48(%rbp), %rax
+    lea -48(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize local variable : u64 zind
+    # for loop start
+    # initialize local variable : u32 i
+    # i
+    sub $8, %rsp
+    movq $0, -56(%rbp)
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable i
+    mov -56(%rbp), %rax
+    lea -56(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : u32 i
+L43:
+    mov $24, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable i
+    mov -56(%rbp), %rax
+    lea -56(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %ebx, %eax
+    setb %al
+    movzx %al, %rax
+    cmp $0, %rax
+    je L45
+    # initialize local variable : u64 ind
+    # ind
+    sub $8, %rsp
+    movq $0, -64(%rbp)
+    mov $23, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable i
+    mov -56(%rbp), %rax
+    lea -56(%rbp), %rcx
+    mov %eax, %eax
+    push %rax    # ExprBinary::emit_asm() : save right
+    mov $127, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable exp
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    mov %eax, %eax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable zind
+    mov -48(%rbp), %rax
+    lea -48(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %rbx, %rax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    sub %rbx, %rax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %rbx, %rax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    sub %rbx, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable ind
+    mov -64(%rbp), %rax
+    lea -64(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize local variable : u64 ind
+    # if statement start
+    # load variable i
+    mov -56(%rbp), %rax
+    lea -56(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    mov $1, %rax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    push %rcx
+    mov %rbx, %rcx
+    sal %cl, %eax
+    pop %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable mantissa
+    mov -32(%rbp), %rax
+    lea -32(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    and %rbx, %rax
+    cmp $0, %rax
+    jne L46
+    jmp L47
+L46:
+    mov $1, %rax
+    movzbq %al, %rax
+
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable base2
+    mov -40(%rbp), %rax
+    lea -40(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable ind
+    mov -64(%rbp), %rax
+    lea -64(%rbp), %rcx
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movb %al, (%rbx)
+    jmp L47
+L47:
+    # if statement end
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+L44:
+    # load variable i
+    mov -56(%rbp), %rax
+    lea -56(%rbp), %rcx
+    incl (%rcx)
+    jmp L43
+L45:
+    # for loop end
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    # initialize local variable : u64 int_por
+    # int_por
+    sub $8, %rsp
+    movq $0, -56(%rbp)
+    mov $0, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable int_por
+    mov -56(%rbp), %rax
+    lea -56(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize local variable : u64 int_por
+    # for loop start
+    # initialize local variable : i32 i
+    # i
+    sub $8, %rsp
+    movq $0, -64(%rbp)
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable i
+    mov -64(%rbp), %rax
+    lea -64(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 i
+L48:
+    mov $60, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable i
+    mov -64(%rbp), %rax
+    lea -64(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %ebx, %eax
+    setl %al
+    movzx %al, %rax
+    cmp $0, %rax
+    je L50
+    # if statement start
+    # load variable base2
+    mov -40(%rbp), %rax
+    lea -40(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable zind
+    mov -48(%rbp), %rax
+    lea -48(%rbp), %rcx
+    mov %eax, %eax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable i
+    mov -64(%rbp), %rax
+    lea -64(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %ebx, %eax
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    cmp $0, %rax
+    jne L51
+    jmp L52
+L51:
+    # load variable i
+    mov -64(%rbp), %rax
+    lea -64(%rbp), %rcx
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    mov $1, %rax
+    movsxd %eax, %rax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    push %rcx
+    mov %rbx, %rcx
+    shl %cl, %rax
+    pop %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable int_por
+    mov -56(%rbp), %rax
+    lea -56(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %rbx, %rax
+    movq %rax, (%rcx)
+    jmp L52
+L52:
+    # if statement end
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+L49:
+    # load variable i
+    mov -64(%rbp), %rax
+    lea -64(%rbp), %rcx
+    incl (%rcx)
+    jmp L48
+L50:
+    # for loop end
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    # initialize local variable : i32 frac_precision
+    # frac_precision
+    sub $8, %rsp
+    movq $0, -64(%rbp)
+    mov $13, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable frac_precision
+    mov -64(%rbp), %rax
+    lea -64(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 frac_precision
+    # initialize local variable : u64 frac_por
+    # frac_por
+    sub $8, %rsp
+    movq $0, -72(%rbp)
+    mov $0, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable frac_por
+    mov -72(%rbp), %rax
+    lea -72(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize local variable : u64 frac_por
+    # initialize local variable : u64 pow2
+    # pow2
+    sub $8, %rsp
+    movq $0, -80(%rbp)
+    mov $1, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable pow2
+    mov -80(%rbp), %rax
+    lea -80(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize local variable : u64 pow2
+    # for loop start
+    # initialize local variable : i32 i
+    # i
+    sub $8, %rsp
+    movq $0, -88(%rbp)
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable i
+    mov -88(%rbp), %rax
+    lea -88(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 i
+L53:
+    # load variable frac_precision
+    mov -64(%rbp), %rax
+    lea -64(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable i
+    mov -88(%rbp), %rax
+    lea -88(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %ebx, %eax
+    setl %al
+    movzx %al, %rax
+    cmp $0, %rax
+    je L55
+    mov $10, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable pow2
+    mov -80(%rbp), %rax
+    lea -80(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    mul %rbx
+    movq %rax, (%rcx)
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+L54:
+    # load variable i
+    mov -88(%rbp), %rax
+    lea -88(%rbp), %rcx
+    incl (%rcx)
+    jmp L53
+L55:
+    # for loop end
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    mov $2, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable pow2
+    mov -80(%rbp), %rax
+    lea -80(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cqo
+    div %rbx
+    movq %rax, (%rcx)
+    # for loop start
+    # initialize local variable : i32 i
+    # i
+    sub $8, %rsp
+    movq $0, -88(%rbp)
+    mov $1, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable zind
+    mov -48(%rbp), %rax
+    lea -48(%rbp), %rcx
+    mov %eax, %eax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    sub %ebx, %eax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable i
+    mov -88(%rbp), %rax
+    lea -88(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 i
+L56:
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable i
+    mov -88(%rbp), %rax
+    lea -88(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %ebx, %eax
+    setge %al
+    movzx %al, %rax
+    cmp $0, %rax
+    je L58
+    # if statement start
+    # load variable base2
+    mov -40(%rbp), %rax
+    lea -40(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable i
+    mov -88(%rbp), %rax
+    lea -88(%rbp), %rcx
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    cmp $0, %rax
+    jne L59
+    jmp L60
+L59:
+    # load variable pow2
+    mov -80(%rbp), %rax
+    lea -80(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable frac_por
+    mov -72(%rbp), %rax
+    lea -72(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %rbx, %rax
+    movq %rax, (%rcx)
+    jmp L60
+L60:
+    # if statement end
+    mov $2, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable pow2
+    mov -80(%rbp), %rax
+    lea -80(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cqo
+    div %rbx
+    movq %rax, (%rcx)
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+L57:
+    # load variable i
+    mov -88(%rbp), %rax
+    lea -88(%rbp), %rcx
+    decl (%rcx)
+    jmp L56
+L58:
+    # for loop end
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    # initialize local variable : u8* int_str
+    # int_str
+    sub $8, %rsp
+    movq $0, -88(%rbp)
+    # calling function : to_string
+    # function call member variable : x
+    # TMP:23
+    sub $8, %rsp
+    movq $0, -96(%rbp)
+    # load variable int_por
+    mov -56(%rbp), %rax
+    lea -56(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:23
+    mov -96(%rbp), %rax
+    lea -96(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L29
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable int_str
+    mov -88(%rbp), %rax
+    lea -88(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize local variable : u8* int_str
+    # initialize local variable : u8* frac_str
+    # frac_str
+    sub $8, %rsp
+    movq $0, -96(%rbp)
+    # calling function : to_string
+    # function call member variable : x
+    # TMP:24
+    sub $8, %rsp
+    movq $0, -104(%rbp)
+    # load variable frac_por
+    mov -72(%rbp), %rax
+    lea -72(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:24
+    mov -104(%rbp), %rax
+    lea -104(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L29
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable frac_str
+    mov -96(%rbp), %rax
+    lea -96(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize local variable : u8* frac_str
+    # initialize local variable : i32 int_len
+    # int_len
+    sub $8, %rsp
+    movq $0, -104(%rbp)
+    # calling function : strlen
+    # function call member variable : s
+    # TMP:25
+    sub $8, %rsp
+    movq $0, -112(%rbp)
+    # load variable int_str
+    mov -88(%rbp), %rax
+    lea -88(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:25
+    mov -112(%rbp), %rax
+    lea -112(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L26
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    mov %eax, %eax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable int_len
+    mov -104(%rbp), %rax
+    lea -104(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 int_len
+    # initialize local variable : i32 frac_len
+    # frac_len
+    sub $8, %rsp
+    movq $0, -112(%rbp)
+    # calling function : strlen
+    # function call member variable : s
+    # TMP:26
+    sub $8, %rsp
+    movq $0, -120(%rbp)
+    # load variable frac_str
+    mov -96(%rbp), %rax
+    lea -96(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:26
+    mov -120(%rbp), %rax
+    lea -120(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L26
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    mov %eax, %eax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable frac_len
+    mov -112(%rbp), %rax
+    lea -112(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 frac_len
+    # initialize local variable : i32 len
+    # len
+    sub $8, %rsp
+    movq $0, -120(%rbp)
+    mov $1, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable frac_precision
+    mov -64(%rbp), %rax
+    lea -64(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable int_len
+    mov -104(%rbp), %rax
+    lea -104(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %ebx, %eax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %ebx, %eax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable len
+    mov -120(%rbp), %rax
+    lea -120(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 len
+    # if statement start
+    # load variable sgn
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    cmp $0, %rax
+    jne L61
+    jmp L62
+L61:
+    mov $1, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable len
+    mov -120(%rbp), %rax
+    lea -120(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %ebx, %eax
+    movl %eax, (%rcx)
+    jmp L62
+L62:
+    # if statement end
+    # initialize local variable : u8* out_str
+    # out_str
+    sub $8, %rsp
+    movq $0, -128(%rbp)
+    # calling function : malloc
+    # function call member variable : sz
+    # TMP:27
+    sub $8, %rsp
+    movq $0, -136(%rbp)
+    mov $1, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable len
+    mov -120(%rbp), %rax
+    lea -120(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %ebx, %eax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:27
+    mov -136(%rbp), %rax
+    lea -136(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L18
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable out_str
+    mov -128(%rbp), %rax
+    lea -128(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize local variable : u8* out_str
+    # initialize local variable : i32 ptr
+    # ptr
+    sub $8, %rsp
+    movq $0, -136(%rbp)
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable ptr
+    mov -136(%rbp), %rax
+    lea -136(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 ptr
+    # if statement start
+    # load variable sgn
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    cmp $0, %rax
+    jne L63
+    jmp L64
+L63:
+    movb $45, %al
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable out_str
+    mov -128(%rbp), %rax
+    lea -128(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable ptr
+    mov -136(%rbp), %rax
+    lea -136(%rbp), %rcx
+    incl (%rcx)
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movb %al, (%rbx)
+    jmp L64
+L64:
+    # if statement end
+    # for loop start
+    # initialize local variable : i32 i
+    # i
+    sub $8, %rsp
+    movq $0, -144(%rbp)
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable i
+    mov -144(%rbp), %rax
+    lea -144(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 i
+L65:
+    # load variable int_len
+    mov -104(%rbp), %rax
+    lea -104(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable i
+    mov -144(%rbp), %rax
+    lea -144(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %ebx, %eax
+    setl %al
+    movzx %al, %rax
+    cmp $0, %rax
+    je L67
+    # load variable int_str
+    mov -88(%rbp), %rax
+    lea -88(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable i
+    mov -144(%rbp), %rax
+    lea -144(%rbp), %rcx
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable out_str
+    mov -128(%rbp), %rax
+    lea -128(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable ptr
+    mov -136(%rbp), %rax
+    lea -136(%rbp), %rcx
+    incl (%rcx)
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movb %al, (%rbx)
+L66:
+    # load variable i
+    mov -144(%rbp), %rax
+    lea -144(%rbp), %rcx
+    incl (%rcx)
+    jmp L65
+L67:
+    # for loop end
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    movb $46, %al
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable out_str
+    mov -128(%rbp), %rax
+    lea -128(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable ptr
+    mov -136(%rbp), %rax
+    lea -136(%rbp), %rcx
+    incl (%rcx)
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movb %al, (%rbx)
+    # for loop start
+    # initialize local variable : i32 i
+    # i
+    sub $8, %rsp
+    movq $0, -144(%rbp)
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable i
+    mov -144(%rbp), %rax
+    lea -144(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 i
+L68:
+    # load variable frac_len
+    mov -112(%rbp), %rax
+    lea -112(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable frac_precision
+    mov -64(%rbp), %rax
+    lea -64(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    sub %ebx, %eax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable i
+    mov -144(%rbp), %rax
+    lea -144(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %ebx, %eax
+    setl %al
+    movzx %al, %rax
+    cmp $0, %rax
+    je L70
+    movb $48, %al
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable out_str
+    mov -128(%rbp), %rax
+    lea -128(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable ptr
+    mov -136(%rbp), %rax
+    lea -136(%rbp), %rcx
+    incl (%rcx)
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movb %al, (%rbx)
+L69:
+    # load variable i
+    mov -144(%rbp), %rax
+    lea -144(%rbp), %rcx
+    incl (%rcx)
+    jmp L68
+L70:
+    # for loop end
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    # for loop start
+    # initialize local variable : i32 i
+    # i
+    sub $8, %rsp
+    movq $0, -144(%rbp)
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable i
+    mov -144(%rbp), %rax
+    lea -144(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 i
+L71:
+    # load variable frac_len
+    mov -112(%rbp), %rax
+    lea -112(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable i
+    mov -144(%rbp), %rax
+    lea -144(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %ebx, %eax
+    setl %al
+    movzx %al, %rax
+    cmp $0, %rax
+    je L73
+    # load variable frac_str
+    mov -96(%rbp), %rax
+    lea -96(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable i
+    mov -144(%rbp), %rax
+    lea -144(%rbp), %rcx
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable out_str
+    mov -128(%rbp), %rax
+    lea -128(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable ptr
+    mov -136(%rbp), %rax
+    lea -136(%rbp), %rcx
+    incl (%rcx)
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movb %al, (%rbx)
+L72:
+    # load variable i
+    mov -144(%rbp), %rax
+    lea -144(%rbp), %rcx
+    incl (%rcx)
+    jmp L71
+L73:
+    # for loop end
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    mov $0, %rax
+    movzbq %al, %rax
+
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable out_str
+    mov -128(%rbp), %rax
+    lea -128(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable ptr
+    mov -136(%rbp), %rax
+    lea -136(%rbp), %rcx
+    incl (%rcx)
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movb %al, (%rbx)
+    # TMP:28
+    sub $8, %rsp
+    movq $0, -144(%rbp)
+    # load variable out_str
+    mov -128(%rbp), %rax
+    lea -128(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:28
+    mov -144(%rbp), %rax
+    lea -144(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    mov -144(%rbp), %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $136, %rsp
+    pop %rbp
+    ret
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $136, %rsp
+
+# to_string(u64)
+L29:
+    push %rbp
+    mov %rsp, %rbp
+    # initialize local variable : u8* str
+    # str
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    # calling function : malloc
+    # function call member variable : sz
+    # TMP:29
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    mov $21, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:29
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L18
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable str
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize local variable : u8* str
+    # initialize local variable : i32 ptr
+    # ptr
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    mov $20, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable ptr
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 ptr
+    mov $0, %rax
+    movzbq %al, %rax
+
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable str
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable ptr
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    decl (%rcx)
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movb %al, (%rbx)
+    # if statement start
+    mov $0, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable x
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %rbx, %rax
+    sete %al
+    movzx %al, %rax
+    cmp $0, %rax
+    jne L74
+    jmp L75
+L74:
+    movb $48, %al
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable str
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable ptr
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movb %al, (%rbx)
+    # TMP:30
+    sub $8, %rsp
+    movq $0, -24(%rbp)
+    # load variable str
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable ptr
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:30
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    mov -24(%rbp), %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $16, %rsp
+    pop %rbp
+    ret
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+    jmp L75
+L75:
+    # if statement end
+    # while loop start
+L76:
+    mov $0, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable x
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %rbx, %rax
+    setne %al
+    movzx %al, %rax
+    cmp $0, %rax
+    je L78
+    mov $10, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable x
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cqo
+    div %rbx
+    mov %rdx, %rax
+    movzbq %al, %rax
+
+    push %rax    # ExprBinary::emit_asm() : save right
+    movb $48, %al
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %bl, %al
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable str
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable ptr
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    decl (%rcx)
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movb %al, (%rbx)
+    mov $10, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable x
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cqo
+    div %rbx
+    movq %rax, (%rcx)
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+L77:
+    jmp L76
+L78:
+    # while loop end
+    # TMP:31
+    sub $8, %rsp
+    movq $0, -24(%rbp)
+    # load variable str
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    mov $1, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable ptr
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %ebx, %eax
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:31
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    mov -24(%rbp), %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $16, %rsp
+    pop %rbp
+    ret
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $16, %rsp
+
+# to_string(i32)
+L28:
+    push %rbp
+    mov %rsp, %rbp
+    # if statement start
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable x
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %ebx, %eax
+    sete %al
+    movzx %al, %rax
+    cmp $0, %rax
+    jne L79
+    jmp L80
+L79:
+    # TMP:32
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    mov $2, %rax
+    push %rax    # emit_malloc() : malloc arg
+    call L18
+    # emit_malloc() : malloc arg
+    add $8, %rsp
+    push %rax    # StringLiteral::emit_asm() : string start
+    mov %rax, %rbx
+    movb $48, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $0, %al
+    movb %al, (%rbx)
+    pop %rax    # StringLiteral::emit_asm() : string start
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:32
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    mov -8(%rbp), %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    pop %rbp
+    ret
+    jmp L80
+L80:
+    # if statement end
+    # initialize local variable : i32 is_neg
+    # is_neg
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable x
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %ebx, %eax
+    setl %al
+    movzx %al, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable is_neg
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 is_neg
+    # if statement start
+    # load variable is_neg
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    cmp $0, %rax
+    jne L81
+    jmp L82
+L81:
+    mov $1, %rax
+    neg %eax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable x
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    imul %ebx, %eax
+    movl %eax, (%rcx)
+    jmp L82
+L82:
+    # if statement end
+    # initialize local variable : u8* str
+    # str
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    # calling function : malloc
+    # function call member variable : sz
+    # TMP:33
+    sub $8, %rsp
+    movq $0, -24(%rbp)
+    mov $12, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:33
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L18
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable str
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize local variable : u8* str
+    # initialize local variable : i32 ptr
+    # ptr
+    sub $8, %rsp
+    movq $0, -24(%rbp)
+    mov $11, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable ptr
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # done initialize local variable : i32 ptr
+    mov $0, %rax
+    movzbq %al, %rax
+
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable str
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable ptr
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    decl (%rcx)
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movb %al, (%rbx)
+    # while loop start
+L83:
+    mov $0, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable x
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %ebx, %eax
+    setne %al
+    movzx %al, %rax
+    cmp $0, %rax
+    je L85
+    mov $10, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable x
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    movsx %eax, %rax
+    movsx %ebx, %rbx
+    cqo
+    idiv %rbx
+    mov %edx, %eax
+    push %rax    # ExprBinary::emit_asm() : save right
+    movb $48, %al
+    movzbl %al, %eax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %ebx, %eax
+    movzbq %al, %rax
+
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable str
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable ptr
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    decl (%rcx)
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movb %al, (%rbx)
+    mov $10, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable x
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    movsx %eax, %rax
+    movsx %ebx, %rbx
+    cqo
+    idiv %rbx
+    mov %eax, %eax
+    movl %eax, (%rcx)
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+L84:
+    jmp L83
+L85:
+    # while loop end
+    # if statement start
+    # load variable is_neg
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    cmp $0, %rax
+    jne L86
+    jmp L87
+L86:
+    movb $45, %al
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable str
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable ptr
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    decl (%rcx)
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movb %al, (%rbx)
+    jmp L87
+L87:
+    # if statement end
+    # TMP:34
+    sub $8, %rsp
+    movq $0, -32(%rbp)
+    # load variable str
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    mov $1, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable ptr
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %ebx, %eax
+    movsxd %eax, %rax
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    mov %rcx, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:34
+    mov -32(%rbp), %rax
+    lea -32(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    mov -32(%rbp), %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $24, %rsp
+    pop %rbp
+    ret
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $24, %rsp
+
+# to_string(i32, u8*)
+L27:
+    push %rbp
+    mov %rsp, %rbp
+    # TMP:35
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    mov $0, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:35
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    mov -8(%rbp), %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    pop %rbp
+    ret
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+
+# strlen(u8*)
+L26:
+    push %rbp
+    mov %rsp, %rbp
+    # for loop start
+    # initialize local variable : u64 i
+    # i
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    mov $0, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable i
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # done initialize local variable : u64 i
+L88:
+    # if statement start
+    mov $0, %rax
+    movzbq %al, %rax
+
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable s
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    # load variable i
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rax, %rbx
+    pop %rcx    # ExprPostfix::emit_asm() : [] %rcx 1
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 1
+    push %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    lea (%rax, %rbx, 1), %rax
+    mov %rax, %rcx
+    pop %rax    # ExprPostfix::emit_asm() : [] %rax 2
+    movzbl (%rax, %rbx, 1), %eax
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    cmp %bl, %al
+    sete %al
+    movzx %al, %rax
+    cmp $0, %rax
+    jne L91
+    jmp L92
+L91:
+    # TMP:36
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    # load variable i
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:36
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    mov -16(%rbp), %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    pop %rbp
+    ret
+    jmp L92
+L92:
+    # if statement end
+L89:
+    # load variable i
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    incq (%rcx)
+    jmp L88
+L90:
+    # for loop end
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+
+# puti_endl(i32)
+L25:
+    push %rbp
+    mov %rsp, %rbp
+    # calling function : puts_endl
+    # function call member variable : s
+    # TMP:37
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    # calling function : to_string
+    # function call member variable : x
+    # TMP:38
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    # load variable x
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:38
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    call L28
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:37
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L23
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+    pop %rbp
+    ret
+
+# puti(i32)
+L24:
+    push %rbp
+    mov %rsp, %rbp
+    # calling function : puts
+    # function call member variable : s
+    # TMP:39
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    # calling function : to_string
+    # function call member variable : x
+    # TMP:40
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    # load variable x
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:40
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    call L28
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:39
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L22
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+    pop %rbp
+    ret
+
+# puts_endl(u8*)
+L23:
+    push %rbp
+    mov %rsp, %rbp
+    # calling function : sys_write
+    # function call member variable : fd
+    # TMP:41
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    mov $1, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:41
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # function call member variable : buf
+    # TMP:42
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    # load variable s
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:42
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # function call member variable : count
+    # TMP:43
+    sub $8, %rsp
+    movq $0, -24(%rbp)
+    # calling function : strlen
+    # function call member variable : s
+    # TMP:44
+    sub $8, %rsp
+    movq $0, -32(%rbp)
+    # load variable s
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:44
+    mov -32(%rbp), %rax
+    lea -32(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L26
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:43
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L9
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $24, %rsp
+    # calling function : sys_write
+    # function call member variable : fd
+    # TMP:45
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    mov $1, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:45
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # function call member variable : buf
+    # TMP:46
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    mov $2, %rax
+    push %rax    # emit_malloc() : malloc arg
+    call L18
+    # emit_malloc() : malloc arg
+    add $8, %rsp
+    push %rax    # StringLiteral::emit_asm() : string start
+    mov %rax, %rbx
+    movb $10, %al
+    movb %al, (%rbx)
+    inc %rbx
+    movb $0, %al
+    movb %al, (%rbx)
+    pop %rax    # StringLiteral::emit_asm() : string start
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:46
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # function call member variable : count
+    # TMP:47
+    sub $8, %rsp
+    movq $0, -24(%rbp)
+    mov $1, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:47
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L9
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $24, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+    pop %rbp
+    ret
+
+# puts(u8*)
+L22:
+    push %rbp
+    mov %rsp, %rbp
+    # calling function : sys_write
+    # function call member variable : fd
+    # TMP:48
+    sub $8, %rsp
+    movq $0, -8(%rbp)
+    mov $1, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:48
+    mov -8(%rbp), %rax
+    lea -8(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movl %eax, (%rbx)
+    # function call member variable : buf
+    # TMP:49
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    # load variable s
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:49
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # function call member variable : count
+    # TMP:50
+    sub $8, %rsp
+    movq $0, -24(%rbp)
+    # calling function : strlen
+    # function call member variable : s
+    # TMP:51
+    sub $8, %rsp
+    movq $0, -32(%rbp)
+    # load variable s
+    mov 16(%rbp), %rax
+    lea 16(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:51
+    mov -32(%rbp), %rax
+    lea -32(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L26
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:50
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L9
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $24, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+    pop %rbp
+    ret
+
+# get_sys_time_ns()
+L21:
+    push %rbp
+    mov %rsp, %rbp
+    # initialize local variable : timespec ts
+    # ts
+    sub $8, %rsp
+    mov $16, %rax
+    push %rax    # emit_malloc() : malloc arg
+    call L18
+    # emit_malloc() : malloc arg
+    add $8, %rsp
+    # initialize struct timespec
+    push %rax    # emit_initialize_struct() :: save original %rax
+    movq $0, (%rax)
+    add $8, %rax
+    movq $0, (%rax)
+    add $8, %rax
+    pop %rax    # emit_initialize_struct() :: save original %rax
+    # done initialize struct memory timespec
+    movq %rax, -8(%rbp)
+    # calling constructor : timespec
+    mov $16, %rax
+    push %rax    # emit_malloc() : malloc arg
+    call L18
+    # emit_malloc() : malloc arg
+    add $8, %rsp
+    # initialize struct timespec
+    push %rax    # emit_initialize_struct() :: save original %rax
+    movq $0, (%rax)
+    add $8, %rax
+    movq $0, (%rax)
+    add $8, %rax
+    pop %rax    # emit_initialize_struct() :: save original %rax
+    # done initialize struct memory timespec
+    push %rax    # ConstructorCall::emit_asm() : target struct return ref %rax
+    push %rax    # ConstructorCall::emit_asm() : target struct
+    call L0
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $0, %rsp
+    # ConstructorCall::emit_asm() : target struct
+    add $8, %rsp
+    pop %rax    # ConstructorCall::emit_asm() : target struct return ref %rax
+    # expression struct assignment tmp variable
+    push %rax    # TMP:52
+    # load variable ts
+    mov -8(%rbp), %rax
+    mov -8(%rbp), %rcx
+    # calling constructor : timespec
+    # initialize struct timespec
+    push %rax    # emit_initialize_struct() :: save original %rax
+    movq $0, (%rax)
+    add $8, %rax
+    movq $0, (%rax)
+    add $8, %rax
+    pop %rax    # emit_initialize_struct() :: save original %rax
+    # done initialize struct memory timespec
+    push %rax    # ConstructorCall::emit_asm() : target struct return ref %rax
+    push %rax    # ConstructorCall::emit_asm() : target struct
+    # TMP:53
+    sub $8, %rsp
+    # load variable TMP:52
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    # dereferencing to type timespec
+    mov %rax, %rcx
+    movq %rcx, -40(%rbp)
+    call L1
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    # ConstructorCall::emit_asm() : target struct
+    add $8, %rsp
+    pop %rax    # ConstructorCall::emit_asm() : target struct return ref %rax
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $8, %rsp
+    # done initialize local variable : timespec ts
+    # calling function : sys_clock_gettime
+    # function call member variable : clock_id
+    # TMP:54
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    # load variable CLOCK_REALTIME
+    mov 96(%r15), %rax
+    lea 96(%r15), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:54
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    # function call member variable : tp
+    # TMP:55
+    sub $8, %rsp
+    movq $0, -24(%rbp)
+    # load variable ts
+    mov -8(%rbp), %rax
+    mov -8(%rbp), %rcx
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:55
+    mov -24(%rbp), %rax
+    lea -24(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    call L13
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    pop %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    add $16, %rsp
+    # TMP:56
+    sub $8, %rsp
+    movq $0, -16(%rbp)
+    # load variable ts
+    mov -8(%rbp), %rax
+    mov -8(%rbp), %rcx
+    # accessing member variable tv_nsec, offset : 8
+    lea 8(%rax), %rcx
+    lea 8(%rax), %rax
+    movq (%rax), %rax
+    # done accessing member variable tv_nsec
+    push %rax    # ExprBinary::emit_asm() : save right
+    mov $1000000000, %rax
+    movsxd %eax, %rax
+    push %rax    # ExprBinary::emit_asm() : save right
+    # load variable ts
+    mov -8(%rbp), %rax
+    mov -8(%rbp), %rcx
+    # accessing member variable tv_sec, offset : 0
+    lea 0(%rax), %rcx
+    lea 0(%rax), %rax
+    movq (%rax), %rax
+    # done accessing member variable tv_sec
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    mul %rbx
+    pop %rbx    # ExprBinary::emit_asm() : save right
+    add %rbx, %rax
+    push %rax    # ExprBinary::emit_asm() : = save right
+    # load variable TMP:56
+    mov -16(%rbp), %rax
+    lea -16(%rbp), %rcx
+    mov %rcx, %rbx
+    pop %rax    # ExprBinary::emit_asm() : = save right
+    movq %rax, (%rbx)
+    mov -16(%rbp), %rax
+    add $8, %rsp
+    push %rax    # emit_cleanup_declaration_stack_layer() : save %rax
+    push %rcx    # emit_cleanup_declaration_stack_layer() : save %rcx
+    movq -8(%rbp), %rax
+    # calling destructor : timespec
+    push %rax    # DestructorCall::emit_asm() : target struct

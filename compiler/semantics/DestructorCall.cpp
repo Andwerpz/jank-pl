@@ -7,6 +7,7 @@
 #include "TemplateMapping.h"
 #include "StructLayout.h"
 #include "StructDefinition.h"
+#include "Identifier.h"
 
 DestructorCall::DestructorCall(Type *_type) {
     type = _type;
@@ -54,10 +55,10 @@ void DestructorCall::emit_asm(bool should_dealloc) {
     StructLayout *sl = get_struct_layout(type);
     assert(sl != nullptr);
     for(int i = (int) sl->member_variables.size() - 1; i >= 0; i--){
-        Type *t = sl->member_variables[i]->type;
-        Identifier *id = sl->member_variables[i]->id;
-        int offset = sl->get_offset(id);
-        if(!is_type_primitive(t)) {
+        Type *mvt = sl->member_variables[i]->type;
+        Identifier *mvid = sl->member_variables[i]->id;
+        int offset = sl->get_offset(mvid);
+        if(!is_type_primitive(mvt)) {
             //save base struct address
             emit_push("%rax", "DestructorCall::emit_asm() : target struct");
 
@@ -65,9 +66,9 @@ void DestructorCall::emit_asm(bool should_dealloc) {
             fout << indent() << "add $" << offset << ", %rax\n";
 
             //call destructor
-            DestructorCall *dc = new DestructorCall(type);
+            DestructorCall *dc = new DestructorCall(mvt);
             assert(dc->resolve_type() != nullptr);
-            dc->emit_asm();
+            dc->emit_asm(false);
 
             //retrieve base struct address
             emit_pop("%rax", "DestructorCall::emit_asm() : target struct");
