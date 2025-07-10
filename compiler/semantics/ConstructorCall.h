@@ -16,7 +16,7 @@ struct ConstructorCall {
     static ConstructorCall* convert(parser::constructor_call *c);
     Constructor* resolve_called_constructor();
     Type* resolve_type();
-    void emit_asm(bool alloc_new = true);
+    void emit_asm(bool alloc_new);
     std::string to_string();
     size_t hash();
     bool equals(ConstructorCall *other);

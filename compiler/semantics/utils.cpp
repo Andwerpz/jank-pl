@@ -1134,6 +1134,13 @@ void push_declaration_stack() {
     declaration_stack.push_back(std::vector<Variable*>(0));
 }
 
+//expects mem addr of the struct to be in %rax
+void emit_destructor_call(Type *t, bool should_dealloc) {
+    DestructorCall *dc = new DestructorCall(t);
+    assert(dc->resolve_type() != nullptr);
+    dc->emit_asm(should_dealloc);
+}
+
 //if do_free == true, also frees allocated structs on this layer
 //just emits frees, should not actually affect the controller
 //this should only be called outside of pop_declaration_stack() in return, break, and continue. 
@@ -1150,14 +1157,11 @@ void emit_cleanup_declaration_stack_layer(int layer_ind) {
     for(int i = 0; i < layer.size(); i++){
         Type *t = layer[i]->type;
         if(!is_type_primitive(t)) {
-            DestructorCall *dc = new DestructorCall(t);
-            assert(dc->resolve_type() != nullptr);
-
             //put addr to struct in %rax
             fout << indent() << "movq " << layer[i]->addr << ", %rax\n";
 
             //call destructor
-            dc->emit_asm();
+            emit_destructor_call(t, true);
         }
     }   
 
@@ -1491,14 +1495,10 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr, s
             fout << indent() << "movq $0, " << addr_str << "\n";
         }
         else {
-            //allocate some memory
-            int sz = vt->calc_size();
-            emit_malloc(sz);
-
             //call default constructor 
             ConstructorCall *cc = new ConstructorCall(vt, {});
             assert(cc->resolve_type()->equals(vt));
-            cc->emit_asm();
+            cc->emit_asm(true);
 
             //save pointer to addr
             fout << indent() << "movq %rax, " << addr_str << "\n";

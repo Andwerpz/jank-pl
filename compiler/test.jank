@@ -3,82 +3,11 @@
 #include <assert>;
 #include <ostream>;
 
-[0] i32 mem_cntr = 0;
-
-struct A {
-    u64 var;
-    A() {
-        this.var = $u64 0;
-        mem_cntr ++;
-    }
-    A(A& other) {
-        this.var = other.var;
-        mem_cntr ++;
-    }
-    ~A() {
-        mem_cntr --;
-    }
-}
-
-struct B {
-    A foo;
-    B() {
-        mem_cntr ++;
-    }
-    B(B& other) {
-        this.foo = other.foo;
-        mem_cntr ++;
-    }
-    ~B() {
-        mem_cntr --;
-    }
-}
-
-void check_cntr() {
-    if(mem_cntr != 0){
-        cout << "mem_cntr nonzero : " << mem_cntr << "\n";
-        assert(0);
-    }
-}
-
 i32 main() {
 
-    for(i32 i = 0; i < 10; i++){
-        B b = new B();
-    }
-    check_cntr();
-
-    for(i32 i = 0; i < 10; i++){
-        B b = new B();
-        continue;
-    }
-    check_cntr();
-
-    for(i32 i = 0; i < 10; i++){
-        B b = new B();
-        if(i == 5) break;
-    }
-    check_cntr();
-
-    {
-        B b = new B();
-        B c = new B();
-        c = b;
-    }
-    check_cntr();
-
-    {
-        B b = new B();
-        b.foo = new A();
-    }
-    check_cntr();
-
-    {
-        new A();
-    }
-    check_cntr();
-
-    cout << "test passed\n";
+    u64 init_mem = MEM_USED;
+    get_sys_time_ns();
+    u64 diff = MEM_USED - init_mem;
 
     return 0;
 }

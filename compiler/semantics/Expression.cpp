@@ -803,7 +803,7 @@ void ExprPrimary::emit_asm() {
     }
     else if(std::holds_alternative<ConstructorCall*>(val)) {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
-        c->emit_asm();
+        c->emit_asm(true);
     }
     else if(std::holds_alternative<OverloadCall*>(val)) {
         OverloadCall *o = std::get<OverloadCall*>(val);
@@ -940,13 +940,7 @@ void ExprBinary::emit_asm() {
 
                 //destruct left struct without dealloccing
                 emit_push("%rax", "ExprBinary::emit_asm() : save left addr before destruct");
-                {
-                    DestructorCall *dc = new DestructorCall(lt);
-                    assert(dc->resolve_type() != nullptr);
-
-                    //%rax should already hold addr, call destructor
-                    dc->emit_asm(false);
-                }
+                emit_destructor_call(lt, false);
                 emit_pop("%rax", "ExprBinary::emit_asm() : save left addr before destruct");
 
                 //use copy constructor to overwrite left struct mem location
@@ -960,14 +954,11 @@ void ExprBinary::emit_asm() {
                     //save left mem addr
                     emit_push("%rax", "ExprBinary::emit_asm() : save struct addr during right dealloc");
                     
-                    DestructorCall *dc = new DestructorCall(rt);
-                    assert(dc->resolve_type() != nullptr);
-        
                     //put addr to struct in %rax
                     fout << indent() << "movq " << v->addr << ", %rax\n";
-        
+
                     //call destructor
-                    dc->emit_asm();
+                    emit_destructor_call(rt, true);
                     
                     //retrieve left mem addr
                     emit_pop("%rax", "ExprBinary::emit_asm() : save struct addr during right dealloc");
@@ -1179,9 +1170,19 @@ void ExprPostfix::emit_asm() {
     else assert(false);
 }
 
-void Expression::emit_asm() {
+void Expression::emit_asm(bool should_dealloc) {
     elaborate();
     expr_node->emit_asm();
+
+    //dealloc unused r-value struct
+    if(should_dealloc) {
+        Type *et = resolve_type();
+        assert(et != nullptr);
+        if(!is_type_primitive(et) && !is_lvalue()) {
+            //call destructor
+            emit_destructor_call(et, true);
+        }
+    }
 }
 
 // -- TO STRING --

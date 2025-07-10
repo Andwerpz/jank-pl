@@ -48,7 +48,26 @@ struct Screen {
         this.width = other.width;
         this.height = other.height;
         this.clear_sz = other.clear_sz;
-        this.screen_buf = other.screen_buf;
+        
+        this.screen_buf = $u8* malloc(this.clear_sz + (this.width + $u64 1) * this.height);
+        //this.screen_buf[0] = $u8 27;
+        //this.screen_buf[1] = '[';
+        //this.screen_buf[2] = 'H';
+        this.screen_buf[0] = $u8 27;
+        this.screen_buf[1] = '[';
+        this.screen_buf[2] = '2';
+        this.screen_buf[3] = 'J';
+        this.screen_buf[4] = $u8 27;
+        this.screen_buf[5] = '[';
+        this.screen_buf[6] = 'H';
+        for(i32 i = 0; i < $i32 this.height; i++){
+            this[i][this.width] = '\n';
+        }
+        this.clear();
+    }
+
+    ~Screen() {
+        free($void* this.screen_buf, this.clear_sz + (this.width + $u64 1) * this.height);
     }
 
     void clear() {
@@ -81,6 +100,8 @@ void exit_alt_screen() {
     sys_write(STDOUT, $void* exit_str, strlen(exit_str));
 }
 
+[0] i32 vec2_alloc_cntr = 0;
+
 struct vec2 {
     f32 x;
     f32 y;
@@ -88,17 +109,24 @@ struct vec2 {
     vec2() {
         this.x = 0.0;
         this.y = 0.0;
+        vec2_alloc_cntr ++;
     }
 
     vec2(vec2& other) {
         this.x = other.x;
         this.y = other.y;
+        vec2_alloc_cntr ++;
     }
 
     vec2(f32 _x, f32 _y) {
         this.x = _x;
         this.y = _y;
+        vec2_alloc_cntr ++;
     }
+
+    ~vec2() {
+        vec2_alloc_cntr --;
+    }   
 
     f32 length_sq() {
         return this.x * this.x + this.y * this.y;
@@ -177,23 +205,31 @@ i32 min(i32 x, i32 y) {
 [1] vector<vector<i32>> g_map = new vector<vector<i32>>(g_map_height, new vector<i32>(g_map_width, 0));
 [0] f32 epsilon = 0.0001;
 
+[0] i32 hitinfo_alloc_cntr = 0;
+
 struct HitInfo {
     vec2 pos;
     i32 is_xhit;
 
     HitInfo() {
+        hitinfo_alloc_cntr ++;
+    }
 
+    ~HitInfo() {
+        hitinfo_alloc_cntr --;
     }
 
     HitInfo(vec2 _pos, i32 _is_xhit) {
         this.pos = _pos;
         this.is_xhit = _is_xhit;
+        hitinfo_alloc_cntr ++;
     }
 
     HitInfo(HitInfo& other) {
         this.pos = other.pos;
         this.is_xhit = other.is_xhit;
-    }
+        hitinfo_alloc_cntr ++;
+    }    
 }
 
 HitInfo calc_hit_info(vec2 pos, vec2 dir) {
@@ -329,6 +365,8 @@ i32 main() {
         g_screen.render();
 
         cout << "MEM USAGE : " << (MEM_USED >> ($u64 20)) << " MB\n";
+        cout << "VEC2 ALLOC : " << vec2_alloc_cntr << "\n";
+        cout << "HITINFO ALLOC : " << hitinfo_alloc_cntr << "\n";
 
         //cout << "PROT : " << prot << "\n";
         //cout << "INCAMT : " << incamt << "\n";

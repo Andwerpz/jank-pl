@@ -14,9 +14,9 @@ void* sbrk(u64 inc) {
     return $void* cur_brk;
 }
 
-void* _malloc(u64 sz) {
-    return sbrk(sz);
-}
+//void* _malloc(u64 sz) {
+//    return sbrk(sz);
+//}
 
 //mmap allocator. Essentially pushing the task of memory management to the OS. We can now free using munmap.
 //the downside is that the resolution of our allocs becomes 4KB.  

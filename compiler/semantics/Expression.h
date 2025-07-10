@@ -142,7 +142,9 @@ struct Expression {
     Type* resolve_type();
     bool is_lvalue();
     void elaborate();
-    void emit_asm();
+    //if should_dealloc == true, will auto dealloc any produced struct r-value
+    //this should probably only be true when calling from a control statement. 
+    void emit_asm(bool should_dealloc = false); 
     std::string to_string();
     size_t hash();
     bool equals(Expression* other);

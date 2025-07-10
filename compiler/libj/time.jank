@@ -20,8 +20,8 @@ struct timespec {
     }
 
     ~timespec() {
-        
-    }
+
+    }   
 }
 
 u64 get_sys_time_ns() {

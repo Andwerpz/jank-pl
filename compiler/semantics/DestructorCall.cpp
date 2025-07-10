@@ -65,10 +65,8 @@ void DestructorCall::emit_asm(bool should_dealloc) {
             //move member variable address into %rax
             fout << indent() << "add $" << offset << ", %rax\n";
 
-            //call destructor
-            DestructorCall *dc = new DestructorCall(mvt);
-            assert(dc->resolve_type() != nullptr);
-            dc->emit_asm(false);
+            //call destructor, no dealloc
+            emit_destructor_call(mvt, false);
 
             //retrieve base struct address
             emit_pop("%rax", "DestructorCall::emit_asm() : target struct");

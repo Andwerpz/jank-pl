@@ -240,7 +240,7 @@ bool ExpressionStatement::is_well_formed() {
         return false;
     }
 
-    expr->emit_asm();
+    expr->emit_asm(true);
 
     return true;
 }
@@ -403,7 +403,7 @@ bool IfStatement::is_well_formed() {
 
     //check each expression one by one to see where we should jump to
     for(int i = 0; i < exprs.size(); i++){
-        exprs[i]->emit_asm();
+        exprs[i]->emit_asm(true);
         fout << indent() << "cmp $0, %rax\n";
         fout << indent() << "jne " << labels[i] << "\n";
     }
@@ -451,7 +451,7 @@ bool WhileStatement::is_well_formed() {
     fout << loop_start_label << ":\n";
 
     //check loop condition
-    expr->emit_asm();
+    expr->emit_asm(true);
     fout << indent() << "cmp $0, %rax\n";
     fout << indent() << "je " << loop_end_label << "\n";
 
@@ -512,7 +512,7 @@ bool ForStatement::is_well_formed() {
 
     //check loop condition
     if(expr1.has_value()) {
-        expr1.value()->emit_asm();
+        expr1.value()->emit_asm(true);
         fout << indent() << "cmp $0, %rax\n";
         fout << indent() << "je " << loop_end_label << "\n";
     }
@@ -524,7 +524,7 @@ bool ForStatement::is_well_formed() {
 
     //loop variable assignment
     fout << loop_assignment_label << ":\n";
-    if(expr2.has_value()) expr2.value()->emit_asm();
+    if(expr2.has_value()) expr2.value()->emit_asm(true);
 
     //jump to start of loop
     fout << indent() << "jmp " << loop_start_label << "\n";

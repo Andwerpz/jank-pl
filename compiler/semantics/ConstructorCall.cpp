@@ -49,7 +49,7 @@ Type* ConstructorCall::resolve_type() {
 }
 
 //if alloc_new is false, assumes memory address is in %rax
-//calls emit_initialize_struct() on given memory
+//calls emit_initialize_struct()
 //should return with %rax holding initialized type
 void ConstructorCall::emit_asm(bool alloc_new) {
     if(asm_debug) fout << indent() << "# calling constructor : " << type->to_string() << "\n";

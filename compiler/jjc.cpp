@@ -734,25 +734,11 @@ it's sitting somewhere in between, Overload is more like a function, while Overl
 So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
 
 some miscellaneous features:
+ - array type. Array types should not be primitive. We can treat them like structs, they'll have layouts, 
+   constructors, destructors. 
+ - implement const
  - make string literals point to rodata instead of allocating more memory every time. 
    - should maybe consider implementing const? so a string literal would be of type const u8*
- - after implementing free, add struct destructors. 
-   - currently, I assume that cleaning up the local variable declaration stack does not affect any
-     of the registers. This will no longer be true after implementing struct destructors.
-   - examples where I use this assumption are in FunctionCall::emit_asm() and SyscallLiteral::emit_asm() 
-     - perhaps can make it so that pop_declaration_stack() specifically saves %rax, %rcx. This is enough for 
-       expression evaluation to still work. 
-   - variables should get destructed when they go out of scope. Should modify pop_declaration_stack() to do this. 
-   - will also have to think about how to free temp variables. 
-     - primitives (i32, f32, etc.) are simple and don't need destruction
-     - overloaded operators and constructor calls are already wrapped in function calls during the elaboration phase
-     - therefore, any temporary structs produced within subexpressions will have been bound to named temporaries or returned 
-       from an overload/constructor, which means the only destructible temporary I need to explicitly handle is the final 
-       value on the right-hand side of an assignment if it is an rvalue struct
-     - actually, I don't even need to specifically handle these temp variables at all, as in the '=' operator, I bind 
-       the temp variable to a named temporary reference, so if I just handle cleaning up named variables then I should be fine. 
-   - use mmap and munmap syscalls to implement malloc and free. 
-   - okok, now we just have to clean up unused r-values from expressions.
  - have some reserved keywords (break, continue, sizeof)
  - goto statement
  - make id_to_type() return a bool so that it doesn't fail an assert when a variable doesn't exist
@@ -805,6 +791,25 @@ type = templated_type , [ "&" ] ;
    - perhaps can pass in a type as the last argument and that will be the assumed return type?
    - 'syscall(<syscall number>, <return type>, <arg list>)'
    - we won't do any checking on the syscall number and argument types. That's the user's issue. 
+ - after implementing free, add struct destructors. 
+   - currently, I assume that cleaning up the local variable declaration stack does not affect any
+     of the registers. This will no longer be true after implementing struct destructors.
+   - examples where I use this assumption are in FunctionCall::emit_asm() and SyscallLiteral::emit_asm() 
+     - perhaps can make it so that pop_declaration_stack() specifically saves %rax, %rcx. This is enough for 
+       expression evaluation to still work. 
+   - variables should get destructed when they go out of scope. Should modify pop_declaration_stack() to do this. 
+   - will also have to think about how to free temp variables. 
+     - primitives (i32, f32, etc.) are simple and don't need destruction
+     - overloaded operators and constructor calls are already wrapped in function calls during the elaboration phase
+     - therefore, any temporary structs produced within subexpressions will have been bound to named temporaries or returned 
+       from an overload/constructor, which means the only destructible temporary I need to explicitly handle is the final 
+       value on the right-hand side of an assignment if it is an rvalue struct
+     - actually, I don't even need to specifically handle these temp variables at all, as in the '=' operator, I bind 
+       the temp variable to a named temporary reference, so if I just handle cleaning up named variables then I should be fine. 
+   - use mmap and munmap syscalls to implement malloc and free. 
+   - okok, now we just have to clean up unused r-values from expressions.
+     - i changed the default assignment operator to instead return an l-value. So now, if I see any leftover
+       r-values, I can confidently just clean them up. 
 
 
 
