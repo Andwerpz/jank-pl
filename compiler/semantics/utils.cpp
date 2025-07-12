@@ -1514,7 +1514,7 @@ void emit_initialize_struct(Type *t) {
 }
 
 //allocates the next stack slot and initializes the variable into it. 
-Variable* emit_initialize_stack_variable(Type *vt, Identifier *id, Expression *expr) {
+Variable* emit_initialize_stack_variable(Type *vt, Identifier *id, std::optional<Expression*> expr) {
     //claim next stack slot
     emit_sub_rsp(8, id->name);
     std::string addr_str = std::to_string(local_offset) + "(%rbp)";
@@ -1530,7 +1530,7 @@ Variable* emit_initialize_stack_variable(Type *vt, Identifier *id, Expression *e
 //evaluates the expression and initializes the variable onto the top of the stack
 //if for some reason is unable to initialize the variable, returns nullptr
 //expects the address at addr_str to be already allocated
-Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr, std::string addr_str, bool is_global) { 
+Variable* emit_initialize_variable(Type *vt, Identifier *id, std::optional<Expression*> expr, std::string addr_str, bool is_global) { 
     assert(vt != nullptr);
     assert(id != nullptr);
     assert(expr != nullptr);    //might want to later have a version that default declares types
@@ -1553,33 +1553,39 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr, s
         return nullptr;
     }
     // - does the expression resolve to a type?
-    if(expr->resolve_type() == nullptr){
+    if(expr.has_value() && expr.value()->resolve_type() == nullptr){
         std::cout << "Expression does not resolve to type\n";
         return nullptr;
     }
 
-    Type *et = expr->resolve_type();
-    bool is_lvalue = expr->is_lvalue();
     Variable *v = add_variable(vt, id, is_global);
     assert(v != nullptr);
     v->addr = addr_str;
 
     if(dynamic_cast<ReferenceType*>(vt) != nullptr) {
         vt = dynamic_cast<ReferenceType*>(vt)->type;
+        // - must assign a value when initializing references
+        if(!expr.has_value()) {
+            std::cout << "Cannot default initialize reference\n";
+            return nullptr;
+        }
         // - must use l-value when binding references
-        if(!is_lvalue) {
+        if(!expr.value()->is_lvalue()) {
             std::cout << "Cannot assign r-value to reference\n";
             return nullptr;
         }
         // - must bind to reference something of matching type (no conversions) 
-        if(*vt != *et) {
+        if(*vt != *(expr.value()->resolve_type())) {
             std::cout << "Cannot assign non-matching type to reference\n";
             return nullptr;
         }
 
+        //zero initialize primitive
+        fout << indent() << "movq $0, " << addr_str << "\n";
+
         //evaluate expr
         //%rax = value, %rcx = addr
-        expr->emit_asm();
+        expr.value()->emit_asm();
 
         //save addr into given addr
         fout << indent() << "movq %rcx, " << addr_str << "\n";
@@ -1608,13 +1614,15 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, Expression *expr, s
         }
 
         //'assignment'
-        //right now, expr = b. We want expr = (a = b)
-        Expression *a_expr = new Expression(new ExprBinary(new ExprPrimary(id), "=", expr->expr_node));
-        if(a_expr->resolve_type() == nullptr) {
-            std::cout << "Cannot cast expression type into variable type\n";
-            return nullptr;
+        if(expr.has_value()) {
+            //right now, expr = b. We want expr = (a = b)
+            Expression *a_expr = new Expression(new ExprBinary(new ExprPrimary(id), "=", expr.value()->expr_node));
+            if(a_expr->resolve_type() == nullptr) {
+                std::cout << "Cannot cast expression type into variable type\n";
+                return nullptr;
+            }
+            a_expr->emit_asm();
         }
-        a_expr->emit_asm();
     }
 
     return v;

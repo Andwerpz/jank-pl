@@ -732,3 +732,82 @@ bool CompoundStatement::look_for_templates() {
     for(int i = 0; i < statements.size(); i++) if(!statements[i]->look_for_templates()) return false;
     return true;
 }
+
+// -- TO STRING --
+std::string DeclarationStatement::to_string() {
+    return declaration->to_string() + ";";
+}
+
+std::string ExpressionStatement::to_string() {
+    return expr->to_string() + ";";
+}
+
+std::string ReturnStatement::to_string() {
+    std::string ret = "return";
+    if(opt_expr.has_value()) ret += " " + opt_expr.value()->to_string();
+    ret += ";";
+    return ret;
+}
+
+std::string ASMStatement::to_string() {
+    return "asm!(\"" + asm_str + "\");";
+}
+
+std::string BreakStatement::to_string() {
+    return "break;";
+}
+
+std::string ContinueStatement::to_string() {
+    return "continue;";
+}
+
+std::string IfStatement::to_string() {
+    std::string ret = "";
+    for(int i = 0; i < exprs.size(); i++){
+        if(i == 0) ret += "if(";
+        else ret += "else if(";
+        ret += exprs[i]->to_string();
+        ret += ") ";
+        ret += statements[i]->to_string();
+        if(i + 1 != exprs.size()) ret += "\n";
+    }
+    if(else_statement.has_value()) {
+        ret += "\n";
+        ret += "else ";
+        ret += else_statement.value()->to_string();
+    }
+    return ret;
+}
+
+std::string WhileStatement::to_string() {
+    std::string ret = "";
+    ret += "while(";
+    ret += expr->to_string();
+    ret += ") ";
+    ret += statement->to_string();
+    return ret;
+}
+
+std::string ForStatement::to_string() {
+    std::string ret = "";
+    ret += "for(";
+    if(declaration.has_value()) ret += declaration.value()->to_string();
+    ret += "; ";
+    if(expr1.has_value()) ret += expr1.value()->to_string();
+    ret += "; ";
+    if(expr2.has_value()) ret += expr2.value()->to_string();
+    ret += ") ";
+    ret += statement->to_string();
+    return ret;
+}
+
+std::string CompoundStatement::to_string() {
+    std::string ret = "";
+    ret += "{\n";
+    for(int i = 0; i < statements.size(); i++){
+        ret += statements[i]->to_string();
+        ret += "\n";
+    }
+    ret += "}";
+    return ret;
+}

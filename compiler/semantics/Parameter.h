@@ -13,4 +13,5 @@ struct Parameter {
     Parameter* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
     bool look_for_templates();
+    std::string to_string();
 };

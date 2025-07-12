@@ -82,6 +82,8 @@ bool Function::is_well_formed() {
         return true;
     }
     std::cout << "CHECKING FUNCTION : " << fs->to_string() << std::endl;
+    std::cout << to_string() << "\n";
+
 
     // - are templates all resolvable?
     if(!look_for_templates()) {
@@ -141,12 +143,11 @@ bool Function::is_well_formed() {
         for(int i = 0; i < global_declarations.size(); i++){
             Type *type = global_declarations[i]->declaration->type;
             Identifier *id = global_declarations[i]->declaration->id;
-            Expression *expr = global_declarations[i]->declaration->expr;
             std::string addr_str = std::to_string(i * 8) + "(%r15)";
             std::cout << "GLOBAL : " << type->to_string() << " " << id->name << "\n";
 
             if(asm_debug) fout << indent() << "# initialize global variable : " << type->to_string() << " " << id->name << "\n";
-            Variable *v = emit_initialize_variable(type, id, expr, addr_str, true);
+            Variable *v = emit_initialize_variable(type, id, global_declarations[i]->declaration->expr, addr_str, true);
             if(asm_debug) fout << indent() << "# done initialize global variable : " << type->to_string() << " " << id->name << "\n";
         
             if(v == nullptr) {
@@ -289,6 +290,20 @@ bool Function::look_for_templates() {
     for(int i = 0; i < parameters.size(); i++) if(!parameters[i]->look_for_templates()) return false;
     if(!body->look_for_templates()) return false;
     return true;
+}
+
+std::string Function::to_string() {
+    std::string ret = "";
+    ret += type->to_string() + " ";
+    if(enclosing_type.has_value()) ret += enclosing_type.value()->to_string() + "::";
+    ret += id->name + "(";
+    for(int i = 0; i < parameters.size(); i++){
+        ret += parameters[i]->to_string();
+        if(i + 1 != parameters.size()) ret += ", ";
+    }
+    ret += ") ";
+    ret += body->to_string();
+    return ret;
 }
 
 bool Function::is_main() {

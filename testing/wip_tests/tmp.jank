@@ -1,102 +1,17 @@
-#include <jstring>;
 #include <put>;
-#include <assert>;
+#include <jstring>;
+#include <vector>;
 #include <iostream>;
-
-void test_basic() {
-    {
-        i32[5] a = new i32[5]();
-        i32 n = 5;
-        for(i32 i = 0; i < n; i++){
-            a[i] = i * i;
-        }
-        i32[5] b = new i32[5](a);
-        for(i32 i = 0; i < n; i++){
-            assert(b[i] == i * i);
-        }
-    }
-
-    {
-        i32[5][5] a = new i32[5][5]();
-        i32 n = 5;
-        for(i32 i = 0; i < n; i++){
-            for(i32 j = 0; j < n; j++){
-                a[i][j] = i * j;
-            }
-        }
-        i32[5][5] b = new i32[5][5](a);
-        for(i32 i = 0; i < n; i++){
-            for(i32 j = 0; j < n; j++){
-                assert(b[i][j] == i * j);
-            }
-        }
-    }
-
-    {
-        i32 n = 5;
-        i32*[5] a = new i32*[5]();
-        for(i32 i = 0; i < n; i++){
-            a[i] = $i32* malloc($u64 n);
-        }
-        for(i32 i = 0; i < n; i++){
-            for(i32 j = 0; j < n; j++){
-                a[i][j] = i * j;
-            }
-        }
-        i32*[5] b = new i32*[5](a);
-        for(i32 i = 0; i < n; i++){
-            for(i32 j = 0; j < n; j++){
-                assert(b[i][j] == i * j);
-            }
-        }
-        for(i32 i = 0; i < n; i++){
-            for(i32 j = 0; j < n; j++){
-                b[i][j] = i + j;
-            }
-        }
-        for(i32 i = 0; i < n; i++){
-            for(i32 j = 0; j < n; j++){
-                assert(a[i][j] == i + j);
-            }
-        }
-    }
-
-    cout << "basic tests passed\n";
-}
-
-struct A {
-    i32[5] a;
-
-    A() {}
-    A(A& other) {
-        this.a = new i32[5](other.a);
-    }
-    ~A() {}
-}   
-
-struct B {
-    A[5] a;
-
-    B() {}
-    B(B& other) {
-        this.a = new A[5](other.a);
-    }
-    ~B() {}
-}
-
-void test_struct() {
-    {
-        B[5] b = new B[5]();
-    }
-
-    cout << "struct tests passed\n";
-}
+#include <assert>;
 
 i32 main() {
 
-    test_basic();
-    test_struct();
-    cout << "all tests passed\n";
+    vector<i32> arr1;
+    vector<u64> arr2;
+    vector<u8*> arr3;
+    vector<vector<u32>> arr4;
+
+    cout << "test passed\n";
 
     return 0;
 }

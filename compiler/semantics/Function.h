@@ -35,6 +35,7 @@ struct Function {
     virtual Function* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
     bool look_for_templates();
+    std::string to_string();
 
     bool is_main();
 };

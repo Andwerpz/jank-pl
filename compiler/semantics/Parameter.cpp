@@ -30,3 +30,7 @@ bool Parameter::replace_templated_types(TemplateMapping *mapping) {
 bool Parameter::look_for_templates() {
     return type->look_for_templates();
 }
+
+std::string Parameter::to_string() {
+    return type->to_string() + " " + id->name;
+}

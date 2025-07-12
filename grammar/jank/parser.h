@@ -1,4 +1,4 @@
-// Date Generated : 07-12-2025 00:23:28
+// Date Generated : 07-12-2025 16:13:27
 #pragma once
 #include <vector>
 #include <string>
@@ -4380,23 +4380,31 @@ namespace parser {
         std::string to_string();
     };
 
-    // declaration = type , rws , identifier , ows , "=" , ows , expression ;
+    // declaration = type , rws , identifier , [ ows , "=" , ows , expression ] ;
     struct declaration {
+        struct a0 {
+            ows *t0;
+            std::string t1;
+            ows *t2;
+            expression *t3;
+            a0(ows *_t0, std::string _t1, ows *_t2, expression *_t3) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
         type *t0;
         rws *t1;
         identifier *t2;
-        ows *t3;
-        std::string t4;
-        ows *t5;
-        expression *t6;
-        declaration(type *_t0, rws *_t1, identifier *_t2, ows *_t3, std::string _t4, ows *_t5, expression *_t6) {
+        a0 *t3;
+        declaration(type *_t0, rws *_t1, identifier *_t2, a0 *_t3) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
             t3 = _t3;
-            t4 = _t4;
-            t5 = _t5;
-            t6 = _t6;
         }
         static declaration* parse();
         std::string to_string();

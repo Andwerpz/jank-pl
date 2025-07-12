@@ -1658,7 +1658,10 @@ bool ExprPrimary::replace_templated_types(TemplateMapping *mapping) {
     }
     else if(std::holds_alternative<Type*>(val)) {
         Type *t = std::get<Type*>(val);
-        return t->replace_templated_types(mapping);
+        if(auto x = mapping->find_mapped_type(t)) t = x;
+        else if(!t->replace_templated_types(mapping)) return false;
+        val = t;
+        return true;
     }
     else assert(false);
 }
@@ -1680,7 +1683,8 @@ bool ExprPrefix::replace_templated_types(TemplateMapping *mapping) {
     }
     else if(std::holds_alternative<Type*>(op)) {
         Type *cast_t = std::get<Type*>(op);
-        if(!cast_t->replace_templated_types(mapping)) return false;
+        if(auto x = mapping->find_mapped_type(cast_t)) cast_t = x;
+        else if(!cast_t->replace_templated_types(mapping)) return false;
         op = cast_t;
     }
     else assert(false);

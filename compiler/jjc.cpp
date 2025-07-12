@@ -734,7 +734,8 @@ it's sitting somewhere in between, Overload is more like a function, while Overl
 So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
 
 some miscellaneous features:
- - default declarations, so the expression portion of a declaration should be optional
+ - multi declarations, we can separate multiple variable declarations on the same line with commas
+ - expression comma operator
  - implement const
  - make string literals point to rodata instead of allocating more memory every time. 
    - should maybe consider implementing const? so a string literal would be of type const u8*
@@ -743,10 +744,10 @@ some miscellaneous features:
  - make id_to_type() return a bool so that it doesn't fail an assert when a variable doesn't exist
  - extension to inline assembly: have a way to print out the address of any local (or global) variable. 
  - typedefs. Just have them be pretty much resolved template variables
- - syntax error reporting, keep track of the deepest parse. 
+ - syntax error reporting, keep track of the deepest parse.
+   - also have some pretty printing when parse fails pointing to exact deepest parse position 
  - reduce the amount of debug prints (enable using flags)
  - function call resolution with partial ordering
- - support member variable declaration like T[5] a; It's just shorthand for 5 Ts, and a should resolve to T* when used 
  - templated function calls? like hash<T>(T a)? as an alternative to automated resolution
  - think about how to handle user defined typecasts (and typecasts in general). Perhaps typecasting
    shouldn't be treated the same as other operators. The input type has to exactly match, and the
@@ -820,7 +821,7 @@ type = templated_type , [ "&" ] ;
        their base type exists.
      - maybe can hijack find_templates() and use that to also generate array types?
    - ok, made array struct layouts lazily generated when calling get_struct_layout()
-
+ - default declarations, so the expression portion of a declaration should be optional
 
 
 Struct member functions should be called with 'this' as a pointer to the target struct. 

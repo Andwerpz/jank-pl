@@ -14,6 +14,7 @@ struct Statement {
     virtual Statement* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
     virtual bool look_for_templates() = 0;
+    virtual std::string to_string() = 0;
 };
 
 struct SimpleStatement : public Statement {
@@ -23,6 +24,7 @@ struct SimpleStatement : public Statement {
     virtual Statement* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
     virtual bool look_for_templates() = 0;
+    virtual std::string to_string() = 0;
 };
 
 struct DeclarationStatement : public SimpleStatement {
@@ -33,6 +35,7 @@ struct DeclarationStatement : public SimpleStatement {
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
+    std::string to_string() override;
 };
 
 struct ExpressionStatement : public SimpleStatement {
@@ -43,6 +46,7 @@ struct ExpressionStatement : public SimpleStatement {
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
+    std::string to_string() override;
 };
 
 struct ReturnStatement : public SimpleStatement {
@@ -53,6 +57,7 @@ struct ReturnStatement : public SimpleStatement {
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
+    std::string to_string() override;
 };
 
 struct ASMStatement : public SimpleStatement {
@@ -63,6 +68,7 @@ struct ASMStatement : public SimpleStatement {
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
+    std::string to_string() override;
 };
 
 struct BreakStatement : public SimpleStatement {
@@ -72,6 +78,7 @@ struct BreakStatement : public SimpleStatement {
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
+    std::string to_string() override;
 };
 
 struct ContinueStatement : public SimpleStatement {
@@ -81,6 +88,7 @@ struct ContinueStatement : public SimpleStatement {
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
+    std::string to_string() override;
 };
 
 struct ControlStatement : public Statement {
@@ -90,6 +98,7 @@ struct ControlStatement : public Statement {
     virtual Statement* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
     virtual bool look_for_templates() = 0;
+    virtual std::string to_string() = 0;
 };
 
 struct IfStatement : public ControlStatement {
@@ -102,6 +111,7 @@ struct IfStatement : public ControlStatement {
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
+    std::string to_string() override;
 };
 
 struct WhileStatement : public ControlStatement {
@@ -113,6 +123,7 @@ struct WhileStatement : public ControlStatement {
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
+    std::string to_string() override;
 };
 
 struct ForStatement : public ControlStatement {
@@ -126,6 +137,7 @@ struct ForStatement : public ControlStatement {
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
+    std::string to_string() override;
 };  
 
 struct CompoundStatement : public Statement {
@@ -137,4 +149,5 @@ struct CompoundStatement : public Statement {
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
+    std::string to_string() override;
 };

@@ -4,6 +4,7 @@
 #include "TemplateMapping.h"
 #include "utils.h"
 #include "StructDefinition.h"
+#include "Function.h"
 
 TemplatedStructDefinition::TemplatedStructDefinition(TemplateHeader *_header, StructDefinition *_struct_def) {
     header = _header;
@@ -71,7 +72,7 @@ StructDefinition* TemplatedStructDefinition::gen_struct_def(TemplatedType* type)
 
     // - replace struct basetype with templated version
     assert(mapping->add_mapping(this->struct_def->type, type));
-
+    
     //try to construct
     StructDefinition *n_struct_def = this->struct_def->make_copy();
     if(!n_struct_def->replace_templated_types(mapping)) return nullptr;
