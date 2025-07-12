@@ -3,6 +3,7 @@
 #include "TemplateMapping.h"
 #include "TemplateHeader.h"
 #include "StructLayout.h"
+#include "Literal.h"
 
 Type* Type::remove_reference() {
     Type *ret = this->make_copy();
@@ -26,6 +27,12 @@ BaseType::BaseType(std::string _name) {
 PointerType::PointerType(Type *_type) {
     assert(_type != nullptr);
     type = _type;
+}
+
+ArrayType:: ArrayType(Type *_type, int _amt) {
+    assert(_type != nullptr);
+    type = _type;
+    amt = _amt;
 }
 
 ReferenceType::ReferenceType(Type *_type) {
@@ -61,6 +68,10 @@ int PointerType::calc_size() {
     return 8;
 }
 
+int ArrayType::calc_size() {
+    return type->calc_size() * amt;
+}
+
 int ReferenceType::calc_size() {
     return 8;
 }
@@ -83,6 +94,11 @@ bool BaseType::equals(const Type *other) const {
 
 bool PointerType::equals(const Type *other) const {
     if(auto x = dynamic_cast<const PointerType*>(other)) return *type == *(x->type);
+    return false;
+}
+
+bool ArrayType::equals(const Type *other) const {
+    if(auto x = dynamic_cast<const ArrayType*>(other)) return *type == *(x->type) && amt == x->amt;
     return false;
 }
 
@@ -110,6 +126,12 @@ size_t PointerType::hash() const {
     return type->hash() ^ 0x13952424;
 }
 
+size_t ArrayType::hash() const {
+    size_t hash = type->hash();
+    hash_combine(hash, (size_t) amt);
+    return hash;
+}
+
 size_t ReferenceType::hash() const {
     return type->hash() ^ 0xdeadbeef;
 }
@@ -128,6 +150,10 @@ std::string BaseType::to_string() {
 
 std::string PointerType::to_string() {
     return type->to_string() + "*";
+}
+
+std::string ArrayType::to_string() {
+    return type->to_string() + "[" + std::to_string(amt) + "]";
 }
 
 std::string ReferenceType::to_string() {
@@ -155,6 +181,10 @@ Type* PointerType::make_copy() {
     return new PointerType(type->make_copy());
 }
 
+Type* ArrayType::make_copy() {
+    return new ArrayType(type->make_copy(), amt);
+}
+
 Type* ReferenceType::make_copy() {
     return new ReferenceType(type->make_copy());
 }
@@ -179,7 +209,15 @@ Type* Type::convert(parser::templated_type *t) {
         res = new TemplatedType(dynamic_cast<BaseType*>(res), template_types);
     }
     for(int i = 0; i < t->t2.size(); i++){
-        res = new PointerType(res);
+        if(t->t2[i]->is_b0) {   //pointer
+            res = new PointerType(res);
+        }
+        else if(t->t2[i]->is_b1) {  //array
+            IntegerLiteral *ilit = IntegerLiteral::convert(t->t2[i]->t1->t1);
+            int amt = ilit->val;
+            res = new ArrayType(res, amt);
+        }
+        else assert(false);
     }
     return res;
 }
@@ -212,6 +250,11 @@ bool ReferenceType::replace_templated_types(TemplateMapping *mapping) {
     else return type->replace_templated_types(mapping);
 }
 
+bool ArrayType::replace_templated_types(TemplateMapping *mapping) {
+    if(auto x = mapping->find_mapped_type(type)) {type = x; return true;}
+    else return type->replace_templated_types(mapping);
+}
+
 bool TemplatedType::replace_templated_types(TemplateMapping *mapping) {
     //right now, I'm not supporting template template parameters
     //template <template <typename> class T>
@@ -237,6 +280,15 @@ bool BaseType::look_for_templates() {
 
 bool PointerType::look_for_templates() {
     return type->look_for_templates();
+}
+
+bool ArrayType::look_for_templates() {
+    if(!type->look_for_templates()) return false;
+
+    //hijacking look_for_templates() to also find array types
+    if(!create_arraytype(this)) return false;
+
+    return true;
 }
 
 bool ReferenceType::look_for_templates(){
@@ -294,6 +346,26 @@ TemplateMapping* PointerType::generate_mapping(Type *_t, TemplateHeader *header)
     }
 }
 
+TemplateMapping* ArrayType::generate_mapping(Type *_t, TemplateHeader *header) {
+    if(dynamic_cast<BaseType*>(_t)) {
+        BaseType *t = dynamic_cast<BaseType*>(_t);
+        // - is t a templated type?
+        for(int i = 0; i < header->types.size(); i++){
+            if(header->types[i]->equals(t)) {
+                TemplateMapping *mapping = new TemplateMapping();
+                mapping->add_mapping(header->types[i], this->make_copy());
+                return mapping;
+            }
+        }
+        return nullptr;
+    }
+    else {
+        if(dynamic_cast<ArrayType*>(_t) == nullptr) return nullptr;
+        ArrayType *t = dynamic_cast<ArrayType*>(_t);
+        return this->type->generate_mapping(t->type, header);
+    }
+}
+
 TemplateMapping* ReferenceType::generate_mapping(Type *_t, TemplateHeader *header) {
     assert(false);
 }
@@ -315,7 +387,7 @@ TemplateMapping* TemplatedType::generate_mapping(Type *_t, TemplateHeader *heade
         if(dynamic_cast<TemplatedType*>(_t) == nullptr) return nullptr;
         TemplatedType *t = dynamic_cast<TemplatedType*>(_t);
 
-        // - exclude matches like T<int, int>
+        // - exclude matches like T<int, int>, (you can't template the base type of a templated type)
         if(!this->base_type->equals(t->base_type)) return nullptr;
 
         // - number of template types must match

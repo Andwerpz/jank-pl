@@ -54,22 +54,44 @@ void DestructorCall::emit_asm(bool should_dealloc) {
     //call member variable destructors
     StructLayout *sl = get_struct_layout(type);
     assert(sl != nullptr);
-    for(int i = (int) sl->member_variables.size() - 1; i >= 0; i--){
-        Type *mvt = sl->member_variables[i]->type;
-        Identifier *mvid = sl->member_variables[i]->id;
-        int offset = sl->get_offset(mvid);
-        if(!is_type_primitive(mvt)) {
-            //save base struct address
-            emit_push("%rax", "DestructorCall::emit_asm() : target struct");
+    if(auto atype = dynamic_cast<ArrayType*>(type)) {
+        Type *bt = atype->type;
+        int bt_sz = bt->calc_size();
+        assert(bt != nullptr);
+        if(!is_type_primitive(bt)) {
+            for(int i = atype->amt - 1; i >= 0; i--){
+                //save base struct address
+                emit_push("%rax", "DestructorCall::emit_asm() : target struct");
 
-            //move member variable address into %rax
-            fout << indent() << "add $" << offset << ", %rax\n";
+                //move member variable address into %rax
+                fout << indent() << "add $" << i * bt_sz << ", %rax\n";
 
-            //call destructor, no dealloc
-            emit_destructor_call(mvt, false);
+                //call destructor, no dealloc
+                emit_destructor_call(bt, false);
 
-            //retrieve base struct address
-            emit_pop("%rax", "DestructorCall::emit_asm() : target struct");
+                //retrieve base struct address
+                emit_pop("%rax", "DestructorCall::emit_asm() : target struct");
+            }
+        }
+    }
+    else {
+        for(int i = (int) sl->member_variables.size() - 1; i >= 0; i--){
+            Type *mvt = sl->member_variables[i]->type;
+            Identifier *mvid = sl->member_variables[i]->id;
+            int offset = sl->get_offset(mvid);
+            if(!is_type_primitive(mvt)) {
+                //save base struct address
+                emit_push("%rax", "DestructorCall::emit_asm() : target struct");
+
+                //move member variable address into %rax
+                fout << indent() << "add $" << offset << ", %rax\n";
+
+                //call destructor, no dealloc
+                emit_destructor_call(mvt, false);
+
+                //retrieve base struct address
+                emit_pop("%rax", "DestructorCall::emit_asm() : target struct");
+            }
         }
     }
 

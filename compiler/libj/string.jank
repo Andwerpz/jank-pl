@@ -110,16 +110,12 @@ u8& operator[](string& a, i32 ind) {
 //if s is out of range, sets ERR_RANGE
 //leading '0's are 
 u64 stou64(string s) {
+    //is string empty?
     if(s.size() == $u64 0) {
         errno = ERR_MALFORMED;
         return $u64 -1;
     }
     u64 ptr = $u64 0;
-
-    //remove leading '0's
-    while(s.size() != ptr && s[ptr] == '0') {
-        ptr ++;
-    }
 
     u64 ans = $u64 0;
     for(i32 i = 0; i < $i32 s.size(); i++){
@@ -145,31 +141,35 @@ u64 stou64(string s) {
 //if s is not a valid signed integer, sets ERR_MALFORMED
 //if s is out of range, sets ERR_RANGE
 i32 stoi32(string s) {
+    //is string empty?
     if(s.size() == $u64 0) {
         errno = ERR_MALFORMED;
         return -1;
     }
-    s.reverse();
+    u64 ptr = $u64 0;
 
     //is negative?
     i32 is_neg = 0;
-    if(s[s.size() - $u64 1] == '-') {
+    if(s[ptr] == '-') {
         is_neg = 1;
-        s.pop_back();
+        ptr ++;
     }
 
-    if(s.size() == $u64 0) {
+    //are there no digits?
+    if(s.size() == ptr) {
         errno = ERR_MALFORMED;
         return -1;
     }
 
-    //remove leading '0's
-    while(s.size() != $u64 1 && s[s.size() - $u64 1] == '0') s.pop_back();
+    //skip leading '0's
+    while(ptr != s.size() && s[ptr] == '0') {
+        ptr ++;
+    }
 
     i32 ans = 0;
     if(is_neg) {
-        ans = - $i32 (s[0] - '0');
-        for(i32 i = 1; i < $i32 s.size(); i++){
+        ans = - $i32 (s[ptr] - '0');
+        for(i32 i = $i32 ptr + 1; i < $i32 s.size(); i++){
             u8 c = s[i];
 
             //is next char a digit?
@@ -188,7 +188,7 @@ i32 stoi32(string s) {
         }
     }
     else {
-        for(i32 i = 0; i < $i32 s.size(); i++){
+        for(i32 i = $i32 ptr; i < $i32 s.size(); i++){
             u8 c = s[i];
 
             //is next char a digit?

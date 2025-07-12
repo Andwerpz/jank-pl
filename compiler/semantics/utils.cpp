@@ -18,6 +18,7 @@
 #include "primitives.h"
 #include "Destructor.h"
 #include "DestructorCall.h"
+#include "Statement.h"
 
 Variable::Variable(Type *_type, Identifier *_id) {
     id = _id;
@@ -962,6 +963,13 @@ bool add_basetype(BaseType *t) {
     return true;
 }
 
+bool add_arraytype(ArrayType *t) {
+    assert(t != nullptr);
+    if(is_type_declared(t)) return false;
+    declared_types.push_back(t);
+    return true;
+}
+
 bool add_templated_struct(TemplatedStructDefinition *t) {
     assert(t != nullptr);
     if(is_templated_struct_declared(t)) return false;
@@ -1020,6 +1028,37 @@ bool create_templated_type(TemplatedType *t) {
 
     //couldn't generate it
     return false;
+}
+
+bool create_arraytype(ArrayType *t) {
+    //have we already generated this type?
+    if(is_type_declared(t)) return true;
+    
+    //is amt <= 0?
+    if(t->amt <= 0) {
+        std::cout << "Array type must have amount > 0\n";
+        return false;
+    }
+
+    //does every non-primitive type have to have a StructDefinition?
+    //I don't think it's correct for every non-primitive type to have a struct definition. 
+    //struct definitions are only used right now to generate StructLayouts . 
+    //generate type
+    //  - default constructor
+    //  - copy constructor
+    //  - destructor
+    //  - struct layout (this is generated lazily)
+    assert(add_arraytype(t));
+
+    Constructor *default_constructor = new ArrayConstructor(t, false);
+    Constructor *copy_constructor = new ArrayConstructor(t, true);
+    Destructor *destructor = new Destructor(t, new CompoundStatement({}));
+
+    add_constructor(default_constructor);
+    add_constructor(copy_constructor);
+    add_destructor(destructor);
+
+    return true;
 }
 
 bool add_function(Function *f){
@@ -1255,6 +1294,7 @@ bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_
     }
 
     //get struct definition
+    std::cout << t->to_string() << "\n";
     StructDefinition *sd = get_struct_definition(t);
     assert(sd != nullptr);
 
@@ -1295,6 +1335,7 @@ bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_
     return true;
 }
 
+//this requires that t have a struct definition. 
 bool construct_struct_layout(Type *t) {
     std::vector<Type*> type_stack;
     int byte_off = 0;
@@ -1308,6 +1349,25 @@ StructLayout* get_struct_layout(Type *t) {
             return struct_layout_map[i].second;
         }
     }
+
+    //catch for array types
+    if(auto atype = dynamic_cast<ArrayType*>(t)) {
+        StructLayout *nsl = nullptr;
+        if(is_type_primitive(atype->type)) {
+            nsl = new StructLayout({}, {}, atype->type->calc_size() * atype->amt);
+        }
+        else {
+            if(get_struct_layout(atype->type)) {
+                nsl = new StructLayout({}, {}, atype->type->calc_size() * atype->amt);
+            }
+        }
+
+        if(nsl != nullptr) {
+            struct_layout_map.push_back({t, nsl});
+            return nsl;
+        }
+    }
+
     return nullptr;
 }
 
@@ -1367,12 +1427,55 @@ void emit_initialize_primitive(Type *t) {
 
 //expects memory address in %rax, initializes struct, returns with memory address in %rax
 //expects memory to already have been allocated
+void emit_initialize_array(ArrayType *t) {
+    std::cout << "EMIT INITIALIZE ARRAY : " << t->to_string() << std::endl;
+    if(asm_debug) fout << indent() << "# initialize array " << t->to_string() << "\n";
+
+    emit_push("%rax", "emit_initialize_array() :: save original %rax");
+
+    Type *bt = t->type;
+    int bt_sz = bt->calc_size();
+
+    std::cout << "ARRAY BASETYPE : " << bt->to_string() << "\n";
+    for(int i = 0; i < t->amt; i++){
+        if(is_type_primitive(bt)) {
+            emit_initialize_primitive(bt);
+        }
+        else {
+            //invoke struct default constructor
+            emit_push("%rax", "emit_initialize_struct() :: save %rax before constructor call");
+
+            //%rax already holds member struct memory address
+            ConstructorCall *cc = new ConstructorCall(bt, {});
+            assert(cc->resolve_type()->equals(bt));
+            cc->emit_asm(false);
+
+            emit_pop("%rax", "emit_initialize_struct() :: save %rax before constructor call");
+        }
+
+        //increment %rax
+        fout << indent() << "add $" << bt_sz << ", %rax\n";
+    }
+
+    emit_pop("%rax", "emit_initialize_array() :: save original %rax");
+
+    if(asm_debug) fout << indent() << "# done initialize array memory " << t->to_string() << "\n";
+}
+
+//expects memory address in %rax, initializes struct, returns with memory address in %rax
+//expects memory to already have been allocated
 void emit_initialize_struct(Type *t) {
     assert(t != nullptr);
 
     //check if we're actually trying to initialize a primitive
     if(is_type_primitive(t)) {
         emit_initialize_primitive(t);
+        return;
+    }
+
+    //check if we're trying to initialize an array
+    if(auto x = dynamic_cast<ArrayType*>(t)) {
+        emit_initialize_array(x);
         return;
     }
 

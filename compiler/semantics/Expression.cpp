@@ -429,12 +429,16 @@ Type* ExprPostfix::resolve_type() {
             std::cout << "Builtin indexing expression must be convertible to u64\n";
             return nullptr;
         }
-        if(dynamic_cast<PointerType*>(lt) == nullptr) {
-            std::cout << "Can't index into non-pointer type " << lt->to_string() << "\n";
+        if(auto nt = dynamic_cast<PointerType*>(lt)) {
+            return nt->type;
+        }
+        else if(auto nt = dynamic_cast<ArrayType*>(lt)) {
+            return nt->type;
+        }
+        else {
+            std::cout << "Can't index into non-pointer and non-array type " << lt->to_string() << "\n";
             return nullptr;
         }
-        Type *nt = dynamic_cast<PointerType*>(lt)->type;
-        return nt;
     }
     else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {
         std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
@@ -1045,9 +1049,14 @@ void ExprPostfix::emit_asm() {
     left->emit_asm();
 
     if(std::holds_alternative<Expression*>(op)) {   //indexing
-        //t must be PointerType
-        assert(dynamic_cast<PointerType*>(lt) != nullptr);
-        lt = (dynamic_cast<PointerType*>(lt))->type;
+        //t must be PointerType or ArrayType
+        if(dynamic_cast<PointerType*>(lt)) {
+            lt = dynamic_cast<PointerType*>(lt)->type;
+        }
+        else if(dynamic_cast<ArrayType*>(lt)) {
+            lt = dynamic_cast<ArrayType*>(lt)->type;
+        }
+        else assert(false);
 
         //save %rax, %rcx to stack
         emit_push("%rax", "ExprPostfix::emit_asm() : [] %rax 1");

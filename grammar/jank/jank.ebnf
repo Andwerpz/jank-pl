@@ -35,7 +35,7 @@ rws = < ws > ;                                  (* required whitespace *)
 ows = { ws } ;                                  (* optional whitespace *)
 
 base_type = alpha , { alpha | digit | "_" } ;
-templated_type = base_type , [ "<" , ows , templated_type , { ows , "," , ows , templated_type } , ows , ">" ] , { "*" } ;
+templated_type = base_type , [ "<" , ows , templated_type , { ows , "," , ows , templated_type } , ows , ">" ] , { "*" | "[" , literal_integer , "]" } ;
 type = templated_type , [ "&" ] ;
 
 template_header = "template" , ows , "<" , ows , base_type , { ows , "," , ows , base_type } , ows , ">" ;

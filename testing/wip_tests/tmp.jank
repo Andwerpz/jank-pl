@@ -3,108 +3,100 @@
 #include <assert>;
 #include <iostream>;
 
-[0] i32 mem_cntr = 0;
+void test_basic() {
+    {
+        i32[5] a = new i32[5]();
+        i32 n = 5;
+        for(i32 i = 0; i < n; i++){
+            a[i] = i * i;
+        }
+        i32[5] b = new i32[5](a);
+        for(i32 i = 0; i < n; i++){
+            assert(b[i] == i * i);
+        }
+    }
+
+    {
+        i32[5][5] a = new i32[5][5]();
+        i32 n = 5;
+        for(i32 i = 0; i < n; i++){
+            for(i32 j = 0; j < n; j++){
+                a[i][j] = i * j;
+            }
+        }
+        i32[5][5] b = new i32[5][5](a);
+        for(i32 i = 0; i < n; i++){
+            for(i32 j = 0; j < n; j++){
+                assert(b[i][j] == i * j);
+            }
+        }
+    }
+
+    {
+        i32 n = 5;
+        i32*[5] a = new i32*[5]();
+        for(i32 i = 0; i < n; i++){
+            a[i] = $i32* malloc($u64 n);
+        }
+        for(i32 i = 0; i < n; i++){
+            for(i32 j = 0; j < n; j++){
+                a[i][j] = i * j;
+            }
+        }
+        i32*[5] b = new i32*[5](a);
+        for(i32 i = 0; i < n; i++){
+            for(i32 j = 0; j < n; j++){
+                assert(b[i][j] == i * j);
+            }
+        }
+        for(i32 i = 0; i < n; i++){
+            for(i32 j = 0; j < n; j++){
+                b[i][j] = i + j;
+            }
+        }
+        for(i32 i = 0; i < n; i++){
+            for(i32 j = 0; j < n; j++){
+                assert(a[i][j] == i + j);
+            }
+        }
+    }
+
+    cout << "basic tests passed\n";
+}
 
 struct A {
-    u64 var;
-    A() {
-        this.var = $u64 0;
-        mem_cntr ++;
-    }
+    i32[5] a;
+
+    A() {}
     A(A& other) {
-        this.var = other.var;
-        mem_cntr ++;
+        this.a = new i32[5](other.a);
     }
-    ~A() {
-        mem_cntr --;
-    }
-}
+    ~A() {}
+}   
 
 struct B {
-    A foo;
-    B() {
-        mem_cntr ++;
-    }
+    A[5] a;
+
+    B() {}
     B(B& other) {
-        this.foo = other.foo;
-        mem_cntr ++;
+        this.a = new A[5](other.a);
     }
-    ~B() {
-        mem_cntr --;
-    }
+    ~B() {}
 }
 
-void check_cntr() {
-    if(mem_cntr != 0){
-        cout << "mem_cntr nonzero : " << mem_cntr << "\n";
-        assert(0);
+void test_struct() {
+    {
+        B[5] b = new B[5]();
     }
-}
 
-A foo() {
-    return new A();
-}
-
-B foob() {
-    return new B();
+    cout << "struct tests passed\n";
 }
 
 i32 main() {
 
-    for(i32 i = 0; i < 10; i++){
-        B b = new B();
-    }
-    check_cntr();
-
-    for(i32 i = 0; i < 10; i++){
-        B b = new B();
-        continue;
-    }
-    check_cntr();
-
-    for(i32 i = 0; i < 10; i++){
-        B b = new B();
-        if(i == 5) break;
-    }
-    check_cntr();
-
-    {
-        B b = new B();
-        B c = new B();
-        c = b;
-    }
-    check_cntr();
-
-    {
-        B b = new B();
-        b.foo = new A();
-    }
-    check_cntr();
-
-    {
-        new A();
-    }
-    check_cntr();
-
-    {
-        if(new A()) {
-            //not sure if this should trigger
-            //undefined behaviour!!
-        }
-    }
-    check_cntr();
-
-    {
-        A bar = foo();
-    }
-    check_cntr();
-
-    {
-        B bar = foob();
-    }
-    check_cntr();
-
-    cout << "test passed\n";
+    test_basic();
+    test_struct();
+    cout << "all tests passed\n";
 
     return 0;
 }

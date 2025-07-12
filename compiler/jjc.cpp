@@ -734,16 +734,7 @@ it's sitting somewhere in between, Overload is more like a function, while Overl
 So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
 
 some miscellaneous features:
- - default declarations
- - array type. Array types should not be primitive. We can treat them like structs, they'll have layouts, 
-   constructors, destructors. 
-   - T[<int>] a = new T[<int>]();
-   - so the size of the array is part of the type information. 
-   - This also means we can only have fixed size arrays
-   - array layouts, constructors, destructors, should be added when we lookup if the type exists. 
-     - we should always lookup if a type exists before using it right??
-     - or maybe, we can add array layouts, constructors, destructors on the fly. We just have to make sure
-       their base type exists.
+ - default declarations, so the expression portion of a declaration should be optional
  - implement const
  - make string literals point to rodata instead of allocating more memory every time. 
    - should maybe consider implementing const? so a string literal would be of type const u8*
@@ -818,6 +809,17 @@ type = templated_type , [ "&" ] ;
    - okok, now we just have to clean up unused r-values from expressions.
      - i changed the default assignment operator to instead return an l-value. So now, if I see any leftover
        r-values, I can confidently just clean them up. 
+ - array type. Array types should not be primitive. We can treat them like structs, they'll have layouts, 
+   constructors, destructors. 
+   - T[<int>] a = new T[<int>]();
+   - so the size of the array is part of the type information. 
+   - This also means we can only have fixed size arrays
+   - array layouts, constructors, destructors, should be added when we lookup if the type exists. 
+     - we should always lookup if a type exists before using it right??
+     - or maybe, we can add array layouts, constructors, destructors on the fly. We just have to make sure
+       their base type exists.
+     - maybe can hijack find_templates() and use that to also generate array types?
+   - ok, made array struct layouts lazily generated when calling get_struct_layout()
 
 
 

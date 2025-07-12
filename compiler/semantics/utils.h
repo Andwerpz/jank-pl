@@ -30,6 +30,7 @@ struct Overload;
 struct TemplatedOverload;
 struct Destructor;
 struct DestructorCall;
+struct ArrayType;
 
 struct Variable;
 struct OperatorSignature;
@@ -155,10 +156,12 @@ Variable* get_variable(Identifier *id);
 bool add_struct_type(StructDefinition *sd);
 bool add_primitive_basetype(BaseType *t);   //these don't constitute all the primitive types, you can have derived primitive types (like pointer)
 bool add_basetype(BaseType *t);
+bool add_arraytype(ArrayType *t);
 bool add_templated_struct(TemplatedStructDefinition *t);
 bool add_templated_function(TemplatedFunction *f);  //TODO add unification checking 
 bool add_templated_overload(TemplatedOverload *o);
 bool create_templated_type(TemplatedType *t); 
+bool create_arraytype(ArrayType *t);
 bool add_function(Function *f);
 bool add_sys_function(Function *f);
 bool add_constructor(Constructor *c);
@@ -176,7 +179,7 @@ void push_loop_stack(std::string start_label, std::string assignment_label, std:
 void pop_loop_stack(std::string start_label, std::string assignment_label, std::string end_label);
 bool construct_struct_layout(Type *t);
 StructLayout* get_struct_layout(Type *t);   
-StructDefinition* get_struct_definition(Type *t);
+StructDefinition* get_struct_definition(Type *t);   
 void emit_initialize_primitive(Type *t);
 void emit_initialize_struct(Type *t);
 Variable* emit_initialize_stack_variable(Type *vt, Identifier *id, Expression *expr);

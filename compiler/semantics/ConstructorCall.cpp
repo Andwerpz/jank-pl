@@ -52,6 +52,7 @@ Type* ConstructorCall::resolve_type() {
 //calls emit_initialize_struct()
 //should return with %rax holding initialized type
 void ConstructorCall::emit_asm(bool alloc_new) {
+    std::cout << "CONSTRUCTOR CALL : " << type->to_string() << "\n";
     if(asm_debug) fout << indent() << "# calling constructor : " << type->to_string() << "\n";
 
     //find constructor
@@ -59,7 +60,7 @@ void ConstructorCall::emit_asm(bool alloc_new) {
     assert(c != nullptr);
 
     if(!is_type_primitive(type)) {
-        assert(dynamic_cast<StructConstructor*>(c) != nullptr);
+        assert(dynamic_cast<StructConstructor*>(c) != nullptr || dynamic_cast<ArrayConstructor*>(c) != nullptr);
 
         //create new instance of the object
         //address should be placed into %rax

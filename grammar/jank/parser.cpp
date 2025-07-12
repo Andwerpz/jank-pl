@@ -1,4 +1,4 @@
-// Date Generated : 07-07-2025 20:08:39
+// Date Generated : 07-12-2025 00:23:28
 #include "parser.h"
 
 namespace parser {
@@ -5226,18 +5226,50 @@ namespace parser {
         return ans;
     }
 
-    templated_type::a1* templated_type::a1::parse() {
+    templated_type::a1::b0* templated_type::a1::b0::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
         if(_t0 != "*") {pop_stack(); return nullptr;}
         rm_stack();
-        return new templated_type::a1(_t0);
+        return new templated_type::a1::b0(_t0);
     }
 
-    std::string templated_type::a1::to_string() {
+    std::string templated_type::a1::b0::to_string() {
         std::string ans = "";
         ans += t0;
         return ans;
+    }
+
+    templated_type::a1::b1* templated_type::a1::b1::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "[") {pop_stack(); return nullptr;}
+        literal_integer *_t1 = literal_integer::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(1);
+        if(_t2 != "]") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new templated_type::a1::b1(_t0, _t1, _t2);
+    }
+
+    std::string templated_type::a1::b1::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2;
+        return ans;
+    }
+
+    templated_type::a1* templated_type::a1::parse() {
+        if(auto x = templated_type::a1::b0::parse()) return new templated_type::a1(x);
+        if(auto x = templated_type::a1::b1::parse()) return new templated_type::a1(x);
+        return nullptr;
+    }
+
+    std::string templated_type::a1::to_string() {
+        if(is_b0) return t0->to_string();
+        if(is_b1) return t1->to_string();
+        assert(false);
     }
 
     templated_type* templated_type::parse() {

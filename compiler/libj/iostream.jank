@@ -116,6 +116,7 @@ istream& operator>>(istream& stream, i32& x) {
     return stream;
 }
 
+
 struct ostream {
     i32 fd;
     u8* scratch_buf;

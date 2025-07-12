@@ -1,4 +1,4 @@
-// Date Generated : 07-07-2025 20:08:39
+// Date Generated : 07-12-2025 00:23:28
 #pragma once
 #include <vector>
 #include <string>
@@ -4150,7 +4150,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // templated_type = base_type , [ "<" , ows , templated_type , { ows , "," , ows , templated_type } , ows , ">" ] , { "*" } ;
+    // templated_type = base_type , [ "<" , ows , templated_type , { ows , "," , ows , templated_type } , ows , ">" ] , { "*" | "[" , literal_integer , "]" } ;
     struct templated_type {
         struct a0 {
             struct b0 {
@@ -4185,9 +4185,37 @@ namespace parser {
             std::string to_string();
         };
         struct a1 {
-            std::string t0;
-            a1(std::string _t0) {
+            struct b0 {
+                std::string t0;
+                b0(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            struct b1 {
+                std::string t0;
+                literal_integer *t1;
+                std::string t2;
+                b1(std::string _t0, literal_integer *_t1, std::string _t2) {
+                    t0 = _t0;
+                    t1 = _t1;
+                    t2 = _t2;
+                }
+                static b1* parse();
+                std::string to_string();
+            };
+            bool is_b0 = false;
+            b0 *t0;
+            bool is_b1 = false;
+            b1 *t1;
+            a1(b0 *_t0) {
+                is_b0 = true;
                 t0 = _t0;
+            }
+            a1(b1 *_t1) {
+                is_b1 = true;
+                t1 = _t1;
             }
             static a1* parse();
             std::string to_string();

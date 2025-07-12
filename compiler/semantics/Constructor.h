@@ -7,6 +7,7 @@ struct Parameter;
 struct CompoundStatement;
 struct ConstructorSignature;
 struct TemplateMapping;
+struct ArrayType;
 
 struct Constructor {
     Type *type;
@@ -24,6 +25,17 @@ struct Constructor {
 struct StructConstructor : public Constructor {
     CompoundStatement *body;
     StructConstructor(Type* _type, std::vector<Parameter*> _parameters, CompoundStatement *_body);
+
+    bool equals(Constructor* other) const override;
+    bool is_well_formed() override;
+    Constructor* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
+    bool look_for_templates() override;
+};
+
+struct ArrayConstructor : public Constructor {
+    bool is_copy_constructor;
+    ArrayConstructor(ArrayType *_type, bool _is_copy_constructor);
 
     bool equals(Constructor* other) const override;
     bool is_well_formed() override;
