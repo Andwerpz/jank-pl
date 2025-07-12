@@ -53,7 +53,7 @@ namespace primitives {
         add_operator_implementation(new OperatorSignature("+", p_int), new BuiltinOperator(p_int, {}));
         add_operator_implementation(new OperatorSignature("-", p_int), new BuiltinOperator(p_int, {"neg " + rax}));
         add_operator_implementation(new OperatorSignature("~", p_int), new BuiltinOperator(p_int, {"not " + rax}));
-        add_operator_implementation(new OperatorSignature("!", p_int), new BuiltinOperator(p_int, {
+        add_operator_implementation(new OperatorSignature("!", p_int), new BuiltinOperator(i32, {
             "test " + rax + ", " + rax,
             "sete %al",
             "movzx %al, %rax",
@@ -203,6 +203,7 @@ namespace primitives {
                 }));
             }
             else if(sz_bytes == 8) {
+                //cqo does sign extension on %rax to %rdx
                 add_operator_implementation(new OperatorSignature(p_int, "/", p_int), new BuiltinOperator(p_int, {
                     "cqo",
                     "idiv %rbx",
@@ -262,22 +263,23 @@ namespace primitives {
                 }));
             }
             else if(sz_bytes == 8) {
+                //need to clear out upper bits
                 add_operator_implementation(new OperatorSignature(p_int, "/", p_int), new BuiltinOperator(p_int, {
-                    "cqo",
+                    "xor %rdx, %rdx",
                     "div %rbx",
                 }));
                 add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "/=", p_int), new BuiltinOperator(p_int, {
-                    "cqo",
+                    "xor %rdx, %rdx",
                     "div %rbx",
                     mov + " " + rax + ", (%rcx)",
                 }));
                 add_operator_implementation(new OperatorSignature(p_int, "%", p_int), new BuiltinOperator(p_int, {
-                    "cqo",
+                    "xor %rdx, %rdx",
                     "div %rbx",
                     "mov %rdx, %rax",
                 }));
                 add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "%=", p_int), new BuiltinOperator(p_int, {
-                    "cqo",
+                    "xor %rdx, %rdx",
                     "div %rbx",
                     "mov %rdx, %rax",
                     mov + " " + rax + ", (%rcx)",

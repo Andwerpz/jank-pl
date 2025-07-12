@@ -1,4 +1,4 @@
-#include <ostream>;
+#include <iostream>;
 #include <jstring>;
 #include <assert>;
 #include <vector>;
@@ -20,11 +20,11 @@ struct Screen {
     u64 clear_sz;
 
     Screen() {
-        //this.width = $u64 192;
-        //this.height = $u64 54;
+        this.width = $u64 192;
+        this.height = $u64 54;
 
-        this.width = $u64 96;
-        this.height = $u64 27;
+        //this.width = $u64 96;
+        //this.height = $u64 27;
 
         this.clear_sz = $u64 7;
         this.screen_buf = $u8* malloc(this.clear_sz + (this.width + $u64 1) * this.height);
@@ -375,7 +375,7 @@ i32 main() {
         //cout << "WORLD SCREEN WIDTH : " << screen_width << "\n";
         //cout << "G SCREEN WIDTH : " << g_screen.width << "\n";
         //cout << floor(ppos.x) << " " << ceil(ppos.x) << "\n";
-        prot += 0.0025;  
+        prot += 0.01;  
     }
 
     exit_alt_screen();

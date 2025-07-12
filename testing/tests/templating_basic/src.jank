@@ -1,45 +1,8 @@
 #include <jstring>;
 #include <put>;
 #include <assert>;
-#include <ostream>;
-
-template<T>
-struct vector {
-    i32 cap;
-    i32 sz;
-    T* arr;
-
-    vector() {
-        this.cap = 1;
-        this.sz = 0;
-        this.arr = $T* malloc(sizeof(T) * $u64 1);
-    }
-    vector(vector& other) {
-        this.cap = other.cap;
-        this.sz = other.sz;
-        this.arr = $T* malloc(sizeof(T) * $u64 this.cap);
-        for(i32 i = 0; i < this.cap; i++) this.arr[i] = other.arr[i];
-    }
-    vector(i32 n, T default) {
-        this.cap = n;
-        this.sz = n;
-        this.arr = $T* malloc(sizeof(T) * $u64 n);
-        for(i32 i = 0; i < n; i++) this.arr[i] = default;
-    }
-    ~vector() {
-        free($void* this.arr, sizeof(T) * $u64 this.cap);
-    }
-}
-
-template<T>
-T& at(vector<T>& arr, i32 ind) {
-    return arr.arr[ind];
-}
-
-template<T>
-T& operator[](vector<T>& a, i32 ind) {
-    return a.arr[ind];
-}
+#include <iostream>;
+#include <vector>;
 
 template<T, U>
 struct pair {
@@ -73,9 +36,7 @@ i32 main() {
     cout << p.first << " " << p.second << "\n";
     cout << p2.first << " " << p2.second << "\n";
 
-    //dp[0][0] = 1;
-    at(dp, 0) = new vector<i32>(n, 0);
-    at(dp[0], 0) = 1;
+    dp[0][0] = 1;
     for(i32 i = 0; i < n; i++){
         for(i32 j = 0; j < n; j++){
             if(i != 0) dp[i][j] += dp[i - 1][j];

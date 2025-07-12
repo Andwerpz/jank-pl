@@ -1,43 +1,8 @@
 #include <jstring>;
 #include <put>;
 #include <assert>;
-#include <ostream>;
-
-template<T>
-struct vector {
-    i32 cap;
-    i32 sz;
-    T* arr;
-
-    vector() {
-        this.cap = 1;
-        this.sz = 0;
-        this.arr = $T* malloc(sizeof(T) * $u64 1);
-    }
-    vector(vector& other) {
-        this.cap = other.cap;
-        this.sz = other.sz;
-        this.arr = $T* malloc(sizeof(T) * $u64 this.cap);
-        for(i32 i = 0; i < this.cap; i++) this.arr[i] = other.arr[i];
-    }
-    vector(i32 n, T default) {
-        this.cap = n;
-        this.sz = n;
-        this.arr = $T* malloc(sizeof(T) * $u64 n);
-        for(i32 i = 0; i < n; i++) this.arr[i] = default;
-    }
-    ~vector() {
-        free($void* this.arr, $u64 this.cap * sizeof(T));
-    }
-}
-
-i32& operator[](vector<i32>& a, i32 ind) {
-    return a.arr[ind];
-}
-
-vector<i32>& operator[](vector<vector<i32>>& a, i32 ind) {
-    return a.arr[ind];
-}
+#include <iostream>;
+#include <vector>;
 
 i32 main() {
 

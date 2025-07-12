@@ -1,4 +1,3 @@
-#include <malloc>;
 
 template<T>
 struct vector {
@@ -22,6 +21,7 @@ struct vector {
     vector(u64 n, T default) {
         this.cap = n;
         this.sz = n;
+        if(this.cap == $u64 0) this.cap = $u64 1;
         this.arr = $T* malloc(sizeof(T) * this.cap);
         for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] = default;
     }
@@ -29,6 +29,7 @@ struct vector {
     vector(i32 n, T default) {
         this.cap = $u64 n;
         this.sz = $u64 n;
+        if(this.cap == $u64 0) this.cap = $u64 1;
         this.arr = $T* malloc(sizeof(T) * this.cap);
         for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] = default;
     }

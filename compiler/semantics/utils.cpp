@@ -423,8 +423,8 @@ void emit_write_array(int sz) {
 //will put return value into %rax
 //always zero extends %rax if the amount is less than 8 bytes
 void emit_mem_retrieve(int sz) {
-    if(sz == 1) fout << indent() << "movzbl (%rax), %al\n";
-    else if(sz == 2) fout << indent() << "movzwl (%rax), %ax\n";
+    if(sz == 1) fout << indent() << "movzbq (%rax), %rax\n";
+    else if(sz == 2) fout << indent() << "movzwq (%rax), %rax\n";
     else if(sz == 4) fout << indent() << "movl (%rax), %eax\n";
     else if(sz == 8) fout << indent() << "movq (%rax), %rax\n";
     else {

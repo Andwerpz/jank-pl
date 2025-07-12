@@ -1,13 +1,11 @@
 #include <jstring>;
 #include <put>;
 #include <assert>;
-#include <ostream>;
+#include <iostream>;
 
 i32 main() {
 
-    u64 init_mem = MEM_USED;
-    get_sys_time_ns();
-    u64 diff = MEM_USED - init_mem;
+    
 
     return 0;
 }

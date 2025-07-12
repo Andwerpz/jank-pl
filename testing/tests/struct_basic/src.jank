@@ -1,7 +1,7 @@
 #include <jstring>;
 #include <put>;
 #include <assert>;
-#include <ostream>;
+#include <iostream>;
 
 struct vec2 {
     i32 x;

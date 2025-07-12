@@ -1,7 +1,7 @@
 #include <put>;
 #include <jstring>;
 #include <vector>;
-#include <ostream>;
+#include <iostream>;
 #include <assert>;
 
 void test_basic() {

@@ -1,4 +1,4 @@
-#include <ostream>;
+#include <iostream>;
 
 // simple bump allocator
 // just increases the heap size every time we want to allocate more memory.

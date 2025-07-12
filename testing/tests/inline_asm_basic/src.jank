@@ -1,7 +1,7 @@
 #include <put>;
 #include <jstring>;
 #include <vector>;
-#include <ostream>;
+#include <iostream>;
 
 i32 main() {
 

@@ -722,15 +722,14 @@ void ExprPrefix::elaborate(ExprNode*& self) {
             self = new ExprPrimary(oc);
             return;
         }
-
-        return;
     }
     else if(std::holds_alternative<Type*>(op)) {
         Type *cast_t = std::get<Type*>(op);
         Type *rt = right->resolve_type();
 
         //for now, assume that all typecasts are builtin
-        return;
+        OperatorImplementation *oe = find_typecast_implementation(rt, cast_t);
+        assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
     }
     else assert(false);
 
@@ -742,6 +741,8 @@ void ExprPostfix::elaborate(ExprNode*& self) {
     if(std::holds_alternative<Expression*>(op)) {   //indexing
         Expression *expr = std::get<Expression*>(op);
         assert(expr->resolve_type() != nullptr);
+
+        std::cout << "ELABORATING INDEXING : " << left->to_string() << " " << expr->to_string() << "\n";
 
         //convert overloads into overload calls
         OperatorImplementation *oe = find_operator_implementation(left, "[]", expr->expr_node);

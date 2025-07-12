@@ -10,9 +10,9 @@ void puts_endl(u8* s) {
 }
 
 void puti(i32 x) {
-    puts(to_string(x));
+    puts(to_jstr(x));
 }
 
 void puti_endl(i32 x) {
-    puts_endl(to_string(x));
+    puts_endl(to_jstr(x));
 }

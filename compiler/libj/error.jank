@@ -1,0 +1,5 @@
+
+[-10] u64 errno = $u64 0;
+
+[-10] u64 ERR_RANGE = $u64 1;
+[-10] u64 ERR_MALFORMED = $u64 2;

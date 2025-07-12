@@ -1,0 +1,181 @@
+#include <jstring>;
+#include <assert>;
+#include <vector>;
+#include <string>;
+#include <error>;
+
+[-2] i32 STDIN = 0;
+[-2] i32 STDOUT = 1;
+[-2] i32 STDERR = 2;
+
+[-1] ostream cout = new ostream(STDOUT);
+[-1] istream cin = new istream(STDIN);
+
+struct istream {
+    i32 fd;
+    u8* buf;
+    u64 buf_sz;
+    u64 buf_ptr;
+    i32 is_eof;
+
+    istream() {
+        this.fd = STDIN;
+        this.init_buf();
+    }
+
+    istream(i32 _fd) {
+        this.fd = _fd;
+        this.init_buf();
+    }
+
+    istream(istream& other) {
+        this.fd = other.fd;
+        this.init_buf();
+    }
+
+    ~istream() {
+        free($void* this.buf, $u64 4096);
+    }
+
+    void init_buf() {
+        this.buf = $u8* malloc($u64 4096);
+        this.buf_sz = $u64 0;
+        this.buf_ptr = $u64 0;
+        this.is_eof = 0;
+    }
+
+    void refresh_buf() {
+        this.buf_ptr = $u64 0;
+        this.buf_sz = sys_read(this.fd, $void* this.buf, $u64 4096);
+        cout << "REFRESH BUF : " << this.buf_ptr << " " << this.buf_sz << "\n";
+        if(this.buf_sz == $u64 0) this.is_eof = 1;
+    }
+
+    i32 is_whitespace(u8 c) {
+        return c == ' ' || c == '\n' || c == '\t' || c == '\r';
+    }
+
+    u8 next_char() {
+        while(!this.eof() && this.buf_ptr == this.buf_sz) this.refresh_buf();
+        if(this.eof()) return '\0';
+        return this.buf[this.buf_ptr ++];
+    }
+
+    //if we hit eof before a token, returns nullptr
+    u8* next_token() {
+        vector<u8> tok = new vector<u8>(0, '\0');
+
+        i32 found_tok = 0;
+        while(1) {
+            u8 c = this.next_char();
+            if(this.eof()) break;
+            if(this.is_whitespace(c)) {
+                if(found_tok) break;
+            }
+            else {
+                found_tok = 1;
+                tok.push_back(c);
+            }
+        }
+        cout << "TOK : " << found_tok << " " << tok.size() << "\n";
+
+        if(!found_tok) return $u8* nullptr;
+
+        u8* ret = $u8* malloc(tok.size() + $u64 1);
+        for(u64 i = $u64 0; i < tok.size(); i++) ret[i] = tok[i];
+        ret[tok.size()] = '\0';
+        return ret;
+    }
+
+    i32 eof() {
+        return this.is_eof;
+    }
+}
+
+istream& operator>>(istream& stream, string& s) {
+    u8* tok = stream.next_token();
+    if($u64 tok != $u64 nullptr) {
+        s = new string(tok);
+    }
+    return stream;
+}
+
+istream& operator>>(istream& stream, u64& x) {
+    u8* tok = stream.next_token();
+    if($u64 tok != $u64 nullptr) {
+        x = stou64(new string(tok));
+    }
+    return stream;
+}
+
+istream& operator>>(istream& stream, i32& x) {
+    u8* tok = stream.next_token();
+    if($u64 tok != $u64 nullptr) {
+        x = stoi32(new string(tok));
+    }
+    return stream;
+}
+
+struct ostream {
+    i32 fd;
+    u8* scratch_buf;
+
+    ostream() {
+        this.fd = STDOUT;
+        this.scratch_buf = $u8* malloc($u64 128);
+    }
+
+    ostream(i32 _fd) {
+        this.fd = _fd;
+        this.scratch_buf = $u8* malloc($u64 128);
+    }
+
+    ostream(ostream& other) {
+        this.fd = other.fd;
+    }
+
+    ~ostream() {
+        free($void* this.scratch_buf, $u64 128);
+    }
+
+    void write_to_fd(u8* str) {
+        sys_write(this.fd, $void* str, strlen(str));
+    }
+
+    void write_to_fd(string str) {
+        sys_write(this.fd, $void* str.arr, str.size());
+    }
+}
+
+ostream& operator<<(ostream& stream, u8* s) {
+    stream.write_to_fd(s);
+    return stream;
+}
+
+ostream& operator<<(ostream& stream, u8 c) {
+    u8* str = $u8* malloc($u64 2);
+    str[0] = c;
+    str[1] = '\0';
+    stream.write_to_fd(str);
+    return stream;
+}
+
+ostream& operator<<(ostream& stream, i32 x) {
+    stream.write_to_fd(to_jstr(x));
+    return stream;
+}
+
+ostream& operator<<(ostream& stream, u64 x) {
+    stream.write_to_fd(to_jstr(x));
+    return stream;
+}
+
+ostream& operator<<(ostream& stream, f32 x) {
+    stream.write_to_fd(to_jstr(x));
+    return stream;
+}
+
+ostream& operator<<(ostream& stream, string& s) {
+    stream.write_to_fd(s);
+    return stream;
+}
