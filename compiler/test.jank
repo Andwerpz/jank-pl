@@ -4,44 +4,47 @@
 #include <iostream>;
 #include <assert>;
 
-struct A {
-    i32 x;
-    A(A& other) {
-        this.x = other.x;
-    }
-    A(i32 _x) {
-        this.x = _x;
+struct liandrew {
+    u8* li;
+    u64 moni;
+    u8 citadel_internship;
+    i32[7] balls; 
+
+    liandrew(liandrew& other) {
+        this.li = other.li;
+        this.moni = other.moni;
+        this.citadel_internship = other.citadel_internship;
+        this.balls = other.balls;
     }
 }
 
-void test_basic() {
-    {
-        i32 a;
-        assert(a == 0);
-    }
-
-    {
-        u64 a;
-        assert(a == $u64 0);
-    }
-
-    cout << "basic tests passed\n";
-}
-
-void test_struct() {
-    {
-        A a;
-        assert(a.x == 0);
-    }
-
-    cout << "struct tests passed\n";
-}
+[0] u8* maxim = "so big";
 
 i32 main() {
+    u8* andrew = "Bello my name is andrew li";
+    u8* dest = $u8* malloc(strlen(andrew)+$u64 1);
+    memcpy($void* dest, $void* andrew, strlen(andrew)+$u64 1);
+    cout << dest << "\n";
 
-    test_basic();
-    test_struct();
-    cout << "all tests passed\n";
+    liandrew l1;
+    liandrew* l_ptr = @l1;
+    cout << $u64 l_ptr << "\n";
+
+    l1.li = "ceda pa";
+    l1.moni = $u64 7;
+    l1.citadel_internship = $u8 0;
+    l1.balls[3] = 9;
+
+    liandrew l2 = l1;
+    cout << l2.li << "\n";
+
+    liandrew* l3 = $liandrew* malloc(sizeof(liandrew));
+    memcpy($void* l3, $void* @l2, sizeof(liandrew));
+    cout << "bello: " << $i32 l3->citadel_internship << "\n";
+
+    cout << maxim << "\n";
+    cout << l3->balls[3] << "\n";
+    
 
     return 0;
 }
