@@ -9,24 +9,19 @@ struct liandrew {
     u64 moni;
     u8 citadel_internship;
     i32[7] balls; 
-
-    liandrew(liandrew& other) {
-        this.li = other.li;
-        this.moni = other.moni;
-        this.citadel_internship = other.citadel_internship;
-        this.balls = other.balls;
-    }
 }
 
 [0] u8* maxim = "so big";
 
 i32 main() {
+    
     u8* andrew = "Bello my name is andrew li";
     u8* dest = $u8* malloc(strlen(andrew)+$u64 1);
     memcpy($void* dest, $void* andrew, strlen(andrew)+$u64 1);
     cout << dest << "\n";
 
     liandrew l1;
+    liandrew* l_ptr = @l1;
 
     l1.li = "ceda pa";
     l1.moni = $u64 7;
@@ -42,7 +37,6 @@ i32 main() {
 
     cout << maxim << "\n";
     cout << l3->balls[3] << "\n";
-    
 
     return 0;
 }

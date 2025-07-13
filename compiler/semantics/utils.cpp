@@ -19,6 +19,8 @@
 #include "Destructor.h"
 #include "DestructorCall.h"
 #include "Statement.h"
+#include "Literal.h"
+#include "Parameter.h"
 
 Variable::Variable(Type *_type, Identifier *_id) {
     id = _id;
@@ -941,7 +943,42 @@ bool add_struct_type(StructDefinition *sd) {
     add_constructor(new StructConstructor(t->make_copy(), {}, new CompoundStatement({})));
 
     //default copy constructor
-    // - waiting on steven to implement memcpy, default copy constructor will just copy over the memory as-is. 
+    // - just memcpys the memory from other into this 
+    {
+        Identifier *oid = new Identifier("other");
+        Identifier *tid = new Identifier("this");
+
+        // memcpy($void* @this, $void* @other, sizeof(T));
+        CompoundStatement *body = new CompoundStatement({
+            new ExpressionStatement(new Expression(new ExprPrimary(
+                new FunctionCall(
+                    new Identifier("memcpy"),
+                    {
+                        new Expression(
+                            new ExprPrefix(
+                                new PointerType(primitives::_void->make_copy()), 
+                                new ExprPrefix("@", new ExprPrimary(tid->make_copy()))
+                            )
+                        ),
+                        new Expression(
+                            new ExprPrefix(
+                                new PointerType(primitives::_void->make_copy()),
+                                new ExprPrefix("@", new ExprPrimary(oid->make_copy()))
+                            )
+                        ),
+                        new Expression(
+                            new ExprPrimary(new SizeofLiteral(t->make_copy()))
+                        )
+                    }
+                )
+            )))
+        });
+        add_constructor(new StructConstructor(
+            t->make_copy(), 
+            {new Parameter(new ReferenceType(t->make_copy()), oid->make_copy())}, 
+            body
+        ));
+    }
 
     //default destructor
     add_destructor(new Destructor(t->make_copy(), new CompoundStatement({})));
@@ -1453,14 +1490,14 @@ void emit_initialize_array(ArrayType *t) {
         }
         else {
             //invoke struct default constructor
-            emit_push("%rax", "emit_initialize_struct() :: save %rax before constructor call");
+            emit_push("%rax", "emit_initialize_array() :: save %rax before constructor call");
 
             //%rax already holds member struct memory address
             ConstructorCall *cc = new ConstructorCall(bt, {});
             assert(cc->resolve_type()->equals(bt));
             cc->emit_asm(false);
 
-            emit_pop("%rax", "emit_initialize_struct() :: save %rax before constructor call");
+            emit_pop("%rax", "emit_initialize_array() :: save %rax before constructor call");
         }
 
         //increment %rax
