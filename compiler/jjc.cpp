@@ -740,11 +740,6 @@ some miscellaneous features:
    - will need to fix function/constructor call grammar to not interfere with commas separating function call arguments. 
    - and eventually also multi declarations as well
  - implement const
- - make string literals point to rodata instead of allocating more memory every time. 
-   - should maybe consider implementing const? so a string literal would be of type const u8*
-   - instead of string literals emitting their current initialization, I'll just have them load a pointer onto the stack
-     and load into the controller that we need to allocate that string. Then after everything has been emitted, put the
-     .data section and actually create the strings. 
  - have some reserved keywords (break, continue, sizeof)
  - goto statement
  - make id_to_type() return a bool so that it doesn't fail an assert when a variable doesn't exist
@@ -752,6 +747,7 @@ some miscellaneous features:
  - typedefs. Just have them be pretty much resolved template variables
  - reduce the amount of debug prints (enable using flags)
  - function call resolution with partial ordering
+   - want to be able to have both 'T foo(T a)' and 'T foo(T& a)'
  - templated function calls? like hash<T>(T a)? as an alternative to automated resolution
  - think about how to handle user defined typecasts (and typecasts in general). Perhaps typecasting
    shouldn't be treated the same as other operators. The input type has to exactly match, and the
@@ -828,6 +824,11 @@ type = templated_type , [ "&" ] ;
  - default declarations, so the expression portion of a declaration should be optional
  - syntax error reporting, keep track of the deepest parse.
    - also have some pretty printing when parse fails pointing to exact deepest parse position 
+ - make string literals point to rodata instead of allocating more memory every time. 
+   - should maybe consider implementing const? so a string literal would be of type const u8*
+   - instead of string literals emitting their current initialization, I'll just have them load a pointer onto the stack
+     and load into the controller that we need to allocate that string. Then after everything has been emitted, put the
+     .data section and actually create the strings. 
 
 
 Struct member functions should be called with 'this' as a pointer to the target struct. 

@@ -197,6 +197,9 @@ void remove_operator_implementation(OperatorSignature *os, OperatorImplementatio
 void remove_operator_implementation(Overload *o);
 void emit_malloc(int sz_bytes);
 void emit_free(int sz_bytes);
+bool add_string_literal(std::string str);
+std::string get_string_literal_label(std::string str);
+void emit_data_section();
 
 // -- CONTROLLER --
 //should probably move this stuff into its own file

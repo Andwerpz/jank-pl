@@ -208,6 +208,7 @@ std::unordered_map<ConstructorSignature*, std::string, ConstructorSignatureHash,
 std::unordered_map<Type*, std::string, TypeHash, TypeEquals> destructor_label_map;
 std::unordered_map<OperatorSignature*, std::string, OperatorSignatureHash, OperatorSignatureEquals> overload_label_map;
 std::unordered_map<OperatorSignature*, OperatorImplementation*, OperatorSignatureHash, OperatorSignatureEquals> conversion_map;  
+std::unordered_map<std::string, std::string> string_literal_label_map;
 
 int label_counter;
 int tmp_variable_counter;
@@ -1696,4 +1697,25 @@ void remove_operator_implementation(Overload *o) {
         declared_overloads.erase(declared_overloads.begin() + ind);
     }
     overload_label_map.erase(os);
+}
+
+bool add_string_literal(std::string str) {
+    if(string_literal_label_map.count(str)) return true;
+    string_literal_label_map[str] = create_new_label();
+    return true;
+}
+
+std::string get_string_literal_label(std::string str) {
+    assert(string_literal_label_map.count(str));
+    return string_literal_label_map[str];
+}
+
+void emit_data_section() {
+    fout << ".section .rodata\n";
+    for(auto i = string_literal_label_map.begin(); i != string_literal_label_map.end(); i++) {
+        std::string val = i->first;
+        std::string label = i->second;
+        fout << label << ": .string \"" << val << "\"\n";
+    }
+    fout << "\n";
 }

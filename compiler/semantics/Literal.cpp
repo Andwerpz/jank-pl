@@ -97,18 +97,10 @@ CharLiteral* CharLiteral::convert(parser::literal_char *lit) {
 
 StringLiteral* StringLiteral::convert(parser::literal_string *lit) {
     std::vector<parser::literal_string::a0*> chars = lit->t1;
-    std::string val(chars.size(), ' ');
+    std::string val = "";
     for(int i = 0; i < chars.size(); i++){
         parser::literal_string::a0* c = chars[i];
-        char cchar;
-        if(c->is_b2) {  //escape
-            parser::escape *e = c->t2->t0;
-            cchar = escape_to_char(e);
-        }
-        else {
-            cchar = c->to_string()[0];
-        }
-        val[i] = cchar;
+        val += c->to_string();
     }
     return new StringLiteral(val);
 }
@@ -204,26 +196,14 @@ void CharLiteral::emit_asm() {
 }
 
 void StringLiteral::emit_asm() {
-    //allocate memory
-    emit_malloc(val.size() + 1);
+    //add this string literal to controller
+    add_string_literal(val);
 
-    //save start of string
-    emit_push("%rax", "StringLiteral::emit_asm() : string start");
+    //get label
+    std::string label = get_string_literal_label(val);
 
-    //string index pointer to %rbx
-    fout << indent() << "mov %rax, %rbx\n";
-
-    //populate memory
-    for(int i = 0; i < val.size(); i++){
-        fout << indent() << "movb $" << (int) val[i] << ", %al\n";
-        emit_mem_store(1);
-        fout << indent() << "inc %rbx\n";
-    }
-    fout << indent() << "movb $0, %al\n";
-    emit_mem_store(1);
-
-    //retrieve start of string
-    emit_pop("%rax", "StringLiteral::emit_asm() : string start");
+    //load address into %rax using %rip relative addressing
+    fout << indent() << "lea " << label << "(%rip), %rax\n";
 }
 
 void SyscallLiteral::emit_asm() {

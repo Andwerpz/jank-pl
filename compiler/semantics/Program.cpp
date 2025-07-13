@@ -274,6 +274,9 @@ bool Program::is_well_formed() {
         }
     }
 
+    // - emit .data section
+    emit_data_section();
+
     enclosing_program = nullptr;
 
     assert(declaration_stack.size() == 0);
