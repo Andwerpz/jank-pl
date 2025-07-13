@@ -334,11 +334,11 @@ Type* ExprBinary::resolve_type() {
         //default behaviour
         if(str_op == "=") {
             if(!left->is_lvalue()) {
-                std::cout << "Cannot assign to r-value\n";
+                if(debug) std::cout << "Cannot assign to r-value\n";
                 return nullptr;
             }
             if(!lt->equals(rt)) {
-                std::cout << "Cannot assign " << lt->to_string() << " to " << rt->to_string() << "\n";
+                if(debug) std::cout << "Cannot assign " << lt->to_string() << " to " << rt->to_string() << "\n";
                 return nullptr;
             }
             return lt;
@@ -746,8 +746,6 @@ void ExprPostfix::elaborate(ExprNode*& self) {
         Expression *expr = std::get<Expression*>(op);
         assert(expr->resolve_type() != nullptr);
 
-        std::cout << "ELABORATING INDEXING : " << left->to_string() << " " << expr->to_string() << "\n";
-
         //convert overloads into overload calls
         OperatorImplementation *oe = find_operator_implementation(left, "[]", expr->expr_node);
         if(auto fo = dynamic_cast<OverloadedOperator*>(oe)) {
@@ -783,13 +781,13 @@ void ExprPostfix::elaborate(ExprNode*& self) {
 
 void Expression::elaborate() {
     if(has_elaborated) {
-        std::cout << "ALREADY ELABORATED : " << to_string() << "\n";
+        if(debug) std::cout << "ALREADY ELABORATED : " << to_string() << "\n";
         assert(false);
     }
-    std::cout << "ELABORATING : " << to_string() << std::endl;
+    if(debug) std::cout << "ELABORATING : " << to_string() << std::endl;
     has_elaborated = true;
     expr_node->elaborate(expr_node);
-    std::cout << "DONE ELABORATING : " << to_string() << std::endl;
+    if(debug) std::cout << "DONE ELABORATING : " << to_string() << std::endl;
 }
 
 // -- EMIT_ASM -- 
@@ -1151,8 +1149,6 @@ void ExprPostfix::emit_asm() {
         Type *vt = sl->get_type(id);
         int offset = sl->get_offset(id);
         if(asm_debug) fout << indent() << "# accessing member variable " << id->name << ", offset : " << offset << "\n";
-        
-        std::cout << "TRY TO GET MEMBER VARIABLE : " << vt->to_string() << " " << id->name << "\n";
 
         fout << indent() << "lea " << offset << "(%rax), %rcx\n";
         fout << indent() << "lea " << offset << "(%rax), %rax\n";

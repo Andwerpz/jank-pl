@@ -6,17 +6,11 @@
 
 struct A {
     i32 x;
-    A() {
-        this.x = 100;
-    }
     A(A& other) {
         this.x = other.x;
     }
     A(i32 _x) {
         this.x = _x;
-    }
-    ~A() {
-
     }
 }
 
@@ -37,7 +31,7 @@ void test_basic() {
 void test_struct() {
     {
         A a;
-        assert(a.x == 100);
+        assert(a.x == 0);
     }
 
     cout << "struct tests passed\n";

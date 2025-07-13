@@ -937,6 +937,15 @@ bool add_struct_type(StructDefinition *sd) {
         }
     }
 
+    //default default constructor
+    add_constructor(new StructConstructor(t->make_copy(), {}, new CompoundStatement({})));
+
+    //default copy constructor
+    // - waiting on steven to implement memcpy, default copy constructor will just copy over the memory as-is. 
+
+    //default destructor
+    add_destructor(new Destructor(t->make_copy(), new CompoundStatement({})));
+
     //resolve all templates in function signature and member variables
     if(!sd->look_for_templates()) {
         std::cout << "Unable to resolve all templates in " << t->to_string() << "\n";
@@ -1085,7 +1094,7 @@ bool add_sys_function(Function *f) {
 bool add_constructor(Constructor *c) {
     assert(c != nullptr);
     ConstructorSignature *cs = c->resolve_constructor_signature();
-    if(is_constructor_declared(cs)) assert(false);
+    if(is_constructor_declared(cs)) return false;   
     declared_constructors.push_back(c);
     constructor_label_map.insert({cs, create_new_label()});
     std::cout << "ADD CONSTRUCTOR : " << cs->to_string() << " " << declared_constructors.size() << std::endl;
@@ -1536,7 +1545,7 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, std::optional<Expre
     assert(id != nullptr);
     assert(expr != nullptr);    //might want to later have a version that default declares types
 
-    std::cout << "Initialize variable : " << vt->to_string() << " " << id->name << std::endl;
+    if(debug) std::cout << "Initialize variable : " << vt->to_string() << " " << id->name << std::endl;
 
     // - make sure vt is declared
     if(!is_type_declared(vt)) {

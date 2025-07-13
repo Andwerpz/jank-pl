@@ -108,36 +108,37 @@ bool StructDefinition::is_well_formed() {
         }
     }
 
-    // - is there a default constructor?
-    {
-        ConstructorSignature *cid = new ConstructorSignature(type->make_copy(), {});
-        if(!is_constructor_declared(cid)) {
-            std::cout << "Default constructor for " << type->to_string() << " not defined\n";
-            return false;
-        }
-    }
-    // - is there a copy constructor?
-    {
-        ConstructorSignature *cid = new ConstructorSignature(type->make_copy(), {new ReferenceType(type->make_copy())});
-        if(!is_constructor_declared(cid)) {
-            std::cout << "Copy constructor for " << type->to_string() << " not defined\n";
-            return false;
-        }
-    }
+    // -- no longer required, if these don't exist, default ones are created --
+    // // - is there a default constructor?
+    // {
+    //     ConstructorSignature *cid = new ConstructorSignature(type->make_copy(), {});
+    //     if(!is_constructor_declared(cid)) {
+    //         std::cout << "Default constructor for " << type->to_string() << " not defined\n";
+    //         return false;
+    //     }
+    // }
+    // // - is there a copy constructor?
+    // {
+    //     ConstructorSignature *cid = new ConstructorSignature(type->make_copy(), {new ReferenceType(type->make_copy())});
+    //     if(!is_constructor_declared(cid)) {
+    //         std::cout << "Copy constructor for " << type->to_string() << " not defined\n";
+    //         return false;
+    //     }
+    // }
 
-    // - are all the destructors actually destructing this type?
-    for(int i = 0; i < destructors.size(); i++){
-        if(!type->equals(destructors[i]->type)) {
-            std::cout << "Destructor in " << type->to_string() << " is of wrong type : " << destructors[i]->type->to_string() << "\n";
-            return false;
-        }
-    }
+    // // - are all the destructors actually destructing this type?
+    // for(int i = 0; i < destructors.size(); i++){
+    //     if(!type->equals(destructors[i]->type)) {
+    //         std::cout << "Destructor in " << type->to_string() << " is of wrong type : " << destructors[i]->type->to_string() << "\n";
+    //         return false;
+    //     }
+    // }
 
-    // - is there exactly 1 destructor?
-    if(destructors.size() != 1) {
-        std::cout << "There must be exactly one destructor for struct " << type->to_string() << "\n";
-        return false;
-    }
+    // // - is there exactly 1 destructor?
+    // if(destructors.size() != 1) {
+    //     std::cout << "There must be exactly one destructor for struct " << type->to_string() << "\n";
+    //     return false;
+    // }
     
     return true;
 }

@@ -52,7 +52,6 @@ Type* ConstructorCall::resolve_type() {
 //calls emit_initialize_struct()
 //should return with %rax holding initialized type
 void ConstructorCall::emit_asm(bool alloc_new) {
-    std::cout << "CONSTRUCTOR CALL : " << type->to_string() << "\n";
     if(asm_debug) fout << indent() << "# calling constructor : " << type->to_string() << "\n";
 
     //find constructor

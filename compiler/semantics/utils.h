@@ -222,6 +222,9 @@ inline std::vector<LoopContext*> loop_stack;
 //add some helpful (?) comments in the generated asm. 
 inline bool asm_debug = true;
 
+//add some helpful (?) prints in the compiler
+inline bool debug = false;
+
 //descriptions of whatever is on the stack. 
 //to push anything, you need to provide a description
 //to pop anything, you need to provide a description, and it will only work if the descriptions match
