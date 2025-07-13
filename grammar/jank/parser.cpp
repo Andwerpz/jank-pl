@@ -1,4 +1,4 @@
-// Date Generated : 07-12-2025 16:13:27
+// Date Generated : 07-12-2025 22:46:01
 #include "parser.h"
 
 namespace parser {
@@ -9,6 +9,9 @@ namespace parser {
     //where we are in the string
     int ptr;
 
+    //what is the furthest we've gotten into the string
+    int max_parse;
+
     //this is so we know where to backtrack to
     //the stack should be unaffected by any parse function. 
     std::stack<int> ptr_stack;
@@ -17,18 +20,88 @@ namespace parser {
     void set_s(std::string& ns) {
         s = ns;
         ptr = 0;
+        max_parse = 0;
         while(ptr_stack.size() != 0) ptr_stack.pop();
+    }
+
+    //does nice printout of lines surrounding the position where ind is
+    void prettyprint_at_ind(int ind) {
+        assert(ind >= 0 && ind < s.size());
+
+        //figure out for each line, what character indices are on it
+        //newlines will count as characters for the line that they broke, not the next line. 
+        std::vector<std::vector<int>> lines(2); //start with a dummy line to make them 1-indexed
+        for(int i = 0; i < s.size(); i++){
+            lines.rbegin()->push_back(i);
+            if(s[i] == '\n') lines.push_back({});
+        }
+
+        //find which line ind is on
+        int indline = -1;
+        for(int i = 0; i < lines.size(); i++){
+            for(int j = 0; j < lines[i].size(); j++) {
+                if(lines[i][j] == ind) indline = i;
+            }
+        }
+
+        //figure out maximum width of numbers
+        int line_start = std::max(0, indline - 5);
+        int line_end = std::min((int) s.size(), indline + 5);
+        int nr_width = 0;
+        for(int i = line_start; i < line_end; i++){
+            nr_width = std::max(nr_width, (int) std::to_string(i).size());
+        }
+
+        //print relevant lines <= indline
+        for(int i = line_start; i <= indline; i++){
+            std::string istr = std::to_string(i);
+            for(int j = istr.size(); j < nr_width; j++) std::cout << " ";
+            std::cout << istr;
+            std::cout << "| ";
+            for(int j = 0; j < lines[i].size(); j++){
+                int nind = lines[i][j];
+                if(s[nind] == '\n') std::cout << " ";
+                else std::cout << s[nind];
+            }
+            std::cout << "\n";
+        }
+
+        //print indptr
+        std::cout << std::string(nr_width, ' ') << "| ";
+        for(int i = 0; i < lines[indline].size(); i++){
+            if(lines[indline][i] == ind) std::cout << "^";
+            else std::cout << " ";
+        }   
+        std::cout << "\n";
+
+        //print relevant lines > indline
+        for(int i = indline + 1; i < line_end; i++){
+            std::string istr = std::to_string(i);
+            for(int j = istr.size(); j < nr_width; j++) std::cout << " ";
+            std::cout << istr;
+            std::cout << "| ";
+            for(int j = 0; j < lines[i].size(); j++){
+                int nind = lines[i][j];
+                if(s[nind] == '\n') std::cout << " ";
+                else std::cout << s[nind];
+            }
+            std::cout << "\n";
+        }
     }
 
     //call this when you think you are done
     bool check_finished_parsing() {
-        if(ptr != s.size()) return false;
+        if(ptr != s.size()) {
+            prettyprint_at_ind(max_parse);
+            return false;
+        }
         return true;
     }
 
     //use before trying an optional grammar rule
     void push_stack() {
         ptr_stack.push(ptr);
+        max_parse = std::max(max_parse, ptr);
     }
 
     //use when grammar rule fails to parse

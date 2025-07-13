@@ -4,14 +4,50 @@
 #include <iostream>;
 #include <assert>;
 
+struct A {
+    i32 x;
+    A() {
+        this.x = 100;
+    }
+    A(A& other) {
+        this.x = other.x;
+    }
+    A(i32 _x) {
+        this.x = _x;
+    }
+    ~A() {
+
+    }
+}
+
+void test_basic() {
+    {
+        i32 a;
+        assert(a == 0);
+    }
+
+    {
+        u64 a;
+        assert(a == $u64 0);
+    }
+
+    cout << "basic tests passed\n";
+}
+
+void test_struct() {
+    {
+        A a;
+        assert(a.x == 100);
+    }
+
+    cout << "struct tests passed\n";
+}
+
 i32 main() {
 
-    vector<i32> arr1;
-    vector<u64> arr2;
-    vector<u8*> arr3;
-    vector<vector<u32>> arr4;
-
-    cout << "test passed\n";
+    test_basic();
+    test_struct();
+    cout << "all tests passed\n";
 
     return 0;
 }

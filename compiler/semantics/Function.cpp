@@ -82,8 +82,6 @@ bool Function::is_well_formed() {
         return true;
     }
     std::cout << "CHECKING FUNCTION : " << fs->to_string() << std::endl;
-    std::cout << to_string() << "\n";
-
 
     // - are templates all resolvable?
     if(!look_for_templates()) {
