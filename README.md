@@ -14,4 +14,12 @@ Features include:
 - SSE-based float operations
 - Basic import system and global variables
 
+## Setup 
+
+Tested on WSL.
+
+Make sure you have `gcc` and `make` installed. Go into the `compiler` directory and run `make all`. It should create `jjc.exe`. If you want to add it to PATH, you can run `make install`. 
+
+To test your installation, go into `testing` and run `make all`. Then, run the generated executable: `./main.exe run-tests`. 
+
 
