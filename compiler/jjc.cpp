@@ -218,7 +218,6 @@ int assemble(char src_path[], char res_path[]) {
             "-nostartfiles", "-nostdlib",   //tell gcc that we're not compiling C assembly
             "-m64",         //64 bit mode?
             src_path,
-            (compiler_dir + "/asm/syscall.asm").c_str(),
             "-o", res_path,
             (char*) NULL
         );

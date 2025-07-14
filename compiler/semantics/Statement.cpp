@@ -308,8 +308,12 @@ bool ReturnStatement::is_well_formed() {
     //special case for exiting out of main
     if(enclosing_function != nullptr && FunctionSignature(new Identifier("main"), {}) == *(enclosing_function->resolve_function_signature())) {
         //function is main, use exit syscall instead
+
+        //get sys_exit(i32 status) label
+        std::string exit_label = get_function_label(new FunctionSignature(new Identifier("sys_exit"), {primitives::i32->make_copy()}));
+
         fout << indent() << "push %rax\n";  //should not be managed by local_offset
-        fout << indent() << "call sys_exit\n";
+        fout << indent() << "call " << exit_label << "\n";
     }
     else {
         //return from function
