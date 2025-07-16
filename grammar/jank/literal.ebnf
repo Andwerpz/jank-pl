@@ -1,12 +1,12 @@
 #include "jank.ebnf" ;
 
-(* TODO support other types of literals like strings / floats / chars *)
-
 literal_sizeof = "sizeof" , ows , "(" , ows , type , ows , ")" ;
 literal_integer = < digit > ;
 literal_float = < digit > , "." , < digit > ;
 literal_char = "'" , ( alpha | digit | escape | symbol | " " ) , "'" ;
 literal_string = "\"" , { alpha | digit | escape | symbol | " " } , "\"" ;
 literal_syscall = "syscall" , ows , "(" , ows , literal_integer , ows , "," , ows , type , ows , "," , ows , argument_list , ows , ")" ;
+literal_hex = "0x" , < digit | "a" | "b" | "c" | "d" | "e" | "f" > ;
+literal_binary = "0b" , < "0" | "1" > ;
 
-literal = literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall ;
+literal = literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall | literal_hex | literal_binary ;

@@ -1,4 +1,4 @@
-// Date Generated : 07-12-2025 22:46:01
+// Date Generated : 07-16-2025 12:01:17
 #pragma once
 #include <vector>
 #include <string>
@@ -23,6 +23,8 @@ namespace parser {
     struct literal_char;
     struct literal_string;
     struct literal_syscall;
+    struct literal_hex;
+    struct literal_binary;
     struct literal;
     struct member_variable_declaration;
     struct constructor_definition;
@@ -436,7 +438,165 @@ namespace parser {
         std::string to_string();
     };
 
-    // literal = literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall ;
+    // literal_hex = "0x" , < digit | "a" | "b" | "c" | "d" | "e" | "f" > ;
+    struct literal_hex {
+        struct a0 {
+            struct b0 {
+                digit *t0;
+                b0(digit *_t0) {
+                    t0 = _t0;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            struct b1 {
+                std::string t0;
+                b1(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b1* parse();
+                std::string to_string();
+            };
+            struct b2 {
+                std::string t0;
+                b2(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b2* parse();
+                std::string to_string();
+            };
+            struct b3 {
+                std::string t0;
+                b3(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b3* parse();
+                std::string to_string();
+            };
+            struct b4 {
+                std::string t0;
+                b4(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b4* parse();
+                std::string to_string();
+            };
+            struct b5 {
+                std::string t0;
+                b5(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b5* parse();
+                std::string to_string();
+            };
+            struct b6 {
+                std::string t0;
+                b6(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b6* parse();
+                std::string to_string();
+            };
+            bool is_b0 = false;
+            b0 *t0;
+            bool is_b1 = false;
+            b1 *t1;
+            bool is_b2 = false;
+            b2 *t2;
+            bool is_b3 = false;
+            b3 *t3;
+            bool is_b4 = false;
+            b4 *t4;
+            bool is_b5 = false;
+            b5 *t5;
+            bool is_b6 = false;
+            b6 *t6;
+            a0(b0 *_t0) {
+                is_b0 = true;
+                t0 = _t0;
+            }
+            a0(b1 *_t1) {
+                is_b1 = true;
+                t1 = _t1;
+            }
+            a0(b2 *_t2) {
+                is_b2 = true;
+                t2 = _t2;
+            }
+            a0(b3 *_t3) {
+                is_b3 = true;
+                t3 = _t3;
+            }
+            a0(b4 *_t4) {
+                is_b4 = true;
+                t4 = _t4;
+            }
+            a0(b5 *_t5) {
+                is_b5 = true;
+                t5 = _t5;
+            }
+            a0(b6 *_t6) {
+                is_b6 = true;
+                t6 = _t6;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        std::string t0;
+        std::vector<a0*> t1;
+        literal_hex(std::string _t0, std::vector<a0*> _t1) {
+            t0 = _t0;
+            t1 = _t1;
+        }
+        static literal_hex* parse();
+        std::string to_string();
+    };
+
+    // literal_binary = "0b" , < "0" | "1" > ;
+    struct literal_binary {
+        struct a0 {
+            struct b0 {
+                std::string t0;
+                b0(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            struct b1 {
+                std::string t0;
+                b1(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b1* parse();
+                std::string to_string();
+            };
+            bool is_b0 = false;
+            b0 *t0;
+            bool is_b1 = false;
+            b1 *t1;
+            a0(b0 *_t0) {
+                is_b0 = true;
+                t0 = _t0;
+            }
+            a0(b1 *_t1) {
+                is_b1 = true;
+                t1 = _t1;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        std::string t0;
+        std::vector<a0*> t1;
+        literal_binary(std::string _t0, std::vector<a0*> _t1) {
+            t0 = _t0;
+            t1 = _t1;
+        }
+        static literal_binary* parse();
+        std::string to_string();
+    };
+
+    // literal = literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall | literal_hex | literal_binary ;
     struct literal {
         struct a0 {
             literal_float *t0;
@@ -486,6 +646,22 @@ namespace parser {
             static a5* parse();
             std::string to_string();
         };
+        struct a6 {
+            literal_hex *t0;
+            a6(literal_hex *_t0) {
+                t0 = _t0;
+            }
+            static a6* parse();
+            std::string to_string();
+        };
+        struct a7 {
+            literal_binary *t0;
+            a7(literal_binary *_t0) {
+                t0 = _t0;
+            }
+            static a7* parse();
+            std::string to_string();
+        };
         bool is_a0 = false;
         a0 *t0;
         bool is_a1 = false;
@@ -498,6 +674,10 @@ namespace parser {
         a4 *t4;
         bool is_a5 = false;
         a5 *t5;
+        bool is_a6 = false;
+        a6 *t6;
+        bool is_a7 = false;
+        a7 *t7;
         literal(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
@@ -521,6 +701,14 @@ namespace parser {
         literal(a5 *_t5) {
             is_a5 = true;
             t5 = _t5;
+        }
+        literal(a6 *_t6) {
+            is_a6 = true;
+            t6 = _t6;
+        }
+        literal(a7 *_t7) {
+            is_a7 = true;
+            t7 = _t7;
         }
         static literal* parse();
         std::string to_string();

@@ -1,4 +1,4 @@
-// Date Generated : 07-12-2025 22:46:01
+// Date Generated : 07-16-2025 12:01:17
 #include "parser.h"
 
 namespace parser {
@@ -640,6 +640,210 @@ namespace parser {
         return ans;
     }
 
+    literal_hex::a0::b0* literal_hex::a0::b0::parse() {
+        push_stack();
+        digit *_t0 = digit::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_hex::a0::b0(_t0);
+    }
+
+    std::string literal_hex::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    literal_hex::a0::b1* literal_hex::a0::b1::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "a") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_hex::a0::b1(_t0);
+    }
+
+    std::string literal_hex::a0::b1::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    literal_hex::a0::b2* literal_hex::a0::b2::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "b") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_hex::a0::b2(_t0);
+    }
+
+    std::string literal_hex::a0::b2::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    literal_hex::a0::b3* literal_hex::a0::b3::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "c") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_hex::a0::b3(_t0);
+    }
+
+    std::string literal_hex::a0::b3::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    literal_hex::a0::b4* literal_hex::a0::b4::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "d") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_hex::a0::b4(_t0);
+    }
+
+    std::string literal_hex::a0::b4::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    literal_hex::a0::b5* literal_hex::a0::b5::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "e") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_hex::a0::b5(_t0);
+    }
+
+    std::string literal_hex::a0::b5::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    literal_hex::a0::b6* literal_hex::a0::b6::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "f") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_hex::a0::b6(_t0);
+    }
+
+    std::string literal_hex::a0::b6::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    literal_hex::a0* literal_hex::a0::parse() {
+        if(auto x = literal_hex::a0::b0::parse()) return new literal_hex::a0(x);
+        if(auto x = literal_hex::a0::b1::parse()) return new literal_hex::a0(x);
+        if(auto x = literal_hex::a0::b2::parse()) return new literal_hex::a0(x);
+        if(auto x = literal_hex::a0::b3::parse()) return new literal_hex::a0(x);
+        if(auto x = literal_hex::a0::b4::parse()) return new literal_hex::a0(x);
+        if(auto x = literal_hex::a0::b5::parse()) return new literal_hex::a0(x);
+        if(auto x = literal_hex::a0::b6::parse()) return new literal_hex::a0(x);
+        return nullptr;
+    }
+
+    std::string literal_hex::a0::to_string() {
+        if(is_b0) return t0->to_string();
+        if(is_b1) return t1->to_string();
+        if(is_b2) return t2->to_string();
+        if(is_b3) return t3->to_string();
+        if(is_b4) return t4->to_string();
+        if(is_b5) return t5->to_string();
+        if(is_b6) return t6->to_string();
+        assert(false);
+    }
+
+    literal_hex* literal_hex::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "0x") {pop_stack(); return nullptr;}
+        std::vector<literal_hex::a0*> _t1;
+        while(true) {
+            literal_hex::a0 *tmp = literal_hex::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        if(_t1.size() == 0) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_hex(_t0, _t1);
+    }
+
+    std::string literal_hex::to_string() {
+        std::string ans = "";
+        ans += t0;
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
+    }
+
+    literal_binary::a0::b0* literal_binary::a0::b0::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "0") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_binary::a0::b0(_t0);
+    }
+
+    std::string literal_binary::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    literal_binary::a0::b1* literal_binary::a0::b1::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "1") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_binary::a0::b1(_t0);
+    }
+
+    std::string literal_binary::a0::b1::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    literal_binary::a0* literal_binary::a0::parse() {
+        if(auto x = literal_binary::a0::b0::parse()) return new literal_binary::a0(x);
+        if(auto x = literal_binary::a0::b1::parse()) return new literal_binary::a0(x);
+        return nullptr;
+    }
+
+    std::string literal_binary::a0::to_string() {
+        if(is_b0) return t0->to_string();
+        if(is_b1) return t1->to_string();
+        assert(false);
+    }
+
+    literal_binary* literal_binary::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "0b") {pop_stack(); return nullptr;}
+        std::vector<literal_binary::a0*> _t1;
+        while(true) {
+            literal_binary::a0 *tmp = literal_binary::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        if(_t1.size() == 0) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal_binary(_t0, _t1);
+    }
+
+    std::string literal_binary::to_string() {
+        std::string ans = "";
+        ans += t0;
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
+    }
+
     literal::a0* literal::a0::parse() {
         push_stack();
         literal_float *_t0 = literal_float::parse();
@@ -724,6 +928,34 @@ namespace parser {
         return ans;
     }
 
+    literal::a6* literal::a6::parse() {
+        push_stack();
+        literal_hex *_t0 = literal_hex::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal::a6(_t0);
+    }
+
+    std::string literal::a6::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    literal::a7* literal::a7::parse() {
+        push_stack();
+        literal_binary *_t0 = literal_binary::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new literal::a7(_t0);
+    }
+
+    std::string literal::a7::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
     literal* literal::parse() {
         if(auto x = literal::a0::parse()) return new literal(x);
         if(auto x = literal::a1::parse()) return new literal(x);
@@ -731,6 +963,8 @@ namespace parser {
         if(auto x = literal::a3::parse()) return new literal(x);
         if(auto x = literal::a4::parse()) return new literal(x);
         if(auto x = literal::a5::parse()) return new literal(x);
+        if(auto x = literal::a6::parse()) return new literal(x);
+        if(auto x = literal::a7::parse()) return new literal(x);
         return nullptr;
     }
 
@@ -741,6 +975,8 @@ namespace parser {
         if(is_a3) return t3->to_string();
         if(is_a4) return t4->to_string();
         if(is_a5) return t5->to_string();
+        if(is_a6) return t6->to_string();
+        if(is_a7) return t7->to_string();
         assert(false);
     }
 
