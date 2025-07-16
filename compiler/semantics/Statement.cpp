@@ -307,13 +307,17 @@ bool ReturnStatement::is_well_formed() {
 
     //special case for exiting out of main
     if(enclosing_function != nullptr && FunctionSignature(new Identifier("main"), {}) == *(enclosing_function->resolve_function_signature())) {
-        //function is main, use exit syscall instead
+        //function is main, should exit the program
+        if(!kernel_mode) {
+            //get sys_exit(i32 status) label
+            std::string exit_label = get_function_label(new FunctionSignature(new Identifier("sys_exit"), {primitives::i32->make_copy()}));
 
-        //get sys_exit(i32 status) label
-        std::string exit_label = get_function_label(new FunctionSignature(new Identifier("sys_exit"), {primitives::i32->make_copy()}));
-
-        fout << indent() << "push %rax\n";  //should not be managed by local_offset
-        fout << indent() << "call " << exit_label << "\n";
+            fout << indent() << "push %rax\n";  //should not be managed by local_offset
+            fout << indent() << "call " << exit_label << "\n";
+        }
+        else {
+            //we can't really exit, TODO decide what to do here
+        }
     }
     else {
         //return from function

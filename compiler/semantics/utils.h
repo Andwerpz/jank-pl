@@ -224,6 +224,7 @@ inline bool asm_debug = false;
 
 //does some various changes to support a kernel
 // - doesn't import malloc, syscall by default
+// - doesn't call sys_exit() when returning out of main
 // - TODO instead of using malloc, uses kmalloc and kfree
 // - TODO uses absolute addressing instead of %rip relative addressing for literals
 inline bool kernel_mode = false;

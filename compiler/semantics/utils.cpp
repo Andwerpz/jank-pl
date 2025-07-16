@@ -877,7 +877,10 @@ Destructor* get_called_destructor(DestructorCall *dc) {
 
 std::string get_function_label(FunctionSignature *fs) {
     assert(fs != nullptr);
-    assert(function_label_map.count(fs));
+    if(!function_label_map.count(fs)) {
+        std::cout << "Unable to find label for : " << fs->to_string() << "\n";
+        assert(false);
+    }
     return function_label_map[fs];
 }
 
