@@ -108,3 +108,31 @@ struct SyscallLiteral : public Literal {
     std::string to_string() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
 };
+
+struct HexLiteral : public Literal {
+    std::string hex_str;    //doesn't contain 0x
+    HexLiteral(std::string _hex_str);
+
+    static HexLiteral* convert(parser::literal_hex *l);
+    Type* resolve_type() override;
+    void emit_asm() override;
+    size_t hash() override;
+    bool equals(Literal *other) override;
+    Literal* make_copy() override;
+    std::string to_string() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
+};
+
+struct BinaryLiteral : public Literal {
+    std::string bin_str;    //doesn't contain 0b
+    BinaryLiteral(std::string _bin_str);
+
+    static BinaryLiteral* convert(parser::literal_binary *l);
+    Type* resolve_type() override;
+    void emit_asm() override;
+    size_t hash() override;
+    bool equals(Literal *other) override;
+    Literal* make_copy() override;
+    std::string to_string() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
+};

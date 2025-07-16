@@ -39,6 +39,14 @@ SyscallLiteral::SyscallLiteral(int _syscall_id, std::vector<Expression*> _argume
     type = _type;
 }
 
+HexLiteral::HexLiteral(std::string _hex_str) {
+    hex_str = _hex_str;
+}
+
+BinaryLiteral::BinaryLiteral(std::string _bin_str) {
+    bin_str = _bin_str;
+}
+
 // -- CONVERT --
 Literal* Literal::convert(parser::literal *l) {
     if(l->is_a0) {  //float literal
@@ -64,6 +72,14 @@ Literal* Literal::convert(parser::literal *l) {
     else if(l->is_a5) { //sizeof literal
         parser::literal_syscall *lit = l->t5->t0;
         return SyscallLiteral::convert(lit);
+    }
+    else if(l->is_a6) { //hex literal
+        parser::literal_hex *lit = l->t6->t0;
+        return HexLiteral::convert(lit);
+    }
+    else if(l->is_a7) { //binary literal
+        parser::literal_binary *lit = l->t7->t0;
+        return BinaryLiteral::convert(lit);
     }
     else assert(false);    
 }
@@ -122,6 +138,18 @@ SyscallLiteral* SyscallLiteral::convert(parser::literal_syscall *lit) {
     return new SyscallLiteral(syscall_id, arguments, type);
 }
 
+HexLiteral* HexLiteral::convert(parser::literal_hex *lit) {
+    std::string hex_str = lit->to_string();
+    assert(hex_str.size() >= 3);
+    return new HexLiteral(hex_str.substr(2));
+}
+
+BinaryLiteral* BinaryLiteral::convert(parser::literal_binary *lit) {
+    std::string bin_str = lit->to_string();
+    assert(bin_str.size() >= 3);
+    return new BinaryLiteral(bin_str.substr(2));
+}
+
 // -- RESOLVE TYPE --
 Type* FloatLiteral::resolve_type() {
     return primitives::f32->make_copy();
@@ -166,6 +194,26 @@ Type* SyscallLiteral::resolve_type() {
 
     //assume that the return type is correct
     return type->make_copy();
+}
+
+Type* HexLiteral::resolve_type() {
+    // - can hex string fit in u64?
+    if(hex_str.size() > 16) {
+        std::cout << "Hex value too large : 0x" << hex_str << "\n";
+        return nullptr;
+    }
+
+    return primitives::u64->make_copy();
+}
+
+Type* BinaryLiteral::resolve_type() {
+    // - can binary string fit in u64?
+    if(bin_str.size() > 64) {
+        std::cout << "Binary value too large : 0b" << bin_str << "\n";
+        return nullptr;
+    }
+
+    return primitives::u64->make_copy();
 }
 
 // -- EMIT ASM --
@@ -243,6 +291,20 @@ void SyscallLiteral::emit_asm() {
     if(asm_debug) fout << indent() << "# done syscall : " << syscall_id << "\n";
 }
 
+void HexLiteral::emit_asm() {
+    assert(hex_str.size() >= 1 && hex_str.size() <= 16);
+    fout << indent() << "mov $" << hex_str << ", %rax\n";
+}
+
+void BinaryLiteral::emit_asm() {
+    assert(bin_str.size() <= 64);
+    uint64_t val = 0;
+    for(int i = 0; i < bin_str.size(); i++){
+        val = (val * 2) + (bin_str[i] - '0');
+    }
+    fout << indent() << "mov $" << val << ", %rax\n";
+}
+
 // -- HASH -- 
 size_t FloatLiteral::hash() {
     return std::hash<float>{}(val);
@@ -272,6 +334,14 @@ size_t SyscallLiteral::hash() {
     }
     hash_combine(hash, type->hash());
     return hash;
+}
+
+size_t HexLiteral::hash() {
+    return std::hash<std::string>()(hex_str);
+}
+
+size_t BinaryLiteral::hash() {
+    return std::hash<std::string>()(bin_str);
 }
 
 // -- EQUALS --
@@ -322,6 +392,20 @@ bool SyscallLiteral::equals(Literal *_other) {
     return true;
 }
 
+bool HexLiteral::equals(Literal *_other) {
+    if(dynamic_cast<HexLiteral*>(_other) == nullptr) return false;
+    HexLiteral *other = dynamic_cast<HexLiteral*>(_other);
+
+    return hex_str == other->hex_str;
+}
+
+bool BinaryLiteral::equals(Literal *_other) {
+    if(dynamic_cast<BinaryLiteral*>(_other) == nullptr) return false;
+    BinaryLiteral *other = dynamic_cast<BinaryLiteral*>(_other);
+
+    return bin_str == other->bin_str;
+}
+
 // -- MAKE COPY --
 Literal* FloatLiteral::make_copy() {
     return new FloatLiteral(val);
@@ -347,6 +431,14 @@ Literal* SyscallLiteral::make_copy() {
     std::vector<Expression*> _arguments;
     for(int i = 0; i < arguments.size(); i++) _arguments.push_back(arguments[i]->make_copy());
     return new SyscallLiteral(syscall_id, _arguments, type->make_copy());
+}
+
+Literal* HexLiteral::make_copy() {
+    return new HexLiteral(hex_str);
+}
+
+Literal* BinaryLiteral::make_copy() {
+    return new BinaryLiteral(bin_str);
 }
 
 // -- TO STRING --
@@ -381,6 +473,14 @@ std::string SyscallLiteral::to_string() {
     return ret;
 }
 
+std::string HexLiteral::to_string() {
+    return "0x" + hex_str;
+}
+
+std::string BinaryLiteral::to_string() {
+    return "0b" + bin_str;
+}
+
 // -- REPLACE TEMPLATED TYPES --
 bool FloatLiteral::replace_templated_types(TemplateMapping *mapping) {
     return true;
@@ -408,5 +508,13 @@ bool SyscallLiteral::replace_templated_types(TemplateMapping *mapping) {
         if(!arguments[i]->replace_templated_types(mapping)) return false;
     }
     if(!type->replace_templated_types(mapping)) return false;
+    return true;
+}
+
+bool HexLiteral::replace_templated_types(TemplateMapping *mapping) {
+    return true;
+}
+
+bool BinaryLiteral::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
