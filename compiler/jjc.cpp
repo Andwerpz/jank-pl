@@ -119,6 +119,9 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
             "syscall",
             "malloc",
         };  
+        if(kernel_mode) {
+            default_libj_includes.clear();
+        }
         for(std::string s : default_libj_includes) {
             std::string npath = libj_to_absolute(s);
             to_parse.push(npath);
@@ -244,6 +247,8 @@ int main(int argc, char* argv[]) {
         std::cout << "USAGE : <filepath>\n";
         std::cout << "-S : generate assembly instead of executable\n";
         std::cout << "-o <out_filepath>\n";
+        std::cout << "-k : kernel mode\n";
+        std::cout << "-ad : assembly debug mode (prints some helpful (?) comments in the generated assembly)\n";
         return 1;
     }
     int argptr = 1;
@@ -293,6 +298,16 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
             dst_dir = std::string(argv[argptr ++]);
+        }
+        else if(arg == "-k") {
+            kernel_mode = true;
+        }
+        else if(arg == "-ad") {
+            asm_debug = true;
+        }
+        else {
+            std::cout << "Unrecognized commandline argument : " << arg << "\n";
+            return 1;
         }
     }
 
@@ -733,6 +748,10 @@ it's sitting somewhere in between, Overload is more like a function, while Overl
 So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
 
 some miscellaneous features:
+ - 'kernel mode'
+   - in the kernel, we don't have access to malloc, free, sys_exit(). Should replace these calls with other stuff.
+   - can't use rip relative addressing
+   - maybe should emit some alignment code?
  - array literals
  - better semantic error messages. 
    - would be nice if on failure, could print out the relevant code or smth. 

@@ -220,7 +220,13 @@ inline std::vector<std::vector<Variable*>> declaration_stack;   //every 'layer' 
 inline std::vector<LoopContext*> loop_stack;
 
 //add some helpful (?) comments in the generated asm. 
-inline bool asm_debug = true;
+inline bool asm_debug = false;
+
+//does some various changes to support a kernel
+// - doesn't import malloc, syscall by default
+// - TODO instead of using malloc, uses kmalloc and kfree
+// - TODO uses absolute addressing instead of %rip relative addressing for literals
+inline bool kernel_mode = false;
 
 //add some helpful (?) prints in the compiler
 inline bool debug = false;
