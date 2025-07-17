@@ -125,7 +125,12 @@ bool Function::is_well_formed() {
         fout << indent() << "mov %rsp, %r15\n";
 
         //reserve enough memory. This should not be managed by local_offset
-        fout << indent() << "sub $" << global_declarations.size() * 8 << ", %rsp\n";
+        int global_mem_ptr = 0;
+        for(int i = 0; i < global_declarations.size(); i++){
+            if(global_declarations[i]->is_extern) continue;
+            global_mem_ptr += 8;
+        }
+        fout << indent() << "sub $" << global_mem_ptr << ", %rsp\n";
 
         //setup fake stack frame. We need to do this because pop_declaration_stack() will not actually
         //move %rsp if it's the last element on the stack. 
@@ -138,14 +143,22 @@ bool Function::is_well_formed() {
         std::sort(global_declarations.begin(), global_declarations.end(), [](GlobalDeclaration *a, GlobalDeclaration *b) -> bool {
             return a->tier < b->tier;
         });
+        global_mem_ptr = 0;
         for(int i = 0; i < global_declarations.size(); i++){
+            bool is_extern = global_declarations[i]->is_extern;
             Type *type = global_declarations[i]->declaration->type;
             Identifier *id = global_declarations[i]->declaration->id;
-            std::string addr_str = std::to_string(i * 8) + "(%r15)";
+            
+            std::string addr_str = "";
+            if(is_extern) addr_str = id->name;
+            else {
+                addr_str = std::to_string(global_mem_ptr) + "(%r15)";
+                global_mem_ptr += 8;
+            }
             std::cout << "GLOBAL : " << type->to_string() << " " << id->name << "\n";
 
             if(asm_debug) fout << indent() << "# initialize global variable : " << type->to_string() << " " << id->name << "\n";
-            Variable *v = emit_initialize_variable(type, id, global_declarations[i]->declaration->expr, addr_str, true);
+            Variable *v = emit_initialize_variable(type, id, global_declarations[i]->declaration->expr, addr_str, true, is_extern);
             if(asm_debug) fout << indent() << "# done initialize global variable : " << type->to_string() << " " << id->name << "\n";
         
             if(v == nullptr) {

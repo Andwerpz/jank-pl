@@ -1,4 +1,4 @@
-// Date Generated : 07-16-2025 19:04:12
+// Date Generated : 07-16-2025 19:44:45
 #include "parser.h"
 
 namespace parser {
@@ -6585,6 +6585,23 @@ namespace parser {
         return ans;
     }
 
+    global_declaration::a2* global_declaration::a2::parse() {
+        push_stack();
+        std::string _t0 = next_chars(6);
+        if(_t0 != "extern") {pop_stack(); return nullptr;}
+        rws *_t1 = rws::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new global_declaration::a2(_t0, _t1);
+    }
+
+    std::string global_declaration::a2::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        return ans;
+    }
+
     global_declaration* global_declaration::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
@@ -6605,14 +6622,15 @@ namespace parser {
         if(_t5 != "]") {pop_stack(); return nullptr;}
         ows *_t6 = ows::parse();
         if(_t6 == nullptr) {pop_stack(); return nullptr;}
-        declaration *_t7 = declaration::parse();
-        if(_t7 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t8 = ows::parse();
+        global_declaration::a2 *_t7 = global_declaration::a2::parse();
+        declaration *_t8 = declaration::parse();
         if(_t8 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t9 = next_chars(1);
-        if(_t9 != ";") {pop_stack(); return nullptr;}
+        ows *_t9 = ows::parse();
+        if(_t9 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t10 = next_chars(1);
+        if(_t10 != ";") {pop_stack(); return nullptr;}
         rm_stack();
-        return new global_declaration(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9);
+        return new global_declaration(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9, _t10);
     }
 
     std::string global_declaration::to_string() {
@@ -6624,9 +6642,10 @@ namespace parser {
         ans += t4->to_string();
         ans += t5;
         ans += t6->to_string();
-        ans += t7->to_string();
+        if(t7 != nullptr) ans += t7->to_string();
         ans += t8->to_string();
-        ans += t9;
+        ans += t9->to_string();
+        ans += t10;
         return ans;
     }
 

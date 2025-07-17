@@ -1,4 +1,4 @@
-// Date Generated : 07-16-2025 19:04:12
+// Date Generated : 07-16-2025 19:44:45
 #pragma once
 #include <vector>
 #include <string>
@@ -5098,7 +5098,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // global_declaration = "[" , ows , [ "-" ] , < digit > , ows , "]" , ows , declaration , ows , ";" ;
+    // global_declaration = "[" , ows , [ "-" ] , < digit > , ows , "]" , ows , [ "extern" , rws ] , declaration , ows , ";" ;
     struct global_declaration {
         struct a0 {
             std::string t0;
@@ -5116,6 +5116,16 @@ namespace parser {
             static a1* parse();
             std::string to_string();
         };
+        struct a2 {
+            std::string t0;
+            rws *t1;
+            a2(std::string _t0, rws *_t1) {
+                t0 = _t0;
+                t1 = _t1;
+            }
+            static a2* parse();
+            std::string to_string();
+        };
         std::string t0;
         ows *t1;
         a0 *t2;
@@ -5123,10 +5133,11 @@ namespace parser {
         ows *t4;
         std::string t5;
         ows *t6;
-        declaration *t7;
-        ows *t8;
-        std::string t9;
-        global_declaration(std::string _t0, ows *_t1, a0 *_t2, std::vector<a1*> _t3, ows *_t4, std::string _t5, ows *_t6, declaration *_t7, ows *_t8, std::string _t9) {
+        a2 *t7;
+        declaration *t8;
+        ows *t9;
+        std::string t10;
+        global_declaration(std::string _t0, ows *_t1, a0 *_t2, std::vector<a1*> _t3, ows *_t4, std::string _t5, ows *_t6, a2 *_t7, declaration *_t8, ows *_t9, std::string _t10) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -5137,6 +5148,7 @@ namespace parser {
             t7 = _t7;
             t8 = _t8;
             t9 = _t9;
+            t10 = _t10;
         }
         static global_declaration* parse();
         std::string to_string();

@@ -57,10 +57,11 @@ namespace {
 
 // -- UTIL STRUCTS --
 struct Variable {
+    bool is_extern; //only global variables should be extern
     Type *type;
     Identifier *id;
-    std::string addr;   //should hold something like "-8(%rbp)" or "24(%r15)"
-    Variable(Type *_type, Identifier *_id);
+    std::string addr;   //should hold something like "-8(%rbp)" or "24(%r15)" or "extern_label"
+    Variable(bool _is_extern, Type *_type, Identifier *_id);
 };
 
 //used by break and continue to know where to jump to and how many things to cleanup
@@ -166,7 +167,7 @@ bool add_function(Function *f);
 bool add_sys_function(Function *f);
 bool add_constructor(Constructor *c);
 bool add_destructor(Destructor *d);
-Variable* add_variable(Type *t, Identifier *id, bool is_global = false);
+Variable* add_variable(Type *t, Identifier *id, bool is_global = false, bool is_extern = false);
 void remove_function(Function *f);
 void remove_variable(Identifier *id);
 void remove_constructor(Constructor *c);
@@ -183,7 +184,7 @@ StructDefinition* get_struct_definition(Type *t);
 void emit_initialize_primitive(Type *t);
 void emit_initialize_struct(Type *t);
 Variable* emit_initialize_stack_variable(Type *vt, Identifier *id, std::optional<Expression*> expr);
-Variable* emit_initialize_variable(Type* vt, Identifier *id, std::optional<Expression*> expr, std::string addr_str, bool is_global = false);
+Variable* emit_initialize_variable(Type* vt, Identifier *id, std::optional<Expression*> expr, std::string addr_str, bool is_global = false, bool is_extern = false);
 void emit_dereference(Type *t);
 void dump_stack_desc();
 void emit_push(std::string reg, std::string desc);

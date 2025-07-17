@@ -1,0 +1,7 @@
+
+void* memcpy(void* dest, void* src, u64 count) {
+    for(u64 i = $u64 0; i < count; i++) {
+        ($u8* dest)[i] = ($u8* src)[i];
+    }
+    return dest;
+}

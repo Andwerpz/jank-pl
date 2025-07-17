@@ -22,7 +22,8 @@
 #include "Literal.h"
 #include "Parameter.h"
 
-Variable::Variable(Type *_type, Identifier *_id) {
+Variable::Variable(bool _is_extern, Type *_type, Identifier *_id) {
+    is_extern = _is_extern;
     id = _id;
     type = _type;
 }
@@ -1151,14 +1152,15 @@ bool add_destructor(Destructor *d) {
     return true;
 }
 
-Variable* add_variable(Type *t, Identifier *id, bool is_global) {
+Variable* add_variable(Type *t, Identifier *id, bool is_global, bool is_extern) {
     assert(t != nullptr && id != nullptr);
+    if(is_extern) assert(is_global);    //extern variables must be global
     if(!is_global) assert(declaration_stack.size() != 0);
     if(is_variable_declared(id)) {
         std::cout << "Cannot redeclare " << t->to_string() << " " << id->name << "\n";
         return nullptr;
     }
-    Variable *v = new Variable(t, id);
+    Variable *v = new Variable(is_extern, t, id);
     declared_variables.push_back(v);
     if(!is_global) declaration_stack.rbegin()->push_back(v);
     return v;
@@ -1572,7 +1574,7 @@ Variable* emit_initialize_stack_variable(Type *vt, Identifier *id, std::optional
     std::string addr_str = std::to_string(local_offset) + "(%rbp)";
 
     //try to initialize variable
-    Variable *v = emit_initialize_variable(vt, id, expr, addr_str);
+    Variable *v = emit_initialize_variable(vt, id, expr, addr_str, false, false);
 
     return v;
 }
@@ -1582,7 +1584,7 @@ Variable* emit_initialize_stack_variable(Type *vt, Identifier *id, std::optional
 //evaluates the expression and initializes the variable onto the top of the stack
 //if for some reason is unable to initialize the variable, returns nullptr
 //expects the address at addr_str to be already allocated
-Variable* emit_initialize_variable(Type *vt, Identifier *id, std::optional<Expression*> expr, std::string addr_str, bool is_global) { 
+Variable* emit_initialize_variable(Type *vt, Identifier *id, std::optional<Expression*> expr, std::string addr_str, bool is_global, bool is_extern) { 
     assert(vt != nullptr);
     assert(id != nullptr);
     assert(expr != nullptr);    //might want to later have a version that default declares types
@@ -1610,12 +1612,17 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, std::optional<Expre
         return nullptr;
     }
 
-    Variable *v = add_variable(vt, id, is_global);
+    Variable *v = add_variable(vt, id, is_global, is_extern);
     assert(v != nullptr);
     v->addr = addr_str;
 
     if(dynamic_cast<ReferenceType*>(vt) != nullptr) {
         vt = dynamic_cast<ReferenceType*>(vt)->type;
+        // - extern variables cannot be of reference type
+        if(is_extern) {
+            std::cout << "Extern variable cannot be reference type\n";
+            return nullptr;
+        }
         // - must assign a value when initializing references
         if(!expr.has_value()) {
             std::cout << "Cannot default initialize reference\n";
@@ -1643,34 +1650,37 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, std::optional<Expre
         fout << indent() << "movq %rcx, " << addr_str << "\n";
     }
     else {
-        //split declaration into the 'declaration' and 'assignment'
-        //int a = b;
-        //will turn into
-        //int a;
-        //a = b;
-        //this is so that I don't have to rewrite all that assignment logic
+        if(!is_extern) {
+            //split declaration into the 'declaration' and 'assignment'
+            //int a = b;
+            //will turn into
+            //int a;
+            //a = b;
+            //this is so that I don't have to rewrite all that assignment logic
 
-        //'declaration'
-        if(is_type_primitive(vt)) {
-            //just 0 initialize the primitive
-            fout << indent() << "movq $0, " << addr_str << "\n";
-        }
-        else {
-            //call default constructor 
-            ConstructorCall *cc = new ConstructorCall(vt, {});
-            assert(cc->resolve_type()->equals(vt));
-            cc->emit_asm(true);
+            //'declaration'
+            if(is_type_primitive(vt)) {
+                //just 0 initialize the primitive
+                fout << indent() << "movq $0, " << addr_str << "\n";
+            }
+            else {
+                //call default constructor 
+                ConstructorCall *cc = new ConstructorCall(vt, {});
+                assert(cc->resolve_type()->equals(vt));
+                cc->emit_asm(true);
 
-            //save pointer to addr
-            fout << indent() << "movq %rax, " << addr_str << "\n";
+                //save pointer to addr
+                fout << indent() << "movq %rax, " << addr_str << "\n";
+            }
         }
+        
 
         //'assignment'
         if(expr.has_value()) {
             //right now, expr = b. We want expr = (a = b)
             Expression *a_expr = new Expression(new ExprBinary(new ExprPrimary(id), "=", expr.value()->expr_node));
             if(a_expr->resolve_type() == nullptr) {
-                std::cout << "Cannot cast expression type into variable type\n";
+                std::cout << "Cannot assign expression type into variable type\n";
                 return nullptr;
             }
             a_expr->emit_asm();

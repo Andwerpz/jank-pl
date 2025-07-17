@@ -115,14 +115,17 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
         std::set<std::string> parsed_paths;
 
         //include default libraries
-        std::vector<std::string> default_libj_includes = {
-            "syscall",
-            "malloc",
+        std::vector<std::string> default_includes = {
+            "memory"
         };  
         if(kernel_mode) {
-            default_libj_includes.clear();
+            //TODO implement kmalloc
         }
-        for(std::string s : default_libj_includes) {
+        else {
+            default_includes.push_back("syscall");
+            default_includes.push_back("malloc");
+        }
+        for(std::string s : default_includes) {
             std::string npath = libj_to_absolute(s);
             to_parse.push(npath);
             parsed_paths.insert(npath);
@@ -755,12 +758,10 @@ some miscellaneous features:
      use it as if it's defined. 
    - should probably give some error if the extern label conflicts with any existing label. (have a bank of used labels)
    - should probably give a warning if the extern label uses my label naming scheme (not too sure about this one)
-   - an extern variable should always be a pointer, so 'extern T* x;'
+   - an extern variable should always be a pointer? so 'extern T* x;'
    - externs are going to be put into the controller before globals?
- - unsigned integer literals in different bases
-   - hex literals, like 0x00FFFFFF
-   - binary literals, like 0b000101
- - binary literals
+   - no, externs are just going to have different memory addresses compared to their stack declared counterparts. 
+     otherwise, they'll behave exactly the same. 
  - array literals
  - better semantic error messages. 
    - would be nice if on failure, could print out the relevant code or smth. 
@@ -878,6 +879,9 @@ type = templated_type , [ "&" ] ;
    - in the kernel, we don't have access to malloc, free, sys_exit(). Should replace these calls with other stuff.
    - can't use rip relative addressing
    - maybe should emit some alignment code?
+ - unsigned integer literals in different bases
+   - hex literals, like 0x00FFFFFF
+   - binary literals, like 0b000101
 
 
 Struct member functions should be called with 'this' as a pointer to the target struct. 

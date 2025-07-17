@@ -5,10 +5,11 @@ struct Declaration;
 struct TemplateMapping;
 
 struct GlobalDeclaration {
+    bool is_extern;
     int tier;
     Declaration *declaration;
 
-    GlobalDeclaration(int _tier, Declaration *_declaration);
+    GlobalDeclaration(bool _is_extern, int _tier, Declaration *_declaration);
 
     static GlobalDeclaration* convert(parser::global_declaration *gd);
     GlobalDeclaration* make_copy();
