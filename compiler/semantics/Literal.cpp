@@ -49,37 +49,37 @@ BinaryLiteral::BinaryLiteral(std::string _bin_str) {
 
 // -- CONVERT --
 Literal* Literal::convert(parser::literal *l) {
-    if(l->is_a0) {  //float literal
-        parser::literal_float *lit = l->t0->t0;
-        return FloatLiteral::convert(lit);
-    }
-    else if(l->is_a1) {  //integer literal
-        parser::literal_integer *lit = l->t1->t0;
-        return IntegerLiteral::convert(lit);
-    }
-    else if(l->is_a2) { //sizeof literal
-        parser::literal_sizeof *lit = l->t2->t0;
-        return SizeofLiteral::convert(lit);
-    }
-    else if(l->is_a3) { //char literal
-        parser::literal_char *lit = l->t3->t0;
-        return CharLiteral::convert(lit);
-    }
-    else if(l->is_a4) { //string literal    
-        parser::literal_string *lit = l->t4->t0;
-        return StringLiteral::convert(lit);
-    }   
-    else if(l->is_a5) { //sizeof literal
-        parser::literal_syscall *lit = l->t5->t0;
-        return SyscallLiteral::convert(lit);
-    }
-    else if(l->is_a6) { //hex literal
-        parser::literal_hex *lit = l->t6->t0;
+    if(l->is_a0) { //hex literal
+        parser::literal_hex *lit = l->t0->t0;
         return HexLiteral::convert(lit);
     }
-    else if(l->is_a7) { //binary literal
-        parser::literal_binary *lit = l->t7->t0;
+    else if(l->is_a1) { //binary literal
+        parser::literal_binary *lit = l->t1->t0;
         return BinaryLiteral::convert(lit);
+    }
+    else if(l->is_a2) {  //float literal
+        parser::literal_float *lit = l->t2->t0;
+        return FloatLiteral::convert(lit);
+    }
+    else if(l->is_a3) {  //integer literal
+        parser::literal_integer *lit = l->t3->t0;
+        return IntegerLiteral::convert(lit);
+    }
+    else if(l->is_a4) { //sizeof literal
+        parser::literal_sizeof *lit = l->t4->t0;
+        return SizeofLiteral::convert(lit);
+    }
+    else if(l->is_a5) { //char literal
+        parser::literal_char *lit = l->t5->t0;
+        return CharLiteral::convert(lit);
+    }
+    else if(l->is_a6) { //string literal    
+        parser::literal_string *lit = l->t6->t0;
+        return StringLiteral::convert(lit);
+    }   
+    else if(l->is_a7) { //sizeof literal
+        parser::literal_syscall *lit = l->t7->t0;
+        return SyscallLiteral::convert(lit);
     }
     else assert(false);    
 }
@@ -293,11 +293,11 @@ void SyscallLiteral::emit_asm() {
 
 void HexLiteral::emit_asm() {
     assert(hex_str.size() >= 1 && hex_str.size() <= 16);
-    fout << indent() << "mov $" << hex_str << ", %rax\n";
+    fout << indent() << "mov $0x" << hex_str << ", %rax\n";
 }
 
 void BinaryLiteral::emit_asm() {
-    assert(bin_str.size() <= 64);
+    assert(bin_str.size() >= 1 && bin_str.size() <= 64);
     uint64_t val = 0;
     for(int i = 0; i < bin_str.size(); i++){
         val = (val * 2) + (bin_str[i] - '0');

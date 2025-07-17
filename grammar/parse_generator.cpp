@@ -9,6 +9,8 @@
 #include <set>
 #include <ctime>
 #include <iomanip>
+#include <chrono>
+#include <functional>
 using namespace std;
 
 /*
@@ -1613,7 +1615,7 @@ void generate_cpp(grammar *g) {
 
         //figure out maximum width of numbers
         int line_start = std::max(0, indline - 5);
-        int line_end = std::min((int) s.size(), indline + 5);
+        int line_end = std::min((int) lines.size(), indline + 5);
         int nr_width = 0;
         for(int i = line_start; i < line_end; i++){
             nr_width = std::max(nr_width, (int) std::to_string(i).size());

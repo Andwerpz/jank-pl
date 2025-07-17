@@ -9,4 +9,4 @@ literal_syscall = "syscall" , ows , "(" , ows , literal_integer , ows , "," , ow
 literal_hex = "0x" , < digit | "a" | "b" | "c" | "d" | "e" | "f" > ;
 literal_binary = "0b" , < "0" | "1" > ;
 
-literal = literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall | literal_hex | literal_binary ;
+literal = literal_hex | literal_binary | literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall ;

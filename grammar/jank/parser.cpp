@@ -1,4 +1,4 @@
-// Date Generated : 07-16-2025 12:01:17
+// Date Generated : 07-16-2025 19:04:12
 #include "parser.h"
 
 namespace parser {
@@ -46,7 +46,7 @@ namespace parser {
 
         //figure out maximum width of numbers
         int line_start = std::max(0, indline - 5);
-        int line_end = std::min((int) s.size(), indline + 5);
+        int line_end = std::min((int) lines.size(), indline + 5);
         int nr_width = 0;
         for(int i = line_start; i < line_end; i++){
             nr_width = std::max(nr_width, (int) std::to_string(i).size());
@@ -846,7 +846,7 @@ namespace parser {
 
     literal::a0* literal::a0::parse() {
         push_stack();
-        literal_float *_t0 = literal_float::parse();
+        literal_hex *_t0 = literal_hex::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new literal::a0(_t0);
@@ -860,7 +860,7 @@ namespace parser {
 
     literal::a1* literal::a1::parse() {
         push_stack();
-        literal_integer *_t0 = literal_integer::parse();
+        literal_binary *_t0 = literal_binary::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new literal::a1(_t0);
@@ -874,7 +874,7 @@ namespace parser {
 
     literal::a2* literal::a2::parse() {
         push_stack();
-        literal_sizeof *_t0 = literal_sizeof::parse();
+        literal_float *_t0 = literal_float::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new literal::a2(_t0);
@@ -888,7 +888,7 @@ namespace parser {
 
     literal::a3* literal::a3::parse() {
         push_stack();
-        literal_char *_t0 = literal_char::parse();
+        literal_integer *_t0 = literal_integer::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new literal::a3(_t0);
@@ -902,7 +902,7 @@ namespace parser {
 
     literal::a4* literal::a4::parse() {
         push_stack();
-        literal_string *_t0 = literal_string::parse();
+        literal_sizeof *_t0 = literal_sizeof::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new literal::a4(_t0);
@@ -916,7 +916,7 @@ namespace parser {
 
     literal::a5* literal::a5::parse() {
         push_stack();
-        literal_syscall *_t0 = literal_syscall::parse();
+        literal_char *_t0 = literal_char::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new literal::a5(_t0);
@@ -930,7 +930,7 @@ namespace parser {
 
     literal::a6* literal::a6::parse() {
         push_stack();
-        literal_hex *_t0 = literal_hex::parse();
+        literal_string *_t0 = literal_string::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new literal::a6(_t0);
@@ -944,7 +944,7 @@ namespace parser {
 
     literal::a7* literal::a7::parse() {
         push_stack();
-        literal_binary *_t0 = literal_binary::parse();
+        literal_syscall *_t0 = literal_syscall::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         return new literal::a7(_t0);

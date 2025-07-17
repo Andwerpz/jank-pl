@@ -1,4 +1,4 @@
-// Date Generated : 07-16-2025 12:01:17
+// Date Generated : 07-16-2025 19:04:12
 #pragma once
 #include <vector>
 #include <string>
@@ -596,67 +596,67 @@ namespace parser {
         std::string to_string();
     };
 
-    // literal = literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall | literal_hex | literal_binary ;
+    // literal = literal_hex | literal_binary | literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall ;
     struct literal {
         struct a0 {
-            literal_float *t0;
-            a0(literal_float *_t0) {
+            literal_hex *t0;
+            a0(literal_hex *_t0) {
                 t0 = _t0;
             }
             static a0* parse();
             std::string to_string();
         };
         struct a1 {
-            literal_integer *t0;
-            a1(literal_integer *_t0) {
+            literal_binary *t0;
+            a1(literal_binary *_t0) {
                 t0 = _t0;
             }
             static a1* parse();
             std::string to_string();
         };
         struct a2 {
-            literal_sizeof *t0;
-            a2(literal_sizeof *_t0) {
+            literal_float *t0;
+            a2(literal_float *_t0) {
                 t0 = _t0;
             }
             static a2* parse();
             std::string to_string();
         };
         struct a3 {
-            literal_char *t0;
-            a3(literal_char *_t0) {
+            literal_integer *t0;
+            a3(literal_integer *_t0) {
                 t0 = _t0;
             }
             static a3* parse();
             std::string to_string();
         };
         struct a4 {
-            literal_string *t0;
-            a4(literal_string *_t0) {
+            literal_sizeof *t0;
+            a4(literal_sizeof *_t0) {
                 t0 = _t0;
             }
             static a4* parse();
             std::string to_string();
         };
         struct a5 {
-            literal_syscall *t0;
-            a5(literal_syscall *_t0) {
+            literal_char *t0;
+            a5(literal_char *_t0) {
                 t0 = _t0;
             }
             static a5* parse();
             std::string to_string();
         };
         struct a6 {
-            literal_hex *t0;
-            a6(literal_hex *_t0) {
+            literal_string *t0;
+            a6(literal_string *_t0) {
                 t0 = _t0;
             }
             static a6* parse();
             std::string to_string();
         };
         struct a7 {
-            literal_binary *t0;
-            a7(literal_binary *_t0) {
+            literal_syscall *t0;
+            a7(literal_syscall *_t0) {
                 t0 = _t0;
             }
             static a7* parse();
