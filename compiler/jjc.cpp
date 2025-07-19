@@ -158,7 +158,7 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
                 Include *inc = np->includes[i];
                 std::string npath;
                 if(inc->is_library_include) npath = compiler_dir + "/libj/" + inc->path + ".jank";
-                else npath = cwd_rel_to_absolute(inc->path);
+                else npath = extract_folder_path(cpath) + inc->path;
 
                 //check if we already parsed
                 if(parsed_paths.count(npath)) continue;
@@ -751,17 +751,8 @@ it's sitting somewhere in between, Overload is more like a function, while Overl
 So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
 
 some miscellaneous features:
- - extern, ability to define variables read directly from memory
-   - extern in C allows to reference some variable that can be defined anywhere else. 
-   - in my case, I just want to use extern to access variables that are defined using labels in linked assembly. 
-   - a label represents an address, if you use extern, you simply assume that the given address is defined elsewhere and
-     use it as if it's defined. 
-   - should probably give some error if the extern label conflicts with any existing label. (have a bank of used labels)
-   - should probably give a warning if the extern label uses my label naming scheme (not too sure about this one)
-   - an extern variable should always be a pointer? so 'extern T* x;'
-   - externs are going to be put into the controller before globals?
-   - no, externs are just going to have different memory addresses compared to their stack declared counterparts. 
-     otherwise, they'll behave exactly the same. 
+ - function pointers, so we can pass in interrupt handlers and stuff. 
+   - 'fn<i32, (i32, i32)>'
  - array literals
  - better semantic error messages. 
    - would be nice if on failure, could print out the relevant code or smth. 
@@ -882,6 +873,17 @@ type = templated_type , [ "&" ] ;
  - unsigned integer literals in different bases
    - hex literals, like 0x00FFFFFF
    - binary literals, like 0b000101
+ - extern, ability to define variables read directly from memory
+   - extern in C allows to reference some variable that can be defined anywhere else. 
+   - in my case, I just want to use extern to access variables that are defined using labels in linked assembly. 
+   - a label represents an address, if you use extern, you simply assume that the given address is defined elsewhere and
+     use it as if it's defined. 
+   - should probably give some error if the extern label conflicts with any existing label. (have a bank of used labels)
+   - should probably give a warning if the extern label uses my label naming scheme (not too sure about this one)
+   - an extern variable should always be a pointer? so 'extern T* x;'
+   - externs are going to be put into the controller before globals?
+   - no, externs are just going to have different memory addresses compared to their stack declared counterparts. 
+     otherwise, they'll behave exactly the same. 
 
 
 Struct member functions should be called with 'this' as a pointer to the target struct. 

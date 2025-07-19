@@ -202,6 +202,9 @@ bool add_string_literal(std::string str);
 std::string get_string_literal_label(std::string str);
 void emit_data_section();
 
+// -- PARSE UTILS --
+std::vector<Type*> convert_type_list(parser::type_list *t);
+
 // -- CONTROLLER --
 //should probably move this stuff into its own file
 

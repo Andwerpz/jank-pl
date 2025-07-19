@@ -1780,3 +1780,15 @@ void emit_data_section() {
     }
     fout << "\n";
 }
+
+
+std::vector<Type*> convert_type_list(parser::type_list *t) {
+    std::vector<Type*> arr;
+    if(t->t0 != nullptr) {
+        arr.push_back(Type::convert(t->t0->t0));
+        for(int i = 0; i < t->t0->t1.size(); i++){
+            arr.push_back(Type::convert(t->t0->t1[i]->t3));
+        }
+    }
+    return arr;
+}

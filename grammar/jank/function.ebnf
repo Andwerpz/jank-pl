@@ -4,3 +4,4 @@ function_definition = type , rws , identifier , ows , "(" , ows , parameter_list
 function = function_definition , ows , compound_statement ;
 templated_function = template_header , ows , function ;
 function_call = identifier , ows , "(" , ows , argument_list , ows , ")" ;
+function_pointer_call = "#" , identifier , ows , "(" , ows , argument_list , ows , ")" ;

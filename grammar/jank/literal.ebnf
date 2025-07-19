@@ -8,5 +8,6 @@ literal_string = "\"" , { alpha | digit | escape | symbol | " " } , "\"" ;
 literal_syscall = "syscall" , ows , "(" , ows , literal_integer , ows , "," , ows , type , ows , "," , ows , argument_list , ows , ")" ;
 literal_hex = "0x" , < digit | "a" | "b" | "c" | "d" | "e" | "f" > ;
 literal_binary = "0b" , < "0" | "1" > ;
+literal_function_pointer = "#" , identifier , ows , "(" , ows , [ type_list ] , ows , ")" ;
 
 literal = literal_hex | literal_binary | literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall ;

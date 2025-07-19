@@ -34,9 +34,11 @@ ws = " " | "\n" | "\t" | "\r" | "\f" | "\b"
 rws = < ws > ;                                  (* required whitespace *)
 ows = { ws } ;                                  (* optional whitespace *)
 
+type_list = [ type , { ows , "," , ows , type } ] ;
 base_type = alpha , { alpha | digit | "_" } ;
 templated_type = base_type , [ "<" , ows , templated_type , { ows , "," , ows , templated_type } , ows , ">" ] , { "*" | "[" , literal_integer , "]" } ;
-type = templated_type , [ "&" ] ;
+function_pointer_type = "fn" , "<" , ows , type , ows , "," , ows , "(" , ows , type_list , ows , ")" , ows , ">" ;
+type = ( templated_type | function_pointer_type ) , [ "&" ] ;
 
 template_header = "template" , ows , "<" , ows , base_type , { ows , "," , ows , base_type } , ows , ">" ;
 

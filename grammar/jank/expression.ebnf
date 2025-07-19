@@ -19,7 +19,7 @@
 (* = += -= <mult>= /= %= <<= >>= &= ^= |= *) 
 (* , *) (* as of right now, the comma operator is not supported because it conflicts with function calls *)
 
-expr_primary = literal | constructor_call | function_call | identifier | "(" , ows , expression , ows , ")" ;
+expr_primary = literal | constructor_call | function_call | identifier | "(" , ows , expression , ows , ")" | function_pointer_call ;
 expr_postfix = expr_primary , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , function_call | "->" , ows , function_call | "." , ows , identifier | "->" , ows , identifier | "++" | "--" ) } ;
 expr_unary = ( "++" | "--" | "+" | "-" | "~" | "!" | "*" | "@" | "$" , type ) , ows , expr_unary | expr_postfix ;
 expr_multiplicative = expr_unary , { ows , ( "*" | "/" | "%" ) , ows , expr_unary } ;

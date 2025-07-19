@@ -4,6 +4,9 @@
 #include "TemplateHeader.h"
 #include "StructLayout.h"
 #include "Literal.h"
+#include "Function.h"
+#include "FunctionSignature.h"
+#include "Parameter.h"
 
 Type* Type::remove_reference() {
     Type *ret = this->make_copy();
@@ -48,6 +51,13 @@ TemplatedType::TemplatedType(BaseType *_base_type, std::vector<Type*> _template_
     template_types = _template_types;
 }
 
+FunctionPointerType::FunctionPointerType(Type *_return_type, std::vector<Type*> _param_types) {
+    return_type = _return_type;
+    param_types = _param_types;
+    assert(return_type != nullptr);
+    for(int i = 0; i < param_types.size(); i++) assert(param_types[i] != nullptr);
+}
+
 // -- CALC SIZE --
 int BaseType::calc_size() {
     if(name == "i64" || name == "u64") return 8;
@@ -85,6 +95,9 @@ int TemplatedType::calc_size() {
     return sl->get_size();
 }
 
+int FunctionPointerType::calc_size() {
+    return 8;
+}
 
 // -- EQUALS --
 bool BaseType::equals(const Type *other) const {
@@ -117,6 +130,15 @@ bool TemplatedType::equals(const Type *other) const {
     return false;
 }
 
+bool FunctionPointerType::equals(const Type *other) const {
+    if(auto x = dynamic_cast<const FunctionPointerType*>(other)) {
+        if(!return_type->equals(x->return_type)) return false;
+        for(int i = 0; i < param_types.size(); i++) if(!param_types[i]->equals(x->param_types[i])) return false;
+        return true;
+    }
+    return false;
+}
+
 // -- HASH --
 size_t BaseType::hash() const {
     return std::hash<std::string>()(name) ^ 0x9e3779b9;
@@ -140,6 +162,13 @@ size_t TemplatedType::hash() const {
     size_t hash = 0;
     hash_combine(hash, base_type->hash());
     for(int i = 0; i < template_types.size(); i++) hash_combine(hash, template_types[i]->hash());
+    return hash;
+}
+
+size_t FunctionPointerType::hash() const {
+    size_t hash = 0;
+    hash_combine(hash, return_type->hash());
+    for(int i = 0; i < param_types.size(); i++) hash_combine(hash, param_types[i]->hash());
     return hash;
 }
 
@@ -172,6 +201,20 @@ std::string TemplatedType::to_string() {
     return res;
 }
 
+std::string FunctionPointerType::to_string() {
+    std::string res = "";
+    res += "#fn";
+    res += "<";
+    res += return_type->to_string();
+    res += ", (";
+    for(int i = 0; i < param_types.size(); i++){
+        res += param_types[i]->to_string();
+        if(i + 1 != param_types.size()) res += ", ";
+    }
+    res += ")>";
+    return res;
+}
+
 // -- MAKE COPY --
 Type* BaseType::make_copy() {
     return new BaseType(name);
@@ -195,6 +238,12 @@ Type* TemplatedType::make_copy() {
         template_types_copy.push_back(template_types[i]->make_copy());
     }
     return new TemplatedType(dynamic_cast<BaseType*>(base_type->make_copy()), template_types_copy);
+}
+
+Type* FunctionPointerType::make_copy() {
+    std::vector<Type*> _param_types;
+    for(int i = 0; i < param_types.size(); i++) _param_types.push_back(param_types[i]->make_copy());
+    return new FunctionPointerType(return_type->make_copy(), _param_types);
 }
 
 // -- CONVERT --
@@ -223,7 +272,15 @@ Type* Type::convert(parser::templated_type *t) {
 }
 
 Type* Type::convert(parser::type *t) {
-    Type *res = Type::convert(t->t0);
+    Type *res = nullptr;
+    if(t->t0->is_b0) {  //templated type
+        res = Type::convert(t->t0->t0->t0);
+    }
+    else if(t->t0->is_b1) { //function pointer type
+        res = FunctionPointerType::convert(t->t0->t1->t0);
+    }
+    else assert(false);
+    assert(res != nullptr);
     if(t->t1 != nullptr) {
         res = new ReferenceType(res);
     }
@@ -232,6 +289,12 @@ Type* Type::convert(parser::type *t) {
 
 BaseType* BaseType::convert(parser::base_type *t) {
     return new BaseType(t->to_string());
+}
+
+FunctionPointerType* FunctionPointerType::convert(parser::function_pointer_type *t) {
+    Type *return_type = Type::convert(t->t3);
+    std::vector<Type*> param_types = convert_type_list(t->t9);
+    return new FunctionPointerType(return_type, param_types);
 }
 
 // -- REPLACE TEMPLATED TYPES --
@@ -272,6 +335,16 @@ bool TemplatedType::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
+bool FunctionPointerType::replace_templated_types(TemplateMapping *mapping) {
+    if(auto x = mapping->find_mapped_type(return_type)) return_type = x;
+    else if(!return_type->replace_templated_types(mapping)) return false;
+    for(int i = 0; i < param_types.size(); i++){
+        if(auto x = mapping->find_mapped_type(param_types[i])) param_types[i] = x;
+        else if(!param_types[i]->replace_templated_types(mapping)) return false;
+    }
+    return true;
+}
+
 // -- LOOK FOR TEMPLATES --
 bool BaseType::look_for_templates() {
     // do nothing
@@ -304,6 +377,14 @@ bool TemplatedType::look_for_templates() {
     //aha! found one! 
     if(!create_templated_type(this)) return false;
     
+    return true;
+}
+
+bool FunctionPointerType::look_for_templates() {
+    if(!return_type->look_for_templates()) return false;
+    for(int i = 0; i < param_types.size(); i++){
+        if(!param_types[i]->look_for_templates()) return false;
+    }
     return true;
 }
 
@@ -400,6 +481,48 @@ TemplateMapping* TemplatedType::generate_mapping(Type *_t, TemplateHeader *heade
             if(nm == nullptr) return nullptr;
             if(!mapping->merge_with_mapping(nm)) return nullptr;
         }
+        return mapping;
+    }
+}
+
+TemplateMapping* FunctionPointerType::generate_mapping(Type *_t, TemplateHeader *header) {
+    if(dynamic_cast<BaseType*>(_t)) {
+        BaseType *t = dynamic_cast<BaseType*>(_t);
+        // - is t a templated type?
+        for(int i = 0; i < header->types.size(); i++){
+            if(header->types[i]->equals(t)) {
+                TemplateMapping *mapping = new TemplateMapping();
+                mapping->add_mapping(header->types[i], this->make_copy());
+                return mapping;
+            }
+        }
+        return nullptr;
+    }
+    else {
+        if(dynamic_cast<FunctionPointerType*>(_t) == nullptr) return nullptr;
+        FunctionPointerType *t = dynamic_cast<FunctionPointerType*>(_t);
+
+        // - number of param types must match
+        if(this->param_types.size() != t->param_types.size()) {
+            return nullptr;
+        }
+
+        TemplateMapping *mapping = new TemplateMapping();
+
+        // - find templates from return type
+        {
+            TemplateMapping *nm = this->return_type->generate_mapping(t->return_type, header);
+            if(nm == nullptr) return nullptr;
+            if(!mapping->merge_with_mapping(nm)) return nullptr;
+        }
+
+        // - find templates from parameter types
+        for(int i = 0; i < this->param_types.size(); i++){
+            TemplateMapping *nm = this->param_types[i]->generate_mapping(t->param_types[i], header);
+            if(nm == nullptr) return nullptr;
+            if(!mapping->merge_with_mapping(nm)) return nullptr;
+        }
+        
         return mapping;
     }
 }

@@ -96,3 +96,19 @@ struct TemplatedType : public Type {
     bool look_for_templates() override;
     TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
 };
+
+struct FunctionPointerType : public Type {
+    Type *return_type;
+    std::vector<Type*> param_types;
+    FunctionPointerType(Type *_return_type, std::vector<Type*> _param_types);
+    static FunctionPointerType* convert(parser::function_pointer_type *t);
+
+    int calc_size() override;
+    bool equals(const Type *other) const override;
+    size_t hash() const override;
+    std::string to_string() override;
+    Type* make_copy() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
+    bool look_for_templates() override;
+    TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
+};
