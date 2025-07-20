@@ -206,7 +206,7 @@ std::string FunctionPointerType::to_string() {
     res += "#fn";
     res += "<";
     res += return_type->to_string();
-    res += ", (";
+    res += "(";
     for(int i = 0; i < param_types.size(); i++){
         res += param_types[i]->to_string();
         if(i + 1 != param_types.size()) res += ", ";
@@ -273,11 +273,11 @@ Type* Type::convert(parser::templated_type *t) {
 
 Type* Type::convert(parser::type *t) {
     Type *res = nullptr;
-    if(t->t0->is_b0) {  //templated type
-        res = Type::convert(t->t0->t0->t0);
+    if(t->t0->is_b0) {  //function pointer type
+        res = FunctionPointerType::convert(t->t0->t0->t0);
     }
-    else if(t->t0->is_b1) { //function pointer type
-        res = FunctionPointerType::convert(t->t0->t1->t0);
+    else if(t->t0->is_b1) { //templated type
+        res = Type::convert(t->t0->t1->t0);
     }
     else assert(false);
     assert(res != nullptr);
@@ -293,7 +293,7 @@ BaseType* BaseType::convert(parser::base_type *t) {
 
 FunctionPointerType* FunctionPointerType::convert(parser::function_pointer_type *t) {
     Type *return_type = Type::convert(t->t3);
-    std::vector<Type*> param_types = convert_type_list(t->t9);
+    std::vector<Type*> param_types = convert_type_list(t->t7);
     return new FunctionPointerType(return_type, param_types);
 }
 

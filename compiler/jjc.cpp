@@ -219,10 +219,10 @@ int assemble(char src_path[], char res_path[]) {
     if(pid == 0) {
         execlp(
             "gcc", "gcc", 
-            "-g",               //debug metadata
-            "-x", "assembler",  //gcc expects .s files to be assembly. 
+            "-g",                           //debug metadata
+            "-x", "assembler",              //gcc expects .s files to be assembly, tell it that all files are assembly
             "-nostartfiles", "-nostdlib",   //tell gcc that we're not compiling C assembly
-            "-m64",         //64 bit mode?
+            "-m64",                         //64 bit mode?
             src_path,
             "-o", res_path,
             (char*) NULL
@@ -750,9 +750,25 @@ it's sitting somewhere in between, Overload is more like a function, while Overl
 
 So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
 
+high priority: fix function call resolution
+- want to be able to have both 'void foo(i32 a)' and 'void foo(i32& a)'. Then, foo(0) would resolve to the first one and foo(x) would
+    resolve to the second one. 
+- ok, let's not worry about references for now, the bigger issue is templating. For each function call, I want to find a unique
+    templated function to match to. 
+- define S(A) as the set of function calls that a function A can match to. 
+- suppose we have two functions A and B. I define A < B if S(A) \subset S(B). Then for a function call F, gather all functions A_i
+    such that F \in S(A_i). Then, we have a unique function if there exists some A_i where A_i < A_j for all other j. 
+- when doing template comparisons, we remove reference wrappers, that is T and T& are identical when doing this. 
+- should probably not make them identical... what if a function call has an r-value argument? Then we might find some minimal function, but
+    it doesn't work because the parameter is an l-value
+- ok, we first strip all references off of the top layer. Then, have some utility that takes a function signature and some
+    arguments and lets us know if the method is callable using those arguments. 
+- so to find a called function, a minimal function must exist for the call, and that minimal function must be callable by the 
+    given arguments. 
+- what if we just make it so that no two functions can share the same name ... no, that would be way too restrictive
+
+
 some miscellaneous features:
- - function pointers, so we can pass in interrupt handlers and stuff. 
-   - 'fn<i32, (i32, i32)>'
  - array literals
  - better semantic error messages. 
    - would be nice if on failure, could print out the relevant code or smth. 
@@ -773,18 +789,6 @@ some miscellaneous features:
    - 'typedef <type> <basetype>'
    - I just need to check typedefs against all existing basetypes right? can't reuse a basetype
    - in C++, typedefs can depend on eachother. Either have to make the same system with global variables, or just say they can't depend on eachother. 
- - reduce the amount of debug prints (enable using flags)
- - function call resolution with partial ordering
-   - want to be able to have both 'void foo(i32 a)' and 'void foo(i32& a)'. Then, foo(0) would resolve to the first one and foo(x) would
-     resolve to the second one. 
-   - ok, let's not worry about references for now, the bigger issue is templating. For each function call, I want to find a unique
-     templated function to match to. 
-   - define S(A) as the set of function calls that a function A can match to. 
-   - suppose we have two functions A and B. I define A < B if S(A) \subset S(B). Then for a function call F, gather all functions A_i
-     such that F \in S(A_i). Then, we have a unique function if there exists some A_i where A_i < A_j for all other j. 
-   - when doing template comparisons, we remove reference wrappers, that is T and T& are identical when doing this. 
-   - should probably not make them identical... what if a function call has an r-value argument? Then we might find some minimal function, but
-     it doesn't work because the parameter is an l-value
  - templated function calls? like hash<T>(T a)? as an alternative to automated resolution
  - think about how to handle user defined typecasts (and typecasts in general). Perhaps typecasting
    shouldn't be treated the same as other operators. The input type has to exactly match, and the
@@ -884,6 +888,8 @@ type = templated_type , [ "&" ] ;
    - externs are going to be put into the controller before globals?
    - no, externs are just going to have different memory addresses compared to their stack declared counterparts. 
      otherwise, they'll behave exactly the same. 
+ - function pointers, so we can pass in interrupt handlers and stuff. 
+   - function pointer type : 'fn<i32(i32, i32)>'
 
 
 Struct member functions should be called with 'this' as a pointer to the target struct. 

@@ -1,4 +1,4 @@
-// Date Generated : 07-18-2025 00:14:59
+// Date Generated : 07-19-2025 21:55:31
 #pragma once
 #include <vector>
 #include <string>
@@ -63,7 +63,6 @@ namespace parser {
     struct ws;
     struct rws;
     struct ows;
-    struct type_list;
     struct base_type;
     struct templated_type;
     struct function_pointer_type;
@@ -72,6 +71,7 @@ namespace parser {
     struct identifier;
     struct declaration;
     struct parameter;
+    struct type_list;
     struct parameter_list;
     struct argument_list;
     struct statement;
@@ -624,25 +624,21 @@ namespace parser {
         std::string to_string();
     };
 
-    // literal_function_pointer = "#" , identifier , ows , "(" , ows , [ type_list ] , ows , ")" ;
+    // literal_function_pointer = "#" , "<" , ows , identifier , ows , "(" , ows , type_list , ows , ")" , ows , ">" ;
     struct literal_function_pointer {
-        struct a0 {
-            type_list *t0;
-            a0(type_list *_t0) {
-                t0 = _t0;
-            }
-            static a0* parse();
-            std::string to_string();
-        };
         std::string t0;
-        identifier *t1;
+        std::string t1;
         ows *t2;
-        std::string t3;
+        identifier *t3;
         ows *t4;
-        a0 *t5;
+        std::string t5;
         ows *t6;
-        std::string t7;
-        literal_function_pointer(std::string _t0, identifier *_t1, ows *_t2, std::string _t3, ows *_t4, a0 *_t5, ows *_t6, std::string _t7) {
+        type_list *t7;
+        ows *t8;
+        std::string t9;
+        ows *t10;
+        std::string t11;
+        literal_function_pointer(std::string _t0, std::string _t1, ows *_t2, identifier *_t3, ows *_t4, std::string _t5, ows *_t6, type_list *_t7, ows *_t8, std::string _t9, ows *_t10, std::string _t11) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -651,12 +647,16 @@ namespace parser {
             t5 = _t5;
             t6 = _t6;
             t7 = _t7;
+            t8 = _t8;
+            t9 = _t9;
+            t10 = _t10;
+            t11 = _t11;
         }
         static literal_function_pointer* parse();
         std::string to_string();
     };
 
-    // literal = literal_hex | literal_binary | literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall ;
+    // literal = literal_hex | literal_binary | literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall | literal_function_pointer ;
     struct literal {
         struct a0 {
             literal_hex *t0;
@@ -722,6 +722,14 @@ namespace parser {
             static a7* parse();
             std::string to_string();
         };
+        struct a8 {
+            literal_function_pointer *t0;
+            a8(literal_function_pointer *_t0) {
+                t0 = _t0;
+            }
+            static a8* parse();
+            std::string to_string();
+        };
         bool is_a0 = false;
         a0 *t0;
         bool is_a1 = false;
@@ -738,6 +746,8 @@ namespace parser {
         a6 *t6;
         bool is_a7 = false;
         a7 *t7;
+        bool is_a8 = false;
+        a8 *t8;
         literal(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
@@ -769,6 +779,10 @@ namespace parser {
         literal(a7 *_t7) {
             is_a7 = true;
             t7 = _t7;
+        }
+        literal(a8 *_t8) {
+            is_a8 = true;
+            t8 = _t8;
         }
         static literal* parse();
         std::string to_string();
@@ -980,7 +994,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // expr_primary = literal | constructor_call | function_call | identifier | "(" , ows , expression , ows , ")" | function_pointer_call ;
+    // expr_primary = literal | constructor_call | function_call | identifier | "(" , ows , expression , ows , ")" ;
     struct expr_primary {
         struct a0 {
             literal *t0;
@@ -1030,14 +1044,6 @@ namespace parser {
             static a4* parse();
             std::string to_string();
         };
-        struct a5 {
-            function_pointer_call *t0;
-            a5(function_pointer_call *_t0) {
-                t0 = _t0;
-            }
-            static a5* parse();
-            std::string to_string();
-        };
         bool is_a0 = false;
         a0 *t0;
         bool is_a1 = false;
@@ -1048,8 +1054,6 @@ namespace parser {
         a3 *t3;
         bool is_a4 = false;
         a4 *t4;
-        bool is_a5 = false;
-        a5 *t5;
         expr_primary(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
@@ -1070,15 +1074,11 @@ namespace parser {
             is_a4 = true;
             t4 = _t4;
         }
-        expr_primary(a5 *_t5) {
-            is_a5 = true;
-            t5 = _t5;
-        }
         static expr_primary* parse();
         std::string to_string();
     };
 
-    // expr_postfix = expr_primary , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , function_call | "->" , ows , function_call | "." , ows , identifier | "->" , ows , identifier | "++" | "--" ) } ;
+    // expr_postfix = expr_primary , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , function_call | "->" , ows , function_call | "." , ows , identifier | "->" , ows , identifier | "++" | "--" | "#(" , argument_list , ")" ) } ;
     struct expr_postfix {
         struct a0 {
             struct b0 {
@@ -1162,6 +1162,18 @@ namespace parser {
                     static c6* parse();
                     std::string to_string();
                 };
+                struct c7 {
+                    std::string t0;
+                    argument_list *t1;
+                    std::string t2;
+                    c7(std::string _t0, argument_list *_t1, std::string _t2) {
+                        t0 = _t0;
+                        t1 = _t1;
+                        t2 = _t2;
+                    }
+                    static c7* parse();
+                    std::string to_string();
+                };
                 bool is_c0 = false;
                 c0 *t0;
                 bool is_c1 = false;
@@ -1176,6 +1188,8 @@ namespace parser {
                 c5 *t5;
                 bool is_c6 = false;
                 c6 *t6;
+                bool is_c7 = false;
+                c7 *t7;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -1203,6 +1217,10 @@ namespace parser {
                 b0(c6 *_t6) {
                     is_c6 = true;
                     t6 = _t6;
+                }
+                b0(c7 *_t7) {
+                    is_c7 = true;
+                    t7 = _t7;
                 }
                 static b0* parse();
                 std::string to_string();
@@ -4354,40 +4372,6 @@ namespace parser {
         std::string to_string();
     };
 
-    // type_list = [ type , { ows , "," , ows , type } ] ;
-    struct type_list {
-        struct a0 {
-            struct b0 {
-                ows *t0;
-                std::string t1;
-                ows *t2;
-                type *t3;
-                b0(ows *_t0, std::string _t1, ows *_t2, type *_t3) {
-                    t0 = _t0;
-                    t1 = _t1;
-                    t2 = _t2;
-                    t3 = _t3;
-                }
-                static b0* parse();
-                std::string to_string();
-            };
-            type *t0;
-            std::vector<b0*> t1;
-            a0(type *_t0, std::vector<b0*> _t1) {
-                t0 = _t0;
-                t1 = _t1;
-            }
-            static a0* parse();
-            std::string to_string();
-        };
-        a0 *t0;
-        type_list(a0 *_t0) {
-            t0 = _t0;
-        }
-        static type_list* parse();
-        std::string to_string();
-    };
-
     // base_type = alpha , { alpha | digit | "_" } ;
     struct base_type {
         struct a0 {
@@ -4528,7 +4512,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // function_pointer_type = "fn" , "<" , ows , type , ows , "," , ows , "(" , ows , type_list , ows , ")" , ows , ">" ;
+    // function_pointer_type = "fn" , "<" , ows , type , ows , "(" , ows , type_list , ows , ")" , ows , ">" ;
     struct function_pointer_type {
         std::string t0;
         std::string t1;
@@ -4537,14 +4521,12 @@ namespace parser {
         ows *t4;
         std::string t5;
         ows *t6;
-        std::string t7;
+        type_list *t7;
         ows *t8;
-        type_list *t9;
+        std::string t9;
         ows *t10;
         std::string t11;
-        ows *t12;
-        std::string t13;
-        function_pointer_type(std::string _t0, std::string _t1, ows *_t2, type *_t3, ows *_t4, std::string _t5, ows *_t6, std::string _t7, ows *_t8, type_list *_t9, ows *_t10, std::string _t11, ows *_t12, std::string _t13) {
+        function_pointer_type(std::string _t0, std::string _t1, ows *_t2, type *_t3, ows *_t4, std::string _t5, ows *_t6, type_list *_t7, ows *_t8, std::string _t9, ows *_t10, std::string _t11) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -4557,27 +4539,25 @@ namespace parser {
             t9 = _t9;
             t10 = _t10;
             t11 = _t11;
-            t12 = _t12;
-            t13 = _t13;
         }
         static function_pointer_type* parse();
         std::string to_string();
     };
 
-    // type = ( templated_type | function_pointer_type ) , [ "&" ] ;
+    // type = ( function_pointer_type | templated_type ) , [ "&" ] ;
     struct type {
         struct a0 {
             struct b0 {
-                templated_type *t0;
-                b0(templated_type *_t0) {
+                function_pointer_type *t0;
+                b0(function_pointer_type *_t0) {
                     t0 = _t0;
                 }
                 static b0* parse();
                 std::string to_string();
             };
             struct b1 {
-                function_pointer_type *t0;
-                b1(function_pointer_type *_t0) {
+                templated_type *t0;
+                b1(templated_type *_t0) {
                     t0 = _t0;
                 }
                 static b1* parse();
@@ -4785,6 +4765,40 @@ namespace parser {
             t2 = _t2;
         }
         static parameter* parse();
+        std::string to_string();
+    };
+
+    // type_list = [ type , { ows , "," , ows , type } ] ;
+    struct type_list {
+        struct a0 {
+            struct b0 {
+                ows *t0;
+                std::string t1;
+                ows *t2;
+                type *t3;
+                b0(ows *_t0, std::string _t1, ows *_t2, type *_t3) {
+                    t0 = _t0;
+                    t1 = _t1;
+                    t2 = _t2;
+                    t3 = _t3;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            type *t0;
+            std::vector<b0*> t1;
+            a0(type *_t0, std::vector<b0*> _t1) {
+                t0 = _t0;
+                t1 = _t1;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        a0 *t0;
+        type_list(a0 *_t0) {
+            t0 = _t0;
+        }
+        static type_list* parse();
         std::string to_string();
     };
 

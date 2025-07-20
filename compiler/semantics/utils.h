@@ -31,6 +31,7 @@ struct TemplatedOverload;
 struct Destructor;
 struct DestructorCall;
 struct ArrayType;
+struct Parameter;
 
 struct Variable;
 struct OperatorSignature;
@@ -204,6 +205,8 @@ void emit_data_section();
 
 // -- PARSE UTILS --
 std::vector<Type*> convert_type_list(parser::type_list *t);
+std::vector<Parameter*> convert_parameter_list(parser::parameter_list *t);
+std::vector<Expression*> convert_argument_list(parser::argument_list *t);
 
 // -- CONTROLLER --
 //should probably move this stuff into its own file

@@ -11,6 +11,9 @@
 #include "primitives.h"
 #include "Expression.h"
 #include "Identifier.h"
+#include "FunctionSignature.h"
+#include "Function.h"
+#include "Identifier.h"
 
 // -- CONSTRUCTOR --
 FloatLiteral::FloatLiteral(float _val) {
@@ -47,6 +50,13 @@ BinaryLiteral::BinaryLiteral(std::string _bin_str) {
     bin_str = _bin_str;
 }
 
+FunctionPointerLiteral::FunctionPointerLiteral(Identifier *_id, std::vector<Type*> _param_types) {
+    id = _id;
+    param_types = _param_types;
+    assert(id != nullptr);
+    for(int i = 0; i < param_types.size(); i++) assert(param_types[i] != nullptr);
+}
+
 // -- CONVERT --
 Literal* Literal::convert(parser::literal *l) {
     if(l->is_a0) { //hex literal
@@ -80,6 +90,10 @@ Literal* Literal::convert(parser::literal *l) {
     else if(l->is_a7) { //sizeof literal
         parser::literal_syscall *lit = l->t7->t0;
         return SyscallLiteral::convert(lit);
+    }
+    else if(l->is_a8) { //function pointer literal
+        parser::literal_function_pointer *lit = l->t8->t0;
+        return FunctionPointerLiteral::convert(lit);
     }
     else assert(false);    
 }
@@ -150,6 +164,12 @@ BinaryLiteral* BinaryLiteral::convert(parser::literal_binary *lit) {
     return new BinaryLiteral(bin_str.substr(2));
 }
 
+FunctionPointerLiteral* FunctionPointerLiteral::convert(parser::literal_function_pointer *lit) {
+    Identifier *id = Identifier::convert(lit->t3);
+    std::vector<Type*> param_types = convert_type_list(lit->t7);
+    return new FunctionPointerLiteral(id, param_types);
+}
+
 // -- RESOLVE TYPE --
 Type* FloatLiteral::resolve_type() {
     return primitives::f32->make_copy();
@@ -214,6 +234,25 @@ Type* BinaryLiteral::resolve_type() {
     }
 
     return primitives::u64->make_copy();
+}
+
+Type* FunctionPointerLiteral::resolve_type() {
+    FunctionSignature *fs = new FunctionSignature(id, param_types);
+
+    // - is there a corresponding function to this?
+    // TODO decide if this should also map to templated functions. 
+    // - if we decide to go down the route of every function being a templated function, 
+    //   then maybe only allow mappings to functions with no templates.
+    // TODO make the behaviour with templated functions consistent. 
+    Function *f = get_function(fs);
+    if(f == nullptr) {
+        std::cout << "Function pointer doesn't map to existing function : " << to_string() << "\n";
+        return nullptr;
+    }
+
+    std::vector<Type*> _param_types;
+    for(int i = 0; i < param_types.size(); i++) _param_types.push_back(param_types[i]->make_copy());
+    return new FunctionPointerType(f->type->make_copy(), _param_types);
 }
 
 // -- EMIT ASM --
@@ -305,6 +344,16 @@ void BinaryLiteral::emit_asm() {
     fout << indent() << "mov $" << val << ", %rax\n";
 }
 
+void FunctionPointerLiteral::emit_asm() {
+    FunctionSignature *fs = new FunctionSignature(id, param_types);
+    Function *f = get_function(fs);
+    assert(f != nullptr);
+    
+    //load label address into register using %rip relative addressing. 
+    std::string label = get_function_label(fs);
+    fout << indent() << "lea " << label << "(%rip), %rax\n";
+}
+
 // -- HASH -- 
 size_t FloatLiteral::hash() {
     return std::hash<float>{}(val);
@@ -342,6 +391,13 @@ size_t HexLiteral::hash() {
 
 size_t BinaryLiteral::hash() {
     return std::hash<std::string>()(bin_str);
+}
+
+size_t FunctionPointerLiteral::hash() {
+    size_t hash = 0;
+    hash_combine(hash, id->hash());
+    for(int i = 0; i < param_types.size(); i++) hash_combine(hash, param_types[i]->hash());
+    return hash;
 }
 
 // -- EQUALS --
@@ -406,6 +462,18 @@ bool BinaryLiteral::equals(Literal *_other) {
     return bin_str == other->bin_str;
 }
 
+bool FunctionPointerLiteral::equals(Literal *_other) {
+    if(dynamic_cast<FunctionPointerLiteral*>(_other) == nullptr) return false;
+    FunctionPointerLiteral *other = dynamic_cast<FunctionPointerLiteral*>(_other);
+
+    if(!id->equals(other->id)) return false;
+    if(param_types.size() != other->param_types.size()) return false;
+    for(int i = 0; i < param_types.size(); i++){
+        if(!param_types[i]->equals(other->param_types[i])) return false;
+    }
+    return true;
+}
+
 // -- MAKE COPY --
 Literal* FloatLiteral::make_copy() {
     return new FloatLiteral(val);
@@ -439,6 +507,12 @@ Literal* HexLiteral::make_copy() {
 
 Literal* BinaryLiteral::make_copy() {
     return new BinaryLiteral(bin_str);
+}
+
+Literal* FunctionPointerLiteral::make_copy() {
+    std::vector<Type*> _param_types;
+    for(int i = 0; i < param_types.size(); i++) _param_types.push_back(param_types[i]->make_copy());
+    return new FunctionPointerLiteral(id->make_copy(), _param_types);
 }
 
 // -- TO STRING --
@@ -481,6 +555,16 @@ std::string BinaryLiteral::to_string() {
     return "0b" + bin_str;
 }
 
+std::string FunctionPointerLiteral::to_string() {
+    std::string ret = "#<" + id->name + "(";
+    for(int i = 0; i < param_types.size(); i++) {
+        ret += param_types[i]->to_string();
+        if(i + 1 != param_types.size()) ret += ", ";
+    }
+    ret += ")>";
+    return ret;
+}
+
 // -- REPLACE TEMPLATED TYPES --
 bool FloatLiteral::replace_templated_types(TemplateMapping *mapping) {
     return true;
@@ -516,5 +600,12 @@ bool HexLiteral::replace_templated_types(TemplateMapping *mapping) {
 }
 
 bool BinaryLiteral::replace_templated_types(TemplateMapping *mapping) {
+    return true;
+}
+
+bool FunctionPointerLiteral::replace_templated_types(TemplateMapping *mapping) {
+    for(int i = 0; i < param_types.size(); i++){
+        if(!param_types[i]->replace_templated_types(mapping)) return false;
+    }
     return true;
 }

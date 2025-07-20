@@ -115,7 +115,7 @@ struct ExprPrefix : ExprNode {
 };
 
 struct ExprPostfix : ExprNode {
-    using op_t = std::variant<Expression*, std::pair<std::string, FunctionCall*>, std::pair<std::string, Identifier*>, std::string>;
+    using op_t = std::variant<Expression*, std::pair<std::string, FunctionCall*>, std::pair<std::string, Identifier*>, std::string, std::vector<Expression*>>;
     ExprNode *left;
     op_t op;
     ExprPostfix(ExprNode *_left, op_t _op);

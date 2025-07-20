@@ -101,6 +101,10 @@ ExprNode* ExprNode::convert(parser::expr_postfix *e) {
             std::string op = "--";
             left = new ExprPostfix(left, op);
         }
+        else if(e->t1[i]->t1->is_c7) {  //function pointer call
+            std::vector<Expression*> argument_list = convert_argument_list(e->t1[i]->t1->t7->t1);
+            left = new ExprPostfix(left, argument_list);
+        }
         else assert(false);
     }
     return left;
@@ -516,6 +520,32 @@ Type* ExprPostfix::resolve_type() {
         std::cout << "Postfix operator " << lt->to_string() << " " << str_op << " does not exist\n";
         return nullptr;
     }
+    else if(std::holds_alternative<std::vector<Expression*>>(op)) {
+        std::vector<Expression*> argument_list = std::get<std::vector<Expression*>>(op);
+
+        // - is type of left a function pointer?
+        FunctionPointerType *fpt = dynamic_cast<FunctionPointerType*>(lt);
+        if(fpt == nullptr) {
+            std::cout << "Trying to do function pointer call on non function pointer : " << lt->to_string() << "\n";
+            return nullptr;
+        }
+
+        // - do the amount of arguments match?
+        if(argument_list.size() != fpt->param_types.size()) {
+            std::cout << "Function pointer call argument count doesn't match with param count\n";
+            return nullptr;
+        }
+
+        // - can the arguments actually call the function?
+        for(int i = 0; i < argument_list.size(); i++){
+            if(!is_declarable(fpt->param_types[i], argument_list[i])){
+                std::cout << "Cannot declare function pointer argument : " << fpt->param_types[i]->to_string() << " with expression " << argument_list[i]->to_string() << "\n";
+                return nullptr;
+            }
+        }
+        
+        return fpt->return_type->make_copy();
+    }
     else assert(false);
 }
 
@@ -555,7 +585,9 @@ bool ExprPrimary::is_lvalue() {
         return e->is_lvalue();
     }
     else if(std::holds_alternative<Type*>(val)) {
-        return true;
+        //if type is reference, this is an l-value
+        Type *t = std::get<Type*>(val);
+        return dynamic_cast<ReferenceType*>(t);
     }
     else assert(false);
 }
@@ -659,6 +691,12 @@ bool ExprPostfix::is_lvalue() {
 
         //default behaviour
         return false;
+    }
+    else if(std::holds_alternative<std::vector<Expression*>>(op)) { //function pointer call
+        std::vector<Expression*> argument_list = std::get<std::vector<Expression*>>(op);
+        FunctionPointerType *fpt = dynamic_cast<FunctionPointerType*>(fpt);
+        if(fpt == nullptr) return false;
+        return dynamic_cast<ReferenceType*>(fpt->return_type);
     }
     else assert(false);
 }
@@ -772,6 +810,9 @@ void ExprPostfix::elaborate(ExprNode*& self) {
             self = new ExprPrimary(oc);
             return;
         }
+    }
+    else if(std::holds_alternative<std::vector<Expression*>>(op)) {
+        //do nothing
     }
     else assert(false);
 
@@ -1042,11 +1083,10 @@ void ExprPrefix::emit_asm() {
 
 void ExprPostfix::emit_asm() {
     Type *lt = left->resolve_type();
-
-    //evaluate left expr
-    left->emit_asm();
-
     if(std::holds_alternative<Expression*>(op)) {   //indexing
+        //evaluate left expr
+        left->emit_asm();
+
         //t must be PointerType or ArrayType
         if(dynamic_cast<PointerType*>(lt)) {
             lt = dynamic_cast<PointerType*>(lt)->type;
@@ -1104,6 +1144,9 @@ void ExprPostfix::emit_asm() {
         std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
         FunctionCall *fc = p.second;
 
+        //evaluate left expr
+        left->emit_asm();
+
         //dereference
         if(p.first == "->") {
             assert(dynamic_cast<PointerType*>(lt) != nullptr);
@@ -1130,6 +1173,9 @@ void ExprPostfix::emit_asm() {
     else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {
         std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
         Identifier *id = p.second;
+
+        //evaluate left expr
+        left->emit_asm();
 
         //dereference
         if(p.first == "->") {
@@ -1163,6 +1209,11 @@ void ExprPostfix::emit_asm() {
     }
     else if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
+
+        //evaluate left expr
+        left->emit_asm();
+
+        //evaluate operator
         OperatorImplementation *oe = find_operator_implementation(left, str_op, std::nullopt);
         assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
         dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
@@ -1172,6 +1223,35 @@ void ExprPostfix::emit_asm() {
         if(dynamic_cast<ReferenceType*>(res) != nullptr) {
             emit_dereference(res);
         }
+    }
+    else if(std::holds_alternative<std::vector<Expression*>>(op)) {
+        std::vector<Expression*> argument_list = std::get<std::vector<Expression*>>(op);
+
+        if(asm_debug) fout << indent() << "# calling function pointer : " << lt->to_string() << "\n";
+
+        FunctionPointerType *vt = dynamic_cast<FunctionPointerType*>(lt);
+        assert(vt != nullptr);
+
+        //create temp variables for arguments
+        push_declaration_stack();
+        assert(argument_list.size() == vt->param_types.size());
+        for(int i = 0; i < argument_list.size(); i++){
+            if(asm_debug) fout << indent() << "# function pointer call member variable : " << vt->param_types[i]->to_string() << "\n";
+            Identifier *id = new Identifier(create_new_tmp_variable_name());
+            Variable *v = emit_initialize_stack_variable(vt->param_types[i], id, argument_list[i]);
+            assert(v != nullptr);
+        }
+
+        //evaluate left expr
+        left->emit_asm();
+
+        //call function pointer
+        fout << indent() << "call *%rax\n"; //*%rax denotes an indirect call, otherwise %rax would be interpreted as a label
+
+        //cleanup argument temp variables
+        pop_declaration_stack();
+
+        if(asm_debug) fout << indent() << "# done calling function pointer : " << lt->to_string() << "\n";
     }
     else assert(false);
 }
@@ -1261,6 +1341,16 @@ std::string ExprPostfix::to_string() {
         std::string str_op = std::get<std::string>(op);
         return left->to_string() + str_op;
     }
+    else if(std::holds_alternative<std::vector<Expression*>>(op)) {
+        std::vector<Expression*> argument_list = std::get<std::vector<Expression*>>(op);
+        std::string ret = left->to_string() + "#(";
+        for(int i = 0; i < argument_list.size(); i++){
+            ret += argument_list[i]->to_string();
+            if(i + 1 != argument_list.size()) ret += ", ";
+        }
+        ret += ")";
+        return ret;
+    }
     else assert(false);
 }
 
@@ -1349,6 +1439,12 @@ size_t ExprPostfix::hash() {
     else if(std::holds_alternative<std::string>(op)) {  //postfix increment / decrement
         std::string str_op = std::get<std::string>(op);
         hash_combine(hash, std::hash<std::string>()(str_op));
+    }
+    else if(std::holds_alternative<std::vector<Expression*>>(op)) {
+        std::vector<Expression*> argument_list = std::get<std::vector<Expression*>>(op);
+        for(int i = 0; i < argument_list.size(); i++){
+            hash_combine(hash, argument_list[i]->hash());
+        }
     }
     else assert(false);
     return hash;
@@ -1465,6 +1561,15 @@ bool ExprPostfix::equals(ExprNode* _other) {
         std::string ostr_op = std::get<std::string>(other->op);
         return str_op == ostr_op;
     }
+    else if(std::holds_alternative<std::vector<Expression*>>(op)) {
+        std::vector<Expression*> argument_list = std::get<std::vector<Expression*>>(op);
+        std::vector<Expression*> oargument_list = std::get<std::vector<Expression*>>(other->op);
+        if(argument_list.size() != oargument_list.size()) return false;
+        for(int i = 0; i < argument_list.size(); i++){
+            if(!argument_list[i]->equals(oargument_list[i])) return false;
+        }
+        return true;
+    }
     else assert(false);
 }
 
@@ -1506,6 +1611,12 @@ void ExprPrimary::id_to_type() {
             std::cout << "Could not find type of variable : " << id->name << "\n";
             assert(false);
         }
+
+        //we use reference types as standin for l-value, so if this isn't a reference type, turn it into one
+        if(dynamic_cast<ReferenceType*>(t) == nullptr) {
+            t = new ReferenceType(t);
+        }
+
         val = t;
     }
     else if(std::holds_alternative<Literal*>(val)) {
@@ -1544,6 +1655,12 @@ void ExprPostfix::id_to_type() {
     }
     else if(std::holds_alternative<std::string>(op)) {  //postfix increment / decrement
         // do nothing
+    }
+    else if(std::holds_alternative<std::vector<Expression*>>(op)) {
+        std::vector<Expression*> argument_list = std::get<std::vector<Expression*>>(op);
+        for(int i = 0; i < argument_list.size(); i++){
+            argument_list[i]->id_to_type();
+        }
     }
     else assert(false);
 }
@@ -1618,6 +1735,12 @@ ExprNode* ExprPostfix::make_copy() {
         std::string str_op = std::get<std::string>(op);
         return new ExprPostfix(left->make_copy(), str_op);
     }   
+    else if(std::holds_alternative<std::vector<Expression*>>(op)) {
+        std::vector<Expression*> argument_list = std::get<std::vector<Expression*>>(op);
+        std::vector<Expression*> _argument_list;
+        for(int i = 0; i < argument_list.size(); i++) _argument_list.push_back(argument_list[i]->make_copy());
+        return new ExprPostfix(left->make_copy(), _argument_list);
+    }
     else assert(false);
 }
 
@@ -1705,6 +1828,12 @@ bool ExprPostfix::replace_templated_types(TemplateMapping *mapping) {
         std::string str_op = std::get<std::string>(op);
         //do nothing
     }
+    else if(std::holds_alternative<std::vector<Expression*>>(op)) {
+        std::vector<Expression*> argument_list = std::get<std::vector<Expression*>>(op);
+        for(int i = 0; i < argument_list.size(); i++){
+            if(!argument_list[i]->replace_templated_types(mapping)) return false;
+        }
+    }
     else assert(false);
     return true;
 }
@@ -1789,6 +1918,12 @@ bool ExprPostfix::look_for_templates() {
     else if(std::holds_alternative<std::string>(op)) {  //postfix increment / decrement
         std::string str_op = std::get<std::string>(op);
         // do nothing
+    }
+    else if(std::holds_alternative<std::vector<Expression*>>(op)) {
+        std::vector<Expression*> argument_list = std::get<std::vector<Expression*>>(op);
+        for(int i = 0; i < argument_list.size(); i++){
+            if(!argument_list[i]->look_for_templates()) return false;
+        }
     }
     else assert(false);
     return true;

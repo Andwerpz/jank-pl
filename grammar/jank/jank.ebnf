@@ -34,11 +34,10 @@ ws = " " | "\n" | "\t" | "\r" | "\f" | "\b"
 rws = < ws > ;                                  (* required whitespace *)
 ows = { ws } ;                                  (* optional whitespace *)
 
-type_list = [ type , { ows , "," , ows , type } ] ;
 base_type = alpha , { alpha | digit | "_" } ;
 templated_type = base_type , [ "<" , ows , templated_type , { ows , "," , ows , templated_type } , ows , ">" ] , { "*" | "[" , literal_integer , "]" } ;
-function_pointer_type = "fn" , "<" , ows , type , ows , "," , ows , "(" , ows , type_list , ows , ")" , ows , ">" ;
-type = ( templated_type | function_pointer_type ) , [ "&" ] ;
+function_pointer_type = "fn" , "<" , ows , type , ows , "(" , ows , type_list , ows , ")" , ows , ">" ;
+type = ( function_pointer_type | templated_type ) , [ "&" ] ;
 
 template_header = "template" , ows , "<" , ows , base_type , { ows , "," , ows , base_type } , ows , ">" ;
 
@@ -49,6 +48,8 @@ declaration = type , rws , identifier , [ ows , "=" , ows , expression ] ;
 
 (* int foo *)
 parameter = type , rws , identifier ;
+
+type_list = [ type , { ows , "," , ows , type } ] ;
 parameter_list = [ parameter , { ows , "," , ows , parameter } ] ;
 argument_list = [ expression , { ows , "," , ows , expression } ] ;
 

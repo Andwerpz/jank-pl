@@ -375,9 +375,10 @@ void emit_sub_rsp(int amt, std::string desc) {
 }
 
 bool is_type_primitive(Type *t) {
-    if(primitive_base_types.count(t)) return true;      //is it explicitly mentioned?
-    if(dynamic_cast<PointerType*>(t)) return true;      //is it a pointer?
-    if(dynamic_cast<ReferenceType*>(t)) return true;    //is it a reference?
+    if(primitive_base_types.count(t)) return true;          //is it explicitly mentioned?
+    if(dynamic_cast<PointerType*>(t)) return true;          //is it a pointer?
+    if(dynamic_cast<ReferenceType*>(t)) return true;        //is it a reference?
+    if(dynamic_cast<FunctionPointerType*>(t)) return true;  //is it a function pointer?
     return false;
 }
 
@@ -492,7 +493,7 @@ bool is_declarable(Type *A, Expression *expr) {
         }
 
         // otherwise, can look for type conversions
-        Expression *a_expr = new Expression(new ExprBinary(new ExprPrimary(A), "=", new ExprPrimary(expr)));
+        Expression *a_expr = new Expression(new ExprBinary(new ExprPrimary(new ReferenceType(A)), "=", new ExprPrimary(expr)));
         if(a_expr->resolve_type() != nullptr) {
             ans = true;
             goto done;
@@ -532,6 +533,10 @@ OperatorImplementation* find_typecast_implementation(Type *from, Type *to) {
     }
     // - from is an u64, to is a pointer
     if(from->equals(primitives::u64) && dynamic_cast<PointerType*>(to) != nullptr) {
+        return new BuiltinOperator(to, {});     //do nothing
+    }
+    // - from is a function pointer, to is an u64
+    if(dynamic_cast<FunctionPointerType*>(from) != nullptr && to->equals(primitives::u64)) {
         return new BuiltinOperator(to, {});     //do nothing
     }
 
@@ -627,6 +632,13 @@ bool is_type_declared(Type *t) {
     assert(t != nullptr);
     if(auto x = dynamic_cast<PointerType*>(t)) return is_type_declared(x->type);
     if(auto x = dynamic_cast<ReferenceType*>(t)) return is_type_declared(x->type);
+    if(auto x = dynamic_cast<FunctionPointerType*>(t)) {
+        if(!is_type_declared(x->return_type)) return false;
+        for(int i = 0; i < x->param_types.size(); i++){
+            if(!is_type_declared(x->param_types[i])) return false;
+        }
+        return true;
+    }
     for(int i = 0; i < declared_types.size(); i++){
         if(*(declared_types[i]) == *t) return true;
     }
@@ -1680,7 +1692,7 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, std::optional<Expre
             //right now, expr = b. We want expr = (a = b)
             Expression *a_expr = new Expression(new ExprBinary(new ExprPrimary(id), "=", expr.value()->expr_node));
             if(a_expr->resolve_type() == nullptr) {
-                std::cout << "Cannot assign expression type into variable type\n";
+                std::cout << "Cannot assign expression into variable type : " << vt->to_string() << ", " << expr.value()->to_string() << "\n";
                 return nullptr;
             }
             a_expr->emit_asm();
@@ -1721,6 +1733,9 @@ bool add_operator_implementation(OperatorSignature *os, OperatorImplementation *
         return false;
     }
     conversion_map[os] = oi;
+    if(dynamic_cast<BuiltinOperator*>(oi)) {
+        std::cout << "ADD BUILTIN OPERATOR : " << os->to_string() << std::endl;
+    }
     return true;
 }
 
@@ -1788,6 +1803,28 @@ std::vector<Type*> convert_type_list(parser::type_list *t) {
         arr.push_back(Type::convert(t->t0->t0));
         for(int i = 0; i < t->t0->t1.size(); i++){
             arr.push_back(Type::convert(t->t0->t1[i]->t3));
+        }
+    }
+    return arr;
+}
+
+std::vector<Parameter*> convert_parameter_list(parser::parameter_list *t) {
+    std::vector<Parameter*> arr;
+    if(t->t0 != nullptr) {
+        arr.push_back(Parameter::convert(t->t0->t0));
+        for(int i = 0; i < t->t0->t1.size(); i++){
+            arr.push_back(Parameter::convert(t->t0->t1[i]->t3));
+        }
+    }
+    return arr;
+}
+
+std::vector<Expression*> convert_argument_list(parser::argument_list *t) {
+    std::vector<Expression*> arr;
+    if(t->t0 != nullptr) {
+        arr.push_back(Expression::convert(t->t0->t0));
+        for(int i = 0; i < t->t0->t1.size(); i++){
+            arr.push_back(Expression::convert(t->t0->t1[i]->t3));
         }
     }
     return arr;

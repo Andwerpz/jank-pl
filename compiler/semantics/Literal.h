@@ -11,6 +11,7 @@ struct CharLiteral;
 struct StringLiteral;
 struct TemplateMapping;
 struct Expression;
+struct Identifier;
 
 struct Literal {
     static Literal* convert(parser::literal *n);
@@ -128,6 +129,21 @@ struct BinaryLiteral : public Literal {
     BinaryLiteral(std::string _bin_str);
 
     static BinaryLiteral* convert(parser::literal_binary *l);
+    Type* resolve_type() override;
+    void emit_asm() override;
+    size_t hash() override;
+    bool equals(Literal *other) override;
+    Literal* make_copy() override;
+    std::string to_string() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
+};
+
+struct FunctionPointerLiteral : public Literal {
+    Identifier *id;
+    std::vector<Type*> param_types;
+    FunctionPointerLiteral(Identifier *_id, std::vector<Type*> _param_types);
+
+    static FunctionPointerLiteral* convert(parser::literal_function_pointer *l);
     Type* resolve_type() override;
     void emit_asm() override;
     size_t hash() override;
