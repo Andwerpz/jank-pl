@@ -34,7 +34,6 @@ void* sbrk(u64 inc) {
 [-10] u64 MAP_PRIVATE = $u64 1 << $u64 1;
 [-10] u64 MAP_ANONYMOUS = $u64 1 << $u64 5;
 
-[-10] void* nullptr = $void* $u64 0;
 [-10] u64 PAGE_SIZE = $u64 4096;
 [-10] u64 MEM_USED = $u64 0;
 

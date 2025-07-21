@@ -88,18 +88,6 @@ u8* operator[](Screen& s, i32 ind) {
     return @(s.screen_buf[s.clear_sz + $u64 ind * (s.width + $u64 1)]);
 }
 
-void enter_alt_screen() {
-    u8* enter_str = "x[?1049h";
-    enter_str[0] = $u8 27;
-    sys_write(STDOUT, $void* enter_str, strlen(enter_str));
-}
-
-void exit_alt_screen() {
-    u8* exit_str = "x[?1049l";
-    exit_str[0] = $u8 27;
-    sys_write(STDOUT, $void* exit_str, strlen(exit_str));
-}
-
 [0] i32 vec2_alloc_cntr = 0;
 
 struct vec2 {
@@ -151,7 +139,7 @@ struct vec2 {
 }
 
 ostream& operator<<(ostream& stream, vec2 v) {
-    stream << "(" << to_string(v.x) << ", " << to_string(v.y) << ")";
+    stream << "(" << to_jstr(v.x) << ", " << to_jstr(v.y) << ")";
     return stream;
 }
 
@@ -289,8 +277,6 @@ void print_map() {
 
 i32 main() {
 
-    enter_alt_screen();
-
     for(i32 i = 0; i < g_map_height; i++){
         for(i32 j = 0; j < g_map_width; j++){
             i32 dtw = min(min(i, g_map_height - 1 - i), min(j, g_map_width - 1 - j));
@@ -377,8 +363,6 @@ i32 main() {
         //cout << floor(ppos.x) << " " << ceil(ppos.x) << "\n";
         prot += 0.01;  
     }
-
-    exit_alt_screen();
 
     return 0;
 }

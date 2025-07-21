@@ -457,6 +457,12 @@ Type* ExprPostfix::resolve_type() {
             lt = dynamic_cast<PointerType*>(lt)->type;
         }
 
+        //make sure this isn't primitive
+        if(is_type_primitive(lt)) {
+            std::cout << "Trying to access member variable of primitive type : " << lt->to_string() << "\n";
+            return nullptr;
+        }
+
         //member function call
         fc = new FunctionCall(lt, fc->id, fc->argument_list);
         Type *nt = fc->resolve_type();
@@ -483,6 +489,12 @@ Type* ExprPostfix::resolve_type() {
                 return nullptr;
             }
             lt = dynamic_cast<PointerType*>(lt)->type;
+        }
+
+        //make sure this isn't primitive
+        if(is_type_primitive(lt)) {
+            std::cout << "Trying to access member variable of primitive type : " << lt->to_string() << "\n";
+            return nullptr;
         }
 
         //member variable access
