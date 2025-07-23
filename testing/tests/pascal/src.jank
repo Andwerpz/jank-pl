@@ -8,6 +8,8 @@ i32 main() {
     dp[0][0] = 1;
     for(i32 i = 0; i < N; i = i + 1) {
         for(i32 j = 0; j < N; j = j + 1) {
+            if(i == 0 && j == 0) continue;
+            dp[i][j] = 0;
             if(i != 0) dp[i][j] = dp[i][j] + dp[i - 1][j];
             if(j != 0) dp[i][j] = dp[i][j] + dp[i][j - 1];
         }

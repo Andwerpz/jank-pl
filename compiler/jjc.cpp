@@ -120,7 +120,7 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
             "error",
         };  
         if(kernel_mode) {
-            //TODO implement kmalloc
+            //malloc should be implemented by the kernel itself
         }
         else {
             default_includes.push_back("syscall");
