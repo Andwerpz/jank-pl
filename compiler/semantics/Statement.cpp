@@ -230,7 +230,7 @@ bool ExpressionStatement::is_well_formed() {
     // - does the expression resolve to a type?
     Type *t = expr->resolve_type();
     if(t == nullptr) {
-        std::cout << "Expression does not resolve to type\n";
+        std::cout << "Expression does not resolve to type : " << expr->to_string() << "\n";
         return false;
     }
 
