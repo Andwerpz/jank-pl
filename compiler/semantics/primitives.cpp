@@ -306,7 +306,7 @@ namespace primitives {
         }));
 
         add_operator_implementation(new OperatorSignature(p_int, "&&", p_int), new BuiltinOperator(i32, {
-            "test " + rax + ", " + rbx,
+            "test " + rax + ", " + rax,
             "setne %al",
             "movzx %al, %rax",
             "test " + rbx + ", " + rbx,
@@ -315,7 +315,7 @@ namespace primitives {
             "and %rbx, %rax",
         }));    
         add_operator_implementation(new OperatorSignature(p_int, "||", p_int), new BuiltinOperator(i32, {
-            "test " + rax + ", " + rbx,
+            "test " + rax + ", " + rax,
             "setne %al",
             "movzx %al, %rax",
             "test " + rbx + ", " + rbx,
