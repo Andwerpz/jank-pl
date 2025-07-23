@@ -5,6 +5,7 @@
 #include <math>;
 #include <random>;
 #include <time>;
+#include <string>;
 
 [0] Screen g_screen = new Screen();
 
@@ -139,7 +140,7 @@ struct vec2 {
 }
 
 ostream& operator<<(ostream& stream, vec2 v) {
-    stream << "(" << to_jstr(v.x) << ", " << to_jstr(v.y) << ")";
+    stream << "(" << v.x << ", " << v.y << ")";
     return stream;
 }
 

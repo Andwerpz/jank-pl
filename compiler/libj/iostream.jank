@@ -137,6 +137,10 @@ struct ostream {
         free($void* this.scratch_buf, $u64 128);
     }
 
+    void write_to_fd(u8 c) {
+        sys_write(this.fd, $void* @c, 0x1);
+    }
+
     void write_to_fd(u8* str) {
         sys_write(this.fd, $void* str, strlen(str));
     }
@@ -152,25 +156,22 @@ ostream& operator<<(ostream& stream, u8* s) {
 }
 
 ostream& operator<<(ostream& stream, u8 c) {
-    u8* str = $u8* malloc($u64 2);
-    str[0] = c;
-    str[1] = '\0';
-    stream.write_to_fd(str);
+    stream.write_to_fd(c);
     return stream;
 }
 
 ostream& operator<<(ostream& stream, i32 x) {
-    stream.write_to_fd(to_jstr(x));
+    stream.write_to_fd(to_string(x));
     return stream;
 }
 
 ostream& operator<<(ostream& stream, u64 x) {
-    stream.write_to_fd(to_jstr(x));
+    stream.write_to_fd(to_string(x));
     return stream;
 }
 
 ostream& operator<<(ostream& stream, f32 x) {
-    stream.write_to_fd(to_jstr(x));
+    stream.write_to_fd(to_string(x));
     return stream;
 }
 

@@ -1,4 +1,5 @@
 #include <jstring>;
+#include <string>;
 
 void puts(u8* s) {
     sys_write(1, $void* s, strlen(s));
@@ -9,10 +10,19 @@ void puts_endl(u8* s) {
     sys_write(1, $void* "\n", $u64 1);
 }
 
+void puts_endl(string s) {
+    puts(s);
+    sys_write(1, $void* "\n", $u64 1);
+}
+
+void puts(string s) {
+    sys_write(1, $void* s.arr, s.size());
+}
+
 void puti(i32 x) {
-    puts(to_jstr(x));
+    puts(to_string(x));
 }
 
 void puti_endl(i32 x) {
-    puts_endl(to_jstr(x));
+    puts_endl(to_string(x));
 }

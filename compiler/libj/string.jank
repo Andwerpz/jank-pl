@@ -1,5 +1,13 @@
 #include <jstring>;
 
+[-1] u64 U64_MAX = $u64 -1;
+[-1] u32 U32_MAX = $u32 -1;
+[-1] u16 U16_MAX = $u16 -1;
+[-1] u8 U8_MAX = $u8 -1;
+
+[-1] i32 I32_MAX = 2147483647;
+[-1] i32 I32_MIN = -2147483647 - 1;
+
 struct string {
     u64 cap;
     u64 sz;
@@ -98,13 +106,115 @@ u8& operator[](string& a, i32 ind) {
     return a.arr[ind];
 }
 
-[-1] u64 U64_MAX = $u64 -1;
-[-1] u32 U32_MAX = $u32 -1;
-[-1] u16 U16_MAX = $u16 -1;
-[-1] u8 U8_MAX = $u8 -1;
+string to_string(u64 x) {
+    if(x == $u64 0) return new string("0");
+    string ret = new string();
+    while(x) {
+        ret.push_back('0' + $u8 (x % $u64 10));
+        x /= $u64 10;
+    }
+    ret.reverse();
+    return ret;
+}
 
-[-1] i32 I32_MAX = 2147483647;
-[-1] i32 I32_MIN = -2147483647 - 1;
+string to_string(i32 x) {
+    if(x == 0) return new string("0");
+    string ret = new string();
+    i32 is_neg = 0;
+    if(x < 0) {
+        is_neg = 1;
+        x *= -1;
+    }
+    while(x) {
+        ret.push_back('0' + $u8 (x % 10));
+        x /= 10;
+    }
+    if(is_neg) ret.push_back('-');
+    ret.reverse();
+    return ret;
+}
+
+//jank implementation of float to string
+//each float consists of
+// - 1 sign bit
+// - 8 exponent bits
+// - 23 mantissa bits (+1 implied bit) 
+
+//normally, the value represented is equal to
+// (-1)^sign + 2^(exp - 127) * (1 + mantissa / 2^23)
+//except for when exp == 0, then the value is 
+// (-1)^sign + 2^(-126) * (mantissa / 2^23)
+//and when exp == 255, the value is 
+// (-1)^sign * inf
+
+//so my idea is to construct the base 2 representation of the float, this is exact. 
+//can then represent the integer portion exactly using decimal,
+//represent the fractional portion approximately by using bigint addition
+//currently doesn't have bigint addition, so can only accurately print floats of magnitude up to 2^60
+//also doesn't account for denormalization, NaN, inf. 
+
+[-1] u8* jstring_f32_base2 = $u8* malloc($u64 512);
+
+string to_string(f32 f) {
+    u32 fbits = * $u32* (@f);
+
+    u32 sgn = (fbits & $u32 (1 << 31));
+    u32 exp = (fbits & $u32 (((1 << 8) - 1) << 23));
+    u32 mantissa = (fbits & $u32 ((1 << 23) - 1));
+
+    sgn >>= $u32 31;
+    exp >>= $u32 23;
+    mantissa >>= $u32 0;
+    mantissa |= $u32 (1 << 23);    //implied bit
+
+    //generate exact base2 representation 
+    u8* base2 = jstring_f32_base2;
+    for(i32 i = 0; i < 512; i++){
+        base2[i] = $u8 0;
+    }
+
+    u64 zind = $u64 255;
+    for(u32 i = $u32 0; i < $u32 24; i++){
+        u64 ind = zind + $u64 exp - $u64 127 + $u64 i - $u64 23;
+        if(mantissa & $u32 (1 << $i32 i)) base2[ind] = $u8 1;
+    }
+
+    //generate int portion
+    u64 int_por = $u64 0;
+    for(i32 i = 0; i < 60; i++){
+        if(base2[i + $i32 zind]) int_por += ($u64 1 << $u64 i);
+    }
+
+    //generate fractional portion
+    i32 frac_precision = 13;
+    u64 frac_por = $u64 0;
+    u64 pow2 = $u64 1;
+    for(i32 i = 0; i < frac_precision; i++){
+        pow2 *= $u64 10;
+    }
+    pow2 /= $u64 2;
+    for(i32 i = $i32 zind - 1; i >= 0; i--){
+        if(base2[i]) frac_por += pow2;
+        pow2 /= $u64 2;
+    }
+
+    string int_str = to_string(int_por);
+    string frac_str = to_string(frac_por);
+
+    i32 int_len = $i32 int_str.size();
+    i32 frac_len = $i32 frac_str.size();
+    i32 len = int_len + frac_precision + 1;
+    if(sgn) len += 1;
+
+    string out_str = new string();
+    if(sgn) out_str.push_back('-');
+    for(i32 i = 0; i < int_len; i++) out_str.push_back(int_str[i]);
+    out_str.push_back('.');
+    for(i32 i = 0; i < frac_precision - frac_len; i++) out_str.push_back('0');
+    for(i32 i = 0; i < frac_len; i++) out_str.push_back(frac_str[i]);
+    
+    return out_str;
+}
 
 //if s is not a valid unsigned integer, sets ERR_MALFORMED
 //if s is out of range, sets ERR_RANGE
