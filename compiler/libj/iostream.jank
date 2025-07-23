@@ -2,7 +2,6 @@
 #include <assert>;
 #include <vector>;
 #include <string>;
-#include <error>;
 
 [-2] i32 STDIN = 0;
 [-2] i32 STDOUT = 1;

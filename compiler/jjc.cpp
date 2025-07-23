@@ -116,7 +116,8 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
 
         //include default libraries
         std::vector<std::string> default_includes = {
-            "memory"
+            "memory",
+            "error",
         };  
         if(kernel_mode) {
             //TODO implement kmalloc

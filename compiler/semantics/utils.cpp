@@ -1446,7 +1446,6 @@ StructDefinition* get_struct_definition(Type *t) {
 //allocates sz_bytes memory by calling malloc. Resulting address is in %rax
 void emit_malloc(int sz_bytes) {
     assert(sz_bytes >= 0);
-    assert(!kernel_mode);
 
     FunctionSignature *malloc_signature = new FunctionSignature(new Identifier("malloc"), {primitives::u64});
     std::string malloc_label = get_function_label(malloc_signature);
@@ -1461,7 +1460,6 @@ void emit_malloc(int sz_bytes) {
 //resulting free status is in %rax
 void emit_free(int sz_bytes) {
     assert(sz_bytes >= 0);
-    assert(!kernel_mode);
 
     FunctionSignature *free_signature = new FunctionSignature(new Identifier("free"), {new PointerType(primitives::_void), primitives::u64});
     std::string free_label = get_function_label(free_signature);
