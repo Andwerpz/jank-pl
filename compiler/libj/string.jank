@@ -121,6 +121,9 @@ i32 operator==(string& a, u8* b) {
     }
     return 1;
 }
+i32 operator==(u8* a, string& b) {
+    return b == a;
+}
 
 string to_string(u64 x) {
     if(x == $u64 0) return new string("0");
