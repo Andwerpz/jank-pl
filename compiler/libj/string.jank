@@ -114,6 +114,14 @@ i32 operator==(string& a, string& b) {
     return 1;
 }
 
+i32 operator==(string& a, u8* b) {
+    if(a.size() != strlen(b)) return 0;
+    for(u64 i = $u64 0; i < a.size(); i++) {
+        if(a[i] != b[i]) return 0;
+    }
+    return 1;
+}
+
 string to_string(u64 x) {
     if(x == $u64 0) return new string("0");
     string ret = new string();
