@@ -900,6 +900,8 @@ type = templated_type , [ "&" ] ;
      otherwise, they'll behave exactly the same. 
  - function pointers, so we can pass in interrupt handlers and stuff. 
    - function pointer type : 'fn<i32(i32, i32)>'
+ - construct-in-place operator ':='
+ - manual destructor calls (very hardcoded and jank (holy moly jank!!!) right now)
 
 
 Struct member functions should be called with 'this' as a pointer to the target struct. 
