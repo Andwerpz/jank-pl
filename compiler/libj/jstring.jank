@@ -7,3 +7,10 @@ u64 strlen(u8* s) {
 //to_jstr(T x, u8* buf) should write the string to the beginning of the buffer 
 // and return how many bytes were written (excluding '\0')
 
+i32 strcmp(u8* s1, u8* s2) {
+    if(strlen(s1) != strlen(s2)) return 0;
+    for(u64 i = $u64 0; i < strlen(s1); i++) {
+        if(s1[i] != s2[i]) return 0;
+    }
+    return 1;
+}
