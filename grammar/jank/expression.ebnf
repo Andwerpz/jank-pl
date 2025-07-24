@@ -4,7 +4,7 @@
 #include "struct.ebnf" ;
 
 (* in order of precedence *)
-(* x[<expr>] x.<id> x-><id> x.<fn> x-><fn> x++ x-- *)
+(* x[<expr>] x.<id> x-><id> x.<fn> x-><fn> x++ x-- x.~() x->~() *)
 (* +x -x ~x !x ++x --x <deref>x @x $<type>x *)
 (* <mult> / % *)
 (* + - *)
@@ -16,11 +16,11 @@
 (* | *)
 (* && *)
 (* || *)
-(* = += -= <mult>= /= %= <<= >>= &= ^= |= *) 
+(* = += -= <mult>= /= %= <<= >>= &= ^= |= := *) 
 (* , *) (* as of right now, the comma operator is not supported because it conflicts with function calls *)
 
 expr_primary = literal | constructor_call | function_call | identifier | "(" , ows , expression , ows , ")" ;
-expr_postfix = expr_primary , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , function_call | "->" , ows , function_call | "." , ows , identifier | "->" , ows , identifier | "++" | "--" | "#(" , argument_list , ")" ) } ;
+expr_postfix = expr_primary , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , function_call | "->" , ows , function_call | "." , ows , identifier | "->" , ows , identifier | "++" | "--" | "#(" , argument_list , ")" | "." , ows , "~()" | "->" , ows , "~()" ) } ;
 expr_unary = ( "++" | "--" | "+" | "-" | "~" | "!" | "*" | "@" | "$" , type ) , ows , expr_unary | expr_postfix ;
 expr_multiplicative = expr_unary , { ows , ( "*" | "/" | "%" ) , ows , expr_unary } ;
 expr_additive = expr_multiplicative , { ows , ( "+" | "-" ) , ows , expr_multiplicative } ;
@@ -32,5 +32,5 @@ expr_bit_xor = expr_bit_and , { ows , "^" , ows , expr_bit_and } ;
 expr_bit_or = expr_bit_xor , { ows , "|" , ows , expr_bit_xor } ;
 expr_logical_and = expr_bit_or , { ows , "&&" , ows , expr_bit_or } ;
 expr_logical_or = expr_logical_and , { ows , "||" , ows , expr_logical_and } ;
-expr_assignment = expr_logical_or , { ows , ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "^=" | "|=" ) , ows , expr_logical_or } ;
+expr_assignment = expr_logical_or , { ows , ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "^=" | "|=" | ":=" ) , ows , expr_logical_or } ;
 expression = expr_assignment ;

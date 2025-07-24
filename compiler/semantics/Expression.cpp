@@ -105,6 +105,14 @@ ExprNode* ExprNode::convert(parser::expr_postfix *e) {
             std::vector<Expression*> argument_list = convert_argument_list(e->t1[i]->t1->t7->t1);
             left = new ExprPostfix(left, argument_list);
         }
+        else if(e->t1[i]->t1->is_c8) {  //destructor call
+            std::string op = ".~()";
+            left = new ExprPostfix(left, op);
+        }
+        else if(e->t1[i]->t1->is_c9) {  //dereference, destructor call
+            std::string op = "->~()";
+            left = new ExprPostfix(left, op);
+        }       
         else assert(false);
     }
     return left;
@@ -336,7 +344,7 @@ Type* ExprBinary::resolve_type() {
         }
 
         //default behaviour
-        if(str_op == "=") {
+        if(str_op == "=" || str_op == ":=") {
             if(!left->is_lvalue()) {
                 if(debug) std::cout << "Cannot assign to r-value\n";
                 return nullptr;
@@ -519,6 +527,21 @@ Type* ExprPostfix::resolve_type() {
     else if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
 
+        //manual destructor calls
+        if(str_op == ".~()" || str_op == "->~()") {
+
+            //dereference
+            if(str_op == "->~()") {
+                if(dynamic_cast<PointerType*>(lt) == nullptr) {
+                    std::cout << "Trying to dereference non-pointer type " << lt->to_string() << "\n";
+                    return nullptr;
+                }
+                lt = dynamic_cast<PointerType*>(lt)->type;
+            }
+
+            return primitives::_void->make_copy();
+        }
+
         //try to find overload / builtin
         Type *otype = find_resulting_type(left, str_op, std::nullopt);
         if(otype != nullptr) {
@@ -694,6 +717,11 @@ bool ExprPostfix::is_lvalue() {
     }
     else if(std::holds_alternative<std::string>(op)) {  //postfix increment / decrement
         std::string str_op = std::get<std::string>(op);
+
+        //manual destructor calls
+        if(str_op == ".~()" || str_op == "->~()") {
+            return false;
+        }
 
         //find overload
         Type *otype = find_resulting_type(left, str_op, std::nullopt);
@@ -959,7 +987,7 @@ void ExprBinary::emit_asm() {
 
             fout << label << ":\n";
         }
-        else if(str_op == "=") {
+        else if(str_op == "=" || str_op == ":=") {
             //this should be handled during elaboration
             assert(lt->equals(rt));
 
@@ -993,11 +1021,13 @@ void ExprBinary::emit_asm() {
 
                 //generate left struct. %rax should now hold struct mem location
                 left->emit_asm();
-
-                //destruct left struct without dealloccing
-                emit_push("%rax", "ExprBinary::emit_asm() : save left addr before destruct");
-                emit_destructor_call(lt, false);
-                emit_pop("%rax", "ExprBinary::emit_asm() : save left addr before destruct");
+                
+                //if we're not constructing in place, destruct left struct without dealloccing
+                if(str_op != ":=") {
+                    emit_push("%rax", "ExprBinary::emit_asm() : save left addr before destruct");
+                    emit_destructor_call(lt, false);
+                    emit_pop("%rax", "ExprBinary::emit_asm() : save left addr before destruct");
+                }
 
                 //use copy constructor to overwrite left struct mem location
                 ConstructorCall *cc = new ConstructorCall(lt, {new Expression(new ExprPrimary(id))});
@@ -1225,15 +1255,34 @@ void ExprPostfix::emit_asm() {
         //evaluate left expr
         left->emit_asm();
 
-        //evaluate operator
-        OperatorImplementation *oe = find_operator_implementation(left, str_op, std::nullopt);
-        assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
-        dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
+        //manual destructor calls
+        if(str_op == ".~()" || str_op == "->~()") {
+            //dereference
+            if(str_op == "->~()") {
+                if(asm_debug) fout << indent() << "# dereference via ->\n";
+                assert(dynamic_cast<PointerType*>(lt) != nullptr);
+                emit_dereference(lt);
+                lt = dynamic_cast<PointerType*>(lt)->type;
+                assert(lt != nullptr);
+                if(asm_debug) fout << indent() << "# done dereference via ->\n";
+            }   
+            
+            //if this is not primitive, destruct without deallocing
+            if(!is_type_primitive(lt)) {
+                emit_destructor_call(lt, false);
+            }
+        }
+        else {
+            //evaluate operator
+            OperatorImplementation *oe = find_operator_implementation(left, str_op, std::nullopt);
+            assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
+            dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
 
-        //if this is a reference, dereference it
-        Type *res = oe->res_type;
-        if(dynamic_cast<ReferenceType*>(res) != nullptr) {
-            emit_dereference(res);
+            //if this is a reference, dereference it
+            Type *res = oe->res_type;
+            if(dynamic_cast<ReferenceType*>(res) != nullptr) {
+                emit_dereference(res);
+            }
         }
     }
     else if(std::holds_alternative<std::vector<Expression*>>(op)) {

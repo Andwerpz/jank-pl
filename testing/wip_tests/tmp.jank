@@ -1,16 +1,20 @@
 #include <iostream>;
 #include <random>;
 #include <assert>;
+#include <string>;
+
+u8* gen_trash(u64 sz) {
+    u8* buf = $u8* malloc(sz);
+    for(u64 i = 0x0; i < sz; i++) buf[i] = rand_u8();
+    return buf;
+}
 
 i32 main() {
-
-    u64 bits = 0b0101;
-    u64 flag = 0b0100;
-    cout << (1 < 2) << "\n";
-    cout << $i32 (bits & flag) << "\n";
-    if(1 < 2 && $i32 (bits & flag)) {
-        cout << "this should print\n";
-    }
+    
+    string* s = $string* gen_trash(sizeof(string));
+    *s := new string("asdf");
+    s->~();
+    free($void* s, sizeof(string));
 
     return 0;
 }

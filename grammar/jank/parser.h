@@ -1,4 +1,4 @@
-// Date Generated : 07-19-2025 21:55:31
+// Date Generated : 07-23-2025 21:58:11
 #pragma once
 #include <vector>
 #include <string>
@@ -74,6 +74,7 @@ namespace parser {
     struct type_list;
     struct parameter_list;
     struct argument_list;
+    struct identifier_list;
     struct statement;
     struct simple_statement;
     struct control_statement;
@@ -1078,7 +1079,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // expr_postfix = expr_primary , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , function_call | "->" , ows , function_call | "." , ows , identifier | "->" , ows , identifier | "++" | "--" | "#(" , argument_list , ")" ) } ;
+    // expr_postfix = expr_primary , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , function_call | "->" , ows , function_call | "." , ows , identifier | "->" , ows , identifier | "++" | "--" | "#(" , argument_list , ")" | "." , ows , "~()" | "->" , ows , "~()" ) } ;
     struct expr_postfix {
         struct a0 {
             struct b0 {
@@ -1174,6 +1175,30 @@ namespace parser {
                     static c7* parse();
                     std::string to_string();
                 };
+                struct c8 {
+                    std::string t0;
+                    ows *t1;
+                    std::string t2;
+                    c8(std::string _t0, ows *_t1, std::string _t2) {
+                        t0 = _t0;
+                        t1 = _t1;
+                        t2 = _t2;
+                    }
+                    static c8* parse();
+                    std::string to_string();
+                };
+                struct c9 {
+                    std::string t0;
+                    ows *t1;
+                    std::string t2;
+                    c9(std::string _t0, ows *_t1, std::string _t2) {
+                        t0 = _t0;
+                        t1 = _t1;
+                        t2 = _t2;
+                    }
+                    static c9* parse();
+                    std::string to_string();
+                };
                 bool is_c0 = false;
                 c0 *t0;
                 bool is_c1 = false;
@@ -1190,6 +1215,10 @@ namespace parser {
                 c6 *t6;
                 bool is_c7 = false;
                 c7 *t7;
+                bool is_c8 = false;
+                c8 *t8;
+                bool is_c9 = false;
+                c9 *t9;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -1221,6 +1250,14 @@ namespace parser {
                 b0(c7 *_t7) {
                     is_c7 = true;
                     t7 = _t7;
+                }
+                b0(c8 *_t8) {
+                    is_c8 = true;
+                    t8 = _t8;
+                }
+                b0(c9 *_t9) {
+                    is_c9 = true;
+                    t9 = _t9;
                 }
                 static b0* parse();
                 std::string to_string();
@@ -1876,7 +1913,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // expr_assignment = expr_logical_or , { ows , ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "^=" | "|=" ) , ows , expr_logical_or } ;
+    // expr_assignment = expr_logical_or , { ows , ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "^=" | "|=" | ":=" ) , ows , expr_logical_or } ;
     struct expr_assignment {
         struct a0 {
             struct b0 {
@@ -1968,6 +2005,14 @@ namespace parser {
                     static c10* parse();
                     std::string to_string();
                 };
+                struct c11 {
+                    std::string t0;
+                    c11(std::string _t0) {
+                        t0 = _t0;
+                    }
+                    static c11* parse();
+                    std::string to_string();
+                };
                 bool is_c0 = false;
                 c0 *t0;
                 bool is_c1 = false;
@@ -1990,6 +2035,8 @@ namespace parser {
                 c9 *t9;
                 bool is_c10 = false;
                 c10 *t10;
+                bool is_c11 = false;
+                c11 *t11;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -2033,6 +2080,10 @@ namespace parser {
                 b0(c10 *_t10) {
                     is_c10 = true;
                     t10 = _t10;
+                }
+                b0(c11 *_t11) {
+                    is_c11 = true;
+                    t11 = _t11;
                 }
                 static b0* parse();
                 std::string to_string();
@@ -4867,6 +4918,40 @@ namespace parser {
             t0 = _t0;
         }
         static argument_list* parse();
+        std::string to_string();
+    };
+
+    // identifier_list = [ identifier , { ows , "," , ows , identifier } ] ;
+    struct identifier_list {
+        struct a0 {
+            struct b0 {
+                ows *t0;
+                std::string t1;
+                ows *t2;
+                identifier *t3;
+                b0(ows *_t0, std::string _t1, ows *_t2, identifier *_t3) {
+                    t0 = _t0;
+                    t1 = _t1;
+                    t2 = _t2;
+                    t3 = _t3;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            identifier *t0;
+            std::vector<b0*> t1;
+            a0(identifier *_t0, std::vector<b0*> _t1) {
+                t0 = _t0;
+                t1 = _t1;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        a0 *t0;
+        identifier_list(a0 *_t0) {
+            t0 = _t0;
+        }
+        static identifier_list* parse();
         std::string to_string();
     };
 

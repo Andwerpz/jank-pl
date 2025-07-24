@@ -770,6 +770,15 @@ high priority: fix function call resolution
 
 
 some miscellaneous features:
+ - better global variable dependency stuff
+   - ability to declare nodes, can bind variables to nodes. 
+   - nodes can depend on other nodes
+   - 'GLOBAL_NODE(<identifier>)'
+   - 'GLOBAL_DEP(<id_a>, [<id_list>])', means that A depends on everything in the id list
+   - force the user to initialize all their nodes to avoid typos
+   - allow the user to not bind a global to a node, these globals will be initialized last
+   - maybe have a label that is guaranteed to initialize first? '__GLOBAL_FIRST__'. It's illegal to make it 
+     depend on anything else. 
  - array literals
  - better semantic error messages. 
    - would be nice if on failure, could print out the relevant code or smth. 

@@ -52,6 +52,7 @@ parameter = type , rws , identifier ;
 type_list = [ type , { ows , "," , ows , type } ] ;
 parameter_list = [ parameter , { ows , "," , ows , parameter } ] ;
 argument_list = [ expression , { ows , "," , ows , expression } ] ;
+identifier_list = [ identifier , { ows , "," , ows , identifier } ] ;
 
 statement = simple_statement
           | control_statement

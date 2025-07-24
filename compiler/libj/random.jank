@@ -4,6 +4,16 @@ i32 rand_i32() {
     u8* buf = $u8* malloc(sizeof(i32));
     buf[2] = $u8 0;
     buf[3] = $u8 0;
-    sys_getrandom($void* buf, $u64 2, $u64 0);
-    return *($i32* buf);
+    sys_getrandom($void* buf, 0x2, 0x0);
+    i32 val = *($i32* buf);
+    free($void* buf, sizeof(i32));
+    return val;
+}
+
+u8 rand_u8() {
+    u8* buf = $u8* malloc(sizeof(u8));
+    sys_getrandom($void* buf, 0x1, 0x0);
+    u8 val = *buf;
+    free($void* buf, sizeof(u8));
+    return val;
 }

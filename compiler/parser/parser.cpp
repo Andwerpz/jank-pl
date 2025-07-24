@@ -1,4 +1,4 @@
-// Date Generated : 07-19-2025 21:55:31
+// Date Generated : 07-23-2025 21:58:11
 #include "parser.h"
 
 namespace parser {
@@ -1622,6 +1622,46 @@ namespace parser {
         return ans;
     }
 
+    expr_postfix::a0::b0::c8* expr_postfix::a0::b0::c8::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != ".") {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(3);
+        if(_t2 != "~()") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_postfix::a0::b0::c8(_t0, _t1, _t2);
+    }
+
+    std::string expr_postfix::a0::b0::c8::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2;
+        return ans;
+    }
+
+    expr_postfix::a0::b0::c9* expr_postfix::a0::b0::c9::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "->") {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(3);
+        if(_t2 != "~()") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_postfix::a0::b0::c9(_t0, _t1, _t2);
+    }
+
+    std::string expr_postfix::a0::b0::c9::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2;
+        return ans;
+    }
+
     expr_postfix::a0::b0* expr_postfix::a0::b0::parse() {
         if(auto x = expr_postfix::a0::b0::c0::parse()) return new expr_postfix::a0::b0(x);
         if(auto x = expr_postfix::a0::b0::c1::parse()) return new expr_postfix::a0::b0(x);
@@ -1631,6 +1671,8 @@ namespace parser {
         if(auto x = expr_postfix::a0::b0::c5::parse()) return new expr_postfix::a0::b0(x);
         if(auto x = expr_postfix::a0::b0::c6::parse()) return new expr_postfix::a0::b0(x);
         if(auto x = expr_postfix::a0::b0::c7::parse()) return new expr_postfix::a0::b0(x);
+        if(auto x = expr_postfix::a0::b0::c8::parse()) return new expr_postfix::a0::b0(x);
+        if(auto x = expr_postfix::a0::b0::c9::parse()) return new expr_postfix::a0::b0(x);
         return nullptr;
     }
 
@@ -1643,6 +1685,8 @@ namespace parser {
         if(is_c5) return t5->to_string();
         if(is_c6) return t6->to_string();
         if(is_c7) return t7->to_string();
+        if(is_c8) return t8->to_string();
+        if(is_c9) return t9->to_string();
         assert(false);
     }
 
@@ -2727,6 +2771,20 @@ namespace parser {
         return ans;
     }
 
+    expr_assignment::a0::b0::c11* expr_assignment::a0::b0::c11::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != ":=") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new expr_assignment::a0::b0::c11(_t0);
+    }
+
+    std::string expr_assignment::a0::b0::c11::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
     expr_assignment::a0::b0* expr_assignment::a0::b0::parse() {
         if(auto x = expr_assignment::a0::b0::c0::parse()) return new expr_assignment::a0::b0(x);
         if(auto x = expr_assignment::a0::b0::c1::parse()) return new expr_assignment::a0::b0(x);
@@ -2739,6 +2797,7 @@ namespace parser {
         if(auto x = expr_assignment::a0::b0::c8::parse()) return new expr_assignment::a0::b0(x);
         if(auto x = expr_assignment::a0::b0::c9::parse()) return new expr_assignment::a0::b0(x);
         if(auto x = expr_assignment::a0::b0::c10::parse()) return new expr_assignment::a0::b0(x);
+        if(auto x = expr_assignment::a0::b0::c11::parse()) return new expr_assignment::a0::b0(x);
         return nullptr;
     }
 
@@ -2754,6 +2813,7 @@ namespace parser {
         if(is_c8) return t8->to_string();
         if(is_c9) return t9->to_string();
         if(is_c10) return t10->to_string();
+        if(is_c11) return t11->to_string();
         assert(false);
     }
 
@@ -6251,6 +6311,63 @@ namespace parser {
     }
 
     std::string argument_list::to_string() {
+        std::string ans = "";
+        if(t0 != nullptr) ans += t0->to_string();
+        return ans;
+    }
+
+    identifier_list::a0::b0* identifier_list::a0::b0::parse() {
+        push_stack();
+        ows *_t0 = ows::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t1 = next_chars(1);
+        if(_t1 != ",") {pop_stack(); return nullptr;}
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        identifier *_t3 = identifier::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new identifier_list::a0::b0(_t0, _t1, _t2, _t3);
+    }
+
+    std::string identifier_list::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1;
+        ans += t2->to_string();
+        ans += t3->to_string();
+        return ans;
+    }
+
+    identifier_list::a0* identifier_list::a0::parse() {
+        push_stack();
+        identifier *_t0 = identifier::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::vector<identifier_list::a0::b0*> _t1;
+        while(true) {
+            identifier_list::a0::b0 *tmp = identifier_list::a0::b0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        rm_stack();
+        return new identifier_list::a0(_t0, _t1);
+    }
+
+    std::string identifier_list::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
+    }
+
+    identifier_list* identifier_list::parse() {
+        push_stack();
+        identifier_list::a0 *_t0 = identifier_list::a0::parse();
+        rm_stack();
+        return new identifier_list(_t0);
+    }
+
+    std::string identifier_list::to_string() {
         std::string ans = "";
         if(t0 != nullptr) ans += t0->to_string();
         return ans;
