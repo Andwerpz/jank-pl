@@ -4,11 +4,14 @@
 #include <iostream>;
 #include <assert>;
 
-[0] i32 basic = 10;
-[0] i32 cntr = 0;
+i32 basic = 10;
+i32 cntr = 0;
 
-[0] u64 arrsz = $u64 100;
-[1] vector<i32> arr = new vector<i32>(arrsz, 0);
+#global_node A;
+#global_node B [A, MALLOC];
+
+[A] u64 arrsz = $u64 100;
+[B] vector<i32> arr = new vector<i32>(arrsz, 0);
 
 void foo() {
     cntr ++;

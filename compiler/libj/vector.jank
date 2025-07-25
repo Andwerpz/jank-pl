@@ -1,4 +1,6 @@
 
+//the elements in range [0, sz) will be valid instances of T.
+
 template<T>
 struct vector {
     u64 cap;

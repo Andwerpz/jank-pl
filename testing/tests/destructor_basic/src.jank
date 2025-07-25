@@ -3,7 +3,7 @@
 #include <assert>;
 #include <iostream>;
 
-[0] i32 mem_cntr = 0;
+i32 mem_cntr = 0;
 
 struct A {
     u64 var;

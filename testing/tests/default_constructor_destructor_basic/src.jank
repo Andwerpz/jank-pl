@@ -11,7 +11,7 @@ struct liandrew {
     i32[7] balls; 
 }
 
-[0] u8* maxim = "so big";
+u8* maxim = "so big";
 
 i32 main() {
     

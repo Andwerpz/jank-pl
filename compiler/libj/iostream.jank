@@ -3,12 +3,14 @@
 #include <vector>;
 #include <string>;
 
-[-2] i32 STDIN = 0;
-[-2] i32 STDOUT = 1;
-[-2] i32 STDERR = 2;
+#global_node IOSTREAM [MALLOC];
 
-[-1] ostream cout = new ostream(STDOUT);
-[-1] istream cin = new istream(STDIN);
+[__GLOBAL_FIRST__] i32 STDIN = 0;
+[__GLOBAL_FIRST__] i32 STDOUT = 1;
+[__GLOBAL_FIRST__] i32 STDERR = 2;
+
+[IOSTREAM] ostream cout = new ostream(STDOUT);
+[IOSTREAM] istream cin = new istream(STDIN);
 
 struct istream {
     i32 fd;

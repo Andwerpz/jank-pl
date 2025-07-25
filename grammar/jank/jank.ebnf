@@ -70,7 +70,8 @@ compound_statement = "{" , ows , { statement , ows } , "}" ;
 
 include = "#include" , rws , ( literal_string | "<" , identifier , ">" ) , ows , ";" ;
 
-global_declaration = "[" , ows , [ "-" ] , < digit > , ows , "]" , ows , [ "extern" , rws ] , declaration , ows , ";" ;
+global_node = "#global_node" , rws , identifier , [ ows , "[" , identifier_list , "]" ] , ows , ";" ;
+global_declaration = [ "[" , ows , identifier , ows , "]" , ows ] , [ "extern" , rws ] , declaration , ows , ";" ;
 
-program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload | include | global_declaration ) } , ows ;
+program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload | include | global_declaration | global_node ) } , ows ;
 

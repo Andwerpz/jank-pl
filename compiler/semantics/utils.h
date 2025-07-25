@@ -207,6 +207,7 @@ void emit_data_section();
 std::vector<Type*> convert_type_list(parser::type_list *t);
 std::vector<Parameter*> convert_parameter_list(parser::parameter_list *t);
 std::vector<Expression*> convert_argument_list(parser::argument_list *t);
+std::vector<Identifier*> convert_identifier_list(parser::identifier_list *t);
 
 // -- CONTROLLER --
 //should probably move this stuff into its own file

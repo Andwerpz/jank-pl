@@ -1,5 +1,5 @@
 
-[-10] void* nullptr = $void* $u64 0;
+[__GLOBAL_FIRST__] void* nullptr = $void* $u64 0;
 
 void* memcpy(void* dest, void* src, u64 count) {
     for(u64 i = $u64 0; i < count; i++) {

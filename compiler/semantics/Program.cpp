@@ -20,12 +20,13 @@
 #include "Declaration.h"
 #include <algorithm>
 #include "Destructor.h"
+#include "GlobalNode.h"
 
 Program::Program() {
     // do nothing
 }
 
-Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> _overloads, std::vector<TemplatedOverload*> _templated_overloads, std::vector<Include*> _includes, std::vector<GlobalDeclaration*> _global_declarations) {
+Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> _overloads, std::vector<TemplatedOverload*> _templated_overloads, std::vector<Include*> _includes, std::vector<GlobalDeclaration*> _global_declarations, std::vector<GlobalNode*> _global_nodes) {
     structs = _structs;
     functions = _functions;
     overloads = _overloads;
@@ -37,6 +38,7 @@ Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*>
     includes = _includes;
 
     global_declarations = _global_declarations;
+    global_nodes = _global_nodes;
 }
 
 Program* Program::convert(parser::program *p) {
@@ -51,6 +53,7 @@ Program* Program::convert(parser::program *p) {
     std::vector<Include*> includes;
 
     std::vector<GlobalDeclaration*> global_declarations;
+    std::vector<GlobalNode*> global_nodes;
 
     for(int i = 0; i < p->t0.size(); i++){
         if(p->t0[i]->t1->is_c0) {   //function
@@ -77,9 +80,12 @@ Program* Program::convert(parser::program *p) {
         else if(p->t0[i]->t1->is_c7) {  //global declaration
             global_declarations.push_back(GlobalDeclaration::convert(p->t0[i]->t1->t7->t0));
         }
+        else if(p->t0[i]->t1->is_c8) {  //global node
+            global_nodes.push_back(GlobalNode::convert(p->t0[i]->t1->t8->t0));
+        }
         else assert(false);
     }
-    return new Program(structs, functions, templated_structs, templated_functions, overloads, templated_overloads, includes, global_declarations);
+    return new Program(structs, functions, templated_structs, templated_functions, overloads, templated_overloads, includes, global_declarations, global_nodes);
 }
 
 void Program::add_all(Program *other) {
@@ -94,6 +100,7 @@ void Program::add_all(Program *other) {
     for(int i = 0; i < other->includes.size(); i++) includes.push_back(other->includes[i]);
     
     for(int i = 0; i < other->global_declarations.size(); i++) global_declarations.push_back(other->global_declarations[i]);
+    for(int i = 0; i < other->global_nodes.size(); i++) global_nodes.push_back(other->global_nodes[i]);
 }
 
 bool Program::is_well_formed() {

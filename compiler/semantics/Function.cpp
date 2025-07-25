@@ -12,6 +12,9 @@
 #include "Declaration.h"
 #include "Expression.h"
 #include <algorithm>
+#include "GlobalNode.h"
+#include <map>
+#include <queue>
 
 Function::Function(std::optional<Type*> _enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
     enclosing_type = _enclosing_type;
@@ -111,14 +114,96 @@ bool Function::is_well_formed() {
 
         if(asm_debug) fout << indent() << "# start initialize global variables\n";
 
-        //resolve global declaration templates
+        std::vector<GlobalNode*> global_nodes = enclosing_program->global_nodes;
         std::vector<GlobalDeclaration*> global_declarations = enclosing_program->global_declarations;
         std::cout << "GLOBAL AMT : " << global_declarations.size() << "\n";
+
+        //resolve global declaration templates
         for(int i = 0; i < global_declarations.size(); i++){
             if(!global_declarations[i]->look_for_templates()) {
                 std::cout << "Unable to resolve templates in declaration of global variable " << global_declarations[i]->declaration->id->name << "\n";
                 return false;
             }
+        }
+
+        //add __GLOBAL_FIRST__ node
+        std::string gfirst_name = "__GLOBAL_FIRST__";
+        global_nodes.push_back(new GlobalNode(new Identifier(gfirst_name), {}));
+
+        //check for duplicate global nodes
+        for(int i = 0; i < global_nodes.size(); i++){
+            for(int j = i + 1; j < global_nodes.size(); j++){
+                if(global_nodes[i]->id->equals(global_nodes[j]->id)) {
+                    std::cout << "Duplicate global node declaration : " << global_nodes[i]->id->name << "\n";
+                    return false;
+                }
+            }
+        }
+
+        //map node identifiers to indices
+        std::map<std::string, int> id_map;
+        for(int i = 0; i < global_nodes.size(); i++){
+            id_map[global_nodes[i]->id->name] = i;
+        }
+
+        //all dependencies must be defined
+        for(int i = 0; i < global_nodes.size(); i++){
+            for(int j = 0; j < global_nodes[i]->dependencies.size(); j++){
+                if(!id_map.count(global_nodes[i]->dependencies[j]->name)) {
+                    std::cout << "Undefined dependency \"" << global_nodes[i]->dependencies[j]->name << "\" in node \"" << global_nodes[i]->id->name << "\"\n";
+                    return false;
+                }
+            }
+        }
+
+        //do topological sort
+        std::vector<int> node_order;
+        {   
+            int n = global_nodes.size();
+            std::vector<std::vector<int>> c(n);
+            for(int i = 0; i < n; i++){
+                for(int j = 0; j < global_nodes[i]->dependencies.size(); j++){
+                    c[id_map[global_nodes[i]->dependencies[j]->name]].push_back(i);
+                }                
+            }
+
+            //enforce that __GLOBAL_FIRST__ is first
+            for(int i = 0; i < n; i++){
+                if(i == id_map[gfirst_name]) continue;
+                c[id_map[gfirst_name]].push_back(i);
+            }
+
+            std::vector<int> indeg(n, 0);
+            for(int i = 0; i < n; i++){
+                for(int x : c[i]) indeg[x] ++;
+            }
+
+            std::queue<int> q;
+            for(int i = 0; i < n; i++){
+                if(indeg[i] == 0) q.push(i);
+            }
+
+            node_order = {};
+            while(q.size() != 0){
+                int cur = q.front();
+                q.pop();
+                node_order.push_back(cur);
+                for(int x : c[cur]) {
+                    indeg[x] --;
+                    if(indeg[x] == 0) q.push(x);
+                }
+            }
+        }
+        if(node_order.size() != global_nodes.size()) {
+            std::cout << "Failed to find topological ordering of global nodes\n";
+            return false;
+        }
+        std::map<std::string, int> order_map;
+        std::cout << "Global node initialization order:\n";
+        for(int i = 0; i < global_nodes.size(); i++){
+            int ind = node_order[i];
+            order_map[global_nodes[ind]->id->name] = i;
+            std::cout << global_nodes[ind]->id->name << "\n";
         }
 
         //save global base pointer to %r15
@@ -140,8 +225,10 @@ bool Function::is_well_formed() {
         fout << indent() << "mov %rsp, %rbp\n";
 
         //sort by tier and initialize
-        std::sort(global_declarations.begin(), global_declarations.end(), [](GlobalDeclaration *a, GlobalDeclaration *b) -> bool {
-            return a->tier < b->tier;
+        std::sort(global_declarations.begin(), global_declarations.end(), [&order_map, &global_nodes](GlobalDeclaration *a, GlobalDeclaration *b) -> bool {
+            int aorder = a->node_id.has_value()? order_map[a->node_id.value()->name] : global_nodes.size();
+            int border = b->node_id.has_value()? order_map[b->node_id.value()->name] : global_nodes.size();
+            return aorder < border;
         });
         global_mem_ptr = 0;
         for(int i = 0; i < global_declarations.size(); i++){

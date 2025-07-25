@@ -1,4 +1,4 @@
-// Date Generated : 07-23-2025 21:58:11
+// Date Generated : 07-24-2025 00:42:01
 #pragma once
 #include <vector>
 #include <string>
@@ -80,6 +80,7 @@ namespace parser {
     struct control_statement;
     struct compound_statement;
     struct include;
+    struct global_node;
     struct global_declaration;
     struct program;
 
@@ -5373,63 +5374,87 @@ namespace parser {
         std::string to_string();
     };
 
-    // global_declaration = "[" , ows , [ "-" ] , < digit > , ows , "]" , ows , [ "extern" , rws ] , declaration , ows , ";" ;
-    struct global_declaration {
+    // global_node = "#global_node" , rws , identifier , [ ows , "[" , identifier_list , "]" ] , ows , ";" ;
+    struct global_node {
         struct a0 {
-            std::string t0;
-            a0(std::string _t0) {
+            ows *t0;
+            std::string t1;
+            identifier_list *t2;
+            std::string t3;
+            a0(ows *_t0, std::string _t1, identifier_list *_t2, std::string _t3) {
                 t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
             }
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
-            digit *t0;
-            a1(digit *_t0) {
-                t0 = _t0;
-            }
-            static a1* parse();
-            std::string to_string();
-        };
-        struct a2 {
-            std::string t0;
-            rws *t1;
-            a2(std::string _t0, rws *_t1) {
-                t0 = _t0;
-                t1 = _t1;
-            }
-            static a2* parse();
-            std::string to_string();
-        };
         std::string t0;
-        ows *t1;
-        a0 *t2;
-        std::vector<a1*> t3;
+        rws *t1;
+        identifier *t2;
+        a0 *t3;
         ows *t4;
         std::string t5;
-        ows *t6;
-        a2 *t7;
-        declaration *t8;
-        ows *t9;
-        std::string t10;
-        global_declaration(std::string _t0, ows *_t1, a0 *_t2, std::vector<a1*> _t3, ows *_t4, std::string _t5, ows *_t6, a2 *_t7, declaration *_t8, ows *_t9, std::string _t10) {
+        global_node(std::string _t0, rws *_t1, identifier *_t2, a0 *_t3, ows *_t4, std::string _t5) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
             t3 = _t3;
             t4 = _t4;
             t5 = _t5;
-            t6 = _t6;
-            t7 = _t7;
-            t8 = _t8;
-            t9 = _t9;
-            t10 = _t10;
+        }
+        static global_node* parse();
+        std::string to_string();
+    };
+
+    // global_declaration = [ "[" , ows , identifier , ows , "]" , ows ] , [ "extern" , rws ] , declaration , ows , ";" ;
+    struct global_declaration {
+        struct a0 {
+            std::string t0;
+            ows *t1;
+            identifier *t2;
+            ows *t3;
+            std::string t4;
+            ows *t5;
+            a0(std::string _t0, ows *_t1, identifier *_t2, ows *_t3, std::string _t4, ows *_t5) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+                t4 = _t4;
+                t5 = _t5;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        struct a1 {
+            std::string t0;
+            rws *t1;
+            a1(std::string _t0, rws *_t1) {
+                t0 = _t0;
+                t1 = _t1;
+            }
+            static a1* parse();
+            std::string to_string();
+        };
+        a0 *t0;
+        a1 *t1;
+        declaration *t2;
+        ows *t3;
+        std::string t4;
+        global_declaration(a0 *_t0, a1 *_t1, declaration *_t2, ows *_t3, std::string _t4) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
         }
         static global_declaration* parse();
         std::string to_string();
     };
 
-    // program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload | include | global_declaration ) } , ows ;
+    // program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload | include | global_declaration | global_node ) } , ows ;
     struct program {
         struct a0 {
             struct b0 {
@@ -5497,6 +5522,14 @@ namespace parser {
                     static c7* parse();
                     std::string to_string();
                 };
+                struct c8 {
+                    global_node *t0;
+                    c8(global_node *_t0) {
+                        t0 = _t0;
+                    }
+                    static c8* parse();
+                    std::string to_string();
+                };
                 bool is_c0 = false;
                 c0 *t0;
                 bool is_c1 = false;
@@ -5513,6 +5546,8 @@ namespace parser {
                 c6 *t6;
                 bool is_c7 = false;
                 c7 *t7;
+                bool is_c8 = false;
+                c8 *t8;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -5544,6 +5579,10 @@ namespace parser {
                 b0(c7 *_t7) {
                     is_c7 = true;
                     t7 = _t7;
+                }
+                b0(c8 *_t8) {
+                    is_c8 = true;
+                    t8 = _t8;
                 }
                 static b0* parse();
                 std::string to_string();

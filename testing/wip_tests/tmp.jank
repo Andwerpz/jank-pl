@@ -3,18 +3,16 @@
 #include <assert>;
 #include <string>;
 
-u8* gen_trash(u64 sz) {
-    u8* buf = $u8* malloc(sz);
-    for(u64 i = 0x0; i < sz; i++) buf[i] = rand_u8();
-    return buf;
-}
+#global_node A;
+#global_node B;
+#global_node C [A, B];
+#global_node D [C];
+#global_node E [C];
+#global_node F [D, E];
+
+i32 global_no_id = 0;
 
 i32 main() {
-    
-    string* s = $string* gen_trash(sizeof(string));
-    *s := new string("asdf");
-    s->~();
-    free($void* s, sizeof(string));
 
     return 0;
 }

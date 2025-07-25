@@ -18,7 +18,7 @@ struct liandrew {
     }
 }
 
-[0] u8* maxim = "so big";
+u8* maxim = "so big";
 
 i32 main() {
     u8* andrew = "Bello my name is andrew li";

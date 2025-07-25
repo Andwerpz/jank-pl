@@ -1,5 +1,7 @@
 #include <iostream>;
 
+#global_node MALLOC;
+
 // simple bump allocator
 // just increases the heap size every time we want to allocate more memory.
 
@@ -25,17 +27,17 @@ void* sbrk(u64 inc) {
 //if these variables are unset when trying to initialize something else that requires malloc
 
 // memory protection flags
-[-10] u64 PROT_NONE = $u64 0;
-[-10] u64 PROT_READ = $u64 1;
-[-10] u64 PROT_WRITE = $u64 2;
-[-10] u64 PROT_EXEC = $u64 4;
+[__GLOBAL_FIRST__] u64 PROT_NONE = $u64 0;
+[__GLOBAL_FIRST__] u64 PROT_READ = $u64 1;
+[__GLOBAL_FIRST__] u64 PROT_WRITE = $u64 2;
+[__GLOBAL_FIRST__] u64 PROT_EXEC = $u64 4;
 
 // mmap option flags
-[-10] u64 MAP_PRIVATE = $u64 1 << $u64 1;
-[-10] u64 MAP_ANONYMOUS = $u64 1 << $u64 5;
+[__GLOBAL_FIRST__] u64 MAP_PRIVATE = $u64 1 << $u64 1;
+[__GLOBAL_FIRST__] u64 MAP_ANONYMOUS = $u64 1 << $u64 5;
 
-[-10] u64 PAGE_SIZE = $u64 4096;
-[-10] u64 MEM_USED = $u64 0;
+[__GLOBAL_FIRST__] u64 PAGE_SIZE = $u64 4096;
+[__GLOBAL_FIRST__] u64 MEM_USED = $u64 0;
 
 void* malloc(u64 sz) {
     //round sz up to nearest page size

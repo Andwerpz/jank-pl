@@ -13,6 +13,7 @@ struct TemplatedOverload;
 struct Include;
 
 struct GlobalDeclaration;
+struct GlobalNode;
 
 struct Program {
     std::vector<StructDefinition*> structs;
@@ -26,9 +27,10 @@ struct Program {
     std::vector<Include*> includes;
 
     std::vector<GlobalDeclaration*> global_declarations;
+    std::vector<GlobalNode*> global_nodes;
 
     Program(); 
-    Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> overloads, std::vector<TemplatedOverload*> templated_overloads, std::vector<Include*> includes, std::vector<GlobalDeclaration*> global_declarations);
+    Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> overloads, std::vector<TemplatedOverload*> templated_overloads, std::vector<Include*> includes, std::vector<GlobalDeclaration*> global_declarations, std::vector<GlobalNode*> global_nodes);
 
     void add_all(Program *other);
     static Program* convert(parser::program *p);

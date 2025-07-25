@@ -1,4 +1,4 @@
-// Date Generated : 07-23-2025 21:58:11
+// Date Generated : 07-24-2025 00:42:01
 #include "parser.h"
 
 namespace parser {
@@ -6938,45 +6938,97 @@ namespace parser {
         return ans;
     }
 
+    global_node::a0* global_node::a0::parse() {
+        push_stack();
+        ows *_t0 = ows::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t1 = next_chars(1);
+        if(_t1 != "[") {pop_stack(); return nullptr;}
+        identifier_list *_t2 = identifier_list::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t3 = next_chars(1);
+        if(_t3 != "]") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new global_node::a0(_t0, _t1, _t2, _t3);
+    }
+
+    std::string global_node::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1;
+        ans += t2->to_string();
+        ans += t3;
+        return ans;
+    }
+
+    global_node* global_node::parse() {
+        push_stack();
+        std::string _t0 = next_chars(12);
+        if(_t0 != "#global_node") {pop_stack(); return nullptr;}
+        rws *_t1 = rws::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        identifier *_t2 = identifier::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        global_node::a0 *_t3 = global_node::a0::parse();
+        ows *_t4 = ows::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t5 = next_chars(1);
+        if(_t5 != ";") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new global_node(_t0, _t1, _t2, _t3, _t4, _t5);
+    }
+
+    std::string global_node::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2->to_string();
+        if(t3 != nullptr) ans += t3->to_string();
+        ans += t4->to_string();
+        ans += t5;
+        return ans;
+    }
+
     global_declaration::a0* global_declaration::a0::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
-        if(_t0 != "-") {pop_stack(); return nullptr;}
+        if(_t0 != "[") {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        identifier *_t2 = identifier::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t3 = ows::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t4 = next_chars(1);
+        if(_t4 != "]") {pop_stack(); return nullptr;}
+        ows *_t5 = ows::parse();
+        if(_t5 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        return new global_declaration::a0(_t0);
+        return new global_declaration::a0(_t0, _t1, _t2, _t3, _t4, _t5);
     }
 
     std::string global_declaration::a0::to_string() {
         std::string ans = "";
         ans += t0;
+        ans += t1->to_string();
+        ans += t2->to_string();
+        ans += t3->to_string();
+        ans += t4;
+        ans += t5->to_string();
         return ans;
     }
 
     global_declaration::a1* global_declaration::a1::parse() {
-        push_stack();
-        digit *_t0 = digit::parse();
-        if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        rm_stack();
-        return new global_declaration::a1(_t0);
-    }
-
-    std::string global_declaration::a1::to_string() {
-        std::string ans = "";
-        ans += t0->to_string();
-        return ans;
-    }
-
-    global_declaration::a2* global_declaration::a2::parse() {
         push_stack();
         std::string _t0 = next_chars(6);
         if(_t0 != "extern") {pop_stack(); return nullptr;}
         rws *_t1 = rws::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        return new global_declaration::a2(_t0, _t1);
+        return new global_declaration::a1(_t0, _t1);
     }
 
-    std::string global_declaration::a2::to_string() {
+    std::string global_declaration::a1::to_string() {
         std::string ans = "";
         ans += t0;
         ans += t1->to_string();
@@ -6985,48 +7037,25 @@ namespace parser {
 
     global_declaration* global_declaration::parse() {
         push_stack();
-        std::string _t0 = next_chars(1);
-        if(_t0 != "[") {pop_stack(); return nullptr;}
-        ows *_t1 = ows::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        global_declaration::a0 *_t2 = global_declaration::a0::parse();
-        std::vector<global_declaration::a1*> _t3;
-        while(true) {
-            global_declaration::a1 *tmp = global_declaration::a1::parse();
-            if(tmp == nullptr) break;
-            _t3.push_back(tmp);
-        }
-        if(_t3.size() == 0) {pop_stack(); return nullptr;}
-        ows *_t4 = ows::parse();
-        if(_t4 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t5 = next_chars(1);
-        if(_t5 != "]") {pop_stack(); return nullptr;}
-        ows *_t6 = ows::parse();
-        if(_t6 == nullptr) {pop_stack(); return nullptr;}
-        global_declaration::a2 *_t7 = global_declaration::a2::parse();
-        declaration *_t8 = declaration::parse();
-        if(_t8 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t9 = ows::parse();
-        if(_t9 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t10 = next_chars(1);
-        if(_t10 != ";") {pop_stack(); return nullptr;}
+        global_declaration::a0 *_t0 = global_declaration::a0::parse();
+        global_declaration::a1 *_t1 = global_declaration::a1::parse();
+        declaration *_t2 = declaration::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t3 = ows::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t4 = next_chars(1);
+        if(_t4 != ";") {pop_stack(); return nullptr;}
         rm_stack();
-        return new global_declaration(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9, _t10);
+        return new global_declaration(_t0, _t1, _t2, _t3, _t4);
     }
 
     std::string global_declaration::to_string() {
         std::string ans = "";
-        ans += t0;
-        ans += t1->to_string();
-        if(t2 != nullptr) ans += t2->to_string();
-        for(int i = 0; i < t3.size(); i++) ans += t3[i]->to_string();
-        ans += t4->to_string();
-        ans += t5;
-        ans += t6->to_string();
-        if(t7 != nullptr) ans += t7->to_string();
-        ans += t8->to_string();
-        ans += t9->to_string();
-        ans += t10;
+        if(t0 != nullptr) ans += t0->to_string();
+        if(t1 != nullptr) ans += t1->to_string();
+        ans += t2->to_string();
+        ans += t3->to_string();
+        ans += t4;
         return ans;
     }
 
@@ -7142,6 +7171,20 @@ namespace parser {
         return ans;
     }
 
+    program::a0::b0::c8* program::a0::b0::c8::parse() {
+        push_stack();
+        global_node *_t0 = global_node::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new program::a0::b0::c8(_t0);
+    }
+
+    std::string program::a0::b0::c8::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
     program::a0::b0* program::a0::b0::parse() {
         if(auto x = program::a0::b0::c0::parse()) return new program::a0::b0(x);
         if(auto x = program::a0::b0::c1::parse()) return new program::a0::b0(x);
@@ -7151,6 +7194,7 @@ namespace parser {
         if(auto x = program::a0::b0::c5::parse()) return new program::a0::b0(x);
         if(auto x = program::a0::b0::c6::parse()) return new program::a0::b0(x);
         if(auto x = program::a0::b0::c7::parse()) return new program::a0::b0(x);
+        if(auto x = program::a0::b0::c8::parse()) return new program::a0::b0(x);
         return nullptr;
     }
 
@@ -7163,6 +7207,7 @@ namespace parser {
         if(is_c5) return t5->to_string();
         if(is_c6) return t6->to_string();
         if(is_c7) return t7->to_string();
+        if(is_c8) return t8->to_string();
         assert(false);
     }
 
