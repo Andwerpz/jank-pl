@@ -774,6 +774,7 @@ some miscellaneous features:
  - better semantic error messages. 
    - would be nice if on failure, could print out the relevant code or smth. 
    - how would we even do that? perhaps take advantage of the 'to_string()'?
+   - would need to store line information along with everything D:
  - default struct member variable declarations
    - this would be implemented in emit_initialize_struct(), right after we call each member variable's default constructor
  - multi declarations, we can separate multiple variable declarations on the same line with commas

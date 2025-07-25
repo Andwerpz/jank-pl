@@ -1,4 +1,4 @@
-// Date Generated : 07-24-2025 00:42:01
+// Date Generated : 07-24-2025 21:23:14
 #include "parser.h"
 
 namespace parser {
@@ -18,6 +18,7 @@ namespace parser {
 
     //initializes the parse controller
     void set_s(std::string& ns) {
+        assert(ns.size() != 0);
         s = ns;
         ptr = 0;
         max_parse = 0;
@@ -92,6 +93,9 @@ namespace parser {
     //call this when you think you are done
     bool check_finished_parsing() {
         if(ptr != s.size()) {
+            assert(max_parse >= 0 && max_parse <= s.size());
+            //it could be the case that all the tokens are consumed, but the pattern isn't done parsing
+            if(max_parse == s.size()) max_parse -= 1;   
             prettyprint_at_ind(max_parse);
             return false;
         }
