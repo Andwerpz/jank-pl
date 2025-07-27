@@ -1129,7 +1129,8 @@ bool add_function(Function *f){
     FunctionSignature *fs = f->resolve_function_signature();
     if(is_function_declared(fs)) return false;
     declared_functions.push_back(f);
-    function_label_map.insert({fs, create_new_label()});
+    if(!f->enclosing_type.has_value() && f->parameters.size() == 0) function_label_map.insert({fs, f->id->name});
+    else function_label_map.insert({fs, create_new_label()});
     std::cout << "ADD FUNCTION : " << fs->to_string() << std::endl;
     return true;
 }
