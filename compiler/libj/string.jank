@@ -138,6 +138,14 @@ string to_string(u64 x) {
     return ret;
 }
 
+string to_string(u32 x) {
+    return to_string($u64 x);
+}
+
+string to_string(u16 x) {
+    return to_string($u64 x);
+}
+
 string to_string(i32 x) {
     if(x == 0) return new string("0");
     string ret = new string();
