@@ -230,7 +230,7 @@ bool Function::is_well_formed() {
             int border = b->node_id.has_value()? order_map[b->node_id.value()->name] : global_nodes.size();
             return aorder < border;
         });
-        global_mem_ptr = 0;
+        global_mem_ptr = -8;
         for(int i = 0; i < global_declarations.size(); i++){
             bool is_extern = global_declarations[i]->is_extern;
             Type *type = global_declarations[i]->declaration->type;
@@ -240,7 +240,7 @@ bool Function::is_well_formed() {
             if(is_extern) addr_str = id->name;
             else {
                 addr_str = std::to_string(global_mem_ptr) + "(%r15)";
-                global_mem_ptr += 8;
+                global_mem_ptr -= 8;
             }
             std::cout << "GLOBAL : " << type->to_string() << " " << id->name << "\n";
 
