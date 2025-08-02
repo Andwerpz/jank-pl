@@ -1786,7 +1786,25 @@ std::string get_string_literal_label(std::string str) {
 }
 
 void emit_data_section() {
+    fout << ".section .data\n";
+    //alloc space for global variables
+    //all declared variables at this point should be globals
+    for(int i = 0; i < declared_variables.size(); i++){
+        Variable* v = declared_variables[i];
+        std::string var_addr = v->addr;
+        assert(var_addr.size() >= 6);
+        std::string suf = var_addr.substr(var_addr.size() - 6);
+        assert(suf == "(%rip)");
+        std::string label = var_addr.substr(0, var_addr.size() - 6);
+        assert(label.size() > 0);
+        fout << label << ": .quad 0";
+        if(asm_debug) fout << " # " << v->type->to_string() << " " << v->id->name;
+        fout << "\n";
+    }
+    fout << "\n";
+
     fout << ".section .rodata\n";
+    //alloc string literals
     for(auto i = string_literal_label_map.begin(); i != string_literal_label_map.end(); i++) {
         std::string val = i->first;
         std::string label = i->second;

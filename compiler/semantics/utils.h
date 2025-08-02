@@ -61,7 +61,7 @@ struct Variable {
     bool is_extern; //only global variables should be extern
     Type *type;
     Identifier *id;
-    std::string addr;   //should hold something like "-8(%rbp)" or "24(%r15)" or "extern_label"
+    std::string addr;   //should hold something like "-8(%rbp)" or "L99(%rip)"
     Variable(bool _is_extern, Type *_type, Identifier *_id);
 };
 

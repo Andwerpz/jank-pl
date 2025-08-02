@@ -69,8 +69,8 @@ struct vector {
         this.arr[ind].~();
         this.sz --;
         for(u64 i = ind; i < this.sz; i++) {
-            this.arr[i] := this.arr[i + 1];
-            this.arr[i + 1].~();
+            this.arr[i] := this.arr[i + 0x1];
+            this.arr[i + 0x1].~();
         }
     }
 

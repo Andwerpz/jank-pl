@@ -518,7 +518,7 @@ namespace primitives {
                     //need to truncate
                     std::string mov = "movz" + sz_to_suf[szb] + "q";
                     if(mov == "movzlq") add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {"mov %eax, %eax"}));
-                    else add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + rb + ", %rax\n"}));
+                    else add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + rb + ", %rax"}));
                 }
                 else assert(false);
             }
@@ -541,7 +541,7 @@ namespace primitives {
                     //need to truncate
                     std::string mov = "movz" + sz_to_suf[szb] + "q";
                     if(mov == "movzlq") add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {"mov %eax, %eax"}));
-                    else add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + rb + ", %rax\n"}));
+                    else add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + rb + ", %rax"}));
                 }
                 else assert(false);
             }
@@ -563,7 +563,7 @@ namespace primitives {
                     //truncate
                     std::string mov = "movz" + sz_to_suf[szb] + "q";
                     if(mov == "movzlq") add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {"mov %eax, %eax"}));
-                    else add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + rb + ", %rax\n"}));
+                    else add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + rb + ", %rax"}));
                 }
                 else {
                     //do nothing
@@ -588,7 +588,7 @@ namespace primitives {
                     //need to truncate
                     std::string mov = "movz" + sz_to_suf[szb] + "q";
                     if(mov == "movzlq") add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {"mov %eax, %eax"}));
-                    else add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + rb + ", %rax\n"}));
+                    else add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + rb + ", %rax"}));
                 }
                 else {
                     //do nothing

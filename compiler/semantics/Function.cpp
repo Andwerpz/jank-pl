@@ -206,17 +206,6 @@ bool Function::is_well_formed() {
             std::cout << global_nodes[ind]->id->name << "\n";
         }
 
-        //save global base pointer to %r15
-        fout << indent() << "mov %rsp, %r15\n";
-
-        //reserve enough memory. This should not be managed by local_offset
-        int global_mem_ptr = 0;
-        for(int i = 0; i < global_declarations.size(); i++){
-            if(global_declarations[i]->is_extern) continue;
-            global_mem_ptr += 8;
-        }
-        fout << indent() << "sub $" << global_mem_ptr << ", %rsp\n";
-
         //setup fake stack frame. We need to do this because pop_declaration_stack() will not actually
         //move %rsp if it's the last element on the stack. 
         push_declaration_stack();
@@ -230,18 +219,15 @@ bool Function::is_well_formed() {
             int border = b->node_id.has_value()? order_map[b->node_id.value()->name] : global_nodes.size();
             return aorder < border;
         });
-        global_mem_ptr = -8;
         for(int i = 0; i < global_declarations.size(); i++){
             bool is_extern = global_declarations[i]->is_extern;
             Type *type = global_declarations[i]->declaration->type;
             Identifier *id = global_declarations[i]->declaration->id;
             
             std::string addr_str = "";
-            if(is_extern) addr_str = id->name;
-            else {
-                addr_str = std::to_string(global_mem_ptr) + "(%r15)";
-                global_mem_ptr -= 8;
-            }
+            if(is_extern) addr_str = id->name + "(%rip)";
+            else addr_str = create_new_label() + "(%rip)";   //we'll initialize these labels in the .data segment
+            assert(addr_str.size() != 0);
             std::cout << "GLOBAL : " << type->to_string() << " " << id->name << "\n";
 
             if(asm_debug) fout << indent() << "# initialize global variable : " << type->to_string() << " " << id->name << "\n";
