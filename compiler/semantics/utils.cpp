@@ -1797,9 +1797,13 @@ void emit_data_section() {
         assert(suf == "(%rip)");
         std::string label = var_addr.substr(0, var_addr.size() - 6);
         assert(label.size() > 0);
-        fout << label << ": .quad 0";
-        if(asm_debug) fout << " # " << v->type->to_string() << " " << v->id->name;
-        fout << "\n";
+
+        //if it's extern, it should already be declared somewhere
+        if(!v->is_extern) {
+            fout << label << ": .quad 0";
+            if(asm_debug) fout << " # " << v->type->to_string() << " " << v->id->name;
+            fout << "\n";
+        }
     }
     fout << "\n";
 
