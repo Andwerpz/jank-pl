@@ -61,9 +61,9 @@ struct istream {
         return this.buf[this.buf_ptr ++];
     }
 
-    //if we hit eof before a token, returns nullptr
-    u8* next_token() {
-        vector<u8> tok = new vector<u8>(0, '\0');
+    //if we hit eof before a token, returns empty string
+    string next_token() {
+        string tok = new string();
 
         i32 found_tok = 0;
         while(1) {
@@ -78,12 +78,8 @@ struct istream {
             }
         }
 
-        if(!found_tok) return $u8* nullptr;
-
-        u8* ret = $u8* malloc(tok.size() + $u64 1);
-        for(u64 i = $u64 0; i < tok.size(); i++) ret[i] = tok[i];
-        ret[tok.size()] = '\0';
-        return ret;
+        if(!found_tok) return new string();
+        return tok;
     }
 
     i32 eof() {
@@ -92,26 +88,17 @@ struct istream {
 }
 
 istream& operator>>(istream& stream, string& s) {
-    u8* tok = stream.next_token();
-    if($u64 tok != $u64 nullptr) {
-        s = new string(tok);
-    }
+    s = stream.next_token();
     return stream;
 }
 
 istream& operator>>(istream& stream, u64& x) {
-    u8* tok = stream.next_token();
-    if($u64 tok != $u64 nullptr) {
-        x = stou64(new string(tok));
-    }
+    x = stou64(stream.next_token());
     return stream;
 }
 
 istream& operator>>(istream& stream, i32& x) {
-    u8* tok = stream.next_token();
-    if($u64 tok != $u64 nullptr) {
-        x = stoi32(new string(tok));
-    }
+    x = stoi32(stream.next_token());
     return stream;
 }
 
@@ -156,11 +143,6 @@ ostream& operator<<(ostream& stream, u8* s) {
     return stream;
 }
 
-ostream& operator<<(ostream& stream, u8 c) {
-    stream.write_to_fd(c);
-    return stream;
-}
-
 ostream& operator<<(ostream& stream, i32 x) {
     stream.write_to_fd(to_string(x));
     return stream;
@@ -168,6 +150,21 @@ ostream& operator<<(ostream& stream, i32 x) {
 
 ostream& operator<<(ostream& stream, u64 x) {
     stream.write_to_fd(to_string(x));
+    return stream;
+}
+
+ostream& operator<<(ostream& stream, u32 x) {
+    stream.write_to_fd(to_string(x));
+    return stream;
+}
+
+ostream& operator<<(ostream& stream, u16 x) {
+    stream.write_to_fd(to_string(x));
+    return stream;
+}
+
+ostream& operator<<(ostream& stream, u8 c) {
+    stream.write_to_fd(c);
     return stream;
 }
 

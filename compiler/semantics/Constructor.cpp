@@ -253,7 +253,6 @@ bool ArrayConstructor::is_well_formed() {
         Identifier *thisid = new Identifier("this");
 
         for(int i = 0; i < atype->amt; i++){
-            std::cout << "ARRAY COPY CONSTRUCTOR : " << std::endl;
             Expression *cpy_expr = new Expression(
                 new ExprBinary(
                     new ExprPostfix(new ExprPrimary(thisid), new Expression(new ExprPrimary(new IntegerLiteral(i)))),

@@ -1,4 +1,5 @@
 #include <jstring>;
+#include <vector>;
 
 #global_node STRING [MALLOC];
 
@@ -98,6 +99,28 @@ struct string {
             this[this.sz - $u64 1 - i] = tmp;
         }
     }
+
+    string substr(u64 start, u64 len) {
+        string res = new string(len, '\0');
+        for(u64 i = 0x0; i < len; i++) res[i] = this[start + i];
+        return res;
+    }
+
+    string substr(u64 start) {
+        return this.substr(start, this.size() - start);
+    }
+
+    vector<string> split(u8 delim) {
+        vector<string> res;
+        for(u64 i = 0x0; i < this.size(); i++){
+            if(this[i] == delim) continue;
+            u64 r = i;
+            while(r != this.size() && this[r] != delim) r ++;
+            res.push_back(this.substr(i, r - i));
+            i = r;
+        }
+        return res;
+    }
 }
 
 u8& operator[](string& a, u64 ind) {
@@ -136,6 +159,14 @@ string to_string(u64 x) {
     }
     ret.reverse();
     return ret;
+}
+
+string to_string(u32 x) {
+    return to_string($u64 x);
+}
+
+string to_string(u16 x) {
+    return to_string($u64 x);
 }
 
 string to_string(i32 x) {

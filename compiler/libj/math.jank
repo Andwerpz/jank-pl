@@ -1,8 +1,15 @@
-#include <jstring>;
-#include <iostream>;
-#include <assert>;
 
 [__GLOBAL_FIRST__] f32 PI = 3.1415927;
+
+u64 min(u64 x, u64 y) {
+    if(x < y) return x;
+    return y;
+}
+
+u64 max(u64 x, u64 y) {
+    if(x > y) return x;
+    return y;
+}
 
 f32 sqrt(f32 x) {
     f32 out = 0.0;
@@ -41,7 +48,6 @@ f32 ceil(f32 x) {
 //returns a % b
 //is signed
 f32 fmod(f32 a, f32 b) {
-    assert(b != 0.0);
     return a - trunc(a / b) * b;
 }
 
