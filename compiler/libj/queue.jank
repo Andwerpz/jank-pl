@@ -1,0 +1,89 @@
+
+//expandable rotating buffer
+
+template<T>
+struct deque {
+    u64 cap;
+    u64 start;
+    u64 sz;
+    T* arr;
+
+    deque() {
+        this.cap = 0x1;
+        this.start = 0x0;
+        this.sz = 0x0;
+        this.arr = $T* malloc(sizeof(T) * this.cap);
+    }
+
+    deque(deque& other) {
+        this.cap = other.cap;
+        this.start = other.start;
+        this.sz = other.sz;
+        for(u64 i = $u64 0; i < this.sz; i++) {
+            this.arr[(this.start + i) % this.cap] := other.arr[(this.start + i) % this.cap];
+        }
+    }
+
+    ~deque() {
+        for(u64 i = 0x0; i < this.sz; i++) {
+            this.arr[(this.start + i) % this.cap].~();
+        }
+        free($void* this.arr, this.cap * sizeof(T));
+    }
+
+    void grow() {
+        u64 old_cap = this.cap;
+        this.cap *= 0x2;
+        T* narr = $T* malloc(sizeof(T) * this.cap);
+        for(u64 i = $u64 0; i < this.sz; i++){
+            narr[i] := this.arr[(this.start + i) % old_cap];
+        }
+        for(u64 i = 0x0; i < this.sz; i++) this.arr[(this.start + i) % old_cap].~();
+        free($void* this.arr, old_cap * sizeof(T));
+        this.arr = narr;
+    }
+
+    void push_front(T x) {
+        if(this.sz == this.cap) this.grow();
+        if(this.start == 0x0) this.start = this.cap;
+        this.start --;
+        this.sz ++;
+        this.arr[this.start] := x;
+    }
+
+    void push_back(T x) {
+        if(this.sz == this.cap) this.grow();
+        this.arr[(this.start + this.sz) % this.cap] := x;
+        this.sz ++;
+    }
+
+    T pop_front() {
+        if(this.sz == 0x0) return new T();  //what should I do here D:
+        T retval = this.arr[this.start];
+        this.arr[this.start].~();
+        this.start = (this.start + 0x1) % this.cap;
+        return retval;
+    }
+
+    T pop_back() {
+        if(this.sz == 0x0) return new T(); 
+        this.sz --;
+        T retval = this.arr[(this.start + this.sz) % this.cap];
+        this.arr[(this.start + this.sz) % this.cap].~();
+        return retval;
+    }
+
+    T& front() {
+        return this.arr[this.start];
+    }
+
+    T& back() {
+        u64 ind = (this.start + this.sz) % this.cap;
+        if(ind == 0x0) ind = this.cap - 0x1;
+        return this.arr[ind];
+    }
+
+    u64 size() {
+        return this.sz;
+    }
+}
