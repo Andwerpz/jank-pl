@@ -62,6 +62,7 @@ struct deque {
         T retval = this.arr[this.start];
         this.arr[this.start].~();
         this.start = (this.start + 0x1) % this.cap;
+        this.sz --;
         return retval;
     }
 
