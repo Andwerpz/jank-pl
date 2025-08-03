@@ -224,9 +224,7 @@ bool Function::is_well_formed() {
             Type *type = global_declarations[i]->declaration->type;
             Identifier *id = global_declarations[i]->declaration->id;
             
-            std::string addr_str = "";
-            if(is_extern) addr_str = id->name + "(%rip)";
-            else addr_str = create_new_label() + "(%rip)";   //we'll initialize these labels in the .data segment
+            std::string addr_str = id->name + "(%rip)";
             assert(addr_str.size() != 0);
             std::cout << "GLOBAL : " << type->to_string() << " " << id->name << "\n";
 
