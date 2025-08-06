@@ -3,6 +3,7 @@
 #include "struct.ebnf" ;
 #include "overload.ebnf" ;
 #include "literal.ebnf" ;
+#include "inline_asm.ebnf" ;
 
 (* I loooove dylan janky *)
 
@@ -62,7 +63,7 @@ simple_statement = "return" , [ rws , expression ] , ows , ";"
                  | "continue" , ows , ";" 
                  | declaration , ows , ";" 
                  | expression , ows , ";" 
-                 | "asm!" , ows , "(" , ows , literal_string , ows , ")" , ows , ";" ;
+                 | inline_asm , ows , ";" ;
 control_statement = "if" , ows , "(" , ows ,  expression , ows , ")" , ows , statement , [ rws , "else" , rws , statement ]
                   | "while" , ows , "(" , ows , expression , ows , ")" , ows , statement 
                   | "for" , ows , "(" , ows , [ declaration ] , ows , ";" , ows , [ expression ] , ows , ";" , ows , [ expression ] , ows , ")" , ows , statement ;

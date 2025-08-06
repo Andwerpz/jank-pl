@@ -1,5 +1,12 @@
 
-[__GLOBAL_FIRST__] u64 errno = $u64 0;
+// full list of error codes
+// https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/errno.h.html
 
-[__GLOBAL_FIRST__] u64 ERR_RANGE = $u64 1;
-[__GLOBAL_FIRST__] u64 ERR_MALFORMED = $u64 2;
+[__GLOBAL_FIRST__] i32 errno = 0;
+
+// bad file descriptor
+[__GLOBAL_FIRST__] i32 ERR_BADF = 1;
+[__GLOBAL_FIRST__] i32 ERR_FAULT = 2;
+
+[__GLOBAL_FIRST__] i32 ERR_RANGE = 1000;
+[__GLOBAL_FIRST__] i32 ERR_MALFORMED = 1001;
