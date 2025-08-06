@@ -791,6 +791,11 @@ some miscellaneous features:
    - 'typedef <type> <basetype>'
    - I just need to check typedefs against all existing basetypes right? can't reuse a basetype
    - in C++, typedefs can depend on eachother. Either have to make the same system with global variables, or just say they can't depend on eachother. 
+   - since typedefs are relatively self contained, we can do dynamic typedef resolution. For each typedef, we
+     figure out what typedefs it depends on. Then, topological sort all the typedefs and then turn them all into 
+     <defined_type> -> <type> mappings. Finally, just do a lil replace templated types on the entire program. 
+   - we'll need to do this step after we register all the structs so we can tell what's an existing type 
+   - typedef types should be basetypes. 
  - templated function calls? like hash<T>(T a)? as an alternative to automated resolution
  - think about how to handle user defined typecasts (and typecasts in general). Perhaps typecasting
    shouldn't be treated the same as other operators. The input type has to exactly match, and the

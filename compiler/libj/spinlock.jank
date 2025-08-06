@@ -1,4 +1,48 @@
 
 struct spinlock {
-    
+    u64 locked; //0 = unlocked, 1 = locked
+
+    spinlock() {
+        this.locked = 0x0;
+    }
+
+    spinlock(spinlock& other) {
+        this.locked = 0x0;  //always create new spinlock in unlocked state
+    }
+
+    ~spinlock() {
+        this.locked = 0x0;  //ensure unlocked when destroyed
+    }
+
+    void lock() {
+        // spin until we can lock (woah, spinlock!!)
+        while(this.try_lock() == 0) {
+            // CPU pause instruction to be nice to the processor
+            asm!("pause");
+        }
+    }
+
+    i32 try_lock() {
+        // Simple test-and-set implementation
+        if(this.locked == $u32 0) {
+            this.locked = $u32 1;
+            return 1;  // Successfully acquired lock
+        }
+        return 0;  // Lock was already taken
+    }
+
+    void unlock() {
+        // Memory fence to ensure all previous operations complete
+        asm!("mfence");
+        
+        // Release the lock
+        this.locked = $u32 0;
+        
+        // Another memory fence to ensure the unlock is visible
+        asm!("mfence");
+    }
+
+    i32 is_locked() {
+        return $i32 this.locked;
+    }
 }

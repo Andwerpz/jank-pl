@@ -1,1 +1,9 @@
+#include "jank.ebnf" ; 
 
+inline_dereferencing = "*" , ows , identifier ;
+inline_referencing = "@" , ows , identifier ;
+inline_member_variable = identifier , ( "." | "->" ) , identifier ;
+inline_variable = identifier ;
+inline_access = "{" , ows , ( inline_referencing | inline_member_variable | inline_variable ) , ows , "}" ;
+
+inline_asm = "asm!(\"" , { inline_access | ( alpha | digit | escape | symbol | " " ) } , "\")" ;
