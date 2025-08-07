@@ -79,3 +79,7 @@ StructDefinition* TemplatedStructDefinition::gen_struct_def(TemplatedType* type)
     return n_struct_def;
 }
 
+bool TemplatedStructDefinition::replace_templated_types(TemplateMapping *mapping) {
+    return struct_def->replace_templated_types(mapping);
+}
+

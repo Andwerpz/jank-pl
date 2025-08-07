@@ -1,11 +1,14 @@
 #include "Program.h"
 
+#include <queue>
+#include <map>
+#include <algorithm>
+
 #include "../parser/parser.h"
 #include "StructDefinition.h"
 #include "Function.h"
 #include "utils.h"
 #include "Type.h"
-#include <queue>
 #include "FunctionSignature.h"
 #include "Identifier.h"
 #include "TemplatedStructDefinition.h"
@@ -18,15 +21,16 @@
 #include "Include.h"
 #include "GlobalDeclaration.h"
 #include "Declaration.h"
-#include <algorithm>
 #include "Destructor.h"
 #include "GlobalNode.h"
+#include "Typedef.h"
+#include "TemplateMapping.h"
 
 Program::Program() {
     // do nothing
 }
 
-Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> _overloads, std::vector<TemplatedOverload*> _templated_overloads, std::vector<Include*> _includes, std::vector<GlobalDeclaration*> _global_declarations, std::vector<GlobalNode*> _global_nodes) {
+Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> _overloads, std::vector<TemplatedOverload*> _templated_overloads, std::vector<Include*> _includes, std::vector<GlobalDeclaration*> _global_declarations, std::vector<GlobalNode*> _global_nodes, std::vector<Typedef*> _typedefs) {
     structs = _structs;
     functions = _functions;
     overloads = _overloads;
@@ -39,6 +43,8 @@ Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*>
 
     global_declarations = _global_declarations;
     global_nodes = _global_nodes;
+
+    typedefs = _typedefs;
 }
 
 Program* Program::convert(parser::program *p) {
@@ -54,6 +60,8 @@ Program* Program::convert(parser::program *p) {
 
     std::vector<GlobalDeclaration*> global_declarations;
     std::vector<GlobalNode*> global_nodes;
+
+    std::vector<Typedef*> typedefs;
 
     for(int i = 0; i < p->t0.size(); i++){
         if(p->t0[i]->t1->is_c0) {   //function
@@ -83,9 +91,12 @@ Program* Program::convert(parser::program *p) {
         else if(p->t0[i]->t1->is_c8) {  //global node
             global_nodes.push_back(GlobalNode::convert(p->t0[i]->t1->t8->t0));
         }
+        else if(p->t0[i]->t1->is_c9) {  //typedef
+            typedefs.push_back(Typedef::convert(p->t0[i]->t1->t9->t0));
+        }
         else assert(false);
     }
-    return new Program(structs, functions, templated_structs, templated_functions, overloads, templated_overloads, includes, global_declarations, global_nodes);
+    return new Program(structs, functions, templated_structs, templated_functions, overloads, templated_overloads, includes, global_declarations, global_nodes, typedefs);
 }
 
 void Program::add_all(Program *other) {
@@ -101,6 +112,8 @@ void Program::add_all(Program *other) {
     
     for(int i = 0; i < other->global_declarations.size(); i++) global_declarations.push_back(other->global_declarations[i]);
     for(int i = 0; i < other->global_nodes.size(); i++) global_nodes.push_back(other->global_nodes[i]);
+
+    for(int i = 0; i < other->typedefs.size(); i++) typedefs.push_back(other->typedefs[i]);
 }
 
 bool Program::is_well_formed() {
@@ -112,8 +125,8 @@ bool Program::is_well_formed() {
 
     fout << ".section .text\n";
 
-    //for all templated structs, register their basetype, add them as templated structs
-    std::cout << "ADDING TEMPLATED STRUCTS" << std::endl;
+    //register all basetypes
+    std::cout << "REGISTERING BASETYPES" << std::endl;
     for(int i = 0; i < templated_structs.size(); i++){
         BaseType *sbt = dynamic_cast<BaseType*>(templated_structs[i]->struct_def->type);
         assert(sbt != nullptr);
@@ -121,8 +134,119 @@ bool Program::is_well_formed() {
             std::cout << "Failed to add basetype : " << sbt->to_string() << "\n";
             return false;
         }
+    }
+    for(int i = 0; i < structs.size(); i++) {
+        BaseType *sbt = dynamic_cast<BaseType*>(structs[i]->type);
+        assert(sbt != nullptr);
+        if(!add_basetype(sbt)) {
+            std::cout << "Failed to add basetype : " << sbt->to_string() << "\n";
+            return false;
+        }
+    }
+
+    // - resolve typedefs
+    //at this point all basetypes should be registered in the controller
+    std::cout << "RESOLVING TYPEDEFS" << std::endl;
+    {
+        //register typedefs as basetypes
+        for(int i = 0; i < typedefs.size(); i++){
+            BaseType *tdbt = typedefs[i]->base_type;
+            if(!add_basetype(tdbt)) {
+                std::cout << "Failed to add basetype : " << tdbt->to_string() << "\n";
+                return false;
+            }
+        }
+
+        //map basetypes to ints
+        std::map<std::string, int> btind;
+        for(int i = 0; i < typedefs.size(); i++){
+            btind[typedefs[i]->base_type->name] = i;
+        }
+
+        //for each typedef, find what other typedefs it depends on
+        int n = typedefs.size();
+        std::vector<std::vector<int>> c(n);
+        for(int i = 0; i < n; i++){
+            std::vector<BaseType*> bts;
+            typedefs[i]->type->find_all_basetypes(bts);
+            
+            //make sure all basetypes are either declared or typedef'd
+            for(int j = 0; j < bts.size(); j++){
+                BaseType *bt = bts[j];
+                if(is_basetype_declared(bt)) continue;
+                int ind = -1;
+                for(int k = 0; k < n; k++){
+                    if(typedefs[k]->base_type->equals(bt)) ind = k;
+                }
+                if(ind == -1) {
+                    std::cout << "Basetype \"" << bt->to_string() << "\" not declared in : " << typedefs[i]->to_string() << "\n";
+                    return false;
+                }
+                c[ind].push_back(i);
+            }
+        }
+
+        //toposort typedefs
+        std::vector<int> indeg(n, 0);
+        for(int i = 0; i < n; i++){
+            for(int x : c[i]) indeg[x] ++;
+        }
+        std::vector<int> ord(0);
+        std::queue<int> q;
+        for(int i = 0; i < n; i++) if(indeg[i] == 0) q.push(i);
+        while(q.size() != 0){
+            int cur = q.front();
+            q.pop();
+            ord.push_back(cur);
+            for(int x : c[cur]) if(-- indeg[x] == 0) q.push(x);
+        }
+        if(ord.size() != n) {
+            std::cout << "Could not find ordering for typedefs\n";
+            return false;
+        }
+
+        //for each typedef, replace with previously defined basetypes
+        TemplateMapping *mapping = new TemplateMapping();
+        for(int i = 0; i < n; i++){
+            int cur = ord[i];
+            mapping->add_mapping(typedefs[cur]->base_type, typedefs[cur]->type);
+            if(i + 1 != n) {
+                int next = ord[i + 1];
+                typedefs[next]->replace_templated_types(mapping);
+            }
+        }
+
+        std::cout << "RESOLVED TYPEDEFS : \n";
+        for(int i = 0; i < n; i++){
+            std::cout << typedefs[i]->base_type->to_string() << " : " << typedefs[i]->type->to_string() << "\n";
+        }
+
+        //go through everything and replace typedef types
+        for(int i = 0; i < structs.size(); i++) structs[i]->replace_templated_types(mapping);
+        for(int i = 0; i < functions.size(); i++) functions[i]->replace_templated_types(mapping);
+        for(int i = 0; i < overloads.size(); i++) overloads[i]->replace_templated_types(mapping);
+        for(int i = 0; i < templated_structs.size(); i++) templated_structs[i]->replace_templated_types(mapping);
+        for(int i = 0; i < templated_functions.size(); i++) templated_functions[i]->replace_templated_types(mapping);
+        for(int i = 0; i < templated_overloads.size(); i++) templated_overloads[i]->replace_templated_types(mapping);
+        for(int i = 0; i < global_declarations.size(); i++) global_declarations[i]->replace_templated_types(mapping);
+    }
+
+    //for all templated structs add them as templated structs
+    std::cout << "ADDING TEMPLATED STRUCTS" << std::endl;
+    for(int i = 0; i < templated_structs.size(); i++){
+        BaseType *sbt = dynamic_cast<BaseType*>(templated_structs[i]->struct_def->type);
         if(!add_templated_struct(templated_structs[i])) {
             std::cout << "Failed to add templated struct : " << sbt->to_string() << "\n";
+            return false;
+        }
+    }
+
+    //for all structs, register them as types
+    std::cout << "ADDING STRUCTS" << std::endl;
+    for(int i = 0; i < structs.size(); i++) {
+        BaseType *sbt = dynamic_cast<BaseType*>(structs[i]->type);
+        if(!add_struct_type(structs[i])) {
+            std::cout << "Failed to add type : " << structs[i]->type->to_string() << "\n";
             return false;
         }
     }
@@ -141,21 +265,6 @@ bool Program::is_well_formed() {
     for(int i = 0; i < templated_overloads.size(); i++){
         if(!add_templated_overload(templated_overloads[i])) {
             std::cout << "Failed to add templated overload : " << templated_overloads[i]->overload->resolve_operator_signature()->to_string() << "\n";
-            return false;
-        }
-    }
-
-    //for all structs, register them as types
-    std::cout << "ADDING STRUCTS" << std::endl;
-    for(int i = 0; i < structs.size(); i++) {
-        BaseType *sbt = dynamic_cast<BaseType*>(structs[i]->type);
-        assert(sbt != nullptr);
-        if(!add_basetype(sbt)) {
-            std::cout << "Failed to add basetype : " << sbt->to_string() << "\n";
-            return false;
-        }
-        if(!add_struct_type(structs[i])) {
-            std::cout << "Failed to add type : " << structs[i]->type->to_string() << "\n";
             return false;
         }
     }

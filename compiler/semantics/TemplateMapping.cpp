@@ -19,6 +19,9 @@ Type* TemplateMapping::find_mapped_type(Type *template_type) {
 }
 
 bool TemplateMapping::add_mapping(Type *template_type, Type *mapped_type) {
+    //template type must be a basetype
+    assert(dynamic_cast<BaseType*>(template_type));
+
     //check if already exists
     if(this->find_mapped_type(template_type) != nullptr) {
         //if it already is mapped, make sure the mapped type is the same

@@ -98,3 +98,7 @@ Function* TemplatedFunction::gen_function(FunctionCall *fc) {
     if(!n_function->replace_templated_types(mapping)) return nullptr;
     return n_function;
 }
+
+bool TemplatedFunction::replace_templated_types(TemplateMapping *mapping) {
+    return function->replace_templated_types(mapping);
+}

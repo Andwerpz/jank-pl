@@ -106,3 +106,7 @@ Overload* TemplatedOverload::gen_overload(std::optional<Expression*> left, std::
     if(!n_overload->replace_templated_types(mapping)) return nullptr;
     return n_overload;
 }
+
+bool TemplatedOverload::replace_templated_types(TemplateMapping *mapping) {
+    return overload->replace_templated_types(mapping);
+}

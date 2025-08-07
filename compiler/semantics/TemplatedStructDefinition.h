@@ -17,4 +17,6 @@ struct TemplatedStructDefinition {
     bool is_well_formed();
     TemplateMapping* calc_mapping(TemplatedType *type);
     StructDefinition* gen_struct_def(TemplatedType* type);
+
+    bool replace_templated_types(TemplateMapping *mapping);
 };

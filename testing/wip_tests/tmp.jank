@@ -2,17 +2,24 @@
 #include <random>;
 #include <assert>;
 #include <string>;
+#include <vector>;
+#include <pair>;
 
-#global_node A;
-#global_node B;
-#global_node C [A, B];
-#global_node D [C];
-#global_node E [C];
-#global_node F [D, E];
-
-i32 global_no_id = 0;
+typedef i32 int;
+typedef u64 ll;
+typedef vector<int> vi;
+typedef vector<vi> vvi;
+typedef vector<ll> vl;
+typedef vector<vl> vvl;
+typedef pair<int, int> pii;
+typedef pair<ll, ll> pll;
 
 i32 main() {
+
+    int n = 10;
+    for(int i = 0; i < n; i++){
+        cout << "test : " << i << "\n";
+    }
 
     return 0;
 }

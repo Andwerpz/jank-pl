@@ -1,4 +1,4 @@
-// Date Generated : 07-24-2025 21:23:14
+// Date Generated : 08-06-2025 23:37:07
 #include "parser.h"
 
 namespace parser {
@@ -3496,6 +3496,234 @@ namespace parser {
         return ans;
     }
 
+    inline_dereferencing* inline_dereferencing::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "*") {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        identifier *_t2 = identifier::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new inline_dereferencing(_t0, _t1, _t2);
+    }
+
+    std::string inline_dereferencing::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2->to_string();
+        return ans;
+    }
+
+    inline_referencing* inline_referencing::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "@") {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        identifier *_t2 = identifier::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new inline_referencing(_t0, _t1, _t2);
+    }
+
+    std::string inline_referencing::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2->to_string();
+        return ans;
+    }
+
+    inline_member_variable::a0::b0* inline_member_variable::a0::b0::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != ".") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new inline_member_variable::a0::b0(_t0);
+    }
+
+    std::string inline_member_variable::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    inline_member_variable::a0::b1* inline_member_variable::a0::b1::parse() {
+        push_stack();
+        std::string _t0 = next_chars(2);
+        if(_t0 != "->") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new inline_member_variable::a0::b1(_t0);
+    }
+
+    std::string inline_member_variable::a0::b1::to_string() {
+        std::string ans = "";
+        ans += t0;
+        return ans;
+    }
+
+    inline_member_variable::a0* inline_member_variable::a0::parse() {
+        if(auto x = inline_member_variable::a0::b0::parse()) return new inline_member_variable::a0(x);
+        if(auto x = inline_member_variable::a0::b1::parse()) return new inline_member_variable::a0(x);
+        return nullptr;
+    }
+
+    std::string inline_member_variable::a0::to_string() {
+        if(is_b0) return t0->to_string();
+        if(is_b1) return t1->to_string();
+        assert(false);
+    }
+
+    inline_member_variable* inline_member_variable::parse() {
+        push_stack();
+        identifier *_t0 = identifier::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        inline_member_variable::a0 *_t1 = inline_member_variable::a0::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        identifier *_t2 = identifier::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new inline_member_variable(_t0, _t1, _t2);
+    }
+
+    std::string inline_member_variable::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2->to_string();
+        return ans;
+    }
+
+    inline_variable* inline_variable::parse() {
+        push_stack();
+        identifier *_t0 = identifier::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new inline_variable(_t0);
+    }
+
+    std::string inline_variable::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    inline_access::a0::b0* inline_access::a0::b0::parse() {
+        push_stack();
+        inline_referencing *_t0 = inline_referencing::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new inline_access::a0::b0(_t0);
+    }
+
+    std::string inline_access::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    inline_access::a0::b1* inline_access::a0::b1::parse() {
+        push_stack();
+        inline_member_variable *_t0 = inline_member_variable::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new inline_access::a0::b1(_t0);
+    }
+
+    std::string inline_access::a0::b1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    inline_access::a0::b2* inline_access::a0::b2::parse() {
+        push_stack();
+        inline_variable *_t0 = inline_variable::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new inline_access::a0::b2(_t0);
+    }
+
+    std::string inline_access::a0::b2::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    inline_access::a0* inline_access::a0::parse() {
+        if(auto x = inline_access::a0::b0::parse()) return new inline_access::a0(x);
+        if(auto x = inline_access::a0::b1::parse()) return new inline_access::a0(x);
+        if(auto x = inline_access::a0::b2::parse()) return new inline_access::a0(x);
+        return nullptr;
+    }
+
+    std::string inline_access::a0::to_string() {
+        if(is_b0) return t0->to_string();
+        if(is_b1) return t1->to_string();
+        if(is_b2) return t2->to_string();
+        assert(false);
+    }
+
+    inline_access* inline_access::parse() {
+        push_stack();
+        std::string _t0 = next_chars(1);
+        if(_t0 != "{") {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        inline_access::a0 *_t2 = inline_access::a0::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t3 = ows::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t4 = next_chars(1);
+        if(_t4 != "}") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new inline_access(_t0, _t1, _t2, _t3, _t4);
+    }
+
+    std::string inline_access::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2->to_string();
+        ans += t3->to_string();
+        ans += t4;
+        return ans;
+    }
+
+    inline_asm* inline_asm::parse() {
+        push_stack();
+        std::string _t0 = next_chars(4);
+        if(_t0 != "asm!") {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t2 = next_chars(1);
+        if(_t2 != "(") {pop_stack(); return nullptr;}
+        ows *_t3 = ows::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        literal_string *_t4 = literal_string::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t5 = ows::parse();
+        if(_t5 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t6 = next_chars(1);
+        if(_t6 != ")") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new inline_asm(_t0, _t1, _t2, _t3, _t4, _t5, _t6);
+    }
+
+    std::string inline_asm::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2;
+        ans += t3->to_string();
+        ans += t4->to_string();
+        ans += t5->to_string();
+        ans += t6;
+        return ans;
+    }
+
     alpha::a0* alpha::a0::parse() {
         push_stack();
         std::string _t0 = next_chars(1);
@@ -6554,39 +6782,21 @@ namespace parser {
 
     simple_statement::a5* simple_statement::a5::parse() {
         push_stack();
-        std::string _t0 = next_chars(4);
-        if(_t0 != "asm!") {pop_stack(); return nullptr;}
+        inline_asm *_t0 = inline_asm::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
         ows *_t1 = ows::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
         std::string _t2 = next_chars(1);
-        if(_t2 != "(") {pop_stack(); return nullptr;}
-        ows *_t3 = ows::parse();
-        if(_t3 == nullptr) {pop_stack(); return nullptr;}
-        literal_string *_t4 = literal_string::parse();
-        if(_t4 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t5 = ows::parse();
-        if(_t5 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t6 = next_chars(1);
-        if(_t6 != ")") {pop_stack(); return nullptr;}
-        ows *_t7 = ows::parse();
-        if(_t7 == nullptr) {pop_stack(); return nullptr;}
-        std::string _t8 = next_chars(1);
-        if(_t8 != ";") {pop_stack(); return nullptr;}
+        if(_t2 != ";") {pop_stack(); return nullptr;}
         rm_stack();
-        return new simple_statement::a5(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8);
+        return new simple_statement::a5(_t0, _t1, _t2);
     }
 
     std::string simple_statement::a5::to_string() {
         std::string ans = "";
-        ans += t0;
+        ans += t0->to_string();
         ans += t1->to_string();
         ans += t2;
-        ans += t3->to_string();
-        ans += t4->to_string();
-        ans += t5->to_string();
-        ans += t6;
-        ans += t7->to_string();
-        ans += t8;
         return ans;
     }
 
@@ -6942,6 +7152,38 @@ namespace parser {
         return ans;
     }
 
+    _typedef* _typedef::parse() {
+        push_stack();
+        std::string _t0 = next_chars(7);
+        if(_t0 != "typedef") {pop_stack(); return nullptr;}
+        rws *_t1 = rws::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        type *_t2 = type::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        rws *_t3 = rws::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        base_type *_t4 = base_type::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t5 = ows::parse();
+        if(_t5 == nullptr) {pop_stack(); return nullptr;}
+        std::string _t6 = next_chars(1);
+        if(_t6 != ";") {pop_stack(); return nullptr;}
+        rm_stack();
+        return new _typedef(_t0, _t1, _t2, _t3, _t4, _t5, _t6);
+    }
+
+    std::string _typedef::to_string() {
+        std::string ans = "";
+        ans += t0;
+        ans += t1->to_string();
+        ans += t2->to_string();
+        ans += t3->to_string();
+        ans += t4->to_string();
+        ans += t5->to_string();
+        ans += t6;
+        return ans;
+    }
+
     global_node::a0* global_node::a0::parse() {
         push_stack();
         ows *_t0 = ows::parse();
@@ -7189,6 +7431,20 @@ namespace parser {
         return ans;
     }
 
+    program::a0::b0::c9* program::a0::b0::c9::parse() {
+        push_stack();
+        _typedef *_t0 = _typedef::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        return new program::a0::b0::c9(_t0);
+    }
+
+    std::string program::a0::b0::c9::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
     program::a0::b0* program::a0::b0::parse() {
         if(auto x = program::a0::b0::c0::parse()) return new program::a0::b0(x);
         if(auto x = program::a0::b0::c1::parse()) return new program::a0::b0(x);
@@ -7199,6 +7455,7 @@ namespace parser {
         if(auto x = program::a0::b0::c6::parse()) return new program::a0::b0(x);
         if(auto x = program::a0::b0::c7::parse()) return new program::a0::b0(x);
         if(auto x = program::a0::b0::c8::parse()) return new program::a0::b0(x);
+        if(auto x = program::a0::b0::c9::parse()) return new program::a0::b0(x);
         return nullptr;
     }
 
@@ -7212,6 +7469,7 @@ namespace parser {
         if(is_c6) return t6->to_string();
         if(is_c7) return t7->to_string();
         if(is_c8) return t8->to_string();
+        if(is_c9) return t9->to_string();
         assert(false);
     }
 

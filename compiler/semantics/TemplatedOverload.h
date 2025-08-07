@@ -20,4 +20,6 @@ struct TemplatedOverload {
     bool is_well_formed();
     TemplateMapping* calc_mapping(std::optional<Expression*> left, std::string op, std::optional<Expression*> right);
     Overload* gen_overload(std::optional<Expression*> left, std::string op, std::optional<Expression*> right);
+
+    bool replace_templated_types(TemplateMapping *mapping);
 };

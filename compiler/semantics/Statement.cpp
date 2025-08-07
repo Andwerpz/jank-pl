@@ -102,7 +102,7 @@ SimpleStatement* SimpleStatement::convert(parser::simple_statement *s) {
         return new ExpressionStatement(expr);
     }
     else if(s->is_a5) { //inline asm
-        std::string asm_str = StringLiteral::convert(s->t5->t4)->val;
+        std::string asm_str = StringLiteral::convert(s->t5->t0->t4)->val;
         return new ASMStatement(asm_str);
     }
     else assert(false);

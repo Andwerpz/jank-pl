@@ -1,4 +1,4 @@
-// Date Generated : 07-24-2025 21:23:14
+// Date Generated : 08-06-2025 23:37:07
 #pragma once
 #include <vector>
 #include <string>
@@ -54,6 +54,12 @@ namespace parser {
     struct overload_definition;
     struct overload;
     struct templated_overload;
+    struct inline_dereferencing;
+    struct inline_referencing;
+    struct inline_member_variable;
+    struct inline_variable;
+    struct inline_access;
+    struct inline_asm;
     struct alpha;
     struct digit;
     struct escape;
@@ -80,6 +86,7 @@ namespace parser {
     struct control_statement;
     struct compound_statement;
     struct include;
+    struct _typedef;
     struct global_node;
     struct global_declaration;
     struct program;
@@ -2646,6 +2653,176 @@ namespace parser {
         std::string to_string();
     };
 
+    // inline_dereferencing = "*" , ows , identifier ;
+    struct inline_dereferencing {
+        std::string t0;
+        ows *t1;
+        identifier *t2;
+        inline_dereferencing(std::string _t0, ows *_t1, identifier *_t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static inline_dereferencing* parse();
+        std::string to_string();
+    };
+
+    // inline_referencing = "@" , ows , identifier ;
+    struct inline_referencing {
+        std::string t0;
+        ows *t1;
+        identifier *t2;
+        inline_referencing(std::string _t0, ows *_t1, identifier *_t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static inline_referencing* parse();
+        std::string to_string();
+    };
+
+    // inline_member_variable = identifier , ( "." | "->" ) , identifier ;
+    struct inline_member_variable {
+        struct a0 {
+            struct b0 {
+                std::string t0;
+                b0(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            struct b1 {
+                std::string t0;
+                b1(std::string _t0) {
+                    t0 = _t0;
+                }
+                static b1* parse();
+                std::string to_string();
+            };
+            bool is_b0 = false;
+            b0 *t0;
+            bool is_b1 = false;
+            b1 *t1;
+            a0(b0 *_t0) {
+                is_b0 = true;
+                t0 = _t0;
+            }
+            a0(b1 *_t1) {
+                is_b1 = true;
+                t1 = _t1;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        identifier *t0;
+        a0 *t1;
+        identifier *t2;
+        inline_member_variable(identifier *_t0, a0 *_t1, identifier *_t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static inline_member_variable* parse();
+        std::string to_string();
+    };
+
+    // inline_variable = identifier ;
+    struct inline_variable {
+        identifier *t0;
+        inline_variable(identifier *_t0) {
+            t0 = _t0;
+        }
+        static inline_variable* parse();
+        std::string to_string();
+    };
+
+    // inline_access = "{" , ows , ( inline_referencing | inline_member_variable | inline_variable ) , ows , "}" ;
+    struct inline_access {
+        struct a0 {
+            struct b0 {
+                inline_referencing *t0;
+                b0(inline_referencing *_t0) {
+                    t0 = _t0;
+                }
+                static b0* parse();
+                std::string to_string();
+            };
+            struct b1 {
+                inline_member_variable *t0;
+                b1(inline_member_variable *_t0) {
+                    t0 = _t0;
+                }
+                static b1* parse();
+                std::string to_string();
+            };
+            struct b2 {
+                inline_variable *t0;
+                b2(inline_variable *_t0) {
+                    t0 = _t0;
+                }
+                static b2* parse();
+                std::string to_string();
+            };
+            bool is_b0 = false;
+            b0 *t0;
+            bool is_b1 = false;
+            b1 *t1;
+            bool is_b2 = false;
+            b2 *t2;
+            a0(b0 *_t0) {
+                is_b0 = true;
+                t0 = _t0;
+            }
+            a0(b1 *_t1) {
+                is_b1 = true;
+                t1 = _t1;
+            }
+            a0(b2 *_t2) {
+                is_b2 = true;
+                t2 = _t2;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
+        std::string t0;
+        ows *t1;
+        a0 *t2;
+        ows *t3;
+        std::string t4;
+        inline_access(std::string _t0, ows *_t1, a0 *_t2, ows *_t3, std::string _t4) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
+        }
+        static inline_access* parse();
+        std::string to_string();
+    };
+
+    // inline_asm = "asm!" , ows , "(" , ows , literal_string , ows , ")" ;
+    struct inline_asm {
+        std::string t0;
+        ows *t1;
+        std::string t2;
+        ows *t3;
+        literal_string *t4;
+        ows *t5;
+        std::string t6;
+        inline_asm(std::string _t0, ows *_t1, std::string _t2, ows *_t3, literal_string *_t4, ows *_t5, std::string _t6) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
+            t5 = _t5;
+            t6 = _t6;
+        }
+        static inline_asm* parse();
+        std::string to_string();
+    };
+
     // alpha = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" ;
     struct alpha {
         struct a0 {
@@ -5004,7 +5181,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // simple_statement = "return" , [ rws , expression ] , ows , ";" | "break" , ows , ";" | "continue" , ows , ";" | declaration , ows , ";" | expression , ows , ";" | "asm!" , ows , "(" , ows , literal_string , ows , ")" , ows , ";" ;
+    // simple_statement = "return" , [ rws , expression ] , ows , ";" | "break" , ows , ";" | "continue" , ows , ";" | declaration , ows , ";" | expression , ows , ";" | inline_asm , ows , ";" ;
     struct simple_statement {
         struct a0 {
             struct b0 {
@@ -5079,25 +5256,13 @@ namespace parser {
             std::string to_string();
         };
         struct a5 {
-            std::string t0;
+            inline_asm *t0;
             ows *t1;
             std::string t2;
-            ows *t3;
-            literal_string *t4;
-            ows *t5;
-            std::string t6;
-            ows *t7;
-            std::string t8;
-            a5(std::string _t0, ows *_t1, std::string _t2, ows *_t3, literal_string *_t4, ows *_t5, std::string _t6, ows *_t7, std::string _t8) {
+            a5(inline_asm *_t0, ows *_t1, std::string _t2) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
-                t3 = _t3;
-                t4 = _t4;
-                t5 = _t5;
-                t6 = _t6;
-                t7 = _t7;
-                t8 = _t8;
             }
             static a5* parse();
             std::string to_string();
@@ -5374,6 +5539,28 @@ namespace parser {
         std::string to_string();
     };
 
+    // _typedef = "typedef" , rws , type , rws , base_type , ows , ";" ;
+    struct _typedef {
+        std::string t0;
+        rws *t1;
+        type *t2;
+        rws *t3;
+        base_type *t4;
+        ows *t5;
+        std::string t6;
+        _typedef(std::string _t0, rws *_t1, type *_t2, rws *_t3, base_type *_t4, ows *_t5, std::string _t6) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
+            t5 = _t5;
+            t6 = _t6;
+        }
+        static _typedef* parse();
+        std::string to_string();
+    };
+
     // global_node = "#global_node" , rws , identifier , [ ows , "[" , identifier_list , "]" ] , ows , ";" ;
     struct global_node {
         struct a0 {
@@ -5454,7 +5641,7 @@ namespace parser {
         std::string to_string();
     };
 
-    // program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload | include | global_declaration | global_node ) } , ows ;
+    // program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload | include | global_declaration | global_node | _typedef ) } , ows ;
     struct program {
         struct a0 {
             struct b0 {
@@ -5530,6 +5717,14 @@ namespace parser {
                     static c8* parse();
                     std::string to_string();
                 };
+                struct c9 {
+                    _typedef *t0;
+                    c9(_typedef *_t0) {
+                        t0 = _t0;
+                    }
+                    static c9* parse();
+                    std::string to_string();
+                };
                 bool is_c0 = false;
                 c0 *t0;
                 bool is_c1 = false;
@@ -5548,6 +5743,8 @@ namespace parser {
                 c7 *t7;
                 bool is_c8 = false;
                 c8 *t8;
+                bool is_c9 = false;
+                c9 *t9;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -5583,6 +5780,10 @@ namespace parser {
                 b0(c8 *_t8) {
                     is_c8 = true;
                     t8 = _t8;
+                }
+                b0(c9 *_t9) {
+                    is_c9 = true;
+                    t9 = _t9;
                 }
                 static b0* parse();
                 std::string to_string();

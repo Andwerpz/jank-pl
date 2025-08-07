@@ -526,3 +526,34 @@ TemplateMapping* FunctionPointerType::generate_mapping(Type *_t, TemplateHeader 
         return mapping;
     }
 }
+
+// -- FIND ALL BASETYPES --
+void BaseType::find_all_basetypes(std::vector<BaseType*> &out) {
+    for(int i = 0; i < out.size(); i++){
+        if(out[i]->equals(this)) return;
+    }
+    out.push_back(this);
+}
+
+void PointerType::find_all_basetypes(std::vector<BaseType*> &out) {
+    type->find_all_basetypes(out);
+}
+
+void ArrayType::find_all_basetypes(std::vector<BaseType*> &out) {
+    type->find_all_basetypes(out);
+}
+
+void ReferenceType::find_all_basetypes(std::vector<BaseType*> &out) {
+    type->find_all_basetypes(out);
+}
+
+void TemplatedType::find_all_basetypes(std::vector<BaseType*> &out) {
+    base_type->find_all_basetypes(out);
+    for(int i = 0; i < template_types.size(); i++) template_types[i]->find_all_basetypes(out);
+}
+
+void FunctionPointerType::find_all_basetypes(std::vector<BaseType*> &out) {
+    return_type->find_all_basetypes(out);
+    for(int i = 0; i < param_types.size(); i++) param_types[i]->find_all_basetypes(out);
+}
+

@@ -3,6 +3,7 @@
 
 struct TemplateHeader;
 struct TemplateMapping;
+struct BaseType;
 
 struct Type {
     static Type* convert(parser::type *t);
@@ -20,6 +21,7 @@ struct Type {
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
     virtual bool look_for_templates() = 0;
     virtual TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) = 0;
+    virtual void find_all_basetypes(std::vector<BaseType*> &out) = 0;
 };
 
 struct BaseType : public Type {
@@ -35,6 +37,7 @@ struct BaseType : public Type {
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
     TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
+    void find_all_basetypes(std::vector<BaseType*> &out) override;
 };  
 
 struct PointerType : public Type {
@@ -49,6 +52,7 @@ struct PointerType : public Type {
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
     TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
+    void find_all_basetypes(std::vector<BaseType*> &out) override;
 };
 
 // array types are not primitives, they require heap allocations
@@ -66,6 +70,7 @@ struct ArrayType : public Type {
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
     TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
+    void find_all_basetypes(std::vector<BaseType*> &out) override;
 };  
 
 struct ReferenceType : public Type {
@@ -80,6 +85,7 @@ struct ReferenceType : public Type {
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
     TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
+    void find_all_basetypes(std::vector<BaseType*> &out) override;
 };
 
 struct TemplatedType : public Type {
@@ -95,6 +101,7 @@ struct TemplatedType : public Type {
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
     TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
+    void find_all_basetypes(std::vector<BaseType*> &out) override;
 };
 
 struct FunctionPointerType : public Type {
@@ -111,4 +118,5 @@ struct FunctionPointerType : public Type {
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
     TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
+    void find_all_basetypes(std::vector<BaseType*> &out) override;
 };

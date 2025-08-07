@@ -19,4 +19,6 @@ struct TemplatedFunction {
     bool is_well_formed();
     TemplateMapping* calc_mapping(FunctionCall *fc);
     Function* gen_function(FunctionCall *fc);
+
+    bool replace_templated_types(TemplateMapping *mapping);
 };

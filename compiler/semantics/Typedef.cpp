@@ -1,6 +1,7 @@
 #include "Typedef.h"
 #include "Type.h"
 #include "utils.h"
+#include "TemplateMapping.h"
 
 Typedef::Typedef(Type *_type, BaseType *_base_type) {
     type = _type;
@@ -9,8 +10,10 @@ Typedef::Typedef(Type *_type, BaseType *_base_type) {
     assert(base_type != nullptr);
 }
 
-Typedef* Typedef::convert(parser::typedef *t) {
-    // TODO
+Typedef* Typedef::convert(parser::_typedef *t) {
+    Type *type = Type::convert(t->t2);
+    BaseType *base_type = BaseType::convert(t->t4);
+    return new Typedef(type, base_type);
 }   
 
 bool Typedef::equals(const Typedef *other) const {
@@ -31,7 +34,7 @@ std::string Typedef::to_string() const {
 }
 
 Typedef* Typedef::make_copy() {
-    return new Typedef(type->make_copy(), base_type->make_copy());
+    return new Typedef(type->make_copy(), dynamic_cast<BaseType*>(base_type->make_copy()));
 }
 
 bool Typedef::replace_templated_types(TemplateMapping *mapping) {
