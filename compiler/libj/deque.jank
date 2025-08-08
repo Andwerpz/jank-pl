@@ -38,6 +38,7 @@ struct deque {
         for(u64 i = $u64 0; i < this.sz; i++){
             narr[i] := this.arr[(this.start + i) % old_cap];
         }
+        this.start = 0x0;
         for(u64 i = 0x0; i < this.sz; i++) this.arr[(this.start + i) % old_cap].~();
         free($void* this.arr, old_cap * sizeof(T));
         this.arr = narr;
