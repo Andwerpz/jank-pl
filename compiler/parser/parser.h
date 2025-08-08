@@ -1,4 +1,4 @@
-// Date Generated : 08-06-2025 23:37:07
+// Date Generated : 08-07-2025 19:47:01
 #pragma once
 #include <vector>
 #include <string>
@@ -437,8 +437,22 @@ namespace parser {
         std::string to_string();
     };
 
-    // literal_syscall = "syscall" , ows , "(" , ows , literal_integer , ows , "," , ows , type , ows , "," , ows , argument_list , ows , ")" ;
+    // literal_syscall = "syscall" , ows , "(" , ows , literal_integer , ows , "," , ows , type , [ ows , "," , ows , argument_list ] , ows , ")" ;
     struct literal_syscall {
+        struct a0 {
+            ows *t0;
+            std::string t1;
+            ows *t2;
+            argument_list *t3;
+            a0(ows *_t0, std::string _t1, ows *_t2, argument_list *_t3) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string();
+        };
         std::string t0;
         ows *t1;
         std::string t2;
@@ -448,13 +462,10 @@ namespace parser {
         std::string t6;
         ows *t7;
         type *t8;
-        ows *t9;
-        std::string t10;
-        ows *t11;
-        argument_list *t12;
-        ows *t13;
-        std::string t14;
-        literal_syscall(std::string _t0, ows *_t1, std::string _t2, ows *_t3, literal_integer *_t4, ows *_t5, std::string _t6, ows *_t7, type *_t8, ows *_t9, std::string _t10, ows *_t11, argument_list *_t12, ows *_t13, std::string _t14) {
+        a0 *t9;
+        ows *t10;
+        std::string t11;
+        literal_syscall(std::string _t0, ows *_t1, std::string _t2, ows *_t3, literal_integer *_t4, ows *_t5, std::string _t6, ows *_t7, type *_t8, a0 *_t9, ows *_t10, std::string _t11) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -467,9 +478,6 @@ namespace parser {
             t9 = _t9;
             t10 = _t10;
             t11 = _t11;
-            t12 = _t12;
-            t13 = _t13;
-            t14 = _t14;
         }
         static literal_syscall* parse();
         std::string to_string();

@@ -118,6 +118,7 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
         std::vector<std::string> default_includes = {
             "memory",
             "error",
+            "defs",
         };  
         if(kernel_mode) {
             //malloc should be implemented by the kernel itself

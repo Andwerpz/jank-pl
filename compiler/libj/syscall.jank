@@ -52,3 +52,11 @@ void* sys_mmap(void* addr, u64 len, u64 prot_flags, u64 map_flags, i32 fd, u64 o
 i32 sys_munmap(void* addr, u64 len) {
     return syscall(11, i32, addr, len);
 }
+
+pid_t sys_fork() {
+    return syscall(57, pid_t);
+}
+
+pid_t sys_getpid() {
+    return syscall(39, pid_t);
+}

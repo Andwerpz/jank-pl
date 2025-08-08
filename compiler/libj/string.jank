@@ -131,7 +131,7 @@ u8& operator[](string& a, i32 ind) {
     return a.arr[ind];
 }
 
-i32 operator==(string& a, string& b) {
+i32 operator==(string a, string b) {
     if(a.size() != b.size()) return 0;
     for(u64 i = $u64 0; i < a.size(); i++) {
         if(a[i] != b[i]) return 0;
@@ -139,15 +139,38 @@ i32 operator==(string& a, string& b) {
     return 1;
 }
 
-i32 operator==(string& a, u8* b) {
+i32 operator==(string a, u8* b) {
     if(a.size() != strlen(b)) return 0;
     for(u64 i = $u64 0; i < a.size(); i++) {
         if(a[i] != b[i]) return 0;
     }
     return 1;
 }
-i32 operator==(u8* a, string& b) {
+i32 operator==(u8* a, string b) {
     return b == a;
+}
+
+string operator+(string a, string b) {
+    string ret = new string(a.size() + b.size(), '\0');
+    for(u64 i = 0x0; i < a.size(); i++) ret[i] = a[i];
+    for(u64 i = 0x0; i < b.size(); i++) ret[i + a.size()] = b[i];
+    return ret;
+}
+
+string operator+(string a, u8* b) {
+    u64 blen = strlen(b);
+    string ret = new string(a.size() + blen, '\0');
+    for(u64 i = 0x0; i < a.size(); i++) ret[i] = a[i];
+    for(u64 i = 0x0; i < blen; i++) ret[i + a.size()] = b[i];
+    return  ret;
+}
+
+string operator+(u8* a, string b) {
+    u64 alen = strlen(a);
+    string ret = new string(alen + b.size(), '\0');
+    for(u64 i = 0x0; i < alen; i++) ret[i] = a[i];
+    for(u64 i = 0x0; i < b.size(); i++) ret[i + alen] = b[i];
+    return ret;
 }
 
 string to_string(u64 x) {
@@ -167,6 +190,23 @@ string to_string(u32 x) {
 
 string to_string(u16 x) {
     return to_string($u64 x);
+}
+
+string to_string(i64 x) {
+    if(x == $i64 0) return new string("0");
+    string ret = new string();
+    i32 is_neg = 0;
+    if(x < $i64 0) {
+        is_neg = 1;
+        x *= $i64 -1;
+    }
+    while(x) {
+        ret.push_back('0' + $u8 (x % $i64 10));
+        x /= $i64 10;
+    }
+    if(is_neg) ret.push_back('-');
+    ret.reverse();
+    return ret;
 }
 
 string to_string(i32 x) {

@@ -1,0 +1,5 @@
+
+typedef u64 size_t;
+typedef i64 ssize_t;
+typedef i64 pid_t;
+typedef i32 fd_t;

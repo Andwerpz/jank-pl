@@ -138,9 +138,9 @@ StringLiteral* StringLiteral::convert(parser::literal_string *lit) {
 SyscallLiteral* SyscallLiteral::convert(parser::literal_syscall *lit) {
     IntegerLiteral *ilit = IntegerLiteral::convert(lit->t4);
     int syscall_id = ilit->val;
-    std::vector<Expression*> arguments;
-    {
-        parser::argument_list *arglist = lit->t12;
+    std::vector<Expression*> arguments(0);
+    if(lit->t9 != nullptr) {
+        parser::argument_list *arglist = lit->t9->t3;
         if(arglist->t0 != nullptr) {
             arguments.push_back(Expression::convert(arglist->t0->t0));
             for(int i = 0; i < arglist->t0->t1.size(); i++){
@@ -591,7 +591,8 @@ bool SyscallLiteral::replace_templated_types(TemplateMapping *mapping) {
     for(int i = 0; i < arguments.size(); i++) {
         if(!arguments[i]->replace_templated_types(mapping)) return false;
     }
-    if(!type->replace_templated_types(mapping)) return false;
+    if(auto x = mapping->find_mapped_type(type)) type = x;
+    else if(!type->replace_templated_types(mapping)) return false;
     return true;
 }
 
