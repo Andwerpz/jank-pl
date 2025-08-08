@@ -7,7 +7,7 @@
 #include <time>;
 #include <string>;
 
-[0] Screen g_screen = new Screen();
+Screen g_screen = new Screen();
 
 struct Screen {
     //note that vscode terminal characters have a 1:2 aspect ratio, so stuff appears 
@@ -89,7 +89,7 @@ u8* operator[](Screen& s, i32 ind) {
     return @(s.screen_buf[s.clear_sz + $u64 ind * (s.width + $u64 1)]);
 }
 
-[0] i32 vec2_alloc_cntr = 0;
+[__GLOBAL_FIRST__] i32 vec2_alloc_cntr = 0;
 
 struct vec2 {
     f32 x;
@@ -189,12 +189,12 @@ i32 min(i32 x, i32 y) {
     return y;
 }
 
-[0] i32 g_map_height = 21;
-[0] i32 g_map_width = 21;
-[1] vector<vector<i32>> g_map = new vector<vector<i32>>(g_map_height, new vector<i32>(g_map_width, 0));
-[0] f32 epsilon = 0.0001;
+[__GLOBAL_FIRST__] i32 g_map_height = 21;
+[__GLOBAL_FIRST__] i32 g_map_width = 21;
+vector<vector<i32>> g_map = new vector<vector<i32>>(g_map_height, new vector<i32>(g_map_width, 0));
+[__GLOBAL_FIRST__] f32 epsilon = 0.0001;
 
-[0] i32 hitinfo_alloc_cntr = 0;
+[__GLOBAL_FIRST__] i32 hitinfo_alloc_cntr = 0;
 
 struct HitInfo {
     vec2 pos;
