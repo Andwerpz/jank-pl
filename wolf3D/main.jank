@@ -362,7 +362,7 @@ i32 main() {
         //cout << "WORLD SCREEN WIDTH : " << screen_width << "\n";
         //cout << "G SCREEN WIDTH : " << g_screen.width << "\n";
         //cout << floor(ppos.x) << " " << ceil(ppos.x) << "\n";
-        prot += 0.01;  
+        prot += 0.025;  
     }
 
     return 0;

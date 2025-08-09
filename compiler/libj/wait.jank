@@ -1,0 +1,8 @@
+
+pid_t wait(i32* wstatus) {
+    return waitpid($pid_t -1, wstatus, 0);
+}
+
+pid_t waitpid(pid_t pid, i32* wstatus, i32 options) {
+    return sys_wait4(pid, wstatus, options, nullptr);
+}

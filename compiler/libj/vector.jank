@@ -74,6 +74,11 @@ struct vector {
         }
     }
 
+    void clear() {
+        for(u64 i = 0x0; i < this.sz; i++) this.arr[i].~();
+        this.sz = 0x0;
+    }
+
     u64 size() {
         return this.sz; 
     }

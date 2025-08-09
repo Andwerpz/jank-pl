@@ -6,7 +6,12 @@
 
 // bad file descriptor
 [__GLOBAL_FIRST__] i32 ERR_BADF = 1;
+
+// access fault
 [__GLOBAL_FIRST__] i32 ERR_FAULT = 2;
+
+// no child processes
+[__GLOBAL_FIRST__] i32 ERR_CHILD = 3;
 
 [__GLOBAL_FIRST__] i32 ERR_RANGE = 1000;
 [__GLOBAL_FIRST__] i32 ERR_MALFORMED = 1001;

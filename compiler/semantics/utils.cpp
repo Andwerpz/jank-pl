@@ -959,36 +959,30 @@ bool add_struct_type(StructDefinition *sd) {
     add_constructor(new StructConstructor(t->make_copy(), {}, new CompoundStatement({})));
 
     //default copy constructor
-    // - just memcpys the memory from other into this 
+    // - for each field, just does default copy constructor
     {
         Identifier *oid = new Identifier("other");
         Identifier *tid = new Identifier("this");
 
-        // memcpy($void* @this, $void* @other, sizeof(T));
-        CompoundStatement *body = new CompoundStatement({
-            new ExpressionStatement(new Expression(new ExprPrimary(
-                new FunctionCall(
-                    new Identifier("memcpy"),
-                    {
-                        new Expression(
-                            new ExprPrefix(
-                                new PointerType(primitives::_void->make_copy()), 
-                                new ExprPrefix("@", new ExprPrimary(tid->make_copy()))
-                            )
-                        ),
-                        new Expression(
-                            new ExprPrefix(
-                                new PointerType(primitives::_void->make_copy()),
-                                new ExprPrefix("@", new ExprPrimary(oid->make_copy()))
-                            )
-                        ),
-                        new Expression(
-                            new ExprPrimary(new SizeofLiteral(t->make_copy()))
-                        )
-                    }
-                )
-            )))
-        });
+        std::vector<Statement*> statements;
+        for(int i = 0; i < sd->member_variables.size(); i++){
+            Identifier *mvi = sd->member_variables[i]->id;
+            statements.push_back(
+                new ExpressionStatement(new Expression(new ExprBinary(
+                    new ExprPostfix(
+                        new ExprPrimary(tid),
+                        std::make_pair(".", mvi)
+                    ),
+                    "=",
+                    new ExprPostfix(
+                        new ExprPrimary(oid),
+                        std::make_pair(".", mvi)
+                    )
+                )))
+            );
+        }
+
+        CompoundStatement *body = new CompoundStatement(statements);
         add_constructor(new StructConstructor(
             t->make_copy(), 
             {new Parameter(new ReferenceType(t->make_copy()), oid->make_copy())}, 

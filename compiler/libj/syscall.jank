@@ -60,3 +60,7 @@ pid_t sys_fork() {
 pid_t sys_getpid() {
     return syscall(39, pid_t);
 }
+
+pid_t sys_wait4(pid_t pid, i32* wstatus, i32 options, void* rusage) {
+    return syscall(61, pid_t, pid, wstatus, options, rusage);
+}
