@@ -1,15 +1,21 @@
 #include <put>;
 
-void assert(i32 x) {
+template<T> 
+void assert(T x, u8* msg) {
     if(!x) {
-        puts_endl("assert failed");
+        puts("assert failed : ");
+        puts_endl(msg);
         sys_exit(1);
     }
 }
 
-void assert(u64 x) {
-    if(!x) {
-        puts_endl("assert failed");
-        sys_exit(1);
-    }
+template<T>
+void assert(T x, string msg) {
+    assert(x, msg.jstr());
 }
+
+template<T>
+void assert(T x) {
+    assert(x, "no msg");
+}
+

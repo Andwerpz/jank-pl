@@ -82,6 +82,27 @@ struct istream {
         return tok;
     }
 
+    string next_line() {
+        string line = new string();
+
+        i32 found_line = 0;
+        while(1) {
+            u8 c = this.next_char();
+            if(this.eof()) break;
+            if(c == '\r') {
+                if(found_line) break;
+            }
+            else {
+                found_line = 1;
+                if(c == '\n') continue;
+                line.push_back(c);
+            }
+        }
+
+        if(!found_line) return new string();
+        return line;
+    }
+
     i32 eof() {
         return this.is_eof;
     }

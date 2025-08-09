@@ -1,4 +1,4 @@
-<h1><img src="janky.png" alt="Logo" style="height: 1em; vertical-align: middle;"> jank</h1>
+<h1><img src="janky.png" alt="Logo" style="height: 1em; vertical-align: middle;"> jank-pl</h1>
 
 **jank** is an experimental systems programming language built from scratch in C++, designed for low-level development with C-like performance and control. The compiler emits x86‑64 assembly and uses GCC for linking. Future plans include a custom assembler for complete toolchain control.
 
