@@ -194,7 +194,7 @@ ostream& operator<<(ostream& stream, f32 x) {
     return stream;
 }
 
-ostream& operator<<(ostream& stream, string& s) {
+ostream& operator<<(ostream& stream, string s) {
     stream.write_to_fd(s);
     return stream;
 }

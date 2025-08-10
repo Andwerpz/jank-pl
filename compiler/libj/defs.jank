@@ -10,3 +10,14 @@ typedef i32 fd_t;
 [__GLOBAL_FIRST__] i32 WCONTINUED   = $i32 0x08;    
 [__GLOBAL_FIRST__] i32 WNOWAIT      = $i32 0x10;    // doesn't remove waited child from process table
 [__GLOBAL_FIRST__] i32 WTRAPPED     = $i32 0x20;   
+
+
+// look here for rest of defs : 
+// https://codebrowser.dev/glibc/glibc/sysdeps/unix/sysv/linux/bits/time.h.html
+[__GLOBAL_FIRST__] u64 CLOCK_REALTIME  = $u64 0;           // Identifier for system-wide realtime clock.
+[__GLOBAL_FIRST__] u64 CLOCK_MONOTONIC = $u64 1;           // Monotonic system-wide clock.
+
+struct timespec {
+    i64 tv_sec;
+    i64 tv_nsec;
+}

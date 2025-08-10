@@ -1,31 +1,83 @@
 #include <syscall>;
 
-// look here for rest of defs : 
-// https://codebrowser.dev/glibc/glibc/sysdeps/unix/sysv/linux/bits/time.h.html
-[__GLOBAL_FIRST__] u64 CLOCK_REALTIME  = $u64 0;           // Identifier for system-wide realtime clock.
-[__GLOBAL_FIRST__] u64 CLOCK_MONOTONIC = $u64 1;           // Monotonic system-wide clock.
-
-struct timespec {
-    i64 tv_sec;
-    i64 tv_nsec;
-
-    timespec() {
-        this.tv_sec = $i64 0;
-        this.tv_nsec = $i64 0;
-    }
-
-    timespec(timespec& other) {
-        this.tv_sec = other.tv_sec;
-        this.tv_nsec = other.tv_nsec;
-    }
-
-    ~timespec() {
-
-    }   
+i32 is_leap_year(u64 year) {
+    return (year % $u64 4 == 0x0) && ((year % $u64 100 != 0x0) || (year % $u64 400 == 0x0));
 }
 
 u64 get_sys_time_ns() {
     timespec ts = new timespec();
     sys_clock_gettime(CLOCK_REALTIME, @ts);
     return $u64 ts.tv_sec * $u64 1000000000 + $u64 ts.tv_nsec;
+}
+
+u64 get_sys_time_sec() {
+    return get_sys_time_ns() / $u64 1000000000;
+}
+
+//'string format time'
+string strftime(timespec* ts) {
+    u64 epoch_sec = $u64 ts->tv_sec;
+
+    u64 days = epoch_sec / $u64 86400;
+    
+    //hours, minutes, seconds within today
+    u64 sec_today = epoch_sec % $u64 86400;
+    u64 hours = sec_today / $u64 3600;
+    sec_today %= $u64 3600;
+    u64 minutes = sec_today / $u64 60;
+    sec_today %= $u64 60;
+    u64 seconds = sec_today;
+
+    //find year
+    u64 year = $u64 1970;
+    while(1) {
+        u64 days_in_year = $u64 365;
+        if(is_leap_year(year)) days_in_year ++;
+        if(days < days_in_year) break;
+        days -= days_in_year;
+        year ++;
+    }
+
+    //find month
+    u64[12] month_lens;
+    month_lens[0] = $u64 31;
+    month_lens[1] = $u64 28;
+    month_lens[2] = $u64 31;
+    month_lens[3] = $u64 30;
+    month_lens[4] = $u64 31;
+    month_lens[5] = $u64 30;
+    month_lens[6] = $u64 31;
+    month_lens[7] = $u64 31;
+    month_lens[8] = $u64 30;
+    month_lens[9] = $u64 31;
+    month_lens[10] = $u64 30;
+    month_lens[11] = $u64 31;
+    if(is_leap_year(year)) month_lens[1] ++;
+    u64 month = $u64 0x0;
+    while(1) {
+        assert(month < $u64 12, "strftime() : month should not become 12");
+        if(days < month_lens[month]) break;
+        days -= month_lens[month];
+        month ++;
+    }
+
+    month ++;
+    u64 day = days + $u64 1;
+
+    string hour_str = to_string(hours);
+    string minute_str = to_string(minutes);
+    string second_str = to_string(seconds);
+
+    if(hour_str.size() == 0x1) hour_str = "0" + hour_str;
+    if(minute_str.size() == 0x1) minute_str = "0" + minute_str;
+    if(second_str.size() == 0x1) second_str = "0" + second_str;
+
+    return  to_string(year) + "-" + to_string(month) + "-" + to_string(day) + " " + 
+            hour_str + ":" + minute_str + ":" + second_str;
+}
+
+string strftime() {
+    timespec ts = new timespec();
+    sys_clock_gettime(CLOCK_REALTIME, @ts);
+    return strftime(@ts);
 }
