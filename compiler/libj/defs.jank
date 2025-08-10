@@ -1,8 +1,8 @@
 
-typedef u64 size_t;
-typedef i64 ssize_t;
 typedef i64 pid_t;
 typedef i32 fd_t;
+typedef u64 pte_t;
+typedef pte_t* pagetable_t;
 
 [__GLOBAL_FIRST__] i32 WNOHANG      = $i32 0x01;    // make wait non-blocking 
 [__GLOBAL_FIRST__] i32 WUNTRACED    = $i32 0x02;    
