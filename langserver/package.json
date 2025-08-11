@@ -1,0 +1,24 @@
+{
+    "name": "jank-langserver",
+    "displayName": "jank-pl Language Server",
+    "publisher": "Andrew Li",
+    "version": "0.0.1",
+    "engines": { "vscode": "^1.50.0" },
+    "activationEvents": [
+      "onLanguage:jank"
+    ],
+    "main": "./client/out/extension.js",
+    "contributes": {
+      "languages": [
+        {
+          "id": "jank",
+          "extensions": [".jank"],
+          "aliases": ["jank"]
+        }
+      ]
+    },
+    "dependencies": {
+      "vscode-languageclient": "^8.0.0"
+    }
+}
+  

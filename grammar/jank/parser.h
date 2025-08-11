@@ -1,4 +1,4 @@
-// Date Generated : 08-07-2025 19:47:01
+// Date Generated : 08-10-2025 23:58:55
 #pragma once
 #include <vector>
 #include <string>
@@ -10,8 +10,24 @@
 #include <stdexcept>
 
 namespace parser {
+    struct parse_context;
+    struct token;
+
     void set_s(std::string& ns);
     bool check_finished_parsing();
+    parse_context get_ctx();
+
+    struct parse_context {
+        int ptr;        //where we are in the string
+        int line;       //how many lines we are in the string
+        int line_off;   //current line offset 
+    };
+
+    struct token {
+        parse_context start_ctx;
+        parse_context end_ctx;
+    };
+    
 
     struct function_definition;
     struct function;
@@ -92,7 +108,7 @@ namespace parser {
     struct program;
 
     // function_definition = type , rws , identifier , ows , "(" , ows , parameter_list , ows , ")" ;
-    struct function_definition {
+    struct function_definition : public token {
         type *t0;
         rws *t1;
         identifier *t2;
@@ -118,7 +134,7 @@ namespace parser {
     };
 
     // function = function_definition , ows , compound_statement ;
-    struct function {
+    struct function : public token {
         function_definition *t0;
         ows *t1;
         compound_statement *t2;
@@ -132,7 +148,7 @@ namespace parser {
     };
 
     // templated_function = template_header , ows , function ;
-    struct templated_function {
+    struct templated_function : public token {
         template_header *t0;
         ows *t1;
         function *t2;
@@ -146,7 +162,7 @@ namespace parser {
     };
 
     // function_call = identifier , ows , "(" , ows , argument_list , ows , ")" ;
-    struct function_call {
+    struct function_call : public token {
         identifier *t0;
         ows *t1;
         std::string t2;
@@ -168,7 +184,7 @@ namespace parser {
     };
 
     // function_pointer_call = "#" , identifier , ows , "(" , ows , argument_list , ows , ")" ;
-    struct function_pointer_call {
+    struct function_pointer_call : public token {
         std::string t0;
         identifier *t1;
         ows *t2;
@@ -192,7 +208,7 @@ namespace parser {
     };
 
     // literal_sizeof = "sizeof" , ows , "(" , ows , type , ows , ")" ;
-    struct literal_sizeof {
+    struct literal_sizeof : public token {
         std::string t0;
         ows *t1;
         std::string t2;
@@ -214,8 +230,8 @@ namespace parser {
     };
 
     // literal_integer = < digit > ;
-    struct literal_integer {
-        struct a0 {
+    struct literal_integer : public token {
+        struct a0 : public token {
             digit *t0;
             a0(digit *_t0) {
                 t0 = _t0;
@@ -232,8 +248,8 @@ namespace parser {
     };
 
     // literal_float = < digit > , "." , < digit > ;
-    struct literal_float {
-        struct a0 {
+    struct literal_float : public token {
+        struct a0 : public token {
             digit *t0;
             a0(digit *_t0) {
                 t0 = _t0;
@@ -241,7 +257,7 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
+        struct a1 : public token {
             digit *t0;
             a1(digit *_t0) {
                 t0 = _t0;
@@ -262,9 +278,9 @@ namespace parser {
     };
 
     // literal_char = "'" , ( alpha | digit | escape | symbol | " " ) , "'" ;
-    struct literal_char {
-        struct a0 {
-            struct b0 {
+    struct literal_char : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 alpha *t0;
                 b0(alpha *_t0) {
                     t0 = _t0;
@@ -272,7 +288,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 digit *t0;
                 b1(digit *_t0) {
                     t0 = _t0;
@@ -280,7 +296,7 @@ namespace parser {
                 static b1* parse();
                 std::string to_string();
             };
-            struct b2 {
+            struct b2 : public token {
                 escape *t0;
                 b2(escape *_t0) {
                     t0 = _t0;
@@ -288,7 +304,7 @@ namespace parser {
                 static b2* parse();
                 std::string to_string();
             };
-            struct b3 {
+            struct b3 : public token {
                 symbol *t0;
                 b3(symbol *_t0) {
                     t0 = _t0;
@@ -296,7 +312,7 @@ namespace parser {
                 static b3* parse();
                 std::string to_string();
             };
-            struct b4 {
+            struct b4 : public token {
                 std::string t0;
                 b4(std::string _t0) {
                     t0 = _t0;
@@ -350,9 +366,9 @@ namespace parser {
     };
 
     // literal_string = "\"" , { alpha | digit | escape | symbol | " " } , "\"" ;
-    struct literal_string {
-        struct a0 {
-            struct b0 {
+    struct literal_string : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 alpha *t0;
                 b0(alpha *_t0) {
                     t0 = _t0;
@@ -360,7 +376,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 digit *t0;
                 b1(digit *_t0) {
                     t0 = _t0;
@@ -368,7 +384,7 @@ namespace parser {
                 static b1* parse();
                 std::string to_string();
             };
-            struct b2 {
+            struct b2 : public token {
                 escape *t0;
                 b2(escape *_t0) {
                     t0 = _t0;
@@ -376,7 +392,7 @@ namespace parser {
                 static b2* parse();
                 std::string to_string();
             };
-            struct b3 {
+            struct b3 : public token {
                 symbol *t0;
                 b3(symbol *_t0) {
                     t0 = _t0;
@@ -384,7 +400,7 @@ namespace parser {
                 static b3* parse();
                 std::string to_string();
             };
-            struct b4 {
+            struct b4 : public token {
                 std::string t0;
                 b4(std::string _t0) {
                     t0 = _t0;
@@ -438,8 +454,8 @@ namespace parser {
     };
 
     // literal_syscall = "syscall" , ows , "(" , ows , literal_integer , ows , "," , ows , type , [ ows , "," , ows , argument_list ] , ows , ")" ;
-    struct literal_syscall {
-        struct a0 {
+    struct literal_syscall : public token {
+        struct a0 : public token {
             ows *t0;
             std::string t1;
             ows *t2;
@@ -484,9 +500,9 @@ namespace parser {
     };
 
     // literal_hex = "0x" , < digit | "a" | "b" | "c" | "d" | "e" | "f" > ;
-    struct literal_hex {
-        struct a0 {
-            struct b0 {
+    struct literal_hex : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 digit *t0;
                 b0(digit *_t0) {
                     t0 = _t0;
@@ -494,7 +510,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 std::string t0;
                 b1(std::string _t0) {
                     t0 = _t0;
@@ -502,7 +518,7 @@ namespace parser {
                 static b1* parse();
                 std::string to_string();
             };
-            struct b2 {
+            struct b2 : public token {
                 std::string t0;
                 b2(std::string _t0) {
                     t0 = _t0;
@@ -510,7 +526,7 @@ namespace parser {
                 static b2* parse();
                 std::string to_string();
             };
-            struct b3 {
+            struct b3 : public token {
                 std::string t0;
                 b3(std::string _t0) {
                     t0 = _t0;
@@ -518,7 +534,7 @@ namespace parser {
                 static b3* parse();
                 std::string to_string();
             };
-            struct b4 {
+            struct b4 : public token {
                 std::string t0;
                 b4(std::string _t0) {
                     t0 = _t0;
@@ -526,7 +542,7 @@ namespace parser {
                 static b4* parse();
                 std::string to_string();
             };
-            struct b5 {
+            struct b5 : public token {
                 std::string t0;
                 b5(std::string _t0) {
                     t0 = _t0;
@@ -534,7 +550,7 @@ namespace parser {
                 static b5* parse();
                 std::string to_string();
             };
-            struct b6 {
+            struct b6 : public token {
                 std::string t0;
                 b6(std::string _t0) {
                     t0 = _t0;
@@ -598,9 +614,9 @@ namespace parser {
     };
 
     // literal_binary = "0b" , < "0" | "1" > ;
-    struct literal_binary {
-        struct a0 {
-            struct b0 {
+    struct literal_binary : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 std::string t0;
                 b0(std::string _t0) {
                     t0 = _t0;
@@ -608,7 +624,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 std::string t0;
                 b1(std::string _t0) {
                     t0 = _t0;
@@ -642,7 +658,7 @@ namespace parser {
     };
 
     // literal_function_pointer = "#" , "<" , ows , identifier , ows , "(" , ows , type_list , ows , ")" , ows , ">" ;
-    struct literal_function_pointer {
+    struct literal_function_pointer : public token {
         std::string t0;
         std::string t1;
         ows *t2;
@@ -674,8 +690,8 @@ namespace parser {
     };
 
     // literal = literal_hex | literal_binary | literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall | literal_function_pointer ;
-    struct literal {
-        struct a0 {
+    struct literal : public token {
+        struct a0 : public token {
             literal_hex *t0;
             a0(literal_hex *_t0) {
                 t0 = _t0;
@@ -683,7 +699,7 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
+        struct a1 : public token {
             literal_binary *t0;
             a1(literal_binary *_t0) {
                 t0 = _t0;
@@ -691,7 +707,7 @@ namespace parser {
             static a1* parse();
             std::string to_string();
         };
-        struct a2 {
+        struct a2 : public token {
             literal_float *t0;
             a2(literal_float *_t0) {
                 t0 = _t0;
@@ -699,7 +715,7 @@ namespace parser {
             static a2* parse();
             std::string to_string();
         };
-        struct a3 {
+        struct a3 : public token {
             literal_integer *t0;
             a3(literal_integer *_t0) {
                 t0 = _t0;
@@ -707,7 +723,7 @@ namespace parser {
             static a3* parse();
             std::string to_string();
         };
-        struct a4 {
+        struct a4 : public token {
             literal_sizeof *t0;
             a4(literal_sizeof *_t0) {
                 t0 = _t0;
@@ -715,7 +731,7 @@ namespace parser {
             static a4* parse();
             std::string to_string();
         };
-        struct a5 {
+        struct a5 : public token {
             literal_char *t0;
             a5(literal_char *_t0) {
                 t0 = _t0;
@@ -723,7 +739,7 @@ namespace parser {
             static a5* parse();
             std::string to_string();
         };
-        struct a6 {
+        struct a6 : public token {
             literal_string *t0;
             a6(literal_string *_t0) {
                 t0 = _t0;
@@ -731,7 +747,7 @@ namespace parser {
             static a6* parse();
             std::string to_string();
         };
-        struct a7 {
+        struct a7 : public token {
             literal_syscall *t0;
             a7(literal_syscall *_t0) {
                 t0 = _t0;
@@ -739,7 +755,7 @@ namespace parser {
             static a7* parse();
             std::string to_string();
         };
-        struct a8 {
+        struct a8 : public token {
             literal_function_pointer *t0;
             a8(literal_function_pointer *_t0) {
                 t0 = _t0;
@@ -806,7 +822,7 @@ namespace parser {
     };
 
     // member_variable_declaration = type , rws , identifier , ";" ;
-    struct member_variable_declaration {
+    struct member_variable_declaration : public token {
         type *t0;
         rws *t1;
         identifier *t2;
@@ -822,7 +838,7 @@ namespace parser {
     };
 
     // constructor_definition = base_type , ows , "(" , ows , parameter_list , ows , ")" ;
-    struct constructor_definition {
+    struct constructor_definition : public token {
         base_type *t0;
         ows *t1;
         std::string t2;
@@ -844,7 +860,7 @@ namespace parser {
     };
 
     // constructor = constructor_definition , ows , compound_statement ;
-    struct constructor {
+    struct constructor : public token {
         constructor_definition *t0;
         ows *t1;
         compound_statement *t2;
@@ -858,7 +874,7 @@ namespace parser {
     };
 
     // constructor_call = "new" , rws , type , ows , "(" , ows , argument_list , ows , ")" ;
-    struct constructor_call {
+    struct constructor_call : public token {
         std::string t0;
         rws *t1;
         type *t2;
@@ -884,7 +900,7 @@ namespace parser {
     };
 
     // destructor = "~" , base_type , ows , "()" , ows , compound_statement ;
-    struct destructor {
+    struct destructor : public token {
         std::string t0;
         base_type *t1;
         ows *t2;
@@ -904,10 +920,10 @@ namespace parser {
     };
 
     // struct_definition = "struct" , ows , base_type , ows , "{" , ows , { ( member_variable_declaration | function | constructor | destructor ) , ows } , "}" ;
-    struct struct_definition {
-        struct a0 {
-            struct b0 {
-                struct c0 {
+    struct struct_definition : public token {
+        struct a0 : public token {
+            struct b0 : public token {
+                struct c0 : public token {
                     member_variable_declaration *t0;
                     c0(member_variable_declaration *_t0) {
                         t0 = _t0;
@@ -915,7 +931,7 @@ namespace parser {
                     static c0* parse();
                     std::string to_string();
                 };
-                struct c1 {
+                struct c1 : public token {
                     function *t0;
                     c1(function *_t0) {
                         t0 = _t0;
@@ -923,7 +939,7 @@ namespace parser {
                     static c1* parse();
                     std::string to_string();
                 };
-                struct c2 {
+                struct c2 : public token {
                     constructor *t0;
                     c2(constructor *_t0) {
                         t0 = _t0;
@@ -931,7 +947,7 @@ namespace parser {
                     static c2* parse();
                     std::string to_string();
                 };
-                struct c3 {
+                struct c3 : public token {
                     destructor *t0;
                     c3(destructor *_t0) {
                         t0 = _t0;
@@ -998,7 +1014,7 @@ namespace parser {
     };
 
     // templated_struct_definition = template_header , ows , struct_definition ;
-    struct templated_struct_definition {
+    struct templated_struct_definition : public token {
         template_header *t0;
         ows *t1;
         struct_definition *t2;
@@ -1012,8 +1028,8 @@ namespace parser {
     };
 
     // expr_primary = literal | constructor_call | function_call | identifier | "(" , ows , expression , ows , ")" ;
-    struct expr_primary {
-        struct a0 {
+    struct expr_primary : public token {
+        struct a0 : public token {
             literal *t0;
             a0(literal *_t0) {
                 t0 = _t0;
@@ -1021,7 +1037,7 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
+        struct a1 : public token {
             constructor_call *t0;
             a1(constructor_call *_t0) {
                 t0 = _t0;
@@ -1029,7 +1045,7 @@ namespace parser {
             static a1* parse();
             std::string to_string();
         };
-        struct a2 {
+        struct a2 : public token {
             function_call *t0;
             a2(function_call *_t0) {
                 t0 = _t0;
@@ -1037,7 +1053,7 @@ namespace parser {
             static a2* parse();
             std::string to_string();
         };
-        struct a3 {
+        struct a3 : public token {
             identifier *t0;
             a3(identifier *_t0) {
                 t0 = _t0;
@@ -1045,7 +1061,7 @@ namespace parser {
             static a3* parse();
             std::string to_string();
         };
-        struct a4 {
+        struct a4 : public token {
             std::string t0;
             ows *t1;
             expression *t2;
@@ -1096,10 +1112,10 @@ namespace parser {
     };
 
     // expr_postfix = expr_primary , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , function_call | "->" , ows , function_call | "." , ows , identifier | "->" , ows , identifier | "++" | "--" | "#(" , argument_list , ")" | "." , ows , "~()" | "->" , ows , "~()" ) } ;
-    struct expr_postfix {
-        struct a0 {
-            struct b0 {
-                struct c0 {
+    struct expr_postfix : public token {
+        struct a0 : public token {
+            struct b0 : public token {
+                struct c0 : public token {
                     std::string t0;
                     ows *t1;
                     expression *t2;
@@ -1115,7 +1131,7 @@ namespace parser {
                     static c0* parse();
                     std::string to_string();
                 };
-                struct c1 {
+                struct c1 : public token {
                     std::string t0;
                     ows *t1;
                     function_call *t2;
@@ -1127,7 +1143,7 @@ namespace parser {
                     static c1* parse();
                     std::string to_string();
                 };
-                struct c2 {
+                struct c2 : public token {
                     std::string t0;
                     ows *t1;
                     function_call *t2;
@@ -1139,7 +1155,7 @@ namespace parser {
                     static c2* parse();
                     std::string to_string();
                 };
-                struct c3 {
+                struct c3 : public token {
                     std::string t0;
                     ows *t1;
                     identifier *t2;
@@ -1151,7 +1167,7 @@ namespace parser {
                     static c3* parse();
                     std::string to_string();
                 };
-                struct c4 {
+                struct c4 : public token {
                     std::string t0;
                     ows *t1;
                     identifier *t2;
@@ -1163,7 +1179,7 @@ namespace parser {
                     static c4* parse();
                     std::string to_string();
                 };
-                struct c5 {
+                struct c5 : public token {
                     std::string t0;
                     c5(std::string _t0) {
                         t0 = _t0;
@@ -1171,7 +1187,7 @@ namespace parser {
                     static c5* parse();
                     std::string to_string();
                 };
-                struct c6 {
+                struct c6 : public token {
                     std::string t0;
                     c6(std::string _t0) {
                         t0 = _t0;
@@ -1179,7 +1195,7 @@ namespace parser {
                     static c6* parse();
                     std::string to_string();
                 };
-                struct c7 {
+                struct c7 : public token {
                     std::string t0;
                     argument_list *t1;
                     std::string t2;
@@ -1191,7 +1207,7 @@ namespace parser {
                     static c7* parse();
                     std::string to_string();
                 };
-                struct c8 {
+                struct c8 : public token {
                     std::string t0;
                     ows *t1;
                     std::string t2;
@@ -1203,7 +1219,7 @@ namespace parser {
                     static c8* parse();
                     std::string to_string();
                 };
-                struct c9 {
+                struct c9 : public token {
                     std::string t0;
                     ows *t1;
                     std::string t2;
@@ -1298,10 +1314,10 @@ namespace parser {
     };
 
     // expr_unary = ( "++" | "--" | "+" | "-" | "~" | "!" | "*" | "@" | "$" , type ) , ows , expr_unary | expr_postfix ;
-    struct expr_unary {
-        struct a0 {
-            struct b0 {
-                struct c0 {
+    struct expr_unary : public token {
+        struct a0 : public token {
+            struct b0 : public token {
+                struct c0 : public token {
                     std::string t0;
                     c0(std::string _t0) {
                         t0 = _t0;
@@ -1309,7 +1325,7 @@ namespace parser {
                     static c0* parse();
                     std::string to_string();
                 };
-                struct c1 {
+                struct c1 : public token {
                     std::string t0;
                     c1(std::string _t0) {
                         t0 = _t0;
@@ -1317,7 +1333,7 @@ namespace parser {
                     static c1* parse();
                     std::string to_string();
                 };
-                struct c2 {
+                struct c2 : public token {
                     std::string t0;
                     c2(std::string _t0) {
                         t0 = _t0;
@@ -1325,7 +1341,7 @@ namespace parser {
                     static c2* parse();
                     std::string to_string();
                 };
-                struct c3 {
+                struct c3 : public token {
                     std::string t0;
                     c3(std::string _t0) {
                         t0 = _t0;
@@ -1333,7 +1349,7 @@ namespace parser {
                     static c3* parse();
                     std::string to_string();
                 };
-                struct c4 {
+                struct c4 : public token {
                     std::string t0;
                     c4(std::string _t0) {
                         t0 = _t0;
@@ -1341,7 +1357,7 @@ namespace parser {
                     static c4* parse();
                     std::string to_string();
                 };
-                struct c5 {
+                struct c5 : public token {
                     std::string t0;
                     c5(std::string _t0) {
                         t0 = _t0;
@@ -1349,7 +1365,7 @@ namespace parser {
                     static c5* parse();
                     std::string to_string();
                 };
-                struct c6 {
+                struct c6 : public token {
                     std::string t0;
                     c6(std::string _t0) {
                         t0 = _t0;
@@ -1357,7 +1373,7 @@ namespace parser {
                     static c6* parse();
                     std::string to_string();
                 };
-                struct c7 {
+                struct c7 : public token {
                     std::string t0;
                     c7(std::string _t0) {
                         t0 = _t0;
@@ -1365,7 +1381,7 @@ namespace parser {
                     static c7* parse();
                     std::string to_string();
                 };
-                struct c8 {
+                struct c8 : public token {
                     std::string t0;
                     type *t1;
                     c8(std::string _t0, type *_t1) {
@@ -1443,7 +1459,7 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
+        struct a1 : public token {
             expr_postfix *t0;
             a1(expr_postfix *_t0) {
                 t0 = _t0;
@@ -1468,10 +1484,10 @@ namespace parser {
     };
 
     // expr_multiplicative = expr_unary , { ows , ( "*" | "/" | "%" ) , ows , expr_unary } ;
-    struct expr_multiplicative {
-        struct a0 {
-            struct b0 {
-                struct c0 {
+    struct expr_multiplicative : public token {
+        struct a0 : public token {
+            struct b0 : public token {
+                struct c0 : public token {
                     std::string t0;
                     c0(std::string _t0) {
                         t0 = _t0;
@@ -1479,7 +1495,7 @@ namespace parser {
                     static c0* parse();
                     std::string to_string();
                 };
-                struct c1 {
+                struct c1 : public token {
                     std::string t0;
                     c1(std::string _t0) {
                         t0 = _t0;
@@ -1487,7 +1503,7 @@ namespace parser {
                     static c1* parse();
                     std::string to_string();
                 };
-                struct c2 {
+                struct c2 : public token {
                     std::string t0;
                     c2(std::string _t0) {
                         t0 = _t0;
@@ -1540,10 +1556,10 @@ namespace parser {
     };
 
     // expr_additive = expr_multiplicative , { ows , ( "+" | "-" ) , ows , expr_multiplicative } ;
-    struct expr_additive {
-        struct a0 {
-            struct b0 {
-                struct c0 {
+    struct expr_additive : public token {
+        struct a0 : public token {
+            struct b0 : public token {
+                struct c0 : public token {
                     std::string t0;
                     c0(std::string _t0) {
                         t0 = _t0;
@@ -1551,7 +1567,7 @@ namespace parser {
                     static c0* parse();
                     std::string to_string();
                 };
-                struct c1 {
+                struct c1 : public token {
                     std::string t0;
                     c1(std::string _t0) {
                         t0 = _t0;
@@ -1598,10 +1614,10 @@ namespace parser {
     };
 
     // expr_shift = expr_additive , { ows , ( "<<" | ">>" ) , ows , expr_additive } ;
-    struct expr_shift {
-        struct a0 {
-            struct b0 {
-                struct c0 {
+    struct expr_shift : public token {
+        struct a0 : public token {
+            struct b0 : public token {
+                struct c0 : public token {
                     std::string t0;
                     c0(std::string _t0) {
                         t0 = _t0;
@@ -1609,7 +1625,7 @@ namespace parser {
                     static c0* parse();
                     std::string to_string();
                 };
-                struct c1 {
+                struct c1 : public token {
                     std::string t0;
                     c1(std::string _t0) {
                         t0 = _t0;
@@ -1656,10 +1672,10 @@ namespace parser {
     };
 
     // expr_relational = expr_shift , { ows , ( "<=" | "<" | ">=" | ">" ) , ows , expr_shift } ;
-    struct expr_relational {
-        struct a0 {
-            struct b0 {
-                struct c0 {
+    struct expr_relational : public token {
+        struct a0 : public token {
+            struct b0 : public token {
+                struct c0 : public token {
                     std::string t0;
                     c0(std::string _t0) {
                         t0 = _t0;
@@ -1667,7 +1683,7 @@ namespace parser {
                     static c0* parse();
                     std::string to_string();
                 };
-                struct c1 {
+                struct c1 : public token {
                     std::string t0;
                     c1(std::string _t0) {
                         t0 = _t0;
@@ -1675,7 +1691,7 @@ namespace parser {
                     static c1* parse();
                     std::string to_string();
                 };
-                struct c2 {
+                struct c2 : public token {
                     std::string t0;
                     c2(std::string _t0) {
                         t0 = _t0;
@@ -1683,7 +1699,7 @@ namespace parser {
                     static c2* parse();
                     std::string to_string();
                 };
-                struct c3 {
+                struct c3 : public token {
                     std::string t0;
                     c3(std::string _t0) {
                         t0 = _t0;
@@ -1742,10 +1758,10 @@ namespace parser {
     };
 
     // expr_equality = expr_relational , { ows , ( "==" | "!=" ) , ows , expr_relational } ;
-    struct expr_equality {
-        struct a0 {
-            struct b0 {
-                struct c0 {
+    struct expr_equality : public token {
+        struct a0 : public token {
+            struct b0 : public token {
+                struct c0 : public token {
                     std::string t0;
                     c0(std::string _t0) {
                         t0 = _t0;
@@ -1753,7 +1769,7 @@ namespace parser {
                     static c0* parse();
                     std::string to_string();
                 };
-                struct c1 {
+                struct c1 : public token {
                     std::string t0;
                     c1(std::string _t0) {
                         t0 = _t0;
@@ -1800,8 +1816,8 @@ namespace parser {
     };
 
     // expr_bit_and = expr_equality , { ows , "&" , ows , expr_equality } ;
-    struct expr_bit_and {
-        struct a0 {
+    struct expr_bit_and : public token {
+        struct a0 : public token {
             ows *t0;
             std::string t1;
             ows *t2;
@@ -1826,8 +1842,8 @@ namespace parser {
     };
 
     // expr_bit_xor = expr_bit_and , { ows , "^" , ows , expr_bit_and } ;
-    struct expr_bit_xor {
-        struct a0 {
+    struct expr_bit_xor : public token {
+        struct a0 : public token {
             ows *t0;
             std::string t1;
             ows *t2;
@@ -1852,8 +1868,8 @@ namespace parser {
     };
 
     // expr_bit_or = expr_bit_xor , { ows , "|" , ows , expr_bit_xor } ;
-    struct expr_bit_or {
-        struct a0 {
+    struct expr_bit_or : public token {
+        struct a0 : public token {
             ows *t0;
             std::string t1;
             ows *t2;
@@ -1878,8 +1894,8 @@ namespace parser {
     };
 
     // expr_logical_and = expr_bit_or , { ows , "&&" , ows , expr_bit_or } ;
-    struct expr_logical_and {
-        struct a0 {
+    struct expr_logical_and : public token {
+        struct a0 : public token {
             ows *t0;
             std::string t1;
             ows *t2;
@@ -1904,8 +1920,8 @@ namespace parser {
     };
 
     // expr_logical_or = expr_logical_and , { ows , "||" , ows , expr_logical_and } ;
-    struct expr_logical_or {
-        struct a0 {
+    struct expr_logical_or : public token {
+        struct a0 : public token {
             ows *t0;
             std::string t1;
             ows *t2;
@@ -1930,10 +1946,10 @@ namespace parser {
     };
 
     // expr_assignment = expr_logical_or , { ows , ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "^=" | "|=" | ":=" ) , ows , expr_logical_or } ;
-    struct expr_assignment {
-        struct a0 {
-            struct b0 {
-                struct c0 {
+    struct expr_assignment : public token {
+        struct a0 : public token {
+            struct b0 : public token {
+                struct c0 : public token {
                     std::string t0;
                     c0(std::string _t0) {
                         t0 = _t0;
@@ -1941,7 +1957,7 @@ namespace parser {
                     static c0* parse();
                     std::string to_string();
                 };
-                struct c1 {
+                struct c1 : public token {
                     std::string t0;
                     c1(std::string _t0) {
                         t0 = _t0;
@@ -1949,7 +1965,7 @@ namespace parser {
                     static c1* parse();
                     std::string to_string();
                 };
-                struct c2 {
+                struct c2 : public token {
                     std::string t0;
                     c2(std::string _t0) {
                         t0 = _t0;
@@ -1957,7 +1973,7 @@ namespace parser {
                     static c2* parse();
                     std::string to_string();
                 };
-                struct c3 {
+                struct c3 : public token {
                     std::string t0;
                     c3(std::string _t0) {
                         t0 = _t0;
@@ -1965,7 +1981,7 @@ namespace parser {
                     static c3* parse();
                     std::string to_string();
                 };
-                struct c4 {
+                struct c4 : public token {
                     std::string t0;
                     c4(std::string _t0) {
                         t0 = _t0;
@@ -1973,7 +1989,7 @@ namespace parser {
                     static c4* parse();
                     std::string to_string();
                 };
-                struct c5 {
+                struct c5 : public token {
                     std::string t0;
                     c5(std::string _t0) {
                         t0 = _t0;
@@ -1981,7 +1997,7 @@ namespace parser {
                     static c5* parse();
                     std::string to_string();
                 };
-                struct c6 {
+                struct c6 : public token {
                     std::string t0;
                     c6(std::string _t0) {
                         t0 = _t0;
@@ -1989,7 +2005,7 @@ namespace parser {
                     static c6* parse();
                     std::string to_string();
                 };
-                struct c7 {
+                struct c7 : public token {
                     std::string t0;
                     c7(std::string _t0) {
                         t0 = _t0;
@@ -1997,7 +2013,7 @@ namespace parser {
                     static c7* parse();
                     std::string to_string();
                 };
-                struct c8 {
+                struct c8 : public token {
                     std::string t0;
                     c8(std::string _t0) {
                         t0 = _t0;
@@ -2005,7 +2021,7 @@ namespace parser {
                     static c8* parse();
                     std::string to_string();
                 };
-                struct c9 {
+                struct c9 : public token {
                     std::string t0;
                     c9(std::string _t0) {
                         t0 = _t0;
@@ -2013,7 +2029,7 @@ namespace parser {
                     static c9* parse();
                     std::string to_string();
                 };
-                struct c10 {
+                struct c10 : public token {
                     std::string t0;
                     c10(std::string _t0) {
                         t0 = _t0;
@@ -2021,7 +2037,7 @@ namespace parser {
                     static c10* parse();
                     std::string to_string();
                 };
-                struct c11 {
+                struct c11 : public token {
                     std::string t0;
                     c11(std::string _t0) {
                         t0 = _t0;
@@ -2128,7 +2144,7 @@ namespace parser {
     };
 
     // expression = expr_assignment ;
-    struct expression {
+    struct expression : public token {
         expr_assignment *t0;
         expression(expr_assignment *_t0) {
             t0 = _t0;
@@ -2138,8 +2154,8 @@ namespace parser {
     };
 
     // overloadable_operator = "++x" | "--x" | "x++" | "x--" | "*x" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "[]" | "=" ;
-    struct overloadable_operator {
-        struct a0 {
+    struct overloadable_operator : public token {
+        struct a0 : public token {
             std::string t0;
             a0(std::string _t0) {
                 t0 = _t0;
@@ -2147,7 +2163,7 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
+        struct a1 : public token {
             std::string t0;
             a1(std::string _t0) {
                 t0 = _t0;
@@ -2155,7 +2171,7 @@ namespace parser {
             static a1* parse();
             std::string to_string();
         };
-        struct a2 {
+        struct a2 : public token {
             std::string t0;
             a2(std::string _t0) {
                 t0 = _t0;
@@ -2163,7 +2179,7 @@ namespace parser {
             static a2* parse();
             std::string to_string();
         };
-        struct a3 {
+        struct a3 : public token {
             std::string t0;
             a3(std::string _t0) {
                 t0 = _t0;
@@ -2171,7 +2187,7 @@ namespace parser {
             static a3* parse();
             std::string to_string();
         };
-        struct a4 {
+        struct a4 : public token {
             std::string t0;
             a4(std::string _t0) {
                 t0 = _t0;
@@ -2179,7 +2195,7 @@ namespace parser {
             static a4* parse();
             std::string to_string();
         };
-        struct a5 {
+        struct a5 : public token {
             std::string t0;
             a5(std::string _t0) {
                 t0 = _t0;
@@ -2187,7 +2203,7 @@ namespace parser {
             static a5* parse();
             std::string to_string();
         };
-        struct a6 {
+        struct a6 : public token {
             std::string t0;
             a6(std::string _t0) {
                 t0 = _t0;
@@ -2195,7 +2211,7 @@ namespace parser {
             static a6* parse();
             std::string to_string();
         };
-        struct a7 {
+        struct a7 : public token {
             std::string t0;
             a7(std::string _t0) {
                 t0 = _t0;
@@ -2203,7 +2219,7 @@ namespace parser {
             static a7* parse();
             std::string to_string();
         };
-        struct a8 {
+        struct a8 : public token {
             std::string t0;
             a8(std::string _t0) {
                 t0 = _t0;
@@ -2211,7 +2227,7 @@ namespace parser {
             static a8* parse();
             std::string to_string();
         };
-        struct a9 {
+        struct a9 : public token {
             std::string t0;
             a9(std::string _t0) {
                 t0 = _t0;
@@ -2219,7 +2235,7 @@ namespace parser {
             static a9* parse();
             std::string to_string();
         };
-        struct a10 {
+        struct a10 : public token {
             std::string t0;
             a10(std::string _t0) {
                 t0 = _t0;
@@ -2227,7 +2243,7 @@ namespace parser {
             static a10* parse();
             std::string to_string();
         };
-        struct a11 {
+        struct a11 : public token {
             std::string t0;
             a11(std::string _t0) {
                 t0 = _t0;
@@ -2235,7 +2251,7 @@ namespace parser {
             static a11* parse();
             std::string to_string();
         };
-        struct a12 {
+        struct a12 : public token {
             std::string t0;
             a12(std::string _t0) {
                 t0 = _t0;
@@ -2243,7 +2259,7 @@ namespace parser {
             static a12* parse();
             std::string to_string();
         };
-        struct a13 {
+        struct a13 : public token {
             std::string t0;
             a13(std::string _t0) {
                 t0 = _t0;
@@ -2251,7 +2267,7 @@ namespace parser {
             static a13* parse();
             std::string to_string();
         };
-        struct a14 {
+        struct a14 : public token {
             std::string t0;
             a14(std::string _t0) {
                 t0 = _t0;
@@ -2259,7 +2275,7 @@ namespace parser {
             static a14* parse();
             std::string to_string();
         };
-        struct a15 {
+        struct a15 : public token {
             std::string t0;
             a15(std::string _t0) {
                 t0 = _t0;
@@ -2267,7 +2283,7 @@ namespace parser {
             static a15* parse();
             std::string to_string();
         };
-        struct a16 {
+        struct a16 : public token {
             std::string t0;
             a16(std::string _t0) {
                 t0 = _t0;
@@ -2275,7 +2291,7 @@ namespace parser {
             static a16* parse();
             std::string to_string();
         };
-        struct a17 {
+        struct a17 : public token {
             std::string t0;
             a17(std::string _t0) {
                 t0 = _t0;
@@ -2283,7 +2299,7 @@ namespace parser {
             static a17* parse();
             std::string to_string();
         };
-        struct a18 {
+        struct a18 : public token {
             std::string t0;
             a18(std::string _t0) {
                 t0 = _t0;
@@ -2291,7 +2307,7 @@ namespace parser {
             static a18* parse();
             std::string to_string();
         };
-        struct a19 {
+        struct a19 : public token {
             std::string t0;
             a19(std::string _t0) {
                 t0 = _t0;
@@ -2299,7 +2315,7 @@ namespace parser {
             static a19* parse();
             std::string to_string();
         };
-        struct a20 {
+        struct a20 : public token {
             std::string t0;
             a20(std::string _t0) {
                 t0 = _t0;
@@ -2307,7 +2323,7 @@ namespace parser {
             static a20* parse();
             std::string to_string();
         };
-        struct a21 {
+        struct a21 : public token {
             std::string t0;
             a21(std::string _t0) {
                 t0 = _t0;
@@ -2315,7 +2331,7 @@ namespace parser {
             static a21* parse();
             std::string to_string();
         };
-        struct a22 {
+        struct a22 : public token {
             std::string t0;
             a22(std::string _t0) {
                 t0 = _t0;
@@ -2323,7 +2339,7 @@ namespace parser {
             static a22* parse();
             std::string to_string();
         };
-        struct a23 {
+        struct a23 : public token {
             std::string t0;
             a23(std::string _t0) {
                 t0 = _t0;
@@ -2331,7 +2347,7 @@ namespace parser {
             static a23* parse();
             std::string to_string();
         };
-        struct a24 {
+        struct a24 : public token {
             std::string t0;
             a24(std::string _t0) {
                 t0 = _t0;
@@ -2339,7 +2355,7 @@ namespace parser {
             static a24* parse();
             std::string to_string();
         };
-        struct a25 {
+        struct a25 : public token {
             std::string t0;
             a25(std::string _t0) {
                 t0 = _t0;
@@ -2347,7 +2363,7 @@ namespace parser {
             static a25* parse();
             std::string to_string();
         };
-        struct a26 {
+        struct a26 : public token {
             std::string t0;
             a26(std::string _t0) {
                 t0 = _t0;
@@ -2355,7 +2371,7 @@ namespace parser {
             static a26* parse();
             std::string to_string();
         };
-        struct a27 {
+        struct a27 : public token {
             std::string t0;
             a27(std::string _t0) {
                 t0 = _t0;
@@ -2363,7 +2379,7 @@ namespace parser {
             static a27* parse();
             std::string to_string();
         };
-        struct a28 {
+        struct a28 : public token {
             std::string t0;
             a28(std::string _t0) {
                 t0 = _t0;
@@ -2371,7 +2387,7 @@ namespace parser {
             static a28* parse();
             std::string to_string();
         };
-        struct a29 {
+        struct a29 : public token {
             std::string t0;
             a29(std::string _t0) {
                 t0 = _t0;
@@ -2379,7 +2395,7 @@ namespace parser {
             static a29* parse();
             std::string to_string();
         };
-        struct a30 {
+        struct a30 : public token {
             std::string t0;
             a30(std::string _t0) {
                 t0 = _t0;
@@ -2387,7 +2403,7 @@ namespace parser {
             static a30* parse();
             std::string to_string();
         };
-        struct a31 {
+        struct a31 : public token {
             std::string t0;
             a31(std::string _t0) {
                 t0 = _t0;
@@ -2395,7 +2411,7 @@ namespace parser {
             static a31* parse();
             std::string to_string();
         };
-        struct a32 {
+        struct a32 : public token {
             std::string t0;
             a32(std::string _t0) {
                 t0 = _t0;
@@ -2606,7 +2622,7 @@ namespace parser {
     };
 
     // overload_definition = type , rws , "operator" , overloadable_operator , ows , "(" , ows , parameter_list , ows , ")" ;
-    struct overload_definition {
+    struct overload_definition : public token {
         type *t0;
         rws *t1;
         std::string t2;
@@ -2634,7 +2650,7 @@ namespace parser {
     };
 
     // overload = overload_definition , ows , compound_statement ;
-    struct overload {
+    struct overload : public token {
         overload_definition *t0;
         ows *t1;
         compound_statement *t2;
@@ -2648,7 +2664,7 @@ namespace parser {
     };
 
     // templated_overload = template_header , ows , overload ;
-    struct templated_overload {
+    struct templated_overload : public token {
         template_header *t0;
         ows *t1;
         overload *t2;
@@ -2662,7 +2678,7 @@ namespace parser {
     };
 
     // inline_dereferencing = "*" , ows , identifier ;
-    struct inline_dereferencing {
+    struct inline_dereferencing : public token {
         std::string t0;
         ows *t1;
         identifier *t2;
@@ -2676,7 +2692,7 @@ namespace parser {
     };
 
     // inline_referencing = "@" , ows , identifier ;
-    struct inline_referencing {
+    struct inline_referencing : public token {
         std::string t0;
         ows *t1;
         identifier *t2;
@@ -2690,9 +2706,9 @@ namespace parser {
     };
 
     // inline_member_variable = identifier , ( "." | "->" ) , identifier ;
-    struct inline_member_variable {
-        struct a0 {
-            struct b0 {
+    struct inline_member_variable : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 std::string t0;
                 b0(std::string _t0) {
                     t0 = _t0;
@@ -2700,7 +2716,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 std::string t0;
                 b1(std::string _t0) {
                     t0 = _t0;
@@ -2736,7 +2752,7 @@ namespace parser {
     };
 
     // inline_variable = identifier ;
-    struct inline_variable {
+    struct inline_variable : public token {
         identifier *t0;
         inline_variable(identifier *_t0) {
             t0 = _t0;
@@ -2746,9 +2762,9 @@ namespace parser {
     };
 
     // inline_access = "{" , ows , ( inline_referencing | inline_member_variable | inline_variable ) , ows , "}" ;
-    struct inline_access {
-        struct a0 {
-            struct b0 {
+    struct inline_access : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 inline_referencing *t0;
                 b0(inline_referencing *_t0) {
                     t0 = _t0;
@@ -2756,7 +2772,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 inline_member_variable *t0;
                 b1(inline_member_variable *_t0) {
                     t0 = _t0;
@@ -2764,7 +2780,7 @@ namespace parser {
                 static b1* parse();
                 std::string to_string();
             };
-            struct b2 {
+            struct b2 : public token {
                 inline_variable *t0;
                 b2(inline_variable *_t0) {
                     t0 = _t0;
@@ -2810,7 +2826,7 @@ namespace parser {
     };
 
     // inline_asm = "asm!" , ows , "(" , ows , literal_string , ows , ")" ;
-    struct inline_asm {
+    struct inline_asm : public token {
         std::string t0;
         ows *t1;
         std::string t2;
@@ -2832,8 +2848,8 @@ namespace parser {
     };
 
     // alpha = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" ;
-    struct alpha {
-        struct a0 {
+    struct alpha : public token {
+        struct a0 : public token {
             std::string t0;
             a0(std::string _t0) {
                 t0 = _t0;
@@ -2841,7 +2857,7 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
+        struct a1 : public token {
             std::string t0;
             a1(std::string _t0) {
                 t0 = _t0;
@@ -2849,7 +2865,7 @@ namespace parser {
             static a1* parse();
             std::string to_string();
         };
-        struct a2 {
+        struct a2 : public token {
             std::string t0;
             a2(std::string _t0) {
                 t0 = _t0;
@@ -2857,7 +2873,7 @@ namespace parser {
             static a2* parse();
             std::string to_string();
         };
-        struct a3 {
+        struct a3 : public token {
             std::string t0;
             a3(std::string _t0) {
                 t0 = _t0;
@@ -2865,7 +2881,7 @@ namespace parser {
             static a3* parse();
             std::string to_string();
         };
-        struct a4 {
+        struct a4 : public token {
             std::string t0;
             a4(std::string _t0) {
                 t0 = _t0;
@@ -2873,7 +2889,7 @@ namespace parser {
             static a4* parse();
             std::string to_string();
         };
-        struct a5 {
+        struct a5 : public token {
             std::string t0;
             a5(std::string _t0) {
                 t0 = _t0;
@@ -2881,7 +2897,7 @@ namespace parser {
             static a5* parse();
             std::string to_string();
         };
-        struct a6 {
+        struct a6 : public token {
             std::string t0;
             a6(std::string _t0) {
                 t0 = _t0;
@@ -2889,7 +2905,7 @@ namespace parser {
             static a6* parse();
             std::string to_string();
         };
-        struct a7 {
+        struct a7 : public token {
             std::string t0;
             a7(std::string _t0) {
                 t0 = _t0;
@@ -2897,7 +2913,7 @@ namespace parser {
             static a7* parse();
             std::string to_string();
         };
-        struct a8 {
+        struct a8 : public token {
             std::string t0;
             a8(std::string _t0) {
                 t0 = _t0;
@@ -2905,7 +2921,7 @@ namespace parser {
             static a8* parse();
             std::string to_string();
         };
-        struct a9 {
+        struct a9 : public token {
             std::string t0;
             a9(std::string _t0) {
                 t0 = _t0;
@@ -2913,7 +2929,7 @@ namespace parser {
             static a9* parse();
             std::string to_string();
         };
-        struct a10 {
+        struct a10 : public token {
             std::string t0;
             a10(std::string _t0) {
                 t0 = _t0;
@@ -2921,7 +2937,7 @@ namespace parser {
             static a10* parse();
             std::string to_string();
         };
-        struct a11 {
+        struct a11 : public token {
             std::string t0;
             a11(std::string _t0) {
                 t0 = _t0;
@@ -2929,7 +2945,7 @@ namespace parser {
             static a11* parse();
             std::string to_string();
         };
-        struct a12 {
+        struct a12 : public token {
             std::string t0;
             a12(std::string _t0) {
                 t0 = _t0;
@@ -2937,7 +2953,7 @@ namespace parser {
             static a12* parse();
             std::string to_string();
         };
-        struct a13 {
+        struct a13 : public token {
             std::string t0;
             a13(std::string _t0) {
                 t0 = _t0;
@@ -2945,7 +2961,7 @@ namespace parser {
             static a13* parse();
             std::string to_string();
         };
-        struct a14 {
+        struct a14 : public token {
             std::string t0;
             a14(std::string _t0) {
                 t0 = _t0;
@@ -2953,7 +2969,7 @@ namespace parser {
             static a14* parse();
             std::string to_string();
         };
-        struct a15 {
+        struct a15 : public token {
             std::string t0;
             a15(std::string _t0) {
                 t0 = _t0;
@@ -2961,7 +2977,7 @@ namespace parser {
             static a15* parse();
             std::string to_string();
         };
-        struct a16 {
+        struct a16 : public token {
             std::string t0;
             a16(std::string _t0) {
                 t0 = _t0;
@@ -2969,7 +2985,7 @@ namespace parser {
             static a16* parse();
             std::string to_string();
         };
-        struct a17 {
+        struct a17 : public token {
             std::string t0;
             a17(std::string _t0) {
                 t0 = _t0;
@@ -2977,7 +2993,7 @@ namespace parser {
             static a17* parse();
             std::string to_string();
         };
-        struct a18 {
+        struct a18 : public token {
             std::string t0;
             a18(std::string _t0) {
                 t0 = _t0;
@@ -2985,7 +3001,7 @@ namespace parser {
             static a18* parse();
             std::string to_string();
         };
-        struct a19 {
+        struct a19 : public token {
             std::string t0;
             a19(std::string _t0) {
                 t0 = _t0;
@@ -2993,7 +3009,7 @@ namespace parser {
             static a19* parse();
             std::string to_string();
         };
-        struct a20 {
+        struct a20 : public token {
             std::string t0;
             a20(std::string _t0) {
                 t0 = _t0;
@@ -3001,7 +3017,7 @@ namespace parser {
             static a20* parse();
             std::string to_string();
         };
-        struct a21 {
+        struct a21 : public token {
             std::string t0;
             a21(std::string _t0) {
                 t0 = _t0;
@@ -3009,7 +3025,7 @@ namespace parser {
             static a21* parse();
             std::string to_string();
         };
-        struct a22 {
+        struct a22 : public token {
             std::string t0;
             a22(std::string _t0) {
                 t0 = _t0;
@@ -3017,7 +3033,7 @@ namespace parser {
             static a22* parse();
             std::string to_string();
         };
-        struct a23 {
+        struct a23 : public token {
             std::string t0;
             a23(std::string _t0) {
                 t0 = _t0;
@@ -3025,7 +3041,7 @@ namespace parser {
             static a23* parse();
             std::string to_string();
         };
-        struct a24 {
+        struct a24 : public token {
             std::string t0;
             a24(std::string _t0) {
                 t0 = _t0;
@@ -3033,7 +3049,7 @@ namespace parser {
             static a24* parse();
             std::string to_string();
         };
-        struct a25 {
+        struct a25 : public token {
             std::string t0;
             a25(std::string _t0) {
                 t0 = _t0;
@@ -3041,7 +3057,7 @@ namespace parser {
             static a25* parse();
             std::string to_string();
         };
-        struct a26 {
+        struct a26 : public token {
             std::string t0;
             a26(std::string _t0) {
                 t0 = _t0;
@@ -3049,7 +3065,7 @@ namespace parser {
             static a26* parse();
             std::string to_string();
         };
-        struct a27 {
+        struct a27 : public token {
             std::string t0;
             a27(std::string _t0) {
                 t0 = _t0;
@@ -3057,7 +3073,7 @@ namespace parser {
             static a27* parse();
             std::string to_string();
         };
-        struct a28 {
+        struct a28 : public token {
             std::string t0;
             a28(std::string _t0) {
                 t0 = _t0;
@@ -3065,7 +3081,7 @@ namespace parser {
             static a28* parse();
             std::string to_string();
         };
-        struct a29 {
+        struct a29 : public token {
             std::string t0;
             a29(std::string _t0) {
                 t0 = _t0;
@@ -3073,7 +3089,7 @@ namespace parser {
             static a29* parse();
             std::string to_string();
         };
-        struct a30 {
+        struct a30 : public token {
             std::string t0;
             a30(std::string _t0) {
                 t0 = _t0;
@@ -3081,7 +3097,7 @@ namespace parser {
             static a30* parse();
             std::string to_string();
         };
-        struct a31 {
+        struct a31 : public token {
             std::string t0;
             a31(std::string _t0) {
                 t0 = _t0;
@@ -3089,7 +3105,7 @@ namespace parser {
             static a31* parse();
             std::string to_string();
         };
-        struct a32 {
+        struct a32 : public token {
             std::string t0;
             a32(std::string _t0) {
                 t0 = _t0;
@@ -3097,7 +3113,7 @@ namespace parser {
             static a32* parse();
             std::string to_string();
         };
-        struct a33 {
+        struct a33 : public token {
             std::string t0;
             a33(std::string _t0) {
                 t0 = _t0;
@@ -3105,7 +3121,7 @@ namespace parser {
             static a33* parse();
             std::string to_string();
         };
-        struct a34 {
+        struct a34 : public token {
             std::string t0;
             a34(std::string _t0) {
                 t0 = _t0;
@@ -3113,7 +3129,7 @@ namespace parser {
             static a34* parse();
             std::string to_string();
         };
-        struct a35 {
+        struct a35 : public token {
             std::string t0;
             a35(std::string _t0) {
                 t0 = _t0;
@@ -3121,7 +3137,7 @@ namespace parser {
             static a35* parse();
             std::string to_string();
         };
-        struct a36 {
+        struct a36 : public token {
             std::string t0;
             a36(std::string _t0) {
                 t0 = _t0;
@@ -3129,7 +3145,7 @@ namespace parser {
             static a36* parse();
             std::string to_string();
         };
-        struct a37 {
+        struct a37 : public token {
             std::string t0;
             a37(std::string _t0) {
                 t0 = _t0;
@@ -3137,7 +3153,7 @@ namespace parser {
             static a37* parse();
             std::string to_string();
         };
-        struct a38 {
+        struct a38 : public token {
             std::string t0;
             a38(std::string _t0) {
                 t0 = _t0;
@@ -3145,7 +3161,7 @@ namespace parser {
             static a38* parse();
             std::string to_string();
         };
-        struct a39 {
+        struct a39 : public token {
             std::string t0;
             a39(std::string _t0) {
                 t0 = _t0;
@@ -3153,7 +3169,7 @@ namespace parser {
             static a39* parse();
             std::string to_string();
         };
-        struct a40 {
+        struct a40 : public token {
             std::string t0;
             a40(std::string _t0) {
                 t0 = _t0;
@@ -3161,7 +3177,7 @@ namespace parser {
             static a40* parse();
             std::string to_string();
         };
-        struct a41 {
+        struct a41 : public token {
             std::string t0;
             a41(std::string _t0) {
                 t0 = _t0;
@@ -3169,7 +3185,7 @@ namespace parser {
             static a41* parse();
             std::string to_string();
         };
-        struct a42 {
+        struct a42 : public token {
             std::string t0;
             a42(std::string _t0) {
                 t0 = _t0;
@@ -3177,7 +3193,7 @@ namespace parser {
             static a42* parse();
             std::string to_string();
         };
-        struct a43 {
+        struct a43 : public token {
             std::string t0;
             a43(std::string _t0) {
                 t0 = _t0;
@@ -3185,7 +3201,7 @@ namespace parser {
             static a43* parse();
             std::string to_string();
         };
-        struct a44 {
+        struct a44 : public token {
             std::string t0;
             a44(std::string _t0) {
                 t0 = _t0;
@@ -3193,7 +3209,7 @@ namespace parser {
             static a44* parse();
             std::string to_string();
         };
-        struct a45 {
+        struct a45 : public token {
             std::string t0;
             a45(std::string _t0) {
                 t0 = _t0;
@@ -3201,7 +3217,7 @@ namespace parser {
             static a45* parse();
             std::string to_string();
         };
-        struct a46 {
+        struct a46 : public token {
             std::string t0;
             a46(std::string _t0) {
                 t0 = _t0;
@@ -3209,7 +3225,7 @@ namespace parser {
             static a46* parse();
             std::string to_string();
         };
-        struct a47 {
+        struct a47 : public token {
             std::string t0;
             a47(std::string _t0) {
                 t0 = _t0;
@@ -3217,7 +3233,7 @@ namespace parser {
             static a47* parse();
             std::string to_string();
         };
-        struct a48 {
+        struct a48 : public token {
             std::string t0;
             a48(std::string _t0) {
                 t0 = _t0;
@@ -3225,7 +3241,7 @@ namespace parser {
             static a48* parse();
             std::string to_string();
         };
-        struct a49 {
+        struct a49 : public token {
             std::string t0;
             a49(std::string _t0) {
                 t0 = _t0;
@@ -3233,7 +3249,7 @@ namespace parser {
             static a49* parse();
             std::string to_string();
         };
-        struct a50 {
+        struct a50 : public token {
             std::string t0;
             a50(std::string _t0) {
                 t0 = _t0;
@@ -3241,7 +3257,7 @@ namespace parser {
             static a50* parse();
             std::string to_string();
         };
-        struct a51 {
+        struct a51 : public token {
             std::string t0;
             a51(std::string _t0) {
                 t0 = _t0;
@@ -3566,8 +3582,8 @@ namespace parser {
     };
 
     // digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
-    struct digit {
-        struct a0 {
+    struct digit : public token {
+        struct a0 : public token {
             std::string t0;
             a0(std::string _t0) {
                 t0 = _t0;
@@ -3575,7 +3591,7 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
+        struct a1 : public token {
             std::string t0;
             a1(std::string _t0) {
                 t0 = _t0;
@@ -3583,7 +3599,7 @@ namespace parser {
             static a1* parse();
             std::string to_string();
         };
-        struct a2 {
+        struct a2 : public token {
             std::string t0;
             a2(std::string _t0) {
                 t0 = _t0;
@@ -3591,7 +3607,7 @@ namespace parser {
             static a2* parse();
             std::string to_string();
         };
-        struct a3 {
+        struct a3 : public token {
             std::string t0;
             a3(std::string _t0) {
                 t0 = _t0;
@@ -3599,7 +3615,7 @@ namespace parser {
             static a3* parse();
             std::string to_string();
         };
-        struct a4 {
+        struct a4 : public token {
             std::string t0;
             a4(std::string _t0) {
                 t0 = _t0;
@@ -3607,7 +3623,7 @@ namespace parser {
             static a4* parse();
             std::string to_string();
         };
-        struct a5 {
+        struct a5 : public token {
             std::string t0;
             a5(std::string _t0) {
                 t0 = _t0;
@@ -3615,7 +3631,7 @@ namespace parser {
             static a5* parse();
             std::string to_string();
         };
-        struct a6 {
+        struct a6 : public token {
             std::string t0;
             a6(std::string _t0) {
                 t0 = _t0;
@@ -3623,7 +3639,7 @@ namespace parser {
             static a6* parse();
             std::string to_string();
         };
-        struct a7 {
+        struct a7 : public token {
             std::string t0;
             a7(std::string _t0) {
                 t0 = _t0;
@@ -3631,7 +3647,7 @@ namespace parser {
             static a7* parse();
             std::string to_string();
         };
-        struct a8 {
+        struct a8 : public token {
             std::string t0;
             a8(std::string _t0) {
                 t0 = _t0;
@@ -3639,7 +3655,7 @@ namespace parser {
             static a8* parse();
             std::string to_string();
         };
-        struct a9 {
+        struct a9 : public token {
             std::string t0;
             a9(std::string _t0) {
                 t0 = _t0;
@@ -3712,9 +3728,9 @@ namespace parser {
     };
 
     // escape = "\\" , ( "n" | "t" | "r" | "f" | "b" | "\"" | "\\" | "'" | "0" ) ;
-    struct escape {
-        struct a0 {
-            struct b0 {
+    struct escape : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 std::string t0;
                 b0(std::string _t0) {
                     t0 = _t0;
@@ -3722,7 +3738,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 std::string t0;
                 b1(std::string _t0) {
                     t0 = _t0;
@@ -3730,7 +3746,7 @@ namespace parser {
                 static b1* parse();
                 std::string to_string();
             };
-            struct b2 {
+            struct b2 : public token {
                 std::string t0;
                 b2(std::string _t0) {
                     t0 = _t0;
@@ -3738,7 +3754,7 @@ namespace parser {
                 static b2* parse();
                 std::string to_string();
             };
-            struct b3 {
+            struct b3 : public token {
                 std::string t0;
                 b3(std::string _t0) {
                     t0 = _t0;
@@ -3746,7 +3762,7 @@ namespace parser {
                 static b3* parse();
                 std::string to_string();
             };
-            struct b4 {
+            struct b4 : public token {
                 std::string t0;
                 b4(std::string _t0) {
                     t0 = _t0;
@@ -3754,7 +3770,7 @@ namespace parser {
                 static b4* parse();
                 std::string to_string();
             };
-            struct b5 {
+            struct b5 : public token {
                 std::string t0;
                 b5(std::string _t0) {
                     t0 = _t0;
@@ -3762,7 +3778,7 @@ namespace parser {
                 static b5* parse();
                 std::string to_string();
             };
-            struct b6 {
+            struct b6 : public token {
                 std::string t0;
                 b6(std::string _t0) {
                     t0 = _t0;
@@ -3770,7 +3786,7 @@ namespace parser {
                 static b6* parse();
                 std::string to_string();
             };
-            struct b7 {
+            struct b7 : public token {
                 std::string t0;
                 b7(std::string _t0) {
                     t0 = _t0;
@@ -3778,7 +3794,7 @@ namespace parser {
                 static b7* parse();
                 std::string to_string();
             };
-            struct b8 {
+            struct b8 : public token {
                 std::string t0;
                 b8(std::string _t0) {
                     t0 = _t0;
@@ -3854,8 +3870,8 @@ namespace parser {
     };
 
     // symbol = "[" | "]" | "{" | "}" | "(" | ")" | "<" | ">" | "=" | "|" | "." | "," | ";" | "-" | "+" | "_" | "*" | "?" | ":" | "!" | "@" | "#" | "$" | "%" | "^" | "&" | "/" | "~" | "`" ;
-    struct symbol {
-        struct a0 {
+    struct symbol : public token {
+        struct a0 : public token {
             std::string t0;
             a0(std::string _t0) {
                 t0 = _t0;
@@ -3863,7 +3879,7 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
+        struct a1 : public token {
             std::string t0;
             a1(std::string _t0) {
                 t0 = _t0;
@@ -3871,7 +3887,7 @@ namespace parser {
             static a1* parse();
             std::string to_string();
         };
-        struct a2 {
+        struct a2 : public token {
             std::string t0;
             a2(std::string _t0) {
                 t0 = _t0;
@@ -3879,7 +3895,7 @@ namespace parser {
             static a2* parse();
             std::string to_string();
         };
-        struct a3 {
+        struct a3 : public token {
             std::string t0;
             a3(std::string _t0) {
                 t0 = _t0;
@@ -3887,7 +3903,7 @@ namespace parser {
             static a3* parse();
             std::string to_string();
         };
-        struct a4 {
+        struct a4 : public token {
             std::string t0;
             a4(std::string _t0) {
                 t0 = _t0;
@@ -3895,7 +3911,7 @@ namespace parser {
             static a4* parse();
             std::string to_string();
         };
-        struct a5 {
+        struct a5 : public token {
             std::string t0;
             a5(std::string _t0) {
                 t0 = _t0;
@@ -3903,7 +3919,7 @@ namespace parser {
             static a5* parse();
             std::string to_string();
         };
-        struct a6 {
+        struct a6 : public token {
             std::string t0;
             a6(std::string _t0) {
                 t0 = _t0;
@@ -3911,7 +3927,7 @@ namespace parser {
             static a6* parse();
             std::string to_string();
         };
-        struct a7 {
+        struct a7 : public token {
             std::string t0;
             a7(std::string _t0) {
                 t0 = _t0;
@@ -3919,7 +3935,7 @@ namespace parser {
             static a7* parse();
             std::string to_string();
         };
-        struct a8 {
+        struct a8 : public token {
             std::string t0;
             a8(std::string _t0) {
                 t0 = _t0;
@@ -3927,7 +3943,7 @@ namespace parser {
             static a8* parse();
             std::string to_string();
         };
-        struct a9 {
+        struct a9 : public token {
             std::string t0;
             a9(std::string _t0) {
                 t0 = _t0;
@@ -3935,7 +3951,7 @@ namespace parser {
             static a9* parse();
             std::string to_string();
         };
-        struct a10 {
+        struct a10 : public token {
             std::string t0;
             a10(std::string _t0) {
                 t0 = _t0;
@@ -3943,7 +3959,7 @@ namespace parser {
             static a10* parse();
             std::string to_string();
         };
-        struct a11 {
+        struct a11 : public token {
             std::string t0;
             a11(std::string _t0) {
                 t0 = _t0;
@@ -3951,7 +3967,7 @@ namespace parser {
             static a11* parse();
             std::string to_string();
         };
-        struct a12 {
+        struct a12 : public token {
             std::string t0;
             a12(std::string _t0) {
                 t0 = _t0;
@@ -3959,7 +3975,7 @@ namespace parser {
             static a12* parse();
             std::string to_string();
         };
-        struct a13 {
+        struct a13 : public token {
             std::string t0;
             a13(std::string _t0) {
                 t0 = _t0;
@@ -3967,7 +3983,7 @@ namespace parser {
             static a13* parse();
             std::string to_string();
         };
-        struct a14 {
+        struct a14 : public token {
             std::string t0;
             a14(std::string _t0) {
                 t0 = _t0;
@@ -3975,7 +3991,7 @@ namespace parser {
             static a14* parse();
             std::string to_string();
         };
-        struct a15 {
+        struct a15 : public token {
             std::string t0;
             a15(std::string _t0) {
                 t0 = _t0;
@@ -3983,7 +3999,7 @@ namespace parser {
             static a15* parse();
             std::string to_string();
         };
-        struct a16 {
+        struct a16 : public token {
             std::string t0;
             a16(std::string _t0) {
                 t0 = _t0;
@@ -3991,7 +4007,7 @@ namespace parser {
             static a16* parse();
             std::string to_string();
         };
-        struct a17 {
+        struct a17 : public token {
             std::string t0;
             a17(std::string _t0) {
                 t0 = _t0;
@@ -3999,7 +4015,7 @@ namespace parser {
             static a17* parse();
             std::string to_string();
         };
-        struct a18 {
+        struct a18 : public token {
             std::string t0;
             a18(std::string _t0) {
                 t0 = _t0;
@@ -4007,7 +4023,7 @@ namespace parser {
             static a18* parse();
             std::string to_string();
         };
-        struct a19 {
+        struct a19 : public token {
             std::string t0;
             a19(std::string _t0) {
                 t0 = _t0;
@@ -4015,7 +4031,7 @@ namespace parser {
             static a19* parse();
             std::string to_string();
         };
-        struct a20 {
+        struct a20 : public token {
             std::string t0;
             a20(std::string _t0) {
                 t0 = _t0;
@@ -4023,7 +4039,7 @@ namespace parser {
             static a20* parse();
             std::string to_string();
         };
-        struct a21 {
+        struct a21 : public token {
             std::string t0;
             a21(std::string _t0) {
                 t0 = _t0;
@@ -4031,7 +4047,7 @@ namespace parser {
             static a21* parse();
             std::string to_string();
         };
-        struct a22 {
+        struct a22 : public token {
             std::string t0;
             a22(std::string _t0) {
                 t0 = _t0;
@@ -4039,7 +4055,7 @@ namespace parser {
             static a22* parse();
             std::string to_string();
         };
-        struct a23 {
+        struct a23 : public token {
             std::string t0;
             a23(std::string _t0) {
                 t0 = _t0;
@@ -4047,7 +4063,7 @@ namespace parser {
             static a23* parse();
             std::string to_string();
         };
-        struct a24 {
+        struct a24 : public token {
             std::string t0;
             a24(std::string _t0) {
                 t0 = _t0;
@@ -4055,7 +4071,7 @@ namespace parser {
             static a24* parse();
             std::string to_string();
         };
-        struct a25 {
+        struct a25 : public token {
             std::string t0;
             a25(std::string _t0) {
                 t0 = _t0;
@@ -4063,7 +4079,7 @@ namespace parser {
             static a25* parse();
             std::string to_string();
         };
-        struct a26 {
+        struct a26 : public token {
             std::string t0;
             a26(std::string _t0) {
                 t0 = _t0;
@@ -4071,7 +4087,7 @@ namespace parser {
             static a26* parse();
             std::string to_string();
         };
-        struct a27 {
+        struct a27 : public token {
             std::string t0;
             a27(std::string _t0) {
                 t0 = _t0;
@@ -4079,7 +4095,7 @@ namespace parser {
             static a27* parse();
             std::string to_string();
         };
-        struct a28 {
+        struct a28 : public token {
             std::string t0;
             a28(std::string _t0) {
                 t0 = _t0;
@@ -4266,9 +4282,9 @@ namespace parser {
     };
 
     // line_comment = "//" , { alpha | digit | symbol | "\"" | "'" | " " | "\\" } , "\n" ;
-    struct line_comment {
-        struct a0 {
-            struct b0 {
+    struct line_comment : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 alpha *t0;
                 b0(alpha *_t0) {
                     t0 = _t0;
@@ -4276,7 +4292,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 digit *t0;
                 b1(digit *_t0) {
                     t0 = _t0;
@@ -4284,7 +4300,7 @@ namespace parser {
                 static b1* parse();
                 std::string to_string();
             };
-            struct b2 {
+            struct b2 : public token {
                 symbol *t0;
                 b2(symbol *_t0) {
                     t0 = _t0;
@@ -4292,7 +4308,7 @@ namespace parser {
                 static b2* parse();
                 std::string to_string();
             };
-            struct b3 {
+            struct b3 : public token {
                 std::string t0;
                 b3(std::string _t0) {
                     t0 = _t0;
@@ -4300,7 +4316,7 @@ namespace parser {
                 static b3* parse();
                 std::string to_string();
             };
-            struct b4 {
+            struct b4 : public token {
                 std::string t0;
                 b4(std::string _t0) {
                     t0 = _t0;
@@ -4308,7 +4324,7 @@ namespace parser {
                 static b4* parse();
                 std::string to_string();
             };
-            struct b5 {
+            struct b5 : public token {
                 std::string t0;
                 b5(std::string _t0) {
                     t0 = _t0;
@@ -4316,7 +4332,7 @@ namespace parser {
                 static b5* parse();
                 std::string to_string();
             };
-            struct b6 {
+            struct b6 : public token {
                 std::string t0;
                 b6(std::string _t0) {
                     t0 = _t0;
@@ -4382,9 +4398,9 @@ namespace parser {
     };
 
     // multiline_comment = "/*" , { alpha | digit | " " | "\n" } , "*/" ;
-    struct multiline_comment {
-        struct a0 {
-            struct b0 {
+    struct multiline_comment : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 alpha *t0;
                 b0(alpha *_t0) {
                     t0 = _t0;
@@ -4392,7 +4408,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 digit *t0;
                 b1(digit *_t0) {
                     t0 = _t0;
@@ -4400,7 +4416,7 @@ namespace parser {
                 static b1* parse();
                 std::string to_string();
             };
-            struct b2 {
+            struct b2 : public token {
                 std::string t0;
                 b2(std::string _t0) {
                     t0 = _t0;
@@ -4408,7 +4424,7 @@ namespace parser {
                 static b2* parse();
                 std::string to_string();
             };
-            struct b3 {
+            struct b3 : public token {
                 std::string t0;
                 b3(std::string _t0) {
                     t0 = _t0;
@@ -4456,8 +4472,8 @@ namespace parser {
     };
 
     // ws = " " | "\n" | "\t" | "\r" | "\f" | "\b" | line_comment | multiline_comment ;
-    struct ws {
-        struct a0 {
+    struct ws : public token {
+        struct a0 : public token {
             std::string t0;
             a0(std::string _t0) {
                 t0 = _t0;
@@ -4465,7 +4481,7 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
+        struct a1 : public token {
             std::string t0;
             a1(std::string _t0) {
                 t0 = _t0;
@@ -4473,7 +4489,7 @@ namespace parser {
             static a1* parse();
             std::string to_string();
         };
-        struct a2 {
+        struct a2 : public token {
             std::string t0;
             a2(std::string _t0) {
                 t0 = _t0;
@@ -4481,7 +4497,7 @@ namespace parser {
             static a2* parse();
             std::string to_string();
         };
-        struct a3 {
+        struct a3 : public token {
             std::string t0;
             a3(std::string _t0) {
                 t0 = _t0;
@@ -4489,7 +4505,7 @@ namespace parser {
             static a3* parse();
             std::string to_string();
         };
-        struct a4 {
+        struct a4 : public token {
             std::string t0;
             a4(std::string _t0) {
                 t0 = _t0;
@@ -4497,7 +4513,7 @@ namespace parser {
             static a4* parse();
             std::string to_string();
         };
-        struct a5 {
+        struct a5 : public token {
             std::string t0;
             a5(std::string _t0) {
                 t0 = _t0;
@@ -4505,7 +4521,7 @@ namespace parser {
             static a5* parse();
             std::string to_string();
         };
-        struct a6 {
+        struct a6 : public token {
             line_comment *t0;
             a6(line_comment *_t0) {
                 t0 = _t0;
@@ -4513,7 +4529,7 @@ namespace parser {
             static a6* parse();
             std::string to_string();
         };
-        struct a7 {
+        struct a7 : public token {
             multiline_comment *t0;
             a7(multiline_comment *_t0) {
                 t0 = _t0;
@@ -4574,8 +4590,8 @@ namespace parser {
     };
 
     // rws = < ws > ;
-    struct rws {
-        struct a0 {
+    struct rws : public token {
+        struct a0 : public token {
             ws *t0;
             a0(ws *_t0) {
                 t0 = _t0;
@@ -4592,8 +4608,8 @@ namespace parser {
     };
 
     // ows = { ws } ;
-    struct ows {
-        struct a0 {
+    struct ows : public token {
+        struct a0 : public token {
             ws *t0;
             a0(ws *_t0) {
                 t0 = _t0;
@@ -4610,9 +4626,9 @@ namespace parser {
     };
 
     // base_type = alpha , { alpha | digit | "_" } ;
-    struct base_type {
-        struct a0 {
-            struct b0 {
+    struct base_type : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 alpha *t0;
                 b0(alpha *_t0) {
                     t0 = _t0;
@@ -4620,7 +4636,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 digit *t0;
                 b1(digit *_t0) {
                     t0 = _t0;
@@ -4628,7 +4644,7 @@ namespace parser {
                 static b1* parse();
                 std::string to_string();
             };
-            struct b2 {
+            struct b2 : public token {
                 std::string t0;
                 b2(std::string _t0) {
                     t0 = _t0;
@@ -4668,9 +4684,9 @@ namespace parser {
     };
 
     // templated_type = base_type , [ "<" , ows , templated_type , { ows , "," , ows , templated_type } , ows , ">" ] , { "*" | "[" , literal_integer , "]" } ;
-    struct templated_type {
-        struct a0 {
-            struct b0 {
+    struct templated_type : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 ows *t0;
                 std::string t1;
                 ows *t2;
@@ -4701,8 +4717,8 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
-            struct b0 {
+        struct a1 : public token {
+            struct b0 : public token {
                 std::string t0;
                 b0(std::string _t0) {
                     t0 = _t0;
@@ -4710,7 +4726,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 std::string t0;
                 literal_integer *t1;
                 std::string t2;
@@ -4750,7 +4766,7 @@ namespace parser {
     };
 
     // function_pointer_type = "fn" , "<" , ows , type , ows , "(" , ows , type_list , ows , ")" , ows , ">" ;
-    struct function_pointer_type {
+    struct function_pointer_type : public token {
         std::string t0;
         std::string t1;
         ows *t2;
@@ -4782,9 +4798,9 @@ namespace parser {
     };
 
     // type = ( function_pointer_type | templated_type ) , [ "&" ] ;
-    struct type {
-        struct a0 {
-            struct b0 {
+    struct type : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 function_pointer_type *t0;
                 b0(function_pointer_type *_t0) {
                     t0 = _t0;
@@ -4792,7 +4808,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 templated_type *t0;
                 b1(templated_type *_t0) {
                     t0 = _t0;
@@ -4815,7 +4831,7 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
+        struct a1 : public token {
             std::string t0;
             a1(std::string _t0) {
                 t0 = _t0;
@@ -4834,8 +4850,8 @@ namespace parser {
     };
 
     // template_header = "template" , ows , "<" , ows , base_type , { ows , "," , ows , base_type } , ows , ">" ;
-    struct template_header {
-        struct a0 {
+    struct template_header : public token {
+        struct a0 : public token {
             ows *t0;
             std::string t1;
             ows *t2;
@@ -4872,9 +4888,9 @@ namespace parser {
     };
 
     // identifier = ( alpha | "_" ) , { alpha | digit | "_" } ;
-    struct identifier {
-        struct a0 {
-            struct b0 {
+    struct identifier : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 alpha *t0;
                 b0(alpha *_t0) {
                     t0 = _t0;
@@ -4882,7 +4898,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 std::string t0;
                 b1(std::string _t0) {
                     t0 = _t0;
@@ -4905,8 +4921,8 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
-            struct b0 {
+        struct a1 : public token {
+            struct b0 : public token {
                 alpha *t0;
                 b0(alpha *_t0) {
                     t0 = _t0;
@@ -4914,7 +4930,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 digit *t0;
                 b1(digit *_t0) {
                     t0 = _t0;
@@ -4922,7 +4938,7 @@ namespace parser {
                 static b1* parse();
                 std::string to_string();
             };
-            struct b2 {
+            struct b2 : public token {
                 std::string t0;
                 b2(std::string _t0) {
                     t0 = _t0;
@@ -4962,8 +4978,8 @@ namespace parser {
     };
 
     // declaration = type , rws , identifier , [ ows , "=" , ows , expression ] ;
-    struct declaration {
-        struct a0 {
+    struct declaration : public token {
+        struct a0 : public token {
             ows *t0;
             std::string t1;
             ows *t2;
@@ -4992,7 +5008,7 @@ namespace parser {
     };
 
     // parameter = type , rws , identifier ;
-    struct parameter {
+    struct parameter : public token {
         type *t0;
         rws *t1;
         identifier *t2;
@@ -5006,9 +5022,9 @@ namespace parser {
     };
 
     // type_list = [ type , { ows , "," , ows , type } ] ;
-    struct type_list {
-        struct a0 {
-            struct b0 {
+    struct type_list : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 ows *t0;
                 std::string t1;
                 ows *t2;
@@ -5040,9 +5056,9 @@ namespace parser {
     };
 
     // parameter_list = [ parameter , { ows , "," , ows , parameter } ] ;
-    struct parameter_list {
-        struct a0 {
-            struct b0 {
+    struct parameter_list : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 ows *t0;
                 std::string t1;
                 ows *t2;
@@ -5074,9 +5090,9 @@ namespace parser {
     };
 
     // argument_list = [ expression , { ows , "," , ows , expression } ] ;
-    struct argument_list {
-        struct a0 {
-            struct b0 {
+    struct argument_list : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 ows *t0;
                 std::string t1;
                 ows *t2;
@@ -5108,9 +5124,9 @@ namespace parser {
     };
 
     // identifier_list = [ identifier , { ows , "," , ows , identifier } ] ;
-    struct identifier_list {
-        struct a0 {
-            struct b0 {
+    struct identifier_list : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 ows *t0;
                 std::string t1;
                 ows *t2;
@@ -5142,8 +5158,8 @@ namespace parser {
     };
 
     // statement = simple_statement | control_statement | compound_statement ;
-    struct statement {
-        struct a0 {
+    struct statement : public token {
+        struct a0 : public token {
             simple_statement *t0;
             a0(simple_statement *_t0) {
                 t0 = _t0;
@@ -5151,7 +5167,7 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
+        struct a1 : public token {
             control_statement *t0;
             a1(control_statement *_t0) {
                 t0 = _t0;
@@ -5159,7 +5175,7 @@ namespace parser {
             static a1* parse();
             std::string to_string();
         };
-        struct a2 {
+        struct a2 : public token {
             compound_statement *t0;
             a2(compound_statement *_t0) {
                 t0 = _t0;
@@ -5190,9 +5206,9 @@ namespace parser {
     };
 
     // simple_statement = "return" , [ rws , expression ] , ows , ";" | "break" , ows , ";" | "continue" , ows , ";" | declaration , ows , ";" | expression , ows , ";" | inline_asm , ows , ";" ;
-    struct simple_statement {
-        struct a0 {
-            struct b0 {
+    struct simple_statement : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 rws *t0;
                 expression *t1;
                 b0(rws *_t0, expression *_t1) {
@@ -5215,7 +5231,7 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
+        struct a1 : public token {
             std::string t0;
             ows *t1;
             std::string t2;
@@ -5227,7 +5243,7 @@ namespace parser {
             static a1* parse();
             std::string to_string();
         };
-        struct a2 {
+        struct a2 : public token {
             std::string t0;
             ows *t1;
             std::string t2;
@@ -5239,7 +5255,7 @@ namespace parser {
             static a2* parse();
             std::string to_string();
         };
-        struct a3 {
+        struct a3 : public token {
             declaration *t0;
             ows *t1;
             std::string t2;
@@ -5251,7 +5267,7 @@ namespace parser {
             static a3* parse();
             std::string to_string();
         };
-        struct a4 {
+        struct a4 : public token {
             expression *t0;
             ows *t1;
             std::string t2;
@@ -5263,7 +5279,7 @@ namespace parser {
             static a4* parse();
             std::string to_string();
         };
-        struct a5 {
+        struct a5 : public token {
             inline_asm *t0;
             ows *t1;
             std::string t2;
@@ -5316,9 +5332,9 @@ namespace parser {
     };
 
     // control_statement = "if" , ows , "(" , ows , expression , ows , ")" , ows , statement , [ rws , "else" , rws , statement ] | "while" , ows , "(" , ows , expression , ows , ")" , ows , statement | "for" , ows , "(" , ows , [ declaration ] , ows , ";" , ows , [ expression ] , ows , ";" , ows , [ expression ] , ows , ")" , ows , statement ;
-    struct control_statement {
-        struct a0 {
-            struct b0 {
+    struct control_statement : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 rws *t0;
                 std::string t1;
                 rws *t2;
@@ -5357,7 +5373,7 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
+        struct a1 : public token {
             std::string t0;
             ows *t1;
             std::string t2;
@@ -5381,8 +5397,8 @@ namespace parser {
             static a1* parse();
             std::string to_string();
         };
-        struct a2 {
-            struct b0 {
+        struct a2 : public token {
+            struct b0 : public token {
                 declaration *t0;
                 b0(declaration *_t0) {
                     t0 = _t0;
@@ -5390,7 +5406,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 expression *t0;
                 b1(expression *_t0) {
                     t0 = _t0;
@@ -5398,7 +5414,7 @@ namespace parser {
                 static b1* parse();
                 std::string to_string();
             };
-            struct b2 {
+            struct b2 : public token {
                 expression *t0;
                 b2(expression *_t0) {
                     t0 = _t0;
@@ -5468,8 +5484,8 @@ namespace parser {
     };
 
     // compound_statement = "{" , ows , { statement , ows } , "}" ;
-    struct compound_statement {
-        struct a0 {
+    struct compound_statement : public token {
+        struct a0 : public token {
             statement *t0;
             ows *t1;
             a0(statement *_t0, ows *_t1) {
@@ -5494,9 +5510,9 @@ namespace parser {
     };
 
     // include = "#include" , rws , ( literal_string | "<" , identifier , ">" ) , ows , ";" ;
-    struct include {
-        struct a0 {
-            struct b0 {
+    struct include : public token {
+        struct a0 : public token {
+            struct b0 : public token {
                 literal_string *t0;
                 b0(literal_string *_t0) {
                     t0 = _t0;
@@ -5504,7 +5520,7 @@ namespace parser {
                 static b0* parse();
                 std::string to_string();
             };
-            struct b1 {
+            struct b1 : public token {
                 std::string t0;
                 identifier *t1;
                 std::string t2;
@@ -5548,7 +5564,7 @@ namespace parser {
     };
 
     // _typedef = "typedef" , rws , type , rws , base_type , ows , ";" ;
-    struct _typedef {
+    struct _typedef : public token {
         std::string t0;
         rws *t1;
         type *t2;
@@ -5570,8 +5586,8 @@ namespace parser {
     };
 
     // global_node = "#global_node" , rws , identifier , [ ows , "[" , identifier_list , "]" ] , ows , ";" ;
-    struct global_node {
-        struct a0 {
+    struct global_node : public token {
+        struct a0 : public token {
             ows *t0;
             std::string t1;
             identifier_list *t2;
@@ -5604,8 +5620,8 @@ namespace parser {
     };
 
     // global_declaration = [ "[" , ows , identifier , ows , "]" , ows ] , [ "extern" , rws ] , declaration , ows , ";" ;
-    struct global_declaration {
-        struct a0 {
+    struct global_declaration : public token {
+        struct a0 : public token {
             std::string t0;
             ows *t1;
             identifier *t2;
@@ -5623,7 +5639,7 @@ namespace parser {
             static a0* parse();
             std::string to_string();
         };
-        struct a1 {
+        struct a1 : public token {
             std::string t0;
             rws *t1;
             a1(std::string _t0, rws *_t1) {
@@ -5650,10 +5666,10 @@ namespace parser {
     };
 
     // program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload | include | global_declaration | global_node | _typedef ) } , ows ;
-    struct program {
-        struct a0 {
-            struct b0 {
-                struct c0 {
+    struct program : public token {
+        struct a0 : public token {
+            struct b0 : public token {
+                struct c0 : public token {
                     function *t0;
                     c0(function *_t0) {
                         t0 = _t0;
@@ -5661,7 +5677,7 @@ namespace parser {
                     static c0* parse();
                     std::string to_string();
                 };
-                struct c1 {
+                struct c1 : public token {
                     struct_definition *t0;
                     c1(struct_definition *_t0) {
                         t0 = _t0;
@@ -5669,7 +5685,7 @@ namespace parser {
                     static c1* parse();
                     std::string to_string();
                 };
-                struct c2 {
+                struct c2 : public token {
                     templated_function *t0;
                     c2(templated_function *_t0) {
                         t0 = _t0;
@@ -5677,7 +5693,7 @@ namespace parser {
                     static c2* parse();
                     std::string to_string();
                 };
-                struct c3 {
+                struct c3 : public token {
                     templated_struct_definition *t0;
                     c3(templated_struct_definition *_t0) {
                         t0 = _t0;
@@ -5685,7 +5701,7 @@ namespace parser {
                     static c3* parse();
                     std::string to_string();
                 };
-                struct c4 {
+                struct c4 : public token {
                     overload *t0;
                     c4(overload *_t0) {
                         t0 = _t0;
@@ -5693,7 +5709,7 @@ namespace parser {
                     static c4* parse();
                     std::string to_string();
                 };
-                struct c5 {
+                struct c5 : public token {
                     templated_overload *t0;
                     c5(templated_overload *_t0) {
                         t0 = _t0;
@@ -5701,7 +5717,7 @@ namespace parser {
                     static c5* parse();
                     std::string to_string();
                 };
-                struct c6 {
+                struct c6 : public token {
                     include *t0;
                     c6(include *_t0) {
                         t0 = _t0;
@@ -5709,7 +5725,7 @@ namespace parser {
                     static c6* parse();
                     std::string to_string();
                 };
-                struct c7 {
+                struct c7 : public token {
                     global_declaration *t0;
                     c7(global_declaration *_t0) {
                         t0 = _t0;
@@ -5717,7 +5733,7 @@ namespace parser {
                     static c7* parse();
                     std::string to_string();
                 };
-                struct c8 {
+                struct c8 : public token {
                     global_node *t0;
                     c8(global_node *_t0) {
                         t0 = _t0;
@@ -5725,7 +5741,7 @@ namespace parser {
                     static c8* parse();
                     std::string to_string();
                 };
-                struct c9 {
+                struct c9 : public token {
                     _typedef *t0;
                     c9(_typedef *_t0) {
                         t0 = _t0;

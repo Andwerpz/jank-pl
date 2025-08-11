@@ -1162,7 +1162,7 @@ string process_escapes(string s) {
 }
 
 void generate_struct_from_concatenation(concatenation *c, string struct_name){
-    cout << indent() << "struct " << struct_name << " {\n";
+    cout << indent() << "struct " << struct_name << " : public token {\n";
     struct_depth ++;
     indent_level ++;
 
@@ -1275,7 +1275,7 @@ void generate_struct_from_alternation(alternation *a, string struct_name){
         generate_struct_from_concatenation(a->cs[0], struct_name);
     }
     else {  //there are multiple options; need to do some substructs. 
-        cout << indent() << "struct " << struct_name << " {\n";
+        cout << indent() << "struct " << struct_name << " : public token {\n";
         struct_depth ++;
         indent_level ++;
         
@@ -1368,6 +1368,7 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
     //generate parser
     cout << indent() << struct_name << "* " << struct_name << "::parse() {\n";
     indent_level ++;
+    cout << indent() << "parse_context _start_ctx = get_ctx();\n";
     cout << indent() << "push_stack();\n";
     for(int i = 0; i < c->ts.size(); i++) {
         term *t = c->ts[i];
@@ -1413,7 +1414,7 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
         else assert(false);
     }
     cout << indent() << "rm_stack();\n";
-    cout << indent() << "return new " << struct_name << "(";
+    cout << indent() << struct_name << "* retval = new " << struct_name << "(";
     for(int i = 0; i < c->ts.size(); i++){
         cout << "_" << var_sid[i];
         if(i + 1 != c->ts.size()) {
@@ -1421,6 +1422,9 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
         }
     }
     cout << ");\n";
+    cout << indent() << "retval->start_ctx = _start_ctx;\n";
+    cout << indent() << "retval->end_ctx = get_ctx();\n";
+    cout << indent() << "return retval;\n";
     indent_level --;
     cout << indent() << "}\n";
     cout << "\n";
@@ -1478,8 +1482,16 @@ void generate_fndef_from_alternation(alternation *a, string struct_name) {
         //generate parser
         cout << indent() << struct_name << "* " << struct_name << "::parse() {\n";
         indent_level ++;
+        cout << indent() << "parse_context _start_ctx = get_ctx();\n";
         for(int i = 0; i < a->cs.size(); i++) {
-            cout << indent() << "if(auto x = " << type_sid[i] << "::parse()) return new " << struct_name << "(x);\n";
+            cout << indent() << "if(auto x = " << type_sid[i] << "::parse()) {\n";
+            indent_level ++;
+            cout << indent() << struct_name << "* retval = new " << struct_name << "(x);\n";
+            cout << indent() << "retval->start_ctx = _start_ctx;\n";
+            cout << indent() << "retval->end_ctx = get_ctx();\n";
+            cout << indent() << "return retval;\n";
+            indent_level --;
+            cout << indent() << "}\n";
         }
         cout << indent() << "return nullptr;\n";
         indent_level --;
@@ -1536,9 +1548,28 @@ void generate_h(grammar *g) {
     cout << "namespace parser {\n";
     indent_level ++;
     // parse controller
-    {
+    {   
+        cout << indent() << "struct parse_context;\n";
+        cout << indent() << "struct token;\n";
+        cout << "\n";
         cout << indent() << "void set_s(std::string& ns);\n";
         cout << indent() << "bool check_finished_parsing();\n";
+        cout << indent() << "parse_context get_ctx();\n";
+
+        string tmp = 
+    R"(
+    struct parse_context {
+        int ptr;        //where we are in the string
+        int line;       //how many lines we are in the string
+        int line_off;   //current line offset 
+    };
+
+    struct token {
+        parse_context start_ctx;
+        parse_context end_ctx;
+    };
+    )";
+        cout << tmp << "\n";
     }
     cout << "\n";
 
@@ -1575,23 +1606,26 @@ void generate_cpp(grammar *g) {
     //the grammar to be parsed
     std::string s;
 
-    //where we are in the string
-    int ptr;
-
     //what is the furthest we've gotten into the string
     int max_parse;
 
+    parse_context ctx;
+
+    parse_context get_ctx() {
+        return ctx;
+    }
+
     //this is so we know where to backtrack to
     //the stack should be unaffected by any parse function. 
-    std::stack<int> ptr_stack;
+    std::stack<parse_context> ctx_stack;
 
     //initializes the parse controller
     void set_s(std::string& ns) {
         assert(ns.size() != 0);
         s = ns;
-        ptr = 0;
         max_parse = 0;
-        while(ptr_stack.size() != 0) ptr_stack.pop();
+        ctx = {0, 0, 0};
+        while(ctx_stack.size() != 0) ctx_stack.pop();
     }
 
     //does nice printout of lines surrounding the position where ind is
@@ -1661,7 +1695,7 @@ void generate_cpp(grammar *g) {
 
     //call this when you think you are done
     bool check_finished_parsing() {
-        if(ptr != s.size()) {
+        if(ctx.ptr != s.size()) {
             assert(max_parse >= 0 && max_parse <= s.size());
             //it could be the case that all the tokens are consumed, but the pattern isn't done parsing
             if(max_parse == s.size()) max_parse -= 1;   
@@ -1673,33 +1707,40 @@ void generate_cpp(grammar *g) {
 
     //use before trying an optional grammar rule
     void push_stack() {
-        ptr_stack.push(ptr);
-        max_parse = std::max(max_parse, ptr);
+        ctx_stack.push(ctx);
+        max_parse = std::max(max_parse, ctx.ptr);
     }
 
     //use when grammar rule fails to parse
     void pop_stack() {
-        assert(ptr_stack.size() != 0);
-        ptr = ptr_stack.top();
-        ptr_stack.pop();
+        assert(ctx_stack.size() != 0);
+        ctx = ctx_stack.top();
+        ctx_stack.pop();
     }
 
     //use when grammar rule parses successfully. 
     void rm_stack() {
-        assert(ptr_stack.size() != 0);
-        ptr_stack.pop();
+        assert(ctx_stack.size() != 0);
+        ctx_stack.pop();
     }
     
     char next_char() {
-        if(ptr >= s.size()) return '\0';
-        return s[ptr ++];
+        if(ctx.ptr >= s.size()) return '\0';
+        char ret = s[ctx.ptr];
+        ctx.ptr ++;
+        ctx.line_off ++;
+        if(ret == '\n') {
+            ctx.line ++;
+            ctx.line_off = 0;
+        }
+        return ret;
     }
 
     std::string next_chars(int n) {
         assert(n > 0);
-        if(ptr + n > s.size()) return "";
-        std::string ans = s.substr(ptr, n);
-        ptr += n;
+        if(ctx.ptr + n > s.size()) return "";
+        std::string ans(n, '\0');
+        for(int i = 0; i < n; i++) ans[i] = next_char();
         return ans;
     }
     )";
