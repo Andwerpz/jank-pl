@@ -1,24 +1,61 @@
+/* --------------------------------------------------------------------------------------------
+ * Copyright (c) Microsoft Corporation. All rights reserved.
+ * Licensed under the MIT License. See License.txt in the project root for license information.
+ * ------------------------------------------------------------------------------------------ */
+
 import * as path from 'path';
-import * as vscode from 'vscode';
+import { workspace, ExtensionContext } from 'vscode';
+
 import {
-  LanguageClient,
-  LanguageClientOptions,
-  ServerOptions,
+	LanguageClient,
+	LanguageClientOptions,
+	ServerOptions,
+	TransportKind
 } from 'vscode-languageclient/node';
 
-export function activate(context: vscode.ExtensionContext) {
-  const serverExe = process.platform === 'win32' ? 'mylsp.exe' : './mylsp';
-  const serverPath = context.asAbsolutePath(path.join('server', serverExe));
+let client: LanguageClient;
 
-  const serverOptions: ServerOptions = {
-    run: { command: serverPath },
-    debug: { command: serverPath }
-  };
+export function activate(context: ExtensionContext) {
+	// The server is implemented in node
+	const serverModule = context.asAbsolutePath(
+		path.join('server', 'out', 'server.js')
+	);
 
-  const clientOptions: LanguageClientOptions = {
-    documentSelector: [{ scheme: 'file', language: 'mylang' }]
-  };
+	// If the extension is launched in debug mode then the debug server options are used
+	// Otherwise the run options are used
+	const serverOptions: ServerOptions = {
+		run: { module: serverModule, transport: TransportKind.ipc },
+		debug: {
+			module: serverModule,
+			transport: TransportKind.ipc,
+		}
+	};
 
-  const client = new LanguageClient('mylang', 'My Language Server', serverOptions, clientOptions);
-  context.subscriptions.push(client.start());
+	// Options to control the language client
+	const clientOptions: LanguageClientOptions = {
+		// Register the server for plain text documents
+		documentSelector: [{ scheme: 'file', language: 'plaintext' }],
+		synchronize: {
+			// Notify the server about file changes to '.clientrc files contained in the workspace
+			fileEvents: workspace.createFileSystemWatcher('**/.clientrc')
+		}
+	};
+
+	// Create the language client and start the client.
+	client = new LanguageClient(
+		'languageServerExample',
+		'Language Server Example',
+		serverOptions,
+		clientOptions
+	);
+
+	// Start the client. This will also launch the server
+	client.start();
+}
+
+export function deactivate(): Thenable<void> | undefined {
+	if (!client) {
+		return undefined;
+	}
+	return client.stop();
 }
