@@ -189,7 +189,7 @@ ExprNode* ExprNode::convert(parser::expr_equality *e) {
 ExprNode* ExprNode::convert(parser::expr_bit_and *e) {
     ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
-        std::string op = e->t1[i]->t1;
+        std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
         left = new ExprBinary(left, op, right);
     }
@@ -199,7 +199,7 @@ ExprNode* ExprNode::convert(parser::expr_bit_and *e) {
 ExprNode* ExprNode::convert(parser::expr_bit_xor *e) {
     ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
-        std::string op = e->t1[i]->t1;
+        std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
         left = new ExprBinary(left, op, right);
     }
@@ -209,7 +209,7 @@ ExprNode* ExprNode::convert(parser::expr_bit_xor *e) {
 ExprNode* ExprNode::convert(parser::expr_bit_or *e) {
     ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
-        std::string op = e->t1[i]->t1;
+        std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
         left = new ExprBinary(left, op, right);
     }
@@ -219,7 +219,7 @@ ExprNode* ExprNode::convert(parser::expr_bit_or *e) {
 ExprNode* ExprNode::convert(parser::expr_logical_and *e) {
     ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
-        std::string op = e->t1[i]->t1;
+        std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
         left = new ExprBinary(left, op, right);
     }
@@ -229,7 +229,7 @@ ExprNode* ExprNode::convert(parser::expr_logical_and *e) {
 ExprNode* ExprNode::convert(parser::expr_logical_or *e) {
     ExprNode *left = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
-        std::string op = e->t1[i]->t1;
+        std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
         left = new ExprBinary(left, op, right);
     }

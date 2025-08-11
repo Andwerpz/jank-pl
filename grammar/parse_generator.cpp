@@ -1047,10 +1047,12 @@ PARSERS
 IMPLEMENTED FEATURES
  - alternations with just one option should get simplified down into that option
  - add to_string or something equivalent. 
+ - token parse context tracking: for each token you know where it was pulled from within the text
+ - parse post-processing step to gather more token metadata
 
 NEW FEATURES
  - concatenations with just a terminal should get simplified down into a string
- - alternations with just strings should get simplified down into one string
+ - alternations with just terminals should get simplified down into one string
  - ability to auto-generate methods that will find all of some structure A within structure B and return a vector of them in order
 
 lets look at an example rule
@@ -1190,7 +1192,7 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
             generate_struct_from_alternation(t->a, ctype);
         }
         else if(t->is_terminal) {
-            ctype = "std::string";
+            ctype = "terminal";
         }
         else if(t->is_identifier) {
             ctype = print_identifier(t->i);
@@ -1216,7 +1218,7 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
             cout << indent() << "std::vector<" << type_sid[i] << "*> " << var_sid[i] << ";\n";
         }
         else if(t->is_terminal) {
-            cout << indent() << type_sid[i] << " " << var_sid[i] << ";\n";
+            cout << indent() << type_sid[i] << " *" << var_sid[i] << ";\n";
         }
         else if(t->is_identifier) {
             cout << indent() << type_sid[i] << " *" << var_sid[i] << ";\n";
@@ -1241,7 +1243,7 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
             cout << "std::vector<" << type_sid[i] << "*> _" << var_sid[i];
         }
         else if(t->is_terminal) {
-            cout << type_sid[i] << " _" << var_sid[i];
+            cout << type_sid[i] << " *_" << var_sid[i];
         }
         else if(t->is_identifier) {
             cout << type_sid[i] << " *_" << var_sid[i];
@@ -1264,6 +1266,9 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
 
     //to_string declaration
     cout << indent() << "std::string to_string();\n";
+
+    //postprocess declaration
+    cout << indent() << "void postprocess() override;\n";
 
     indent_level --;
     struct_depth --;
@@ -1313,6 +1318,9 @@ void generate_struct_from_alternation(alternation *a, string struct_name){
         //to_string declaration
         cout << indent() << "std::string to_string();\n";
 
+        //postprocess declaration
+        cout << indent() << "void postprocess() override;\n";
+
         indent_level --;
         struct_depth --;
         cout << indent() << "};\n";
@@ -1355,7 +1363,7 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
             generate_fndef_from_alternation(t->a, struct_name + "::" + layer_char + to_string(substr_ind ++));
         }
         else if(t->is_terminal) {
-            ctype = "std::string";
+            ctype = "terminal";
         }
         else if(t->is_identifier) {
             ctype = print_identifier(t->i);
@@ -1404,8 +1412,8 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
             string terminal_str = print_terminal(t->t); //with quotes, escapes
             assert(terminal_str.size() >= 3);
             int real_sz = process_escapes(terminal_str.substr(1, terminal_str.size() - 2)).size();  //need to process all escapes to determine size
-            cout << indent() << "std::string _" << var_sid[i] << " = next_chars(" << real_sz << ");\n";
-            cout << indent() << "if(_" << var_sid[i] << " != " << terminal_str << ") {pop_stack(); return nullptr;}\n";
+            cout << indent() << "terminal *_" << var_sid[i] << " = terminal::parse(" << terminal_str << ");\n";
+            cout << indent() << "if(_" << var_sid[i] << " == nullptr) {pop_stack(); return nullptr;}\n";
         }
         else if(t->is_identifier) {
             cout << indent() << type_sid[i] << " *_" << var_sid[i] << " = " << type_sid[i] << "::parse();\n";
@@ -1448,7 +1456,7 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
             cout << indent() << "for(int i = 0; i < " << var_sid[i] << ".size(); i++) ans += " << var_sid[i] << "[i]->to_string();\n";
         }
         else if(t->is_terminal) {
-            cout << indent() << "ans += " << var_sid[i] << ";\n";
+            cout << indent() << "ans += " << var_sid[i] << "->to_string();\n";
         }
         else if(t->is_identifier) {
             cout << indent() << "ans += " << var_sid[i] << "->to_string();\n";
@@ -1456,6 +1464,54 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
         else assert(false);
     }
     cout << indent() << "return ans;\n";
+    indent_level --;
+    cout << indent() << "}\n";
+    cout << "\n";
+
+    //generate postprocess
+    cout << indent() << "void " << struct_name << "::postprocess() {\n";
+    indent_level ++;
+    cout << indent() << "token_type = \"" << struct_name << "\";\n";
+    for(int i = 0; i < c->ts.size(); i++){
+        term *t = c->ts[i];
+        if(t->is_grouping) {
+            cout << indent() << "token_children.push_back(" << var_sid[i] << ");\n";
+            cout << indent() << var_sid[i] << "->postprocess();\n";
+        }
+        else if(t->is_zo) {
+            cout << indent() << "if(" << var_sid[i] << " != nullptr) {\n";
+            indent_level ++;
+            cout << indent() << "token_children.push_back(" << var_sid[i] << ");\n";
+            cout << indent() << var_sid[i] << "->postprocess();\n";
+            indent_level --;
+            cout << indent() << "}\n";
+        }
+        else if(t->is_zm) {
+            cout << indent() << "for(int i = 0; i < " << var_sid[i] << ".size(); i++) {\n";
+            indent_level ++;
+            cout << indent() << "token_children.push_back(" << var_sid[i] << "[i]);\n";
+            cout << indent() << var_sid[i] << "[i]->postprocess();\n";
+            indent_level --;
+            cout << indent() << "}\n";
+        }
+        else if(t->is_om) {
+            cout << indent() << "for(int i = 0; i < " << var_sid[i] << ".size(); i++) {\n";
+            indent_level ++;
+            cout << indent() << "token_children.push_back(" << var_sid[i] << "[i]);\n";
+            cout << indent() << var_sid[i] << "[i]->postprocess();\n";
+            indent_level --;
+            cout << indent() << "}\n";
+        }
+        else if(t->is_terminal) {
+            cout << indent() << "token_children.push_back(" << var_sid[i] << ");\n";
+            cout << indent() << var_sid[i] << "->postprocess();\n";
+        }
+        else if(t->is_identifier) {
+            cout << indent() << "token_children.push_back(" << var_sid[i] << ");\n";
+            cout << indent() << var_sid[i] << "->postprocess();\n";
+        }
+        else assert(false);
+    }
     indent_level --;
     cout << indent() << "}\n";
     cout << "\n";
@@ -1508,6 +1564,21 @@ void generate_fndef_from_alternation(alternation *a, string struct_name) {
         indent_level --;    
         cout << indent() << "}\n";
         cout << "\n";
+
+        //generate postprocess
+        cout << indent() << "void " << struct_name << "::postprocess() {\n";
+        indent_level ++;
+        cout << indent() << "token_type = \"" << struct_name << "\";\n";
+        for(int i = 0; i < a->cs.size(); i++){
+            cout << indent() << "if(is_" << (layer_char + to_string(i)) << ") {\n";
+            indent_level ++;
+            cout << indent() << "token_children.push_back(" << var_sid[i] << ");\n";
+            cout << indent() << var_sid[i] << "->postprocess();\n";
+            indent_level --;
+            cout << indent() << "}\n";
+        }
+        indent_level --;
+        cout << indent() << "}\n";
 
         struct_depth --;
     }
@@ -1565,8 +1636,26 @@ void generate_h(grammar *g) {
     };
 
     struct token {
+        // set during parse phase
         parse_context start_ctx;
         parse_context end_ctx;
+
+        // set during postprocess phase
+        std::string token_type;
+        std::vector<token*> token_children;
+        
+        virtual void postprocess() = 0;
+        virtual std::string to_string() = 0;
+    };
+    
+    struct terminal : public token{
+        std::string val;
+        terminal(std::string _val) {
+            val = _val;
+        }
+        static terminal* parse(std::string val);
+        std::string to_string() override;
+        void postprocess() override;
     };
     )";
         cout << tmp << "\n";
@@ -1742,6 +1831,25 @@ void generate_cpp(grammar *g) {
         std::string ans(n, '\0');
         for(int i = 0; i < n; i++) ans[i] = next_char();
         return ans;
+    }
+
+    terminal* terminal::parse(std::string val) {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        if(next_chars(val.size()) != val) {pop_stack(); return nullptr;}
+        rm_stack();
+        terminal* retval = new terminal(val);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string terminal::to_string() {
+        return val;
+    }
+
+    void terminal::postprocess() {
+        token_type = "terminal";
     }
     )";
         cout << tmp << "\n";

@@ -1,4 +1,4 @@
-// Date Generated : 08-10-2025 23:58:55
+// Date Generated : 08-11-2025 13:36:32
 #pragma once
 #include <vector>
 #include <string>
@@ -24,8 +24,26 @@ namespace parser {
     };
 
     struct token {
+        // set during parse phase
         parse_context start_ctx;
         parse_context end_ctx;
+
+        // set during postprocess phase
+        std::string token_type;
+        std::vector<token*> token_children;
+        
+        virtual void postprocess() = 0;
+        virtual std::string to_string() = 0;
+    };
+    
+    struct terminal : public token{
+        std::string val;
+        terminal(std::string _val) {
+            val = _val;
+        }
+        static terminal* parse(std::string val);
+        std::string to_string() override;
+        void postprocess() override;
     };
     
 
@@ -113,12 +131,12 @@ namespace parser {
         rws *t1;
         identifier *t2;
         ows *t3;
-        std::string t4;
+        terminal *t4;
         ows *t5;
         parameter_list *t6;
         ows *t7;
-        std::string t8;
-        function_definition(type *_t0, rws *_t1, identifier *_t2, ows *_t3, std::string _t4, ows *_t5, parameter_list *_t6, ows *_t7, std::string _t8) {
+        terminal *t8;
+        function_definition(type *_t0, rws *_t1, identifier *_t2, ows *_t3, terminal *_t4, ows *_t5, parameter_list *_t6, ows *_t7, terminal *_t8) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -131,6 +149,7 @@ namespace parser {
         }
         static function_definition* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // function = function_definition , ows , compound_statement ;
@@ -145,6 +164,7 @@ namespace parser {
         }
         static function* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // templated_function = template_header , ows , function ;
@@ -159,18 +179,19 @@ namespace parser {
         }
         static templated_function* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // function_call = identifier , ows , "(" , ows , argument_list , ows , ")" ;
     struct function_call : public token {
         identifier *t0;
         ows *t1;
-        std::string t2;
+        terminal *t2;
         ows *t3;
         argument_list *t4;
         ows *t5;
-        std::string t6;
-        function_call(identifier *_t0, ows *_t1, std::string _t2, ows *_t3, argument_list *_t4, ows *_t5, std::string _t6) {
+        terminal *t6;
+        function_call(identifier *_t0, ows *_t1, terminal *_t2, ows *_t3, argument_list *_t4, ows *_t5, terminal *_t6) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -181,19 +202,20 @@ namespace parser {
         }
         static function_call* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // function_pointer_call = "#" , identifier , ows , "(" , ows , argument_list , ows , ")" ;
     struct function_pointer_call : public token {
-        std::string t0;
+        terminal *t0;
         identifier *t1;
         ows *t2;
-        std::string t3;
+        terminal *t3;
         ows *t4;
         argument_list *t5;
         ows *t6;
-        std::string t7;
-        function_pointer_call(std::string _t0, identifier *_t1, ows *_t2, std::string _t3, ows *_t4, argument_list *_t5, ows *_t6, std::string _t7) {
+        terminal *t7;
+        function_pointer_call(terminal *_t0, identifier *_t1, ows *_t2, terminal *_t3, ows *_t4, argument_list *_t5, ows *_t6, terminal *_t7) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -205,18 +227,19 @@ namespace parser {
         }
         static function_pointer_call* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // literal_sizeof = "sizeof" , ows , "(" , ows , type , ows , ")" ;
     struct literal_sizeof : public token {
-        std::string t0;
+        terminal *t0;
         ows *t1;
-        std::string t2;
+        terminal *t2;
         ows *t3;
         type *t4;
         ows *t5;
-        std::string t6;
-        literal_sizeof(std::string _t0, ows *_t1, std::string _t2, ows *_t3, type *_t4, ows *_t5, std::string _t6) {
+        terminal *t6;
+        literal_sizeof(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, type *_t4, ows *_t5, terminal *_t6) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -227,6 +250,7 @@ namespace parser {
         }
         static literal_sizeof* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // literal_integer = < digit > ;
@@ -238,6 +262,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         std::vector<a0*> t0;
         literal_integer(std::vector<a0*> _t0) {
@@ -245,6 +270,7 @@ namespace parser {
         }
         static literal_integer* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // literal_float = < digit > , "." , < digit > ;
@@ -256,6 +282,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
             digit *t0;
@@ -264,17 +291,19 @@ namespace parser {
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         std::vector<a0*> t0;
-        std::string t1;
+        terminal *t1;
         std::vector<a1*> t2;
-        literal_float(std::vector<a0*> _t0, std::string _t1, std::vector<a1*> _t2) {
+        literal_float(std::vector<a0*> _t0, terminal *_t1, std::vector<a1*> _t2) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
         }
         static literal_float* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // literal_char = "'" , ( alpha | digit | escape | symbol | " " ) , "'" ;
@@ -287,6 +316,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
                 digit *t0;
@@ -295,6 +325,7 @@ namespace parser {
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b2 : public token {
                 escape *t0;
@@ -303,6 +334,7 @@ namespace parser {
                 }
                 static b2* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b3 : public token {
                 symbol *t0;
@@ -311,14 +343,16 @@ namespace parser {
                 }
                 static b3* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b4 : public token {
-                std::string t0;
-                b4(std::string _t0) {
+                terminal *t0;
+                b4(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b4* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -352,17 +386,19 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
-        std::string t0;
+        terminal *t0;
         a0 *t1;
-        std::string t2;
-        literal_char(std::string _t0, a0 *_t1, std::string _t2) {
+        terminal *t2;
+        literal_char(terminal *_t0, a0 *_t1, terminal *_t2) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
         }
         static literal_char* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // literal_string = "\"" , { alpha | digit | escape | symbol | " " } , "\"" ;
@@ -375,6 +411,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
                 digit *t0;
@@ -383,6 +420,7 @@ namespace parser {
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b2 : public token {
                 escape *t0;
@@ -391,6 +429,7 @@ namespace parser {
                 }
                 static b2* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b3 : public token {
                 symbol *t0;
@@ -399,14 +438,16 @@ namespace parser {
                 }
                 static b3* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b4 : public token {
-                std::string t0;
-                b4(std::string _t0) {
+                terminal *t0;
+                b4(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b4* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -440,27 +481,29 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
-        std::string t0;
+        terminal *t0;
         std::vector<a0*> t1;
-        std::string t2;
-        literal_string(std::string _t0, std::vector<a0*> _t1, std::string _t2) {
+        terminal *t2;
+        literal_string(terminal *_t0, std::vector<a0*> _t1, terminal *_t2) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
         }
         static literal_string* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // literal_syscall = "syscall" , ows , "(" , ows , literal_integer , ows , "," , ows , type , [ ows , "," , ows , argument_list ] , ows , ")" ;
     struct literal_syscall : public token {
         struct a0 : public token {
             ows *t0;
-            std::string t1;
+            terminal *t1;
             ows *t2;
             argument_list *t3;
-            a0(ows *_t0, std::string _t1, ows *_t2, argument_list *_t3) {
+            a0(ows *_t0, terminal *_t1, ows *_t2, argument_list *_t3) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -468,20 +511,21 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
-        std::string t0;
+        terminal *t0;
         ows *t1;
-        std::string t2;
+        terminal *t2;
         ows *t3;
         literal_integer *t4;
         ows *t5;
-        std::string t6;
+        terminal *t6;
         ows *t7;
         type *t8;
         a0 *t9;
         ows *t10;
-        std::string t11;
-        literal_syscall(std::string _t0, ows *_t1, std::string _t2, ows *_t3, literal_integer *_t4, ows *_t5, std::string _t6, ows *_t7, type *_t8, a0 *_t9, ows *_t10, std::string _t11) {
+        terminal *t11;
+        literal_syscall(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, literal_integer *_t4, ows *_t5, terminal *_t6, ows *_t7, type *_t8, a0 *_t9, ows *_t10, terminal *_t11) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -497,6 +541,7 @@ namespace parser {
         }
         static literal_syscall* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // literal_hex = "0x" , < digit | "a" | "b" | "c" | "d" | "e" | "f" > ;
@@ -509,54 +554,61 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
-                std::string t0;
-                b1(std::string _t0) {
+                terminal *t0;
+                b1(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b2 : public token {
-                std::string t0;
-                b2(std::string _t0) {
+                terminal *t0;
+                b2(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b2* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b3 : public token {
-                std::string t0;
-                b3(std::string _t0) {
+                terminal *t0;
+                b3(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b3* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b4 : public token {
-                std::string t0;
-                b4(std::string _t0) {
+                terminal *t0;
+                b4(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b4* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b5 : public token {
-                std::string t0;
-                b5(std::string _t0) {
+                terminal *t0;
+                b5(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b5* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b6 : public token {
-                std::string t0;
-                b6(std::string _t0) {
+                terminal *t0;
+                b6(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b6* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -602,35 +654,39 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
-        std::string t0;
+        terminal *t0;
         std::vector<a0*> t1;
-        literal_hex(std::string _t0, std::vector<a0*> _t1) {
+        literal_hex(terminal *_t0, std::vector<a0*> _t1) {
             t0 = _t0;
             t1 = _t1;
         }
         static literal_hex* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // literal_binary = "0b" , < "0" | "1" > ;
     struct literal_binary : public token {
         struct a0 : public token {
             struct b0 : public token {
-                std::string t0;
-                b0(std::string _t0) {
+                terminal *t0;
+                b0(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
-                std::string t0;
-                b1(std::string _t0) {
+                terminal *t0;
+                b1(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -646,32 +702,34 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
-        std::string t0;
+        terminal *t0;
         std::vector<a0*> t1;
-        literal_binary(std::string _t0, std::vector<a0*> _t1) {
+        literal_binary(terminal *_t0, std::vector<a0*> _t1) {
             t0 = _t0;
             t1 = _t1;
         }
         static literal_binary* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // literal_function_pointer = "#" , "<" , ows , identifier , ows , "(" , ows , type_list , ows , ")" , ows , ">" ;
     struct literal_function_pointer : public token {
-        std::string t0;
-        std::string t1;
+        terminal *t0;
+        terminal *t1;
         ows *t2;
         identifier *t3;
         ows *t4;
-        std::string t5;
+        terminal *t5;
         ows *t6;
         type_list *t7;
         ows *t8;
-        std::string t9;
+        terminal *t9;
         ows *t10;
-        std::string t11;
-        literal_function_pointer(std::string _t0, std::string _t1, ows *_t2, identifier *_t3, ows *_t4, std::string _t5, ows *_t6, type_list *_t7, ows *_t8, std::string _t9, ows *_t10, std::string _t11) {
+        terminal *t11;
+        literal_function_pointer(terminal *_t0, terminal *_t1, ows *_t2, identifier *_t3, ows *_t4, terminal *_t5, ows *_t6, type_list *_t7, ows *_t8, terminal *_t9, ows *_t10, terminal *_t11) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -687,6 +745,7 @@ namespace parser {
         }
         static literal_function_pointer* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // literal = literal_hex | literal_binary | literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall | literal_function_pointer ;
@@ -698,6 +757,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
             literal_binary *t0;
@@ -706,6 +766,7 @@ namespace parser {
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a2 : public token {
             literal_float *t0;
@@ -714,6 +775,7 @@ namespace parser {
             }
             static a2* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a3 : public token {
             literal_integer *t0;
@@ -722,6 +784,7 @@ namespace parser {
             }
             static a3* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a4 : public token {
             literal_sizeof *t0;
@@ -730,6 +793,7 @@ namespace parser {
             }
             static a4* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a5 : public token {
             literal_char *t0;
@@ -738,6 +802,7 @@ namespace parser {
             }
             static a5* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a6 : public token {
             literal_string *t0;
@@ -746,6 +811,7 @@ namespace parser {
             }
             static a6* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a7 : public token {
             literal_syscall *t0;
@@ -754,6 +820,7 @@ namespace parser {
             }
             static a7* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a8 : public token {
             literal_function_pointer *t0;
@@ -762,6 +829,7 @@ namespace parser {
             }
             static a8* parse();
             std::string to_string();
+            void postprocess() override;
         };
         bool is_a0 = false;
         a0 *t0;
@@ -819,6 +887,7 @@ namespace parser {
         }
         static literal* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // member_variable_declaration = type , rws , identifier , ";" ;
@@ -826,8 +895,8 @@ namespace parser {
         type *t0;
         rws *t1;
         identifier *t2;
-        std::string t3;
-        member_variable_declaration(type *_t0, rws *_t1, identifier *_t2, std::string _t3) {
+        terminal *t3;
+        member_variable_declaration(type *_t0, rws *_t1, identifier *_t2, terminal *_t3) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -835,18 +904,19 @@ namespace parser {
         }
         static member_variable_declaration* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // constructor_definition = base_type , ows , "(" , ows , parameter_list , ows , ")" ;
     struct constructor_definition : public token {
         base_type *t0;
         ows *t1;
-        std::string t2;
+        terminal *t2;
         ows *t3;
         parameter_list *t4;
         ows *t5;
-        std::string t6;
-        constructor_definition(base_type *_t0, ows *_t1, std::string _t2, ows *_t3, parameter_list *_t4, ows *_t5, std::string _t6) {
+        terminal *t6;
+        constructor_definition(base_type *_t0, ows *_t1, terminal *_t2, ows *_t3, parameter_list *_t4, ows *_t5, terminal *_t6) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -857,6 +927,7 @@ namespace parser {
         }
         static constructor_definition* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // constructor = constructor_definition , ows , compound_statement ;
@@ -871,20 +942,21 @@ namespace parser {
         }
         static constructor* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // constructor_call = "new" , rws , type , ows , "(" , ows , argument_list , ows , ")" ;
     struct constructor_call : public token {
-        std::string t0;
+        terminal *t0;
         rws *t1;
         type *t2;
         ows *t3;
-        std::string t4;
+        terminal *t4;
         ows *t5;
         argument_list *t6;
         ows *t7;
-        std::string t8;
-        constructor_call(std::string _t0, rws *_t1, type *_t2, ows *_t3, std::string _t4, ows *_t5, argument_list *_t6, ows *_t7, std::string _t8) {
+        terminal *t8;
+        constructor_call(terminal *_t0, rws *_t1, type *_t2, ows *_t3, terminal *_t4, ows *_t5, argument_list *_t6, ows *_t7, terminal *_t8) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -897,17 +969,18 @@ namespace parser {
         }
         static constructor_call* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // destructor = "~" , base_type , ows , "()" , ows , compound_statement ;
     struct destructor : public token {
-        std::string t0;
+        terminal *t0;
         base_type *t1;
         ows *t2;
-        std::string t3;
+        terminal *t3;
         ows *t4;
         compound_statement *t5;
-        destructor(std::string _t0, base_type *_t1, ows *_t2, std::string _t3, ows *_t4, compound_statement *_t5) {
+        destructor(terminal *_t0, base_type *_t1, ows *_t2, terminal *_t3, ows *_t4, compound_statement *_t5) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -917,6 +990,7 @@ namespace parser {
         }
         static destructor* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // struct_definition = "struct" , ows , base_type , ows , "{" , ows , { ( member_variable_declaration | function | constructor | destructor ) , ows } , "}" ;
@@ -930,6 +1004,7 @@ namespace parser {
                     }
                     static c0* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c1 : public token {
                     function *t0;
@@ -938,6 +1013,7 @@ namespace parser {
                     }
                     static c1* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c2 : public token {
                     constructor *t0;
@@ -946,6 +1022,7 @@ namespace parser {
                     }
                     static c2* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c3 : public token {
                     destructor *t0;
@@ -954,6 +1031,7 @@ namespace parser {
                     }
                     static c3* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 bool is_c0 = false;
                 c0 *t0;
@@ -981,6 +1059,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             b0 *t0;
             ows *t1;
@@ -990,16 +1069,17 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
-        std::string t0;
+        terminal *t0;
         ows *t1;
         base_type *t2;
         ows *t3;
-        std::string t4;
+        terminal *t4;
         ows *t5;
         std::vector<a0*> t6;
-        std::string t7;
-        struct_definition(std::string _t0, ows *_t1, base_type *_t2, ows *_t3, std::string _t4, ows *_t5, std::vector<a0*> _t6, std::string _t7) {
+        terminal *t7;
+        struct_definition(terminal *_t0, ows *_t1, base_type *_t2, ows *_t3, terminal *_t4, ows *_t5, std::vector<a0*> _t6, terminal *_t7) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -1011,6 +1091,7 @@ namespace parser {
         }
         static struct_definition* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // templated_struct_definition = template_header , ows , struct_definition ;
@@ -1025,6 +1106,7 @@ namespace parser {
         }
         static templated_struct_definition* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expr_primary = literal | constructor_call | function_call | identifier | "(" , ows , expression , ows , ")" ;
@@ -1036,6 +1118,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
             constructor_call *t0;
@@ -1044,6 +1127,7 @@ namespace parser {
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a2 : public token {
             function_call *t0;
@@ -1052,6 +1136,7 @@ namespace parser {
             }
             static a2* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a3 : public token {
             identifier *t0;
@@ -1060,14 +1145,15 @@ namespace parser {
             }
             static a3* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a4 : public token {
-            std::string t0;
+            terminal *t0;
             ows *t1;
             expression *t2;
             ows *t3;
-            std::string t4;
-            a4(std::string _t0, ows *_t1, expression *_t2, ows *_t3, std::string _t4) {
+            terminal *t4;
+            a4(terminal *_t0, ows *_t1, expression *_t2, ows *_t3, terminal *_t4) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -1076,6 +1162,7 @@ namespace parser {
             }
             static a4* parse();
             std::string to_string();
+            void postprocess() override;
         };
         bool is_a0 = false;
         a0 *t0;
@@ -1109,6 +1196,7 @@ namespace parser {
         }
         static expr_primary* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expr_postfix = expr_primary , { ows , ( "[" , ows , expression , ows , "]" | "." , ows , function_call | "->" , ows , function_call | "." , ows , identifier | "->" , ows , identifier | "++" | "--" | "#(" , argument_list , ")" | "." , ows , "~()" | "->" , ows , "~()" ) } ;
@@ -1116,12 +1204,12 @@ namespace parser {
         struct a0 : public token {
             struct b0 : public token {
                 struct c0 : public token {
-                    std::string t0;
+                    terminal *t0;
                     ows *t1;
                     expression *t2;
                     ows *t3;
-                    std::string t4;
-                    c0(std::string _t0, ows *_t1, expression *_t2, ows *_t3, std::string _t4) {
+                    terminal *t4;
+                    c0(terminal *_t0, ows *_t1, expression *_t2, ows *_t3, terminal *_t4) {
                         t0 = _t0;
                         t1 = _t1;
                         t2 = _t2;
@@ -1130,106 +1218,116 @@ namespace parser {
                     }
                     static c0* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c1 : public token {
-                    std::string t0;
+                    terminal *t0;
                     ows *t1;
                     function_call *t2;
-                    c1(std::string _t0, ows *_t1, function_call *_t2) {
+                    c1(terminal *_t0, ows *_t1, function_call *_t2) {
                         t0 = _t0;
                         t1 = _t1;
                         t2 = _t2;
                     }
                     static c1* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c2 : public token {
-                    std::string t0;
+                    terminal *t0;
                     ows *t1;
                     function_call *t2;
-                    c2(std::string _t0, ows *_t1, function_call *_t2) {
+                    c2(terminal *_t0, ows *_t1, function_call *_t2) {
                         t0 = _t0;
                         t1 = _t1;
                         t2 = _t2;
                     }
                     static c2* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c3 : public token {
-                    std::string t0;
+                    terminal *t0;
                     ows *t1;
                     identifier *t2;
-                    c3(std::string _t0, ows *_t1, identifier *_t2) {
+                    c3(terminal *_t0, ows *_t1, identifier *_t2) {
                         t0 = _t0;
                         t1 = _t1;
                         t2 = _t2;
                     }
                     static c3* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c4 : public token {
-                    std::string t0;
+                    terminal *t0;
                     ows *t1;
                     identifier *t2;
-                    c4(std::string _t0, ows *_t1, identifier *_t2) {
+                    c4(terminal *_t0, ows *_t1, identifier *_t2) {
                         t0 = _t0;
                         t1 = _t1;
                         t2 = _t2;
                     }
                     static c4* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c5 : public token {
-                    std::string t0;
-                    c5(std::string _t0) {
+                    terminal *t0;
+                    c5(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c5* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c6 : public token {
-                    std::string t0;
-                    c6(std::string _t0) {
+                    terminal *t0;
+                    c6(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c6* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c7 : public token {
-                    std::string t0;
+                    terminal *t0;
                     argument_list *t1;
-                    std::string t2;
-                    c7(std::string _t0, argument_list *_t1, std::string _t2) {
+                    terminal *t2;
+                    c7(terminal *_t0, argument_list *_t1, terminal *_t2) {
                         t0 = _t0;
                         t1 = _t1;
                         t2 = _t2;
                     }
                     static c7* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c8 : public token {
-                    std::string t0;
+                    terminal *t0;
                     ows *t1;
-                    std::string t2;
-                    c8(std::string _t0, ows *_t1, std::string _t2) {
+                    terminal *t2;
+                    c8(terminal *_t0, ows *_t1, terminal *_t2) {
                         t0 = _t0;
                         t1 = _t1;
                         t2 = _t2;
                     }
                     static c8* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c9 : public token {
-                    std::string t0;
+                    terminal *t0;
                     ows *t1;
-                    std::string t2;
-                    c9(std::string _t0, ows *_t1, std::string _t2) {
+                    terminal *t2;
+                    c9(terminal *_t0, ows *_t1, terminal *_t2) {
                         t0 = _t0;
                         t1 = _t1;
                         t2 = _t2;
                     }
                     static c9* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 bool is_c0 = false;
                 c0 *t0;
@@ -1293,6 +1391,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             ows *t0;
             b0 *t1;
@@ -1302,6 +1401,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         expr_primary *t0;
         std::vector<a0*> t1;
@@ -1311,6 +1411,7 @@ namespace parser {
         }
         static expr_postfix* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expr_unary = ( "++" | "--" | "+" | "-" | "~" | "!" | "*" | "@" | "$" , type ) , ows , expr_unary | expr_postfix ;
@@ -1318,78 +1419,87 @@ namespace parser {
         struct a0 : public token {
             struct b0 : public token {
                 struct c0 : public token {
-                    std::string t0;
-                    c0(std::string _t0) {
+                    terminal *t0;
+                    c0(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c0* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c1 : public token {
-                    std::string t0;
-                    c1(std::string _t0) {
+                    terminal *t0;
+                    c1(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c1* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c2 : public token {
-                    std::string t0;
-                    c2(std::string _t0) {
+                    terminal *t0;
+                    c2(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c2* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c3 : public token {
-                    std::string t0;
-                    c3(std::string _t0) {
+                    terminal *t0;
+                    c3(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c3* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c4 : public token {
-                    std::string t0;
-                    c4(std::string _t0) {
+                    terminal *t0;
+                    c4(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c4* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c5 : public token {
-                    std::string t0;
-                    c5(std::string _t0) {
+                    terminal *t0;
+                    c5(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c5* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c6 : public token {
-                    std::string t0;
-                    c6(std::string _t0) {
+                    terminal *t0;
+                    c6(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c6* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c7 : public token {
-                    std::string t0;
-                    c7(std::string _t0) {
+                    terminal *t0;
+                    c7(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c7* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c8 : public token {
-                    std::string t0;
+                    terminal *t0;
                     type *t1;
-                    c8(std::string _t0, type *_t1) {
+                    c8(terminal *_t0, type *_t1) {
                         t0 = _t0;
                         t1 = _t1;
                     }
                     static c8* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 bool is_c0 = false;
                 c0 *t0;
@@ -1447,6 +1557,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             b0 *t0;
             ows *t1;
@@ -1458,6 +1569,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
             expr_postfix *t0;
@@ -1466,6 +1578,7 @@ namespace parser {
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         bool is_a0 = false;
         a0 *t0;
@@ -1481,6 +1594,7 @@ namespace parser {
         }
         static expr_unary* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expr_multiplicative = expr_unary , { ows , ( "*" | "/" | "%" ) , ows , expr_unary } ;
@@ -1488,28 +1602,31 @@ namespace parser {
         struct a0 : public token {
             struct b0 : public token {
                 struct c0 : public token {
-                    std::string t0;
-                    c0(std::string _t0) {
+                    terminal *t0;
+                    c0(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c0* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c1 : public token {
-                    std::string t0;
-                    c1(std::string _t0) {
+                    terminal *t0;
+                    c1(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c1* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c2 : public token {
-                    std::string t0;
-                    c2(std::string _t0) {
+                    terminal *t0;
+                    c2(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c2* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 bool is_c0 = false;
                 c0 *t0;
@@ -1531,6 +1648,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             ows *t0;
             b0 *t1;
@@ -1544,6 +1662,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         expr_unary *t0;
         std::vector<a0*> t1;
@@ -1553,6 +1672,7 @@ namespace parser {
         }
         static expr_multiplicative* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expr_additive = expr_multiplicative , { ows , ( "+" | "-" ) , ows , expr_multiplicative } ;
@@ -1560,20 +1680,22 @@ namespace parser {
         struct a0 : public token {
             struct b0 : public token {
                 struct c0 : public token {
-                    std::string t0;
-                    c0(std::string _t0) {
+                    terminal *t0;
+                    c0(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c0* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c1 : public token {
-                    std::string t0;
-                    c1(std::string _t0) {
+                    terminal *t0;
+                    c1(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c1* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 bool is_c0 = false;
                 c0 *t0;
@@ -1589,6 +1711,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             ows *t0;
             b0 *t1;
@@ -1602,6 +1725,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         expr_multiplicative *t0;
         std::vector<a0*> t1;
@@ -1611,6 +1735,7 @@ namespace parser {
         }
         static expr_additive* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expr_shift = expr_additive , { ows , ( "<<" | ">>" ) , ows , expr_additive } ;
@@ -1618,20 +1743,22 @@ namespace parser {
         struct a0 : public token {
             struct b0 : public token {
                 struct c0 : public token {
-                    std::string t0;
-                    c0(std::string _t0) {
+                    terminal *t0;
+                    c0(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c0* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c1 : public token {
-                    std::string t0;
-                    c1(std::string _t0) {
+                    terminal *t0;
+                    c1(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c1* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 bool is_c0 = false;
                 c0 *t0;
@@ -1647,6 +1774,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             ows *t0;
             b0 *t1;
@@ -1660,6 +1788,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         expr_additive *t0;
         std::vector<a0*> t1;
@@ -1669,6 +1798,7 @@ namespace parser {
         }
         static expr_shift* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expr_relational = expr_shift , { ows , ( "<=" | "<" | ">=" | ">" ) , ows , expr_shift } ;
@@ -1676,36 +1806,40 @@ namespace parser {
         struct a0 : public token {
             struct b0 : public token {
                 struct c0 : public token {
-                    std::string t0;
-                    c0(std::string _t0) {
+                    terminal *t0;
+                    c0(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c0* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c1 : public token {
-                    std::string t0;
-                    c1(std::string _t0) {
+                    terminal *t0;
+                    c1(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c1* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c2 : public token {
-                    std::string t0;
-                    c2(std::string _t0) {
+                    terminal *t0;
+                    c2(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c2* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c3 : public token {
-                    std::string t0;
-                    c3(std::string _t0) {
+                    terminal *t0;
+                    c3(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c3* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 bool is_c0 = false;
                 c0 *t0;
@@ -1733,6 +1867,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             ows *t0;
             b0 *t1;
@@ -1746,6 +1881,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         expr_shift *t0;
         std::vector<a0*> t1;
@@ -1755,6 +1891,7 @@ namespace parser {
         }
         static expr_relational* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expr_equality = expr_relational , { ows , ( "==" | "!=" ) , ows , expr_relational } ;
@@ -1762,20 +1899,22 @@ namespace parser {
         struct a0 : public token {
             struct b0 : public token {
                 struct c0 : public token {
-                    std::string t0;
-                    c0(std::string _t0) {
+                    terminal *t0;
+                    c0(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c0* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c1 : public token {
-                    std::string t0;
-                    c1(std::string _t0) {
+                    terminal *t0;
+                    c1(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c1* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 bool is_c0 = false;
                 c0 *t0;
@@ -1791,6 +1930,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             ows *t0;
             b0 *t1;
@@ -1804,6 +1944,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         expr_relational *t0;
         std::vector<a0*> t1;
@@ -1813,16 +1954,17 @@ namespace parser {
         }
         static expr_equality* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expr_bit_and = expr_equality , { ows , "&" , ows , expr_equality } ;
     struct expr_bit_and : public token {
         struct a0 : public token {
             ows *t0;
-            std::string t1;
+            terminal *t1;
             ows *t2;
             expr_equality *t3;
-            a0(ows *_t0, std::string _t1, ows *_t2, expr_equality *_t3) {
+            a0(ows *_t0, terminal *_t1, ows *_t2, expr_equality *_t3) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -1830,6 +1972,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         expr_equality *t0;
         std::vector<a0*> t1;
@@ -1839,16 +1982,17 @@ namespace parser {
         }
         static expr_bit_and* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expr_bit_xor = expr_bit_and , { ows , "^" , ows , expr_bit_and } ;
     struct expr_bit_xor : public token {
         struct a0 : public token {
             ows *t0;
-            std::string t1;
+            terminal *t1;
             ows *t2;
             expr_bit_and *t3;
-            a0(ows *_t0, std::string _t1, ows *_t2, expr_bit_and *_t3) {
+            a0(ows *_t0, terminal *_t1, ows *_t2, expr_bit_and *_t3) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -1856,6 +2000,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         expr_bit_and *t0;
         std::vector<a0*> t1;
@@ -1865,16 +2010,17 @@ namespace parser {
         }
         static expr_bit_xor* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expr_bit_or = expr_bit_xor , { ows , "|" , ows , expr_bit_xor } ;
     struct expr_bit_or : public token {
         struct a0 : public token {
             ows *t0;
-            std::string t1;
+            terminal *t1;
             ows *t2;
             expr_bit_xor *t3;
-            a0(ows *_t0, std::string _t1, ows *_t2, expr_bit_xor *_t3) {
+            a0(ows *_t0, terminal *_t1, ows *_t2, expr_bit_xor *_t3) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -1882,6 +2028,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         expr_bit_xor *t0;
         std::vector<a0*> t1;
@@ -1891,16 +2038,17 @@ namespace parser {
         }
         static expr_bit_or* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expr_logical_and = expr_bit_or , { ows , "&&" , ows , expr_bit_or } ;
     struct expr_logical_and : public token {
         struct a0 : public token {
             ows *t0;
-            std::string t1;
+            terminal *t1;
             ows *t2;
             expr_bit_or *t3;
-            a0(ows *_t0, std::string _t1, ows *_t2, expr_bit_or *_t3) {
+            a0(ows *_t0, terminal *_t1, ows *_t2, expr_bit_or *_t3) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -1908,6 +2056,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         expr_bit_or *t0;
         std::vector<a0*> t1;
@@ -1917,16 +2066,17 @@ namespace parser {
         }
         static expr_logical_and* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expr_logical_or = expr_logical_and , { ows , "||" , ows , expr_logical_and } ;
     struct expr_logical_or : public token {
         struct a0 : public token {
             ows *t0;
-            std::string t1;
+            terminal *t1;
             ows *t2;
             expr_logical_and *t3;
-            a0(ows *_t0, std::string _t1, ows *_t2, expr_logical_and *_t3) {
+            a0(ows *_t0, terminal *_t1, ows *_t2, expr_logical_and *_t3) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -1934,6 +2084,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         expr_logical_and *t0;
         std::vector<a0*> t1;
@@ -1943,6 +2094,7 @@ namespace parser {
         }
         static expr_logical_or* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expr_assignment = expr_logical_or , { ows , ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "^=" | "|=" | ":=" ) , ows , expr_logical_or } ;
@@ -1950,100 +2102,112 @@ namespace parser {
         struct a0 : public token {
             struct b0 : public token {
                 struct c0 : public token {
-                    std::string t0;
-                    c0(std::string _t0) {
+                    terminal *t0;
+                    c0(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c0* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c1 : public token {
-                    std::string t0;
-                    c1(std::string _t0) {
+                    terminal *t0;
+                    c1(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c1* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c2 : public token {
-                    std::string t0;
-                    c2(std::string _t0) {
+                    terminal *t0;
+                    c2(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c2* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c3 : public token {
-                    std::string t0;
-                    c3(std::string _t0) {
+                    terminal *t0;
+                    c3(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c3* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c4 : public token {
-                    std::string t0;
-                    c4(std::string _t0) {
+                    terminal *t0;
+                    c4(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c4* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c5 : public token {
-                    std::string t0;
-                    c5(std::string _t0) {
+                    terminal *t0;
+                    c5(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c5* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c6 : public token {
-                    std::string t0;
-                    c6(std::string _t0) {
+                    terminal *t0;
+                    c6(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c6* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c7 : public token {
-                    std::string t0;
-                    c7(std::string _t0) {
+                    terminal *t0;
+                    c7(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c7* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c8 : public token {
-                    std::string t0;
-                    c8(std::string _t0) {
+                    terminal *t0;
+                    c8(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c8* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c9 : public token {
-                    std::string t0;
-                    c9(std::string _t0) {
+                    terminal *t0;
+                    c9(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c9* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c10 : public token {
-                    std::string t0;
-                    c10(std::string _t0) {
+                    terminal *t0;
+                    c10(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c10* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c11 : public token {
-                    std::string t0;
-                    c11(std::string _t0) {
+                    terminal *t0;
+                    c11(terminal *_t0) {
                         t0 = _t0;
                     }
                     static c11* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 bool is_c0 = false;
                 c0 *t0;
@@ -2119,6 +2283,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             ows *t0;
             b0 *t1;
@@ -2132,6 +2297,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         expr_logical_or *t0;
         std::vector<a0*> t1;
@@ -2141,6 +2307,7 @@ namespace parser {
         }
         static expr_assignment* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // expression = expr_assignment ;
@@ -2151,273 +2318,307 @@ namespace parser {
         }
         static expression* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // overloadable_operator = "++x" | "--x" | "x++" | "x--" | "*x" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "[]" | "=" ;
     struct overloadable_operator : public token {
         struct a0 : public token {
-            std::string t0;
-            a0(std::string _t0) {
+            terminal *t0;
+            a0(terminal *_t0) {
                 t0 = _t0;
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
-            std::string t0;
-            a1(std::string _t0) {
+            terminal *t0;
+            a1(terminal *_t0) {
                 t0 = _t0;
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a2 : public token {
-            std::string t0;
-            a2(std::string _t0) {
+            terminal *t0;
+            a2(terminal *_t0) {
                 t0 = _t0;
             }
             static a2* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a3 : public token {
-            std::string t0;
-            a3(std::string _t0) {
+            terminal *t0;
+            a3(terminal *_t0) {
                 t0 = _t0;
             }
             static a3* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a4 : public token {
-            std::string t0;
-            a4(std::string _t0) {
+            terminal *t0;
+            a4(terminal *_t0) {
                 t0 = _t0;
             }
             static a4* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a5 : public token {
-            std::string t0;
-            a5(std::string _t0) {
+            terminal *t0;
+            a5(terminal *_t0) {
                 t0 = _t0;
             }
             static a5* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a6 : public token {
-            std::string t0;
-            a6(std::string _t0) {
+            terminal *t0;
+            a6(terminal *_t0) {
                 t0 = _t0;
             }
             static a6* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a7 : public token {
-            std::string t0;
-            a7(std::string _t0) {
+            terminal *t0;
+            a7(terminal *_t0) {
                 t0 = _t0;
             }
             static a7* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a8 : public token {
-            std::string t0;
-            a8(std::string _t0) {
+            terminal *t0;
+            a8(terminal *_t0) {
                 t0 = _t0;
             }
             static a8* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a9 : public token {
-            std::string t0;
-            a9(std::string _t0) {
+            terminal *t0;
+            a9(terminal *_t0) {
                 t0 = _t0;
             }
             static a9* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a10 : public token {
-            std::string t0;
-            a10(std::string _t0) {
+            terminal *t0;
+            a10(terminal *_t0) {
                 t0 = _t0;
             }
             static a10* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a11 : public token {
-            std::string t0;
-            a11(std::string _t0) {
+            terminal *t0;
+            a11(terminal *_t0) {
                 t0 = _t0;
             }
             static a11* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a12 : public token {
-            std::string t0;
-            a12(std::string _t0) {
+            terminal *t0;
+            a12(terminal *_t0) {
                 t0 = _t0;
             }
             static a12* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a13 : public token {
-            std::string t0;
-            a13(std::string _t0) {
+            terminal *t0;
+            a13(terminal *_t0) {
                 t0 = _t0;
             }
             static a13* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a14 : public token {
-            std::string t0;
-            a14(std::string _t0) {
+            terminal *t0;
+            a14(terminal *_t0) {
                 t0 = _t0;
             }
             static a14* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a15 : public token {
-            std::string t0;
-            a15(std::string _t0) {
+            terminal *t0;
+            a15(terminal *_t0) {
                 t0 = _t0;
             }
             static a15* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a16 : public token {
-            std::string t0;
-            a16(std::string _t0) {
+            terminal *t0;
+            a16(terminal *_t0) {
                 t0 = _t0;
             }
             static a16* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a17 : public token {
-            std::string t0;
-            a17(std::string _t0) {
+            terminal *t0;
+            a17(terminal *_t0) {
                 t0 = _t0;
             }
             static a17* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a18 : public token {
-            std::string t0;
-            a18(std::string _t0) {
+            terminal *t0;
+            a18(terminal *_t0) {
                 t0 = _t0;
             }
             static a18* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a19 : public token {
-            std::string t0;
-            a19(std::string _t0) {
+            terminal *t0;
+            a19(terminal *_t0) {
                 t0 = _t0;
             }
             static a19* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a20 : public token {
-            std::string t0;
-            a20(std::string _t0) {
+            terminal *t0;
+            a20(terminal *_t0) {
                 t0 = _t0;
             }
             static a20* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a21 : public token {
-            std::string t0;
-            a21(std::string _t0) {
+            terminal *t0;
+            a21(terminal *_t0) {
                 t0 = _t0;
             }
             static a21* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a22 : public token {
-            std::string t0;
-            a22(std::string _t0) {
+            terminal *t0;
+            a22(terminal *_t0) {
                 t0 = _t0;
             }
             static a22* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a23 : public token {
-            std::string t0;
-            a23(std::string _t0) {
+            terminal *t0;
+            a23(terminal *_t0) {
                 t0 = _t0;
             }
             static a23* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a24 : public token {
-            std::string t0;
-            a24(std::string _t0) {
+            terminal *t0;
+            a24(terminal *_t0) {
                 t0 = _t0;
             }
             static a24* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a25 : public token {
-            std::string t0;
-            a25(std::string _t0) {
+            terminal *t0;
+            a25(terminal *_t0) {
                 t0 = _t0;
             }
             static a25* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a26 : public token {
-            std::string t0;
-            a26(std::string _t0) {
+            terminal *t0;
+            a26(terminal *_t0) {
                 t0 = _t0;
             }
             static a26* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a27 : public token {
-            std::string t0;
-            a27(std::string _t0) {
+            terminal *t0;
+            a27(terminal *_t0) {
                 t0 = _t0;
             }
             static a27* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a28 : public token {
-            std::string t0;
-            a28(std::string _t0) {
+            terminal *t0;
+            a28(terminal *_t0) {
                 t0 = _t0;
             }
             static a28* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a29 : public token {
-            std::string t0;
-            a29(std::string _t0) {
+            terminal *t0;
+            a29(terminal *_t0) {
                 t0 = _t0;
             }
             static a29* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a30 : public token {
-            std::string t0;
-            a30(std::string _t0) {
+            terminal *t0;
+            a30(terminal *_t0) {
                 t0 = _t0;
             }
             static a30* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a31 : public token {
-            std::string t0;
-            a31(std::string _t0) {
+            terminal *t0;
+            a31(terminal *_t0) {
                 t0 = _t0;
             }
             static a31* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a32 : public token {
-            std::string t0;
-            a32(std::string _t0) {
+            terminal *t0;
+            a32(terminal *_t0) {
                 t0 = _t0;
             }
             static a32* parse();
             std::string to_string();
+            void postprocess() override;
         };
         bool is_a0 = false;
         a0 *t0;
@@ -2619,21 +2820,22 @@ namespace parser {
         }
         static overloadable_operator* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // overload_definition = type , rws , "operator" , overloadable_operator , ows , "(" , ows , parameter_list , ows , ")" ;
     struct overload_definition : public token {
         type *t0;
         rws *t1;
-        std::string t2;
+        terminal *t2;
         overloadable_operator *t3;
         ows *t4;
-        std::string t5;
+        terminal *t5;
         ows *t6;
         parameter_list *t7;
         ows *t8;
-        std::string t9;
-        overload_definition(type *_t0, rws *_t1, std::string _t2, overloadable_operator *_t3, ows *_t4, std::string _t5, ows *_t6, parameter_list *_t7, ows *_t8, std::string _t9) {
+        terminal *t9;
+        overload_definition(type *_t0, rws *_t1, terminal *_t2, overloadable_operator *_t3, ows *_t4, terminal *_t5, ows *_t6, parameter_list *_t7, ows *_t8, terminal *_t9) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -2647,6 +2849,7 @@ namespace parser {
         }
         static overload_definition* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // overload = overload_definition , ows , compound_statement ;
@@ -2661,6 +2864,7 @@ namespace parser {
         }
         static overload* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // templated_overload = template_header , ows , overload ;
@@ -2675,54 +2879,59 @@ namespace parser {
         }
         static templated_overload* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // inline_dereferencing = "*" , ows , identifier ;
     struct inline_dereferencing : public token {
-        std::string t0;
+        terminal *t0;
         ows *t1;
         identifier *t2;
-        inline_dereferencing(std::string _t0, ows *_t1, identifier *_t2) {
+        inline_dereferencing(terminal *_t0, ows *_t1, identifier *_t2) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
         }
         static inline_dereferencing* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // inline_referencing = "@" , ows , identifier ;
     struct inline_referencing : public token {
-        std::string t0;
+        terminal *t0;
         ows *t1;
         identifier *t2;
-        inline_referencing(std::string _t0, ows *_t1, identifier *_t2) {
+        inline_referencing(terminal *_t0, ows *_t1, identifier *_t2) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
         }
         static inline_referencing* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // inline_member_variable = identifier , ( "." | "->" ) , identifier ;
     struct inline_member_variable : public token {
         struct a0 : public token {
             struct b0 : public token {
-                std::string t0;
-                b0(std::string _t0) {
+                terminal *t0;
+                b0(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
-                std::string t0;
-                b1(std::string _t0) {
+                terminal *t0;
+                b1(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -2738,6 +2947,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         identifier *t0;
         a0 *t1;
@@ -2749,6 +2959,7 @@ namespace parser {
         }
         static inline_member_variable* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // inline_variable = identifier ;
@@ -2759,6 +2970,7 @@ namespace parser {
         }
         static inline_variable* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // inline_access = "{" , ows , ( inline_referencing | inline_member_variable | inline_variable ) , ows , "}" ;
@@ -2771,6 +2983,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
                 inline_member_variable *t0;
@@ -2779,6 +2992,7 @@ namespace parser {
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b2 : public token {
                 inline_variable *t0;
@@ -2787,6 +3001,7 @@ namespace parser {
                 }
                 static b2* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -2808,13 +3023,14 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
-        std::string t0;
+        terminal *t0;
         ows *t1;
         a0 *t2;
         ows *t3;
-        std::string t4;
-        inline_access(std::string _t0, ows *_t1, a0 *_t2, ows *_t3, std::string _t4) {
+        terminal *t4;
+        inline_access(terminal *_t0, ows *_t1, a0 *_t2, ows *_t3, terminal *_t4) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -2823,18 +3039,19 @@ namespace parser {
         }
         static inline_access* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // inline_asm = "asm!" , ows , "(" , ows , literal_string , ows , ")" ;
     struct inline_asm : public token {
-        std::string t0;
+        terminal *t0;
         ows *t1;
-        std::string t2;
+        terminal *t2;
         ows *t3;
         literal_string *t4;
         ows *t5;
-        std::string t6;
-        inline_asm(std::string _t0, ows *_t1, std::string _t2, ows *_t3, literal_string *_t4, ows *_t5, std::string _t6) {
+        terminal *t6;
+        inline_asm(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, literal_string *_t4, ows *_t5, terminal *_t6) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -2845,425 +3062,478 @@ namespace parser {
         }
         static inline_asm* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // alpha = "A" | "B" | "C" | "D" | "E" | "F" | "G" | "H" | "I" | "J" | "K" | "L" | "M" | "N" | "O" | "P" | "Q" | "R" | "S" | "T" | "U" | "V" | "W" | "X" | "Y" | "Z" | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m" | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z" ;
     struct alpha : public token {
         struct a0 : public token {
-            std::string t0;
-            a0(std::string _t0) {
+            terminal *t0;
+            a0(terminal *_t0) {
                 t0 = _t0;
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
-            std::string t0;
-            a1(std::string _t0) {
+            terminal *t0;
+            a1(terminal *_t0) {
                 t0 = _t0;
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a2 : public token {
-            std::string t0;
-            a2(std::string _t0) {
+            terminal *t0;
+            a2(terminal *_t0) {
                 t0 = _t0;
             }
             static a2* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a3 : public token {
-            std::string t0;
-            a3(std::string _t0) {
+            terminal *t0;
+            a3(terminal *_t0) {
                 t0 = _t0;
             }
             static a3* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a4 : public token {
-            std::string t0;
-            a4(std::string _t0) {
+            terminal *t0;
+            a4(terminal *_t0) {
                 t0 = _t0;
             }
             static a4* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a5 : public token {
-            std::string t0;
-            a5(std::string _t0) {
+            terminal *t0;
+            a5(terminal *_t0) {
                 t0 = _t0;
             }
             static a5* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a6 : public token {
-            std::string t0;
-            a6(std::string _t0) {
+            terminal *t0;
+            a6(terminal *_t0) {
                 t0 = _t0;
             }
             static a6* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a7 : public token {
-            std::string t0;
-            a7(std::string _t0) {
+            terminal *t0;
+            a7(terminal *_t0) {
                 t0 = _t0;
             }
             static a7* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a8 : public token {
-            std::string t0;
-            a8(std::string _t0) {
+            terminal *t0;
+            a8(terminal *_t0) {
                 t0 = _t0;
             }
             static a8* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a9 : public token {
-            std::string t0;
-            a9(std::string _t0) {
+            terminal *t0;
+            a9(terminal *_t0) {
                 t0 = _t0;
             }
             static a9* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a10 : public token {
-            std::string t0;
-            a10(std::string _t0) {
+            terminal *t0;
+            a10(terminal *_t0) {
                 t0 = _t0;
             }
             static a10* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a11 : public token {
-            std::string t0;
-            a11(std::string _t0) {
+            terminal *t0;
+            a11(terminal *_t0) {
                 t0 = _t0;
             }
             static a11* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a12 : public token {
-            std::string t0;
-            a12(std::string _t0) {
+            terminal *t0;
+            a12(terminal *_t0) {
                 t0 = _t0;
             }
             static a12* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a13 : public token {
-            std::string t0;
-            a13(std::string _t0) {
+            terminal *t0;
+            a13(terminal *_t0) {
                 t0 = _t0;
             }
             static a13* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a14 : public token {
-            std::string t0;
-            a14(std::string _t0) {
+            terminal *t0;
+            a14(terminal *_t0) {
                 t0 = _t0;
             }
             static a14* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a15 : public token {
-            std::string t0;
-            a15(std::string _t0) {
+            terminal *t0;
+            a15(terminal *_t0) {
                 t0 = _t0;
             }
             static a15* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a16 : public token {
-            std::string t0;
-            a16(std::string _t0) {
+            terminal *t0;
+            a16(terminal *_t0) {
                 t0 = _t0;
             }
             static a16* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a17 : public token {
-            std::string t0;
-            a17(std::string _t0) {
+            terminal *t0;
+            a17(terminal *_t0) {
                 t0 = _t0;
             }
             static a17* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a18 : public token {
-            std::string t0;
-            a18(std::string _t0) {
+            terminal *t0;
+            a18(terminal *_t0) {
                 t0 = _t0;
             }
             static a18* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a19 : public token {
-            std::string t0;
-            a19(std::string _t0) {
+            terminal *t0;
+            a19(terminal *_t0) {
                 t0 = _t0;
             }
             static a19* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a20 : public token {
-            std::string t0;
-            a20(std::string _t0) {
+            terminal *t0;
+            a20(terminal *_t0) {
                 t0 = _t0;
             }
             static a20* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a21 : public token {
-            std::string t0;
-            a21(std::string _t0) {
+            terminal *t0;
+            a21(terminal *_t0) {
                 t0 = _t0;
             }
             static a21* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a22 : public token {
-            std::string t0;
-            a22(std::string _t0) {
+            terminal *t0;
+            a22(terminal *_t0) {
                 t0 = _t0;
             }
             static a22* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a23 : public token {
-            std::string t0;
-            a23(std::string _t0) {
+            terminal *t0;
+            a23(terminal *_t0) {
                 t0 = _t0;
             }
             static a23* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a24 : public token {
-            std::string t0;
-            a24(std::string _t0) {
+            terminal *t0;
+            a24(terminal *_t0) {
                 t0 = _t0;
             }
             static a24* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a25 : public token {
-            std::string t0;
-            a25(std::string _t0) {
+            terminal *t0;
+            a25(terminal *_t0) {
                 t0 = _t0;
             }
             static a25* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a26 : public token {
-            std::string t0;
-            a26(std::string _t0) {
+            terminal *t0;
+            a26(terminal *_t0) {
                 t0 = _t0;
             }
             static a26* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a27 : public token {
-            std::string t0;
-            a27(std::string _t0) {
+            terminal *t0;
+            a27(terminal *_t0) {
                 t0 = _t0;
             }
             static a27* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a28 : public token {
-            std::string t0;
-            a28(std::string _t0) {
+            terminal *t0;
+            a28(terminal *_t0) {
                 t0 = _t0;
             }
             static a28* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a29 : public token {
-            std::string t0;
-            a29(std::string _t0) {
+            terminal *t0;
+            a29(terminal *_t0) {
                 t0 = _t0;
             }
             static a29* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a30 : public token {
-            std::string t0;
-            a30(std::string _t0) {
+            terminal *t0;
+            a30(terminal *_t0) {
                 t0 = _t0;
             }
             static a30* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a31 : public token {
-            std::string t0;
-            a31(std::string _t0) {
+            terminal *t0;
+            a31(terminal *_t0) {
                 t0 = _t0;
             }
             static a31* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a32 : public token {
-            std::string t0;
-            a32(std::string _t0) {
+            terminal *t0;
+            a32(terminal *_t0) {
                 t0 = _t0;
             }
             static a32* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a33 : public token {
-            std::string t0;
-            a33(std::string _t0) {
+            terminal *t0;
+            a33(terminal *_t0) {
                 t0 = _t0;
             }
             static a33* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a34 : public token {
-            std::string t0;
-            a34(std::string _t0) {
+            terminal *t0;
+            a34(terminal *_t0) {
                 t0 = _t0;
             }
             static a34* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a35 : public token {
-            std::string t0;
-            a35(std::string _t0) {
+            terminal *t0;
+            a35(terminal *_t0) {
                 t0 = _t0;
             }
             static a35* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a36 : public token {
-            std::string t0;
-            a36(std::string _t0) {
+            terminal *t0;
+            a36(terminal *_t0) {
                 t0 = _t0;
             }
             static a36* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a37 : public token {
-            std::string t0;
-            a37(std::string _t0) {
+            terminal *t0;
+            a37(terminal *_t0) {
                 t0 = _t0;
             }
             static a37* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a38 : public token {
-            std::string t0;
-            a38(std::string _t0) {
+            terminal *t0;
+            a38(terminal *_t0) {
                 t0 = _t0;
             }
             static a38* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a39 : public token {
-            std::string t0;
-            a39(std::string _t0) {
+            terminal *t0;
+            a39(terminal *_t0) {
                 t0 = _t0;
             }
             static a39* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a40 : public token {
-            std::string t0;
-            a40(std::string _t0) {
+            terminal *t0;
+            a40(terminal *_t0) {
                 t0 = _t0;
             }
             static a40* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a41 : public token {
-            std::string t0;
-            a41(std::string _t0) {
+            terminal *t0;
+            a41(terminal *_t0) {
                 t0 = _t0;
             }
             static a41* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a42 : public token {
-            std::string t0;
-            a42(std::string _t0) {
+            terminal *t0;
+            a42(terminal *_t0) {
                 t0 = _t0;
             }
             static a42* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a43 : public token {
-            std::string t0;
-            a43(std::string _t0) {
+            terminal *t0;
+            a43(terminal *_t0) {
                 t0 = _t0;
             }
             static a43* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a44 : public token {
-            std::string t0;
-            a44(std::string _t0) {
+            terminal *t0;
+            a44(terminal *_t0) {
                 t0 = _t0;
             }
             static a44* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a45 : public token {
-            std::string t0;
-            a45(std::string _t0) {
+            terminal *t0;
+            a45(terminal *_t0) {
                 t0 = _t0;
             }
             static a45* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a46 : public token {
-            std::string t0;
-            a46(std::string _t0) {
+            terminal *t0;
+            a46(terminal *_t0) {
                 t0 = _t0;
             }
             static a46* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a47 : public token {
-            std::string t0;
-            a47(std::string _t0) {
+            terminal *t0;
+            a47(terminal *_t0) {
                 t0 = _t0;
             }
             static a47* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a48 : public token {
-            std::string t0;
-            a48(std::string _t0) {
+            terminal *t0;
+            a48(terminal *_t0) {
                 t0 = _t0;
             }
             static a48* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a49 : public token {
-            std::string t0;
-            a49(std::string _t0) {
+            terminal *t0;
+            a49(terminal *_t0) {
                 t0 = _t0;
             }
             static a49* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a50 : public token {
-            std::string t0;
-            a50(std::string _t0) {
+            terminal *t0;
+            a50(terminal *_t0) {
                 t0 = _t0;
             }
             static a50* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a51 : public token {
-            std::string t0;
-            a51(std::string _t0) {
+            terminal *t0;
+            a51(terminal *_t0) {
                 t0 = _t0;
             }
             static a51* parse();
             std::string to_string();
+            void postprocess() override;
         };
         bool is_a0 = false;
         a0 *t0;
@@ -3579,89 +3849,100 @@ namespace parser {
         }
         static alpha* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // digit = "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
     struct digit : public token {
         struct a0 : public token {
-            std::string t0;
-            a0(std::string _t0) {
+            terminal *t0;
+            a0(terminal *_t0) {
                 t0 = _t0;
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
-            std::string t0;
-            a1(std::string _t0) {
+            terminal *t0;
+            a1(terminal *_t0) {
                 t0 = _t0;
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a2 : public token {
-            std::string t0;
-            a2(std::string _t0) {
+            terminal *t0;
+            a2(terminal *_t0) {
                 t0 = _t0;
             }
             static a2* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a3 : public token {
-            std::string t0;
-            a3(std::string _t0) {
+            terminal *t0;
+            a3(terminal *_t0) {
                 t0 = _t0;
             }
             static a3* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a4 : public token {
-            std::string t0;
-            a4(std::string _t0) {
+            terminal *t0;
+            a4(terminal *_t0) {
                 t0 = _t0;
             }
             static a4* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a5 : public token {
-            std::string t0;
-            a5(std::string _t0) {
+            terminal *t0;
+            a5(terminal *_t0) {
                 t0 = _t0;
             }
             static a5* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a6 : public token {
-            std::string t0;
-            a6(std::string _t0) {
+            terminal *t0;
+            a6(terminal *_t0) {
                 t0 = _t0;
             }
             static a6* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a7 : public token {
-            std::string t0;
-            a7(std::string _t0) {
+            terminal *t0;
+            a7(terminal *_t0) {
                 t0 = _t0;
             }
             static a7* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a8 : public token {
-            std::string t0;
-            a8(std::string _t0) {
+            terminal *t0;
+            a8(terminal *_t0) {
                 t0 = _t0;
             }
             static a8* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a9 : public token {
-            std::string t0;
-            a9(std::string _t0) {
+            terminal *t0;
+            a9(terminal *_t0) {
                 t0 = _t0;
             }
             static a9* parse();
             std::string to_string();
+            void postprocess() override;
         };
         bool is_a0 = false;
         a0 *t0;
@@ -3725,82 +4006,92 @@ namespace parser {
         }
         static digit* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // escape = "\\" , ( "n" | "t" | "r" | "f" | "b" | "\"" | "\\" | "'" | "0" ) ;
     struct escape : public token {
         struct a0 : public token {
             struct b0 : public token {
-                std::string t0;
-                b0(std::string _t0) {
+                terminal *t0;
+                b0(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
-                std::string t0;
-                b1(std::string _t0) {
+                terminal *t0;
+                b1(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b2 : public token {
-                std::string t0;
-                b2(std::string _t0) {
+                terminal *t0;
+                b2(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b2* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b3 : public token {
-                std::string t0;
-                b3(std::string _t0) {
+                terminal *t0;
+                b3(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b3* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b4 : public token {
-                std::string t0;
-                b4(std::string _t0) {
+                terminal *t0;
+                b4(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b4* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b5 : public token {
-                std::string t0;
-                b5(std::string _t0) {
+                terminal *t0;
+                b5(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b5* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b6 : public token {
-                std::string t0;
-                b6(std::string _t0) {
+                terminal *t0;
+                b6(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b6* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b7 : public token {
-                std::string t0;
-                b7(std::string _t0) {
+                terminal *t0;
+                b7(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b7* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b8 : public token {
-                std::string t0;
-                b8(std::string _t0) {
+                terminal *t0;
+                b8(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b8* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -3858,250 +4149,281 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
-        std::string t0;
+        terminal *t0;
         a0 *t1;
-        escape(std::string _t0, a0 *_t1) {
+        escape(terminal *_t0, a0 *_t1) {
             t0 = _t0;
             t1 = _t1;
         }
         static escape* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // symbol = "[" | "]" | "{" | "}" | "(" | ")" | "<" | ">" | "=" | "|" | "." | "," | ";" | "-" | "+" | "_" | "*" | "?" | ":" | "!" | "@" | "#" | "$" | "%" | "^" | "&" | "/" | "~" | "`" ;
     struct symbol : public token {
         struct a0 : public token {
-            std::string t0;
-            a0(std::string _t0) {
+            terminal *t0;
+            a0(terminal *_t0) {
                 t0 = _t0;
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
-            std::string t0;
-            a1(std::string _t0) {
+            terminal *t0;
+            a1(terminal *_t0) {
                 t0 = _t0;
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a2 : public token {
-            std::string t0;
-            a2(std::string _t0) {
+            terminal *t0;
+            a2(terminal *_t0) {
                 t0 = _t0;
             }
             static a2* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a3 : public token {
-            std::string t0;
-            a3(std::string _t0) {
+            terminal *t0;
+            a3(terminal *_t0) {
                 t0 = _t0;
             }
             static a3* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a4 : public token {
-            std::string t0;
-            a4(std::string _t0) {
+            terminal *t0;
+            a4(terminal *_t0) {
                 t0 = _t0;
             }
             static a4* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a5 : public token {
-            std::string t0;
-            a5(std::string _t0) {
+            terminal *t0;
+            a5(terminal *_t0) {
                 t0 = _t0;
             }
             static a5* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a6 : public token {
-            std::string t0;
-            a6(std::string _t0) {
+            terminal *t0;
+            a6(terminal *_t0) {
                 t0 = _t0;
             }
             static a6* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a7 : public token {
-            std::string t0;
-            a7(std::string _t0) {
+            terminal *t0;
+            a7(terminal *_t0) {
                 t0 = _t0;
             }
             static a7* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a8 : public token {
-            std::string t0;
-            a8(std::string _t0) {
+            terminal *t0;
+            a8(terminal *_t0) {
                 t0 = _t0;
             }
             static a8* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a9 : public token {
-            std::string t0;
-            a9(std::string _t0) {
+            terminal *t0;
+            a9(terminal *_t0) {
                 t0 = _t0;
             }
             static a9* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a10 : public token {
-            std::string t0;
-            a10(std::string _t0) {
+            terminal *t0;
+            a10(terminal *_t0) {
                 t0 = _t0;
             }
             static a10* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a11 : public token {
-            std::string t0;
-            a11(std::string _t0) {
+            terminal *t0;
+            a11(terminal *_t0) {
                 t0 = _t0;
             }
             static a11* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a12 : public token {
-            std::string t0;
-            a12(std::string _t0) {
+            terminal *t0;
+            a12(terminal *_t0) {
                 t0 = _t0;
             }
             static a12* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a13 : public token {
-            std::string t0;
-            a13(std::string _t0) {
+            terminal *t0;
+            a13(terminal *_t0) {
                 t0 = _t0;
             }
             static a13* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a14 : public token {
-            std::string t0;
-            a14(std::string _t0) {
+            terminal *t0;
+            a14(terminal *_t0) {
                 t0 = _t0;
             }
             static a14* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a15 : public token {
-            std::string t0;
-            a15(std::string _t0) {
+            terminal *t0;
+            a15(terminal *_t0) {
                 t0 = _t0;
             }
             static a15* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a16 : public token {
-            std::string t0;
-            a16(std::string _t0) {
+            terminal *t0;
+            a16(terminal *_t0) {
                 t0 = _t0;
             }
             static a16* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a17 : public token {
-            std::string t0;
-            a17(std::string _t0) {
+            terminal *t0;
+            a17(terminal *_t0) {
                 t0 = _t0;
             }
             static a17* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a18 : public token {
-            std::string t0;
-            a18(std::string _t0) {
+            terminal *t0;
+            a18(terminal *_t0) {
                 t0 = _t0;
             }
             static a18* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a19 : public token {
-            std::string t0;
-            a19(std::string _t0) {
+            terminal *t0;
+            a19(terminal *_t0) {
                 t0 = _t0;
             }
             static a19* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a20 : public token {
-            std::string t0;
-            a20(std::string _t0) {
+            terminal *t0;
+            a20(terminal *_t0) {
                 t0 = _t0;
             }
             static a20* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a21 : public token {
-            std::string t0;
-            a21(std::string _t0) {
+            terminal *t0;
+            a21(terminal *_t0) {
                 t0 = _t0;
             }
             static a21* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a22 : public token {
-            std::string t0;
-            a22(std::string _t0) {
+            terminal *t0;
+            a22(terminal *_t0) {
                 t0 = _t0;
             }
             static a22* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a23 : public token {
-            std::string t0;
-            a23(std::string _t0) {
+            terminal *t0;
+            a23(terminal *_t0) {
                 t0 = _t0;
             }
             static a23* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a24 : public token {
-            std::string t0;
-            a24(std::string _t0) {
+            terminal *t0;
+            a24(terminal *_t0) {
                 t0 = _t0;
             }
             static a24* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a25 : public token {
-            std::string t0;
-            a25(std::string _t0) {
+            terminal *t0;
+            a25(terminal *_t0) {
                 t0 = _t0;
             }
             static a25* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a26 : public token {
-            std::string t0;
-            a26(std::string _t0) {
+            terminal *t0;
+            a26(terminal *_t0) {
                 t0 = _t0;
             }
             static a26* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a27 : public token {
-            std::string t0;
-            a27(std::string _t0) {
+            terminal *t0;
+            a27(terminal *_t0) {
                 t0 = _t0;
             }
             static a27* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a28 : public token {
-            std::string t0;
-            a28(std::string _t0) {
+            terminal *t0;
+            a28(terminal *_t0) {
                 t0 = _t0;
             }
             static a28* parse();
             std::string to_string();
+            void postprocess() override;
         };
         bool is_a0 = false;
         a0 *t0;
@@ -4279,6 +4601,7 @@ namespace parser {
         }
         static symbol* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // line_comment = "//" , { alpha | digit | symbol | "\"" | "'" | " " | "\\" } , "\n" ;
@@ -4291,6 +4614,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
                 digit *t0;
@@ -4299,6 +4623,7 @@ namespace parser {
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b2 : public token {
                 symbol *t0;
@@ -4307,38 +4632,43 @@ namespace parser {
                 }
                 static b2* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b3 : public token {
-                std::string t0;
-                b3(std::string _t0) {
+                terminal *t0;
+                b3(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b3* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b4 : public token {
-                std::string t0;
-                b4(std::string _t0) {
+                terminal *t0;
+                b4(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b4* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b5 : public token {
-                std::string t0;
-                b5(std::string _t0) {
+                terminal *t0;
+                b5(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b5* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b6 : public token {
-                std::string t0;
-                b6(std::string _t0) {
+                terminal *t0;
+                b6(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b6* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -4384,17 +4714,19 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
-        std::string t0;
+        terminal *t0;
         std::vector<a0*> t1;
-        std::string t2;
-        line_comment(std::string _t0, std::vector<a0*> _t1, std::string _t2) {
+        terminal *t2;
+        line_comment(terminal *_t0, std::vector<a0*> _t1, terminal *_t2) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
         }
         static line_comment* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // multiline_comment = "/*" , { alpha | digit | " " | "\n" } , "*/" ;
@@ -4407,6 +4739,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
                 digit *t0;
@@ -4415,22 +4748,25 @@ namespace parser {
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b2 : public token {
-                std::string t0;
-                b2(std::string _t0) {
+                terminal *t0;
+                b2(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b2* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b3 : public token {
-                std::string t0;
-                b3(std::string _t0) {
+                terminal *t0;
+                b3(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b3* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -4458,68 +4794,76 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
-        std::string t0;
+        terminal *t0;
         std::vector<a0*> t1;
-        std::string t2;
-        multiline_comment(std::string _t0, std::vector<a0*> _t1, std::string _t2) {
+        terminal *t2;
+        multiline_comment(terminal *_t0, std::vector<a0*> _t1, terminal *_t2) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
         }
         static multiline_comment* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // ws = " " | "\n" | "\t" | "\r" | "\f" | "\b" | line_comment | multiline_comment ;
     struct ws : public token {
         struct a0 : public token {
-            std::string t0;
-            a0(std::string _t0) {
+            terminal *t0;
+            a0(terminal *_t0) {
                 t0 = _t0;
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
-            std::string t0;
-            a1(std::string _t0) {
+            terminal *t0;
+            a1(terminal *_t0) {
                 t0 = _t0;
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a2 : public token {
-            std::string t0;
-            a2(std::string _t0) {
+            terminal *t0;
+            a2(terminal *_t0) {
                 t0 = _t0;
             }
             static a2* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a3 : public token {
-            std::string t0;
-            a3(std::string _t0) {
+            terminal *t0;
+            a3(terminal *_t0) {
                 t0 = _t0;
             }
             static a3* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a4 : public token {
-            std::string t0;
-            a4(std::string _t0) {
+            terminal *t0;
+            a4(terminal *_t0) {
                 t0 = _t0;
             }
             static a4* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a5 : public token {
-            std::string t0;
-            a5(std::string _t0) {
+            terminal *t0;
+            a5(terminal *_t0) {
                 t0 = _t0;
             }
             static a5* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a6 : public token {
             line_comment *t0;
@@ -4528,6 +4872,7 @@ namespace parser {
             }
             static a6* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a7 : public token {
             multiline_comment *t0;
@@ -4536,6 +4881,7 @@ namespace parser {
             }
             static a7* parse();
             std::string to_string();
+            void postprocess() override;
         };
         bool is_a0 = false;
         a0 *t0;
@@ -4587,6 +4933,7 @@ namespace parser {
         }
         static ws* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // rws = < ws > ;
@@ -4598,6 +4945,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         std::vector<a0*> t0;
         rws(std::vector<a0*> _t0) {
@@ -4605,6 +4953,7 @@ namespace parser {
         }
         static rws* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // ows = { ws } ;
@@ -4616,6 +4965,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         std::vector<a0*> t0;
         ows(std::vector<a0*> _t0) {
@@ -4623,6 +4973,7 @@ namespace parser {
         }
         static ows* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // base_type = alpha , { alpha | digit | "_" } ;
@@ -4635,6 +4986,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
                 digit *t0;
@@ -4643,14 +4995,16 @@ namespace parser {
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b2 : public token {
-                std::string t0;
-                b2(std::string _t0) {
+                terminal *t0;
+                b2(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b2* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -4672,6 +5026,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         alpha *t0;
         std::vector<a0*> t1;
@@ -4681,6 +5036,7 @@ namespace parser {
         }
         static base_type* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // templated_type = base_type , [ "<" , ows , templated_type , { ows , "," , ows , templated_type } , ows , ">" ] , { "*" | "[" , literal_integer , "]" } ;
@@ -4688,10 +5044,10 @@ namespace parser {
         struct a0 : public token {
             struct b0 : public token {
                 ows *t0;
-                std::string t1;
+                terminal *t1;
                 ows *t2;
                 templated_type *t3;
-                b0(ows *_t0, std::string _t1, ows *_t2, templated_type *_t3) {
+                b0(ows *_t0, terminal *_t1, ows *_t2, templated_type *_t3) {
                     t0 = _t0;
                     t1 = _t1;
                     t2 = _t2;
@@ -4699,14 +5055,15 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
-            std::string t0;
+            terminal *t0;
             ows *t1;
             templated_type *t2;
             std::vector<b0*> t3;
             ows *t4;
-            std::string t5;
-            a0(std::string _t0, ows *_t1, templated_type *_t2, std::vector<b0*> _t3, ows *_t4, std::string _t5) {
+            terminal *t5;
+            a0(terminal *_t0, ows *_t1, templated_type *_t2, std::vector<b0*> _t3, ows *_t4, terminal *_t5) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -4716,27 +5073,30 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
             struct b0 : public token {
-                std::string t0;
-                b0(std::string _t0) {
+                terminal *t0;
+                b0(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
-                std::string t0;
+                terminal *t0;
                 literal_integer *t1;
-                std::string t2;
-                b1(std::string _t0, literal_integer *_t1, std::string _t2) {
+                terminal *t2;
+                b1(terminal *_t0, literal_integer *_t1, terminal *_t2) {
                     t0 = _t0;
                     t1 = _t1;
                     t2 = _t2;
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -4752,6 +5112,7 @@ namespace parser {
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         base_type *t0;
         a0 *t1;
@@ -4763,23 +5124,24 @@ namespace parser {
         }
         static templated_type* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // function_pointer_type = "fn" , "<" , ows , type , ows , "(" , ows , type_list , ows , ")" , ows , ">" ;
     struct function_pointer_type : public token {
-        std::string t0;
-        std::string t1;
+        terminal *t0;
+        terminal *t1;
         ows *t2;
         type *t3;
         ows *t4;
-        std::string t5;
+        terminal *t5;
         ows *t6;
         type_list *t7;
         ows *t8;
-        std::string t9;
+        terminal *t9;
         ows *t10;
-        std::string t11;
-        function_pointer_type(std::string _t0, std::string _t1, ows *_t2, type *_t3, ows *_t4, std::string _t5, ows *_t6, type_list *_t7, ows *_t8, std::string _t9, ows *_t10, std::string _t11) {
+        terminal *t11;
+        function_pointer_type(terminal *_t0, terminal *_t1, ows *_t2, type *_t3, ows *_t4, terminal *_t5, ows *_t6, type_list *_t7, ows *_t8, terminal *_t9, ows *_t10, terminal *_t11) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -4795,6 +5157,7 @@ namespace parser {
         }
         static function_pointer_type* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // type = ( function_pointer_type | templated_type ) , [ "&" ] ;
@@ -4807,6 +5170,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
                 templated_type *t0;
@@ -4815,6 +5179,7 @@ namespace parser {
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -4830,14 +5195,16 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
-            std::string t0;
-            a1(std::string _t0) {
+            terminal *t0;
+            a1(terminal *_t0) {
                 t0 = _t0;
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         a0 *t0;
         a1 *t1;
@@ -4847,16 +5214,17 @@ namespace parser {
         }
         static type* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // template_header = "template" , ows , "<" , ows , base_type , { ows , "," , ows , base_type } , ows , ">" ;
     struct template_header : public token {
         struct a0 : public token {
             ows *t0;
-            std::string t1;
+            terminal *t1;
             ows *t2;
             base_type *t3;
-            a0(ows *_t0, std::string _t1, ows *_t2, base_type *_t3) {
+            a0(ows *_t0, terminal *_t1, ows *_t2, base_type *_t3) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -4864,16 +5232,17 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
-        std::string t0;
+        terminal *t0;
         ows *t1;
-        std::string t2;
+        terminal *t2;
         ows *t3;
         base_type *t4;
         std::vector<a0*> t5;
         ows *t6;
-        std::string t7;
-        template_header(std::string _t0, ows *_t1, std::string _t2, ows *_t3, base_type *_t4, std::vector<a0*> _t5, ows *_t6, std::string _t7) {
+        terminal *t7;
+        template_header(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, base_type *_t4, std::vector<a0*> _t5, ows *_t6, terminal *_t7) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -4885,6 +5254,7 @@ namespace parser {
         }
         static template_header* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // identifier = ( alpha | "_" ) , { alpha | digit | "_" } ;
@@ -4897,14 +5267,16 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
-                std::string t0;
-                b1(std::string _t0) {
+                terminal *t0;
+                b1(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -4920,6 +5292,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
             struct b0 : public token {
@@ -4929,6 +5302,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
                 digit *t0;
@@ -4937,14 +5311,16 @@ namespace parser {
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b2 : public token {
-                std::string t0;
-                b2(std::string _t0) {
+                terminal *t0;
+                b2(terminal *_t0) {
                     t0 = _t0;
                 }
                 static b2* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -4966,6 +5342,7 @@ namespace parser {
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         a0 *t0;
         std::vector<a1*> t1;
@@ -4975,16 +5352,17 @@ namespace parser {
         }
         static identifier* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // declaration = type , rws , identifier , [ ows , "=" , ows , expression ] ;
     struct declaration : public token {
         struct a0 : public token {
             ows *t0;
-            std::string t1;
+            terminal *t1;
             ows *t2;
             expression *t3;
-            a0(ows *_t0, std::string _t1, ows *_t2, expression *_t3) {
+            a0(ows *_t0, terminal *_t1, ows *_t2, expression *_t3) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -4992,6 +5370,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         type *t0;
         rws *t1;
@@ -5005,6 +5384,7 @@ namespace parser {
         }
         static declaration* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // parameter = type , rws , identifier ;
@@ -5019,6 +5399,7 @@ namespace parser {
         }
         static parameter* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // type_list = [ type , { ows , "," , ows , type } ] ;
@@ -5026,10 +5407,10 @@ namespace parser {
         struct a0 : public token {
             struct b0 : public token {
                 ows *t0;
-                std::string t1;
+                terminal *t1;
                 ows *t2;
                 type *t3;
-                b0(ows *_t0, std::string _t1, ows *_t2, type *_t3) {
+                b0(ows *_t0, terminal *_t1, ows *_t2, type *_t3) {
                     t0 = _t0;
                     t1 = _t1;
                     t2 = _t2;
@@ -5037,6 +5418,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             type *t0;
             std::vector<b0*> t1;
@@ -5046,6 +5428,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         a0 *t0;
         type_list(a0 *_t0) {
@@ -5053,6 +5436,7 @@ namespace parser {
         }
         static type_list* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // parameter_list = [ parameter , { ows , "," , ows , parameter } ] ;
@@ -5060,10 +5444,10 @@ namespace parser {
         struct a0 : public token {
             struct b0 : public token {
                 ows *t0;
-                std::string t1;
+                terminal *t1;
                 ows *t2;
                 parameter *t3;
-                b0(ows *_t0, std::string _t1, ows *_t2, parameter *_t3) {
+                b0(ows *_t0, terminal *_t1, ows *_t2, parameter *_t3) {
                     t0 = _t0;
                     t1 = _t1;
                     t2 = _t2;
@@ -5071,6 +5455,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             parameter *t0;
             std::vector<b0*> t1;
@@ -5080,6 +5465,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         a0 *t0;
         parameter_list(a0 *_t0) {
@@ -5087,6 +5473,7 @@ namespace parser {
         }
         static parameter_list* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // argument_list = [ expression , { ows , "," , ows , expression } ] ;
@@ -5094,10 +5481,10 @@ namespace parser {
         struct a0 : public token {
             struct b0 : public token {
                 ows *t0;
-                std::string t1;
+                terminal *t1;
                 ows *t2;
                 expression *t3;
-                b0(ows *_t0, std::string _t1, ows *_t2, expression *_t3) {
+                b0(ows *_t0, terminal *_t1, ows *_t2, expression *_t3) {
                     t0 = _t0;
                     t1 = _t1;
                     t2 = _t2;
@@ -5105,6 +5492,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             expression *t0;
             std::vector<b0*> t1;
@@ -5114,6 +5502,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         a0 *t0;
         argument_list(a0 *_t0) {
@@ -5121,6 +5510,7 @@ namespace parser {
         }
         static argument_list* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // identifier_list = [ identifier , { ows , "," , ows , identifier } ] ;
@@ -5128,10 +5518,10 @@ namespace parser {
         struct a0 : public token {
             struct b0 : public token {
                 ows *t0;
-                std::string t1;
+                terminal *t1;
                 ows *t2;
                 identifier *t3;
-                b0(ows *_t0, std::string _t1, ows *_t2, identifier *_t3) {
+                b0(ows *_t0, terminal *_t1, ows *_t2, identifier *_t3) {
                     t0 = _t0;
                     t1 = _t1;
                     t2 = _t2;
@@ -5139,6 +5529,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             identifier *t0;
             std::vector<b0*> t1;
@@ -5148,6 +5539,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         a0 *t0;
         identifier_list(a0 *_t0) {
@@ -5155,6 +5547,7 @@ namespace parser {
         }
         static identifier_list* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // statement = simple_statement | control_statement | compound_statement ;
@@ -5166,6 +5559,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
             control_statement *t0;
@@ -5174,6 +5568,7 @@ namespace parser {
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a2 : public token {
             compound_statement *t0;
@@ -5182,6 +5577,7 @@ namespace parser {
             }
             static a2* parse();
             std::string to_string();
+            void postprocess() override;
         };
         bool is_a0 = false;
         a0 *t0;
@@ -5203,6 +5599,7 @@ namespace parser {
         }
         static statement* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // simple_statement = "return" , [ rws , expression ] , ows , ";" | "break" , ows , ";" | "continue" , ows , ";" | declaration , ows , ";" | expression , ows , ";" | inline_asm , ows , ";" ;
@@ -5217,12 +5614,13 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
-            std::string t0;
+            terminal *t0;
             b0 *t1;
             ows *t2;
-            std::string t3;
-            a0(std::string _t0, b0 *_t1, ows *_t2, std::string _t3) {
+            terminal *t3;
+            a0(terminal *_t0, b0 *_t1, ows *_t2, terminal *_t3) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -5230,66 +5628,72 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
-            std::string t0;
+            terminal *t0;
             ows *t1;
-            std::string t2;
-            a1(std::string _t0, ows *_t1, std::string _t2) {
+            terminal *t2;
+            a1(terminal *_t0, ows *_t1, terminal *_t2) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a2 : public token {
-            std::string t0;
+            terminal *t0;
             ows *t1;
-            std::string t2;
-            a2(std::string _t0, ows *_t1, std::string _t2) {
+            terminal *t2;
+            a2(terminal *_t0, ows *_t1, terminal *_t2) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
             }
             static a2* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a3 : public token {
             declaration *t0;
             ows *t1;
-            std::string t2;
-            a3(declaration *_t0, ows *_t1, std::string _t2) {
+            terminal *t2;
+            a3(declaration *_t0, ows *_t1, terminal *_t2) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
             }
             static a3* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a4 : public token {
             expression *t0;
             ows *t1;
-            std::string t2;
-            a4(expression *_t0, ows *_t1, std::string _t2) {
+            terminal *t2;
+            a4(expression *_t0, ows *_t1, terminal *_t2) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
             }
             static a4* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a5 : public token {
             inline_asm *t0;
             ows *t1;
-            std::string t2;
-            a5(inline_asm *_t0, ows *_t1, std::string _t2) {
+            terminal *t2;
+            a5(inline_asm *_t0, ows *_t1, terminal *_t2) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
             }
             static a5* parse();
             std::string to_string();
+            void postprocess() override;
         };
         bool is_a0 = false;
         a0 *t0;
@@ -5329,6 +5733,7 @@ namespace parser {
         }
         static simple_statement* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // control_statement = "if" , ows , "(" , ows , expression , ows , ")" , ows , statement , [ rws , "else" , rws , statement ] | "while" , ows , "(" , ows , expression , ows , ")" , ows , statement | "for" , ows , "(" , ows , [ declaration ] , ows , ";" , ows , [ expression ] , ows , ";" , ows , [ expression ] , ows , ")" , ows , statement ;
@@ -5336,10 +5741,10 @@ namespace parser {
         struct a0 : public token {
             struct b0 : public token {
                 rws *t0;
-                std::string t1;
+                terminal *t1;
                 rws *t2;
                 statement *t3;
-                b0(rws *_t0, std::string _t1, rws *_t2, statement *_t3) {
+                b0(rws *_t0, terminal *_t1, rws *_t2, statement *_t3) {
                     t0 = _t0;
                     t1 = _t1;
                     t2 = _t2;
@@ -5347,18 +5752,19 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
-            std::string t0;
+            terminal *t0;
             ows *t1;
-            std::string t2;
+            terminal *t2;
             ows *t3;
             expression *t4;
             ows *t5;
-            std::string t6;
+            terminal *t6;
             ows *t7;
             statement *t8;
             b0 *t9;
-            a0(std::string _t0, ows *_t1, std::string _t2, ows *_t3, expression *_t4, ows *_t5, std::string _t6, ows *_t7, statement *_t8, b0 *_t9) {
+            a0(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, expression *_t4, ows *_t5, terminal *_t6, ows *_t7, statement *_t8, b0 *_t9) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -5372,18 +5778,19 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
-            std::string t0;
+            terminal *t0;
             ows *t1;
-            std::string t2;
+            terminal *t2;
             ows *t3;
             expression *t4;
             ows *t5;
-            std::string t6;
+            terminal *t6;
             ows *t7;
             statement *t8;
-            a1(std::string _t0, ows *_t1, std::string _t2, ows *_t3, expression *_t4, ows *_t5, std::string _t6, ows *_t7, statement *_t8) {
+            a1(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, expression *_t4, ows *_t5, terminal *_t6, ows *_t7, statement *_t8) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -5396,6 +5803,7 @@ namespace parser {
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a2 : public token {
             struct b0 : public token {
@@ -5405,6 +5813,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
                 expression *t0;
@@ -5413,6 +5822,7 @@ namespace parser {
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b2 : public token {
                 expression *t0;
@@ -5421,25 +5831,26 @@ namespace parser {
                 }
                 static b2* parse();
                 std::string to_string();
+                void postprocess() override;
             };
-            std::string t0;
+            terminal *t0;
             ows *t1;
-            std::string t2;
+            terminal *t2;
             ows *t3;
             b0 *t4;
             ows *t5;
-            std::string t6;
+            terminal *t6;
             ows *t7;
             b1 *t8;
             ows *t9;
-            std::string t10;
+            terminal *t10;
             ows *t11;
             b2 *t12;
             ows *t13;
-            std::string t14;
+            terminal *t14;
             ows *t15;
             statement *t16;
-            a2(std::string _t0, ows *_t1, std::string _t2, ows *_t3, b0 *_t4, ows *_t5, std::string _t6, ows *_t7, b1 *_t8, ows *_t9, std::string _t10, ows *_t11, b2 *_t12, ows *_t13, std::string _t14, ows *_t15, statement *_t16) {
+            a2(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, b0 *_t4, ows *_t5, terminal *_t6, ows *_t7, b1 *_t8, ows *_t9, terminal *_t10, ows *_t11, b2 *_t12, ows *_t13, terminal *_t14, ows *_t15, statement *_t16) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -5460,6 +5871,7 @@ namespace parser {
             }
             static a2* parse();
             std::string to_string();
+            void postprocess() override;
         };
         bool is_a0 = false;
         a0 *t0;
@@ -5481,6 +5893,7 @@ namespace parser {
         }
         static control_statement* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // compound_statement = "{" , ows , { statement , ows } , "}" ;
@@ -5494,12 +5907,13 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
-        std::string t0;
+        terminal *t0;
         ows *t1;
         std::vector<a0*> t2;
-        std::string t3;
-        compound_statement(std::string _t0, ows *_t1, std::vector<a0*> _t2, std::string _t3) {
+        terminal *t3;
+        compound_statement(terminal *_t0, ows *_t1, std::vector<a0*> _t2, terminal *_t3) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -5507,6 +5921,7 @@ namespace parser {
         }
         static compound_statement* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // include = "#include" , rws , ( literal_string | "<" , identifier , ">" ) , ows , ";" ;
@@ -5519,18 +5934,20 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             struct b1 : public token {
-                std::string t0;
+                terminal *t0;
                 identifier *t1;
-                std::string t2;
-                b1(std::string _t0, identifier *_t1, std::string _t2) {
+                terminal *t2;
+                b1(terminal *_t0, identifier *_t1, terminal *_t2) {
                     t0 = _t0;
                     t1 = _t1;
                     t2 = _t2;
                 }
                 static b1* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             bool is_b0 = false;
             b0 *t0;
@@ -5546,13 +5963,14 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
-        std::string t0;
+        terminal *t0;
         rws *t1;
         a0 *t2;
         ows *t3;
-        std::string t4;
-        include(std::string _t0, rws *_t1, a0 *_t2, ows *_t3, std::string _t4) {
+        terminal *t4;
+        include(terminal *_t0, rws *_t1, a0 *_t2, ows *_t3, terminal *_t4) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -5561,18 +5979,19 @@ namespace parser {
         }
         static include* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // _typedef = "typedef" , rws , type , rws , base_type , ows , ";" ;
     struct _typedef : public token {
-        std::string t0;
+        terminal *t0;
         rws *t1;
         type *t2;
         rws *t3;
         base_type *t4;
         ows *t5;
-        std::string t6;
-        _typedef(std::string _t0, rws *_t1, type *_t2, rws *_t3, base_type *_t4, ows *_t5, std::string _t6) {
+        terminal *t6;
+        _typedef(terminal *_t0, rws *_t1, type *_t2, rws *_t3, base_type *_t4, ows *_t5, terminal *_t6) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -5583,16 +6002,17 @@ namespace parser {
         }
         static _typedef* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // global_node = "#global_node" , rws , identifier , [ ows , "[" , identifier_list , "]" ] , ows , ";" ;
     struct global_node : public token {
         struct a0 : public token {
             ows *t0;
-            std::string t1;
+            terminal *t1;
             identifier_list *t2;
-            std::string t3;
-            a0(ows *_t0, std::string _t1, identifier_list *_t2, std::string _t3) {
+            terminal *t3;
+            a0(ows *_t0, terminal *_t1, identifier_list *_t2, terminal *_t3) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -5600,14 +6020,15 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
-        std::string t0;
+        terminal *t0;
         rws *t1;
         identifier *t2;
         a0 *t3;
         ows *t4;
-        std::string t5;
-        global_node(std::string _t0, rws *_t1, identifier *_t2, a0 *_t3, ows *_t4, std::string _t5) {
+        terminal *t5;
+        global_node(terminal *_t0, rws *_t1, identifier *_t2, a0 *_t3, ows *_t4, terminal *_t5) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -5617,18 +6038,19 @@ namespace parser {
         }
         static global_node* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // global_declaration = [ "[" , ows , identifier , ows , "]" , ows ] , [ "extern" , rws ] , declaration , ows , ";" ;
     struct global_declaration : public token {
         struct a0 : public token {
-            std::string t0;
+            terminal *t0;
             ows *t1;
             identifier *t2;
             ows *t3;
-            std::string t4;
+            terminal *t4;
             ows *t5;
-            a0(std::string _t0, ows *_t1, identifier *_t2, ows *_t3, std::string _t4, ows *_t5) {
+            a0(terminal *_t0, ows *_t1, identifier *_t2, ows *_t3, terminal *_t4, ows *_t5) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -5638,23 +6060,25 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         struct a1 : public token {
-            std::string t0;
+            terminal *t0;
             rws *t1;
-            a1(std::string _t0, rws *_t1) {
+            a1(terminal *_t0, rws *_t1) {
                 t0 = _t0;
                 t1 = _t1;
             }
             static a1* parse();
             std::string to_string();
+            void postprocess() override;
         };
         a0 *t0;
         a1 *t1;
         declaration *t2;
         ows *t3;
-        std::string t4;
-        global_declaration(a0 *_t0, a1 *_t1, declaration *_t2, ows *_t3, std::string _t4) {
+        terminal *t4;
+        global_declaration(a0 *_t0, a1 *_t1, declaration *_t2, ows *_t3, terminal *_t4) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -5663,6 +6087,7 @@ namespace parser {
         }
         static global_declaration* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
     // program = { ows , ( function | struct_definition | templated_function | templated_struct_definition | overload | templated_overload | include | global_declaration | global_node | _typedef ) } , ows ;
@@ -5676,6 +6101,7 @@ namespace parser {
                     }
                     static c0* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c1 : public token {
                     struct_definition *t0;
@@ -5684,6 +6110,7 @@ namespace parser {
                     }
                     static c1* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c2 : public token {
                     templated_function *t0;
@@ -5692,6 +6119,7 @@ namespace parser {
                     }
                     static c2* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c3 : public token {
                     templated_struct_definition *t0;
@@ -5700,6 +6128,7 @@ namespace parser {
                     }
                     static c3* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c4 : public token {
                     overload *t0;
@@ -5708,6 +6137,7 @@ namespace parser {
                     }
                     static c4* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c5 : public token {
                     templated_overload *t0;
@@ -5716,6 +6146,7 @@ namespace parser {
                     }
                     static c5* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c6 : public token {
                     include *t0;
@@ -5724,6 +6155,7 @@ namespace parser {
                     }
                     static c6* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c7 : public token {
                     global_declaration *t0;
@@ -5732,6 +6164,7 @@ namespace parser {
                     }
                     static c7* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c8 : public token {
                     global_node *t0;
@@ -5740,6 +6173,7 @@ namespace parser {
                     }
                     static c8* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 struct c9 : public token {
                     _typedef *t0;
@@ -5748,6 +6182,7 @@ namespace parser {
                     }
                     static c9* parse();
                     std::string to_string();
+                    void postprocess() override;
                 };
                 bool is_c0 = false;
                 c0 *t0;
@@ -5811,6 +6246,7 @@ namespace parser {
                 }
                 static b0* parse();
                 std::string to_string();
+                void postprocess() override;
             };
             ows *t0;
             b0 *t1;
@@ -5820,6 +6256,7 @@ namespace parser {
             }
             static a0* parse();
             std::string to_string();
+            void postprocess() override;
         };
         std::vector<a0*> t0;
         ows *t1;
@@ -5829,6 +6266,7 @@ namespace parser {
         }
         static program* parse();
         std::string to_string();
+        void postprocess() override;
     };
 
 };

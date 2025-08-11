@@ -13,6 +13,8 @@ generator: $(GENERATOR_EXE)
 # Run the generator for jank
 jank: $(GENERATOR_EXE) jank/jank.ebnf
 	cd jank && ../$(GENERATOR_EXE) jank.ebnf
+	mv jank/parser.cpp ../compiler/parser/
+	mv jank/parser.h   ../compiler/parser/
 
 # Optional cleanup
 clean:
