@@ -1,4 +1,5 @@
 .vscode
+!langserver/.vscode/
 *.exe
 *.out
 *.o
