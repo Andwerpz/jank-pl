@@ -40,7 +40,7 @@ struct highlight_token {
 	}
 };
 
-void generate_highlight_tokens(parser::token *tok, std::vector<highlight_token>& out_tokens) {
+void generate_highlight_tokens(parser::token *tok, std::vector<highlight_token>& out_tokens, bool in_struct) {
 	//types
 	if(tok->token_type == "base_type") {
 		//builtin types
@@ -65,6 +65,10 @@ void generate_highlight_tokens(parser::token *tok, std::vector<highlight_token>&
 		out_tokens.push_back(highlight_token(tok, "keyword"));
 		return;
 	}
+	if(in_struct && tok->token_type == "identifier" && tok->to_string() == "this") {
+		out_tokens.push_back(highlight_token(tok, "keyword"));
+		return;
+	}
 
 	//numbers
 	if(tok->token_type == "literal_integer" || tok->token_type == "literal_float" || tok->token_type == "literal_hex" || tok->token_type == "literal_binary") {
@@ -79,8 +83,9 @@ void generate_highlight_tokens(parser::token *tok, std::vector<highlight_token>&
 	}
 
 	//generate highlighting for children
+	if(tok->token_type == "struct_definition") in_struct = true;
 	for(int i = 0; i < tok->token_children.size(); i++){
-		generate_highlight_tokens(tok->token_children[i], out_tokens);
+		generate_highlight_tokens(tok->token_children[i], out_tokens, in_struct);
 	}
 }
 
@@ -99,7 +104,7 @@ int main() {
 
 	//generate highlighting tokens
 	std::vector<highlight_token> tokens;
-	generate_highlight_tokens(p, tokens);
+	generate_highlight_tokens(p, tokens, false);
 
 	//output
 	std::cout << "[";

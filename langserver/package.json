@@ -4,7 +4,7 @@
 	"author": "Andrew Li",
 	"publisher": "andwerp",
 	"icon": "janky.png",
-	"version": "3.0.1",
+	"version": "3.1.0",
 	"categories": [],
 	"keywords": [],
 	"engines": {
@@ -15,6 +15,13 @@
 	],
 	"main": "./client/out/extension",
 	"contributes": {
+		"grammars": [
+			{
+				"language": "jank",
+				"scopeName": "source.jank",
+				"path": "./syntaxes/jank.tmLanguage.json"
+			}
+		],
 		"languages": [
 			{
 				"id": "jank",

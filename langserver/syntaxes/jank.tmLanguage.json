@@ -1,0 +1,56 @@
+{
+  "scopeName": "source.jank",
+  "name": "jank",
+  "patterns": [
+    { "include": "#comments" },
+	{ "include": "#strings" },
+	{ "include": "#chars" }
+  ],
+  "repository": {
+    "comments": {
+      "patterns": [
+        {
+          "name": "comment.line.double-slash.jank",
+          "match": "//.*$"
+        },
+        {
+          "name": "comment.block.jank",
+          "begin": "/\\*",
+          "end": "\\*/",
+          "patterns": [
+            { "include": "#comments" }
+          ]
+        }
+      ]
+    },
+	"strings": {
+      "patterns": [
+        {
+          "name": "string.quoted.double.jank",
+          "begin": "\"",
+          "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.jank" } },
+          "end": "\"",
+          "endCaptures": { "0": { "name": "punctuation.definition.string.end.jank" } },
+          "patterns": [
+            { "match": "\\\\.", "name": "constant.character.escape.jank" }
+          ]
+        }
+      ]
+    },
+    "chars": {
+      "patterns": [
+        {
+          "name": "string.quoted.single.jank",
+          "begin": "'",
+          "beginCaptures": { "0": { "name": "punctuation.definition.string.begin.jank" } },
+          "end": "'",
+          "endCaptures": { "0": { "name": "punctuation.definition.string.end.jank" } },
+          "patterns": [
+            { "match": "\\\\.", "name": "constant.character.escape.jank" }
+          ]
+        }
+      ]
+    }
+  },
+  "fileTypes": ["jank"]
+}
