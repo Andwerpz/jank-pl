@@ -1,4 +1,4 @@
-// Date Generated : 08-11-2025 20:46:39
+// Date Generated : 08-12-2025 01:49:40
 #pragma once
 #include <vector>
 #include <string>
@@ -119,6 +119,7 @@ namespace parser {
     struct simple_statement;
     struct control_statement;
     struct compound_statement;
+    struct library_path;
     struct include;
     struct _typedef;
     struct global_node;
@@ -5924,7 +5925,22 @@ namespace parser {
         void postprocess() override;
     };
 
-    // include = "#include" , rws , ( literal_string | "<" , identifier , ">" ) , ows , ";" ;
+    // library_path = "<" , identifier , ">" ;
+    struct library_path : public token {
+        terminal *t0;
+        identifier *t1;
+        terminal *t2;
+        library_path(terminal *_t0, identifier *_t1, terminal *_t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static library_path* parse();
+        std::string to_string();
+        void postprocess() override;
+    };
+
+    // include = "#include" , rws , ( literal_string | library_path ) , ows , ";" ;
     struct include : public token {
         struct a0 : public token {
             struct b0 : public token {
@@ -5937,13 +5953,9 @@ namespace parser {
                 void postprocess() override;
             };
             struct b1 : public token {
-                terminal *t0;
-                identifier *t1;
-                terminal *t2;
-                b1(terminal *_t0, identifier *_t1, terminal *_t2) {
+                library_path *t0;
+                b1(library_path *_t0) {
                     t0 = _t0;
-                    t1 = _t1;
-                    t2 = _t2;
                 }
                 static b1* parse();
                 std::string to_string();

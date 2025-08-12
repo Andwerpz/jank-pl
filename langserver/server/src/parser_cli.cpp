@@ -5,7 +5,7 @@
 #include <set>
 
 std::set<std::string> keywords = {
-	"for", "while", "if", "else", "return", "struct",
+	"for", "while", "if", "else", "return", "struct", "template", "operator",
 	"typedef", "#include", "#global_node",
 	"syscall", "sizeof", "asm!",
 };
@@ -54,7 +54,8 @@ void generate_highlight_tokens(parser::token *tok, std::vector<highlight_token>&
 	}
 
 	//strings
-	if(tok->token_type == "literal_string" || tok->token_type == "literal_char") {
+	if(tok->token_type == "literal_string" || tok->token_type == "literal_char" ||
+		tok->token_type == "library_path") {
 		out_tokens.push_back(highlight_token(tok, "string"));
 		return;
 	}

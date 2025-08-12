@@ -1,0 +1,16 @@
+
+ - install vsce
+npm install -g vsce
+
+ - package the extension, do this in package root directory
+   should produce some .vsix file
+   make sure to bump the version in package.json before doing this
+vsce package
+
+ - login (should only have to ever do this once)
+   this will request a Personal Access Token (PAT) which you can go to azure to generate
+vsce login <publisher name>
+
+ - publish
+vsce publish
+

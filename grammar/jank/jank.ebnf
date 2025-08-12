@@ -69,7 +69,8 @@ control_statement = "if" , ows , "(" , ows ,  expression , ows , ")" , ows , sta
                   | "for" , ows , "(" , ows , [ declaration ] , ows , ";" , ows , [ expression ] , ows , ";" , ows , [ expression ] , ows , ")" , ows , statement ;
 compound_statement = "{" , ows , { statement , ows } , "}" ;
 
-include = "#include" , rws , ( literal_string | "<" , identifier , ">" ) , ows , ";" ;
+library_path = "<" , identifier , ">" ;
+include = "#include" , rws , ( literal_string | library_path ) , ows , ";" ;
 
 _typedef = "typedef" , rws , type , rws , base_type , ows , ";" ; 
 

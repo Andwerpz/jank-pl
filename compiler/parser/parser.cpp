@@ -1,4 +1,4 @@
-// Date Generated : 08-11-2025 20:46:39
+// Date Generated : 08-12-2025 01:49:40
 #include "parser.h"
 
 namespace parser {
@@ -13989,6 +13989,40 @@ namespace parser {
         t3->postprocess();
     }
 
+    library_path* library_path::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("<");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        identifier *_t1 = identifier::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        terminal *_t2 = terminal::parse(">");
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        library_path* retval = new library_path(_t0, _t1, _t2);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string library_path::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2->to_string();
+        return ans;
+    }
+
+    void library_path::postprocess() {
+        token_type = "library_path";
+        token_children.push_back(t0);
+        t0->postprocess();
+        token_children.push_back(t1);
+        t1->postprocess();
+        token_children.push_back(t2);
+        t2->postprocess();
+    }
+
     include::a0::b0* include::a0::b0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -14016,14 +14050,10 @@ namespace parser {
     include::a0::b1* include::a0::b1::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        terminal *_t0 = terminal::parse("<");
+        library_path *_t0 = library_path::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        identifier *_t1 = identifier::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        terminal *_t2 = terminal::parse(">");
-        if(_t2 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        include::a0::b1* retval = new include::a0::b1(_t0, _t1, _t2);
+        include::a0::b1* retval = new include::a0::b1(_t0);
         retval->start_ctx = _start_ctx;
         retval->end_ctx = get_ctx();
         return retval;
@@ -14032,8 +14062,6 @@ namespace parser {
     std::string include::a0::b1::to_string() {
         std::string ans = "";
         ans += t0->to_string();
-        ans += t1->to_string();
-        ans += t2->to_string();
         return ans;
     }
 
@@ -14041,10 +14069,6 @@ namespace parser {
         token_type = "include::a0::b1";
         token_children.push_back(t0);
         t0->postprocess();
-        token_children.push_back(t1);
-        t1->postprocess();
-        token_children.push_back(t2);
-        t2->postprocess();
     }
 
     include::a0* include::a0::parse() {

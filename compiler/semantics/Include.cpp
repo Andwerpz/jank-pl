@@ -13,7 +13,8 @@ Include* Include::convert(parser::include *inc) {
         return new Include(path, false);
     }
     else if(inc->t2->is_b1){
-        std::string path = Identifier::convert(inc->t2->t1->t1)->name;
+        parser::library_path *libpath = inc->t2->t1->t0;
+        std::string path = libpath->t1->to_string();
         return new Include(path, true);
     }
     else assert(false);
