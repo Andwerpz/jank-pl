@@ -5,9 +5,7 @@
 	"publisher": "andwerp",
 	"version": "1.0.0",
 	"categories": [],
-	"keywords": [
-		"multi-root ready"
-	],
+	"keywords": [],
 	"engines": {
 		"vscode": "^1.100.0"
 	},
