@@ -1,4 +1,4 @@
-// Date Generated : 08-11-2025 13:36:32
+// Date Generated : 08-11-2025 20:46:39
 #pragma once
 #include <vector>
 #include <string>
@@ -14,7 +14,7 @@ namespace parser {
     struct token;
 
     void set_s(std::string& ns);
-    bool check_finished_parsing();
+    bool check_finished_parsing(bool prettyprint);
     parse_context get_ctx();
 
     struct parse_context {

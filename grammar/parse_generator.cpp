@@ -1624,7 +1624,7 @@ void generate_h(grammar *g) {
         cout << indent() << "struct token;\n";
         cout << "\n";
         cout << indent() << "void set_s(std::string& ns);\n";
-        cout << indent() << "bool check_finished_parsing();\n";
+        cout << indent() << "bool check_finished_parsing(bool prettyprint);\n";
         cout << indent() << "parse_context get_ctx();\n";
 
         string tmp = 
@@ -1710,7 +1710,6 @@ void generate_cpp(grammar *g) {
 
     //initializes the parse controller
     void set_s(std::string& ns) {
-        assert(ns.size() != 0);
         s = ns;
         max_parse = 0;
         ctx = {0, 0, 0};
@@ -1783,12 +1782,12 @@ void generate_cpp(grammar *g) {
     }
 
     //call this when you think you are done
-    bool check_finished_parsing() {
+    bool check_finished_parsing(bool prettyprint) {
         if(ctx.ptr != s.size()) {
             assert(max_parse >= 0 && max_parse <= s.size());
             //it could be the case that all the tokens are consumed, but the pattern isn't done parsing
             if(max_parse == s.size()) max_parse -= 1;   
-            prettyprint_at_ind(max_parse);
+            if(prettyprint) prettyprint_at_ind(max_parse);
             return false;
         }
         return true;

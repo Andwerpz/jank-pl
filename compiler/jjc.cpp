@@ -147,7 +147,7 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
 
             parser::set_s(code);
             parser::program *pp = parser::program::parse();
-            if(!parser::check_finished_parsing()) {
+            if(!parser::check_finished_parsing(true)) {
                 std::cout << "SYNTAX ERROR\n";
                 return 1;
             }

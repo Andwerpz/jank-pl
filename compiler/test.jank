@@ -1,18 +1,3 @@
-#include <iostream>;
-#include <random>;
-#include <assert>;
-#include <string>;
-#include <vector>;
-#include <pair>;
-
-typedef i32 int;
-typedef u64 ll;
-typedef vector<int> vi;
-typedef vector<vi> vvi;
-typedef vector<ll> vl;
-typedef vector<vl> vvl;
-typedef pair<int, int> pii;
-typedef pair<ll, ll> pll;
 
 i32 main() {
 
