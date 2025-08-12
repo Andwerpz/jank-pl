@@ -4,7 +4,7 @@
 	"author": "Andrew Li",
 	"publisher": "andwerp",
 	"icon": "janky.png",
-	"version": "2.52.4",
+	"version": "2.52.9",
 	"categories": [],
 	"keywords": [],
 	"engines": {
@@ -18,8 +18,14 @@
 		"languages": [
 			{
 				"id": "jank",
-				"extensions": [".jank"],
-				"configuration": "./language-configuration.json"
+				"extensions": [
+					".jank"
+				],
+				"configuration": "./language-configuration.json",
+				"icon": {
+					"light": "janky.png",
+					"dark": "janky.png"
+				}
 			}
 		],
 		"configuration": {
