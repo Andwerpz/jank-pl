@@ -3,7 +3,8 @@
 	"description": "jank language server",
 	"author": "Andrew Li",
 	"publisher": "andwerp",
-	"version": "1.0.0",
+	"icon": "janky.png",
+	"version": "2.52.4",
 	"categories": [],
 	"keywords": [],
 	"engines": {
