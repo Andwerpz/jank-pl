@@ -26,6 +26,8 @@ cd ../testing && make all    # Build test runner
 ./main.exe run-tests         # Verify installation
 ``` 
 
+There also is a VSCode extension for jank, just look up `jank-language-server`. It currently only does syntax highlighting and it only works on linux. 
+
 ## Usage
 
 ```bash

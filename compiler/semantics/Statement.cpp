@@ -9,6 +9,7 @@
 #include "Overload.h"
 #include "primitives.h"
 #include "Literal.h"
+#include "InlineASMAccess.h"
 
 // -- CONSTRUCTOR --
 DeclarationStatement::DeclarationStatement(Declaration *_declaration) {
@@ -24,8 +25,8 @@ ReturnStatement::ReturnStatement(Expression* expr) {
     else opt_expr = expr;
 }
 
-ASMStatement::ASMStatement(std::string _asm_str) {
-    asm_str = _asm_str;
+InlineASMStatement::InlineASMStatement(std::vector<std::variant<std::string, InlineASMAccess*>> _tokens) {
+    tokens = _tokens;
 }
 
 BreakStatement::BreakStatement() {
@@ -102,8 +103,18 @@ SimpleStatement* SimpleStatement::convert(parser::simple_statement *s) {
         return new ExpressionStatement(expr);
     }
     else if(s->is_a5) { //inline asm
-        std::string asm_str = StringLiteral::convert(s->t5->t0->t4)->val;
-        return new ASMStatement(asm_str);
+        std::vector<std::variant<std::string, InlineASMAccess*>> tokens;
+        parser::inline_asm_string *str = s->t5->t0->t3;
+        for(int i = 0; i < str->t1.size(); i++){
+            if(str->t1[i]->is_b0) {         //inline access
+                tokens.push_back(InlineASMAccess::convert(str->t1[i]->t0->t0));
+            }
+            else if(str->t1[i]->is_b1) {    //string
+                tokens.push_back(str->t1[i]->t1->to_string());
+            }
+            else assert(false);
+        }
+        return new InlineASMStatement(tokens);
     }
     else assert(false);
 }
@@ -173,7 +184,7 @@ bool ReturnStatement::is_always_returning() {
     return true;
 }
 
-bool ASMStatement::is_always_returning() {
+bool InlineASMStatement::is_always_returning() {
     //not really accurate, but undefined behaviour is up to the user
     return false;
 }
@@ -328,7 +339,32 @@ bool ReturnStatement::is_well_formed() {
     return true;
 }
 
-bool ASMStatement::is_well_formed() {
+bool InlineASMStatement::is_well_formed() {
+    //we should only have one InlineASMAccess
+    int access_cnt = 0;
+    std::string asm_str = "";
+    for(int i = 0; i < tokens.size(); i++){
+        if(std::holds_alternative<std::string>(tokens[i])) {
+            std::string tok = std::get<std::string>(tokens[i]);
+            asm_str += tok;
+        }
+        else if(std::holds_alternative<InlineASMAccess*>(tokens[i])) {
+            if(access_cnt != 0) {
+                std::cout << "Cannot have more than 1 inline access\n";
+                return false;
+            }
+
+            InlineASMAccess *access = std::get<InlineASMAccess*>(tokens[i]);
+            if(!access->is_well_formed()) {
+                std::cout << "InlineASMAccess not well formed\n";
+                return false;
+            }
+            access->emit_asm();
+            asm_str += access->get_addr();
+        }
+        else assert(false);
+    }
+
     //let the assembler decide
     fout << indent() << asm_str << "\n";
     return true;
@@ -576,8 +612,20 @@ Statement* ReturnStatement::make_copy() {
     return new ReturnStatement(_expr);
 }
 
-Statement* ASMStatement::make_copy() {
-    return new ASMStatement(asm_str);
+Statement* InlineASMStatement::make_copy() {
+    std::vector<std::variant<std::string, InlineASMAccess*>> _tokens;
+    for(int i = 0; i < tokens.size(); i++){
+        if(std::holds_alternative<std::string>(tokens[i])) {
+            std::string tok = std::get<std::string>(tokens[i]);
+            _tokens.push_back(tok);
+        }
+        else if(std::holds_alternative<InlineASMAccess*>(tokens[i])) {
+            InlineASMAccess *access = std::get<InlineASMAccess*>(tokens[i]);
+            _tokens.push_back(access->make_copy());
+        }
+        else assert(false);
+    }
+    return new InlineASMStatement(_tokens);
 }
 
 Statement* BreakStatement::make_copy(){
@@ -645,7 +693,7 @@ bool ReturnStatement::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-bool ASMStatement::replace_templated_types(TemplateMapping *mapping) {
+bool InlineASMStatement::replace_templated_types(TemplateMapping *mapping) {
     return true;    //do nothing
 }
 
@@ -703,7 +751,7 @@ bool ReturnStatement::look_for_templates() {
     return true;
 }
 
-bool ASMStatement::look_for_templates() {
+bool InlineASMStatement::look_for_templates() {
     return true;    //do nothing
 }
 
@@ -757,8 +805,21 @@ std::string ReturnStatement::to_string() {
     return ret;
 }
 
-std::string ASMStatement::to_string() {
-    return "asm!(\"" + asm_str + "\");";
+std::string InlineASMStatement::to_string() {
+    std::string asm_str = "asm!(\"";
+    for(int i = 0; i < tokens.size(); i++){
+        if(std::holds_alternative<std::string>(tokens[i])) {
+            std::string tok = std::get<std::string>(tokens[i]);
+            asm_str += tok;
+        }
+        else if(std::holds_alternative<InlineASMAccess*>(tokens[i])) {
+            InlineASMAccess *access = std::get<InlineASMAccess*>(tokens[i]);
+            asm_str += access->to_string();
+        }
+        else assert(false);
+    }
+    asm_str += "\");";
+    return asm_str;
 }
 
 std::string BreakStatement::to_string() {

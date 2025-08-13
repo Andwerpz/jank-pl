@@ -19,3 +19,5 @@ jank: $(GENERATOR_EXE) jank/jank.ebnf
 # Optional cleanup
 clean:
 	rm -f $(GENERATOR_EXE)
+
+.PHONY: jank clean

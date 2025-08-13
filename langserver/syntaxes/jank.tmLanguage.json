@@ -3,8 +3,8 @@
   "name": "jank",
   "patterns": [
     { "include": "#comments" },
-	{ "include": "#strings" },
-	{ "include": "#chars" }
+    { "include": "#strings" },
+    { "include": "#chars" }
   ],
   "repository": {
     "comments": {
@@ -23,7 +23,7 @@
         }
       ]
     },
-	"strings": {
+    "strings": {
       "patterns": [
         {
           "name": "string.quoted.double.jank",

@@ -40,7 +40,11 @@ struct highlight_token {
 	}
 };
 
-void generate_highlight_tokens(parser::token *tok, std::vector<highlight_token>& out_tokens, bool in_struct) {
+void generate_highlight_tokens(parser::token *tok, bool in_struct);
+
+std::vector<highlight_token> out_tokens;
+
+void generate_highlight_tokens(parser::token *tok, bool in_struct) {
 	//types
 	if(tok->token_type == "base_type") {
 		//builtin types
@@ -55,7 +59,7 @@ void generate_highlight_tokens(parser::token *tok, std::vector<highlight_token>&
 
 	//strings
 	if(tok->token_type == "literal_string" || tok->token_type == "literal_char" ||
-		tok->token_type == "library_path") {
+		tok->token_type == "library_path" || tok->token_type == "inline_asm_string") {
 		out_tokens.push_back(highlight_token(tok, "string"));
 		return;
 	}
@@ -85,7 +89,7 @@ void generate_highlight_tokens(parser::token *tok, std::vector<highlight_token>&
 	//generate highlighting for children
 	if(tok->token_type == "struct_definition") in_struct = true;
 	for(int i = 0; i < tok->token_children.size(); i++){
-		generate_highlight_tokens(tok->token_children[i], out_tokens, in_struct);
+		generate_highlight_tokens(tok->token_children[i], in_struct);
 	}
 }
 
@@ -103,14 +107,13 @@ int main() {
 	p->postprocess();
 
 	//generate highlighting tokens
-	std::vector<highlight_token> tokens;
-	generate_highlight_tokens(p, tokens, false);
+	generate_highlight_tokens(p, false);
 
 	//output
 	std::cout << "[";
-	for(int i = 0; i < tokens.size(); i++){
-		std::cout << tokens[i].to_json_str();
-		if(i != tokens.size() - 1) std::cout << ", ";
+	for(int i = 0; i < out_tokens.size(); i++){
+		std::cout << out_tokens[i].to_json_str();
+		if(i != out_tokens.size() - 1) std::cout << ", ";
 	}
 	std::cout << "]";
 

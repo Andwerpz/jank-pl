@@ -2,10 +2,12 @@
 #include "../parser/parser.h"
 #include <optional>
 #include <vector>
+#include <variant>
 
 struct Declaration;
 struct Expression;
 struct TemplateMapping;
+struct InlineASMAccess;
 
 struct Statement {
     static Statement* convert(parser::statement *s);
@@ -60,9 +62,9 @@ struct ReturnStatement : public SimpleStatement {
     std::string to_string() override;
 };
 
-struct ASMStatement : public SimpleStatement {
-    std::string asm_str;
-    ASMStatement(std::string _asm_str);
+struct InlineASMStatement : public SimpleStatement {
+    std::vector<std::variant<std::string, InlineASMAccess*>> tokens;
+    InlineASMStatement(std::vector<std::variant<std::string, InlineASMAccess*>> _tokens);
     bool is_well_formed() override;
     bool is_always_returning() override;
     Statement* make_copy() override;

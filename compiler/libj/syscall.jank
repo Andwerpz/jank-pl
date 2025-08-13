@@ -64,3 +64,7 @@ pid_t sys_getpid() {
 pid_t sys_wait4(pid_t pid, i32* wstatus, i32 options, void* rusage) {
     return syscall(61, pid_t, pid, wstatus, options, rusage);
 }
+
+u64 sys_sched_yield() {
+    return syscall(24, u64);
+}

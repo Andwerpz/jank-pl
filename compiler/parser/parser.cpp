@@ -1,4 +1,4 @@
-// Date Generated : 08-12-2025 01:49:40
+// Date Generated : 08-13-2025 16:22:21
 #include "parser.h"
 
 namespace parser {
@@ -6753,72 +6753,28 @@ namespace parser {
         t2->postprocess();
     }
 
-    inline_dereferencing* inline_dereferencing::parse() {
+    inline_variable* inline_variable::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        terminal *_t0 = terminal::parse("*");
+        identifier *_t0 = identifier::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t1 = ows::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        identifier *_t2 = identifier::parse();
-        if(_t2 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        inline_dereferencing* retval = new inline_dereferencing(_t0, _t1, _t2);
+        inline_variable* retval = new inline_variable(_t0);
         retval->start_ctx = _start_ctx;
         retval->end_ctx = get_ctx();
         return retval;
     }
 
-    std::string inline_dereferencing::to_string() {
+    std::string inline_variable::to_string() {
         std::string ans = "";
         ans += t0->to_string();
-        ans += t1->to_string();
-        ans += t2->to_string();
         return ans;
     }
 
-    void inline_dereferencing::postprocess() {
-        token_type = "inline_dereferencing";
+    void inline_variable::postprocess() {
+        token_type = "inline_variable";
         token_children.push_back(t0);
         t0->postprocess();
-        token_children.push_back(t1);
-        t1->postprocess();
-        token_children.push_back(t2);
-        t2->postprocess();
-    }
-
-    inline_referencing* inline_referencing::parse() {
-        parse_context _start_ctx = get_ctx();
-        push_stack();
-        terminal *_t0 = terminal::parse("@");
-        if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t1 = ows::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        identifier *_t2 = identifier::parse();
-        if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        rm_stack();
-        inline_referencing* retval = new inline_referencing(_t0, _t1, _t2);
-        retval->start_ctx = _start_ctx;
-        retval->end_ctx = get_ctx();
-        return retval;
-    }
-
-    std::string inline_referencing::to_string() {
-        std::string ans = "";
-        ans += t0->to_string();
-        ans += t1->to_string();
-        ans += t2->to_string();
-        return ans;
-    }
-
-    void inline_referencing::postprocess() {
-        token_type = "inline_referencing";
-        token_children.push_back(t0);
-        t0->postprocess();
-        token_children.push_back(t1);
-        t1->postprocess();
-        token_children.push_back(t2);
-        t2->postprocess();
     }
 
     inline_member_variable::a0::b0* inline_member_variable::a0::b0::parse() {
@@ -6937,34 +6893,1001 @@ namespace parser {
         t2->postprocess();
     }
 
-    inline_variable* inline_variable::parse() {
+    inline_dereferencing* inline_dereferencing::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        identifier *_t0 = identifier::parse();
+        terminal *_t0 = terminal::parse("*");
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        identifier *_t2 = identifier::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        inline_variable* retval = new inline_variable(_t0);
+        inline_dereferencing* retval = new inline_dereferencing(_t0, _t1, _t2);
         retval->start_ctx = _start_ctx;
         retval->end_ctx = get_ctx();
         return retval;
     }
 
-    std::string inline_variable::to_string() {
+    std::string inline_dereferencing::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2->to_string();
+        return ans;
+    }
+
+    void inline_dereferencing::postprocess() {
+        token_type = "inline_dereferencing";
+        token_children.push_back(t0);
+        t0->postprocess();
+        token_children.push_back(t1);
+        t1->postprocess();
+        token_children.push_back(t2);
+        t2->postprocess();
+    }
+
+    inline_symbol::a0* inline_symbol::a0::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("[");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a0* retval = new inline_symbol::a0(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a0::to_string() {
         std::string ans = "";
         ans += t0->to_string();
         return ans;
     }
 
-    void inline_variable::postprocess() {
-        token_type = "inline_variable";
+    void inline_symbol::a0::postprocess() {
+        token_type = "inline_symbol::a0";
         token_children.push_back(t0);
         t0->postprocess();
     }
 
+    inline_symbol::a1* inline_symbol::a1::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("]");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a1* retval = new inline_symbol::a1(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a1::postprocess() {
+        token_type = "inline_symbol::a1";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a2* inline_symbol::a2::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("(");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a2* retval = new inline_symbol::a2(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a2::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a2::postprocess() {
+        token_type = "inline_symbol::a2";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a3* inline_symbol::a3::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse(")");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a3* retval = new inline_symbol::a3(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a3::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a3::postprocess() {
+        token_type = "inline_symbol::a3";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a4* inline_symbol::a4::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("<");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a4* retval = new inline_symbol::a4(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a4::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a4::postprocess() {
+        token_type = "inline_symbol::a4";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a5* inline_symbol::a5::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse(">");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a5* retval = new inline_symbol::a5(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a5::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a5::postprocess() {
+        token_type = "inline_symbol::a5";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a6* inline_symbol::a6::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("=");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a6* retval = new inline_symbol::a6(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a6::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a6::postprocess() {
+        token_type = "inline_symbol::a6";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a7* inline_symbol::a7::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("|");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a7* retval = new inline_symbol::a7(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a7::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a7::postprocess() {
+        token_type = "inline_symbol::a7";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a8* inline_symbol::a8::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse(".");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a8* retval = new inline_symbol::a8(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a8::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a8::postprocess() {
+        token_type = "inline_symbol::a8";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a9* inline_symbol::a9::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse(",");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a9* retval = new inline_symbol::a9(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a9::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a9::postprocess() {
+        token_type = "inline_symbol::a9";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a10* inline_symbol::a10::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse(";");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a10* retval = new inline_symbol::a10(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a10::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a10::postprocess() {
+        token_type = "inline_symbol::a10";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a11* inline_symbol::a11::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("-");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a11* retval = new inline_symbol::a11(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a11::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a11::postprocess() {
+        token_type = "inline_symbol::a11";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a12* inline_symbol::a12::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("+");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a12* retval = new inline_symbol::a12(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a12::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a12::postprocess() {
+        token_type = "inline_symbol::a12";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a13* inline_symbol::a13::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("_");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a13* retval = new inline_symbol::a13(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a13::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a13::postprocess() {
+        token_type = "inline_symbol::a13";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a14* inline_symbol::a14::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("*");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a14* retval = new inline_symbol::a14(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a14::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a14::postprocess() {
+        token_type = "inline_symbol::a14";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a15* inline_symbol::a15::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("?");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a15* retval = new inline_symbol::a15(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a15::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a15::postprocess() {
+        token_type = "inline_symbol::a15";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a16* inline_symbol::a16::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse(":");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a16* retval = new inline_symbol::a16(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a16::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a16::postprocess() {
+        token_type = "inline_symbol::a16";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a17* inline_symbol::a17::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("!");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a17* retval = new inline_symbol::a17(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a17::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a17::postprocess() {
+        token_type = "inline_symbol::a17";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a18* inline_symbol::a18::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("@");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a18* retval = new inline_symbol::a18(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a18::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a18::postprocess() {
+        token_type = "inline_symbol::a18";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a19* inline_symbol::a19::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("#");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a19* retval = new inline_symbol::a19(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a19::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a19::postprocess() {
+        token_type = "inline_symbol::a19";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a20* inline_symbol::a20::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("$");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a20* retval = new inline_symbol::a20(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a20::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a20::postprocess() {
+        token_type = "inline_symbol::a20";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a21* inline_symbol::a21::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("%");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a21* retval = new inline_symbol::a21(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a21::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a21::postprocess() {
+        token_type = "inline_symbol::a21";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a22* inline_symbol::a22::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("^");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a22* retval = new inline_symbol::a22(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a22::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a22::postprocess() {
+        token_type = "inline_symbol::a22";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a23* inline_symbol::a23::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("&");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a23* retval = new inline_symbol::a23(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a23::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a23::postprocess() {
+        token_type = "inline_symbol::a23";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a24* inline_symbol::a24::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("/");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a24* retval = new inline_symbol::a24(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a24::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a24::postprocess() {
+        token_type = "inline_symbol::a24";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a25* inline_symbol::a25::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("~");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a25* retval = new inline_symbol::a25(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a25::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a25::postprocess() {
+        token_type = "inline_symbol::a25";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol::a26* inline_symbol::a26::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("`");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_symbol::a26* retval = new inline_symbol::a26(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_symbol::a26::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_symbol::a26::postprocess() {
+        token_type = "inline_symbol::a26";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_symbol* inline_symbol::parse() {
+        parse_context _start_ctx = get_ctx();
+        if(auto x = inline_symbol::a0::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a1::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a2::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a3::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a4::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a5::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a6::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a7::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a8::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a9::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a10::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a11::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a12::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a13::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a14::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a15::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a16::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a17::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a18::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a19::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a20::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a21::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a22::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a23::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a24::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a25::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_symbol::a26::parse()) {
+            inline_symbol* retval = new inline_symbol(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        return nullptr;
+    }
+
+    std::string inline_symbol::to_string() {
+        if(is_a0) return t0->to_string();
+        if(is_a1) return t1->to_string();
+        if(is_a2) return t2->to_string();
+        if(is_a3) return t3->to_string();
+        if(is_a4) return t4->to_string();
+        if(is_a5) return t5->to_string();
+        if(is_a6) return t6->to_string();
+        if(is_a7) return t7->to_string();
+        if(is_a8) return t8->to_string();
+        if(is_a9) return t9->to_string();
+        if(is_a10) return t10->to_string();
+        if(is_a11) return t11->to_string();
+        if(is_a12) return t12->to_string();
+        if(is_a13) return t13->to_string();
+        if(is_a14) return t14->to_string();
+        if(is_a15) return t15->to_string();
+        if(is_a16) return t16->to_string();
+        if(is_a17) return t17->to_string();
+        if(is_a18) return t18->to_string();
+        if(is_a19) return t19->to_string();
+        if(is_a20) return t20->to_string();
+        if(is_a21) return t21->to_string();
+        if(is_a22) return t22->to_string();
+        if(is_a23) return t23->to_string();
+        if(is_a24) return t24->to_string();
+        if(is_a25) return t25->to_string();
+        if(is_a26) return t26->to_string();
+        assert(false);
+    }
+
+    void inline_symbol::postprocess() {
+        token_type = "inline_symbol";
+        if(is_a0) {
+            token_children.push_back(t0);
+            t0->postprocess();
+        }
+        if(is_a1) {
+            token_children.push_back(t1);
+            t1->postprocess();
+        }
+        if(is_a2) {
+            token_children.push_back(t2);
+            t2->postprocess();
+        }
+        if(is_a3) {
+            token_children.push_back(t3);
+            t3->postprocess();
+        }
+        if(is_a4) {
+            token_children.push_back(t4);
+            t4->postprocess();
+        }
+        if(is_a5) {
+            token_children.push_back(t5);
+            t5->postprocess();
+        }
+        if(is_a6) {
+            token_children.push_back(t6);
+            t6->postprocess();
+        }
+        if(is_a7) {
+            token_children.push_back(t7);
+            t7->postprocess();
+        }
+        if(is_a8) {
+            token_children.push_back(t8);
+            t8->postprocess();
+        }
+        if(is_a9) {
+            token_children.push_back(t9);
+            t9->postprocess();
+        }
+        if(is_a10) {
+            token_children.push_back(t10);
+            t10->postprocess();
+        }
+        if(is_a11) {
+            token_children.push_back(t11);
+            t11->postprocess();
+        }
+        if(is_a12) {
+            token_children.push_back(t12);
+            t12->postprocess();
+        }
+        if(is_a13) {
+            token_children.push_back(t13);
+            t13->postprocess();
+        }
+        if(is_a14) {
+            token_children.push_back(t14);
+            t14->postprocess();
+        }
+        if(is_a15) {
+            token_children.push_back(t15);
+            t15->postprocess();
+        }
+        if(is_a16) {
+            token_children.push_back(t16);
+            t16->postprocess();
+        }
+        if(is_a17) {
+            token_children.push_back(t17);
+            t17->postprocess();
+        }
+        if(is_a18) {
+            token_children.push_back(t18);
+            t18->postprocess();
+        }
+        if(is_a19) {
+            token_children.push_back(t19);
+            t19->postprocess();
+        }
+        if(is_a20) {
+            token_children.push_back(t20);
+            t20->postprocess();
+        }
+        if(is_a21) {
+            token_children.push_back(t21);
+            t21->postprocess();
+        }
+        if(is_a22) {
+            token_children.push_back(t22);
+            t22->postprocess();
+        }
+        if(is_a23) {
+            token_children.push_back(t23);
+            t23->postprocess();
+        }
+        if(is_a24) {
+            token_children.push_back(t24);
+            t24->postprocess();
+        }
+        if(is_a25) {
+            token_children.push_back(t25);
+            t25->postprocess();
+        }
+        if(is_a26) {
+            token_children.push_back(t26);
+            t26->postprocess();
+        }
+    }
     inline_access::a0::b0* inline_access::a0::b0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        inline_referencing *_t0 = inline_referencing::parse();
+        inline_member_variable *_t0 = inline_member_variable::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         inline_access::a0::b0* retval = new inline_access::a0::b0(_t0);
@@ -6988,7 +7911,7 @@ namespace parser {
     inline_access::a0::b1* inline_access::a0::b1::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        inline_member_variable *_t0 = inline_member_variable::parse();
+        inline_dereferencing *_t0 = inline_dereferencing::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         inline_access::a0::b1* retval = new inline_access::a0::b1(_t0);
@@ -7122,6 +8045,280 @@ namespace parser {
         t4->postprocess();
     }
 
+    inline_asm_string::a0::b0* inline_asm_string::a0::b0::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        inline_access *_t0 = inline_access::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_asm_string::a0::b0* retval = new inline_asm_string::a0::b0(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_asm_string::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_asm_string::a0::b0::postprocess() {
+        token_type = "inline_asm_string::a0::b0";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_asm_string::a0::b1::c0::d0* inline_asm_string::a0::b1::c0::d0::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        alpha *_t0 = alpha::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_asm_string::a0::b1::c0::d0* retval = new inline_asm_string::a0::b1::c0::d0(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_asm_string::a0::b1::c0::d0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_asm_string::a0::b1::c0::d0::postprocess() {
+        token_type = "inline_asm_string::a0::b1::c0::d0";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_asm_string::a0::b1::c0::d1* inline_asm_string::a0::b1::c0::d1::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        digit *_t0 = digit::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_asm_string::a0::b1::c0::d1* retval = new inline_asm_string::a0::b1::c0::d1(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_asm_string::a0::b1::c0::d1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_asm_string::a0::b1::c0::d1::postprocess() {
+        token_type = "inline_asm_string::a0::b1::c0::d1";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_asm_string::a0::b1::c0::d2* inline_asm_string::a0::b1::c0::d2::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        inline_symbol *_t0 = inline_symbol::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_asm_string::a0::b1::c0::d2* retval = new inline_asm_string::a0::b1::c0::d2(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_asm_string::a0::b1::c0::d2::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_asm_string::a0::b1::c0::d2::postprocess() {
+        token_type = "inline_asm_string::a0::b1::c0::d2";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_asm_string::a0::b1::c0::d3* inline_asm_string::a0::b1::c0::d3::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse(" ");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_asm_string::a0::b1::c0::d3* retval = new inline_asm_string::a0::b1::c0::d3(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_asm_string::a0::b1::c0::d3::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_asm_string::a0::b1::c0::d3::postprocess() {
+        token_type = "inline_asm_string::a0::b1::c0::d3";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_asm_string::a0::b1::c0* inline_asm_string::a0::b1::c0::parse() {
+        parse_context _start_ctx = get_ctx();
+        if(auto x = inline_asm_string::a0::b1::c0::d0::parse()) {
+            inline_asm_string::a0::b1::c0* retval = new inline_asm_string::a0::b1::c0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_asm_string::a0::b1::c0::d1::parse()) {
+            inline_asm_string::a0::b1::c0* retval = new inline_asm_string::a0::b1::c0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_asm_string::a0::b1::c0::d2::parse()) {
+            inline_asm_string::a0::b1::c0* retval = new inline_asm_string::a0::b1::c0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_asm_string::a0::b1::c0::d3::parse()) {
+            inline_asm_string::a0::b1::c0* retval = new inline_asm_string::a0::b1::c0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        return nullptr;
+    }
+
+    std::string inline_asm_string::a0::b1::c0::to_string() {
+        if(is_d0) return t0->to_string();
+        if(is_d1) return t1->to_string();
+        if(is_d2) return t2->to_string();
+        if(is_d3) return t3->to_string();
+        assert(false);
+    }
+
+    void inline_asm_string::a0::b1::c0::postprocess() {
+        token_type = "inline_asm_string::a0::b1::c0";
+        if(is_d0) {
+            token_children.push_back(t0);
+            t0->postprocess();
+        }
+        if(is_d1) {
+            token_children.push_back(t1);
+            t1->postprocess();
+        }
+        if(is_d2) {
+            token_children.push_back(t2);
+            t2->postprocess();
+        }
+        if(is_d3) {
+            token_children.push_back(t3);
+            t3->postprocess();
+        }
+    }
+    inline_asm_string::a0::b1* inline_asm_string::a0::b1::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        inline_asm_string::a0::b1::c0 *_t0 = inline_asm_string::a0::b1::c0::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_asm_string::a0::b1* retval = new inline_asm_string::a0::b1(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_asm_string::a0::b1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void inline_asm_string::a0::b1::postprocess() {
+        token_type = "inline_asm_string::a0::b1";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    inline_asm_string::a0* inline_asm_string::a0::parse() {
+        parse_context _start_ctx = get_ctx();
+        if(auto x = inline_asm_string::a0::b0::parse()) {
+            inline_asm_string::a0* retval = new inline_asm_string::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = inline_asm_string::a0::b1::parse()) {
+            inline_asm_string::a0* retval = new inline_asm_string::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        return nullptr;
+    }
+
+    std::string inline_asm_string::a0::to_string() {
+        if(is_b0) return t0->to_string();
+        if(is_b1) return t1->to_string();
+        assert(false);
+    }
+
+    void inline_asm_string::a0::postprocess() {
+        token_type = "inline_asm_string::a0";
+        if(is_b0) {
+            token_children.push_back(t0);
+            t0->postprocess();
+        }
+        if(is_b1) {
+            token_children.push_back(t1);
+            t1->postprocess();
+        }
+    }
+    inline_asm_string* inline_asm_string::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("\"");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::vector<inline_asm_string::a0*> _t1;
+        while(true) {
+            inline_asm_string::a0 *tmp = inline_asm_string::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        terminal *_t2 = terminal::parse("\"");
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        inline_asm_string* retval = new inline_asm_string(_t0, _t1, _t2);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string inline_asm_string::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        ans += t2->to_string();
+        return ans;
+    }
+
+    void inline_asm_string::postprocess() {
+        token_type = "inline_asm_string";
+        token_children.push_back(t0);
+        t0->postprocess();
+        for(int i = 0; i < t1.size(); i++) {
+            token_children.push_back(t1[i]);
+            t1[i]->postprocess();
+        }
+        token_children.push_back(t2);
+        t2->postprocess();
+    }
+
     inline_asm* inline_asm::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -7131,16 +8328,12 @@ namespace parser {
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
         terminal *_t2 = terminal::parse("(");
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t3 = ows::parse();
+        inline_asm_string *_t3 = inline_asm_string::parse();
         if(_t3 == nullptr) {pop_stack(); return nullptr;}
-        literal_string *_t4 = literal_string::parse();
+        terminal *_t4 = terminal::parse(")");
         if(_t4 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t5 = ows::parse();
-        if(_t5 == nullptr) {pop_stack(); return nullptr;}
-        terminal *_t6 = terminal::parse(")");
-        if(_t6 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        inline_asm* retval = new inline_asm(_t0, _t1, _t2, _t3, _t4, _t5, _t6);
+        inline_asm* retval = new inline_asm(_t0, _t1, _t2, _t3, _t4);
         retval->start_ctx = _start_ctx;
         retval->end_ctx = get_ctx();
         return retval;
@@ -7153,8 +8346,6 @@ namespace parser {
         ans += t2->to_string();
         ans += t3->to_string();
         ans += t4->to_string();
-        ans += t5->to_string();
-        ans += t6->to_string();
         return ans;
     }
 
@@ -7170,10 +8361,6 @@ namespace parser {
         t3->postprocess();
         token_children.push_back(t4);
         t4->postprocess();
-        token_children.push_back(t5);
-        t5->postprocess();
-        token_children.push_back(t6);
-        t6->postprocess();
     }
 
     alpha::a0* alpha::a0::parse() {

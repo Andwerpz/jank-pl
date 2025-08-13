@@ -1,11 +1,19 @@
 #include "jank.ebnf" ; 
 
-inline_dereferencing = "*" , ows , identifier ;
-inline_referencing = "@" , ows , identifier ;
-inline_member_variable = identifier , ( "." | "->" ) , identifier ;
-inline_variable = identifier ;
-inline_access = "{" , ows , ( inline_referencing | inline_member_variable | inline_variable ) , ows , "}" ;
-
 (* so we probably want one inline asm block to only access one variable *)
-(* inline_asm = "asm!(\"" , { inline_access | ( alpha | digit | escape | symbol | " " ) } , "\")" ; *)
-inline_asm = "asm!" , ows , "(" , ows , literal_string , ows , ")" ;
+(* this can be enforced during semantic phase *)
+
+inline_variable = identifier ;
+inline_member_variable = identifier , ( "." | "->" ) , identifier ;
+inline_dereferencing = "*" , ows , identifier ;
+
+inline_symbol = "[" | "]" | "(" | ")" | "<" | ">"       (* any symbol that is valid to type within a string minus brackets *)
+        | "=" | "|" | "." | "," | ";" | "-" | "+" | "_"
+        | "*" | "?" | ":" | "!" | "@" | "#" | "$" | "%"
+        | "^" | "&" | "/" | "~" | "`" ;
+
+inline_access = "{" , ows , ( inline_member_variable | inline_dereferencing | inline_variable ) , ows , "}" ;
+inline_asm_string = "\"" , { inline_access | ( alpha | digit | inline_symbol | " " ) } , "\"" ;
+inline_asm = "asm!" , ows , "(" , inline_asm_string , ")" ;
+
+(* inline_asm = "asm!" , ows , "(" , ows , literal_string , ows , ")" ; *)

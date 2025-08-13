@@ -1,25 +1,61 @@
-#include <iostream>;
-#include <random>;
-#include <assert>;
-#include <string>;
+#include <put>;
+#include <jstring>;
 #include <vector>;
-#include <pair>;
+#include <iostream>;
+#include <assert>;
 
-typedef i32 int;
-typedef u64 ll;
-typedef vector<int> vi;
-typedef vector<vi> vvi;
-typedef vector<ll> vl;
-typedef vector<vl> vvl;
-typedef pair<int, int> pii;
-typedef pair<ll, ll> pll;
+i32 glob = 100;
+
+struct A {
+    i32 foo;
+    u64 bar;
+}
+
+void test_basic() {
+    {
+        i32 x = 10;
+        asm!("movw $20, {x}");
+        assert(x == 20);
+    }
+
+    {
+        asm!("movw $25, {glob}");
+        assert(glob == 25);
+    }
+
+    {
+        i32* x = $i32* malloc(sizeof(i32));
+        asm!("movw $234, {*x}");
+        assert(*x == 234);
+        free($void* x, sizeof(i32));
+    }
+
+    {
+        A foo = new A();
+        asm!("movw $12, {foo.foo}");
+        asm!("movq $0x100, {foo.bar}");
+        assert(foo.foo == 12);
+        assert(foo.bar == 0x100);
+    }
+    
+    {
+        A* foo = $A* malloc(sizeof(A));
+        *foo := new A();
+        asm!("movw $139, {foo->foo}");
+        asm!("movq $0x1203, {foo->bar}");
+        assert(foo->foo == 139);
+        assert(foo->bar == 0x1203);
+        foo->~();
+        free($void* foo, sizeof(A));
+    }
+    
+    cout << "test basic passed\n";
+}
 
 i32 main() {
 
-    int n = 10;
-    for(int i = 0; i < n; i++){
-        cout << "test : " << i << "\n";
-    }
+    test_basic();
+    cout << "all tests passed\n";
 
     return 0;
 }
