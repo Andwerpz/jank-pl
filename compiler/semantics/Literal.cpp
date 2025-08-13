@@ -223,6 +223,16 @@ Type* HexLiteral::resolve_type() {
         return nullptr;
     }
 
+    // - make sure all characters are correct
+    for(int i = 0; i < hex_str.size(); i++){
+        char c = hex_str[i];
+        if('0' <= c && c <= '9') continue;
+        if('a' <= c && c <= 'f') continue;
+        if('A' <= c && c <= 'F') continue;
+        std::cout << "Invalid hex character : " << c << " in hex string : " << hex_str << "\n";
+        return nullptr;
+    }
+
     return primitives::u64->make_copy();
 }
 

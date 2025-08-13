@@ -4,7 +4,7 @@ i32 main() {
     
     cout << 0xfffffffffc000000 << "\n";
     cout << 0b11101010001100101010 << "\n";
-    cout << 0xffedcba987654321 << "\n";
+    cout << 0xFFEDCBA987654321 << "\n";
 
     return 0;
 }

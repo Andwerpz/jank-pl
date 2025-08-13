@@ -6,7 +6,7 @@ literal_float = < digit > , "." , < digit > ;
 literal_char = "'" , ( alpha | digit | escape | symbol | " " ) , "'" ;
 literal_string = "\"" , { alpha | digit | escape | symbol | " " } , "\"" ;
 literal_syscall = "syscall" , ows , "(" , ows , literal_integer , ows , "," , ows , type , [ ows , "," , ows , argument_list ] , ows , ")" ;
-literal_hex = "0x" , < digit | "a" | "b" | "c" | "d" | "e" | "f" > ;
+literal_hex = "0x" , < digit | "a" | "b" | "c" | "d" | "e" | "f" | "A" | "B" | "C" | "D" | "E" | "F" > ;
 literal_binary = "0b" , < "0" | "1" > ;
 literal_function_pointer = "#" , "<" , ows , identifier , ows , "(" , ows , type_list , ows , ")" , ows , ">" ;
 

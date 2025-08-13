@@ -160,6 +160,8 @@ bool InlineASMDereferencing::is_well_formed() {
 // -- EMIT ASM --
 // use %r15 as a temp register. In the end, %r15 should hold addr
 // perhaps should have some way to specify which register to use
+// maybe something like 'asm!("movq %0x100, {var:%r14}");'
+// it will be optional, if it's not specified will use %r15 automatically
 void InlineASMVariable::emit_asm() {
     Variable *v = get_variable(id);
     assert(v != nullptr);

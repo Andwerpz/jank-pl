@@ -1,4 +1,4 @@
-// Date Generated : 08-13-2025 16:22:21
+// Date Generated : 08-13-2025 17:49:08
 #include "parser.h"
 
 namespace parser {
@@ -1348,6 +1348,150 @@ namespace parser {
         t0->postprocess();
     }
 
+    literal_hex::a0::b7* literal_hex::a0::b7::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("A");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_hex::a0::b7* retval = new literal_hex::a0::b7(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_hex::a0::b7::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal_hex::a0::b7::postprocess() {
+        token_type = "literal_hex::a0::b7";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal_hex::a0::b8* literal_hex::a0::b8::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("B");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_hex::a0::b8* retval = new literal_hex::a0::b8(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_hex::a0::b8::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal_hex::a0::b8::postprocess() {
+        token_type = "literal_hex::a0::b8";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal_hex::a0::b9* literal_hex::a0::b9::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("C");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_hex::a0::b9* retval = new literal_hex::a0::b9(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_hex::a0::b9::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal_hex::a0::b9::postprocess() {
+        token_type = "literal_hex::a0::b9";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal_hex::a0::b10* literal_hex::a0::b10::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("D");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_hex::a0::b10* retval = new literal_hex::a0::b10(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_hex::a0::b10::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal_hex::a0::b10::postprocess() {
+        token_type = "literal_hex::a0::b10";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal_hex::a0::b11* literal_hex::a0::b11::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("E");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_hex::a0::b11* retval = new literal_hex::a0::b11(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_hex::a0::b11::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal_hex::a0::b11::postprocess() {
+        token_type = "literal_hex::a0::b11";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal_hex::a0::b12* literal_hex::a0::b12::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("F");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_hex::a0::b12* retval = new literal_hex::a0::b12(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_hex::a0::b12::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal_hex::a0::b12::postprocess() {
+        token_type = "literal_hex::a0::b12";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
     literal_hex::a0* literal_hex::a0::parse() {
         parse_context _start_ctx = get_ctx();
         if(auto x = literal_hex::a0::b0::parse()) {
@@ -1392,6 +1536,42 @@ namespace parser {
             retval->end_ctx = get_ctx();
             return retval;
         }
+        if(auto x = literal_hex::a0::b7::parse()) {
+            literal_hex::a0* retval = new literal_hex::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = literal_hex::a0::b8::parse()) {
+            literal_hex::a0* retval = new literal_hex::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = literal_hex::a0::b9::parse()) {
+            literal_hex::a0* retval = new literal_hex::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = literal_hex::a0::b10::parse()) {
+            literal_hex::a0* retval = new literal_hex::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = literal_hex::a0::b11::parse()) {
+            literal_hex::a0* retval = new literal_hex::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = literal_hex::a0::b12::parse()) {
+            literal_hex::a0* retval = new literal_hex::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
         return nullptr;
     }
 
@@ -1403,6 +1583,12 @@ namespace parser {
         if(is_b4) return t4->to_string();
         if(is_b5) return t5->to_string();
         if(is_b6) return t6->to_string();
+        if(is_b7) return t7->to_string();
+        if(is_b8) return t8->to_string();
+        if(is_b9) return t9->to_string();
+        if(is_b10) return t10->to_string();
+        if(is_b11) return t11->to_string();
+        if(is_b12) return t12->to_string();
         assert(false);
     }
 
@@ -1435,6 +1621,30 @@ namespace parser {
         if(is_b6) {
             token_children.push_back(t6);
             t6->postprocess();
+        }
+        if(is_b7) {
+            token_children.push_back(t7);
+            t7->postprocess();
+        }
+        if(is_b8) {
+            token_children.push_back(t8);
+            t8->postprocess();
+        }
+        if(is_b9) {
+            token_children.push_back(t9);
+            t9->postprocess();
+        }
+        if(is_b10) {
+            token_children.push_back(t10);
+            t10->postprocess();
+        }
+        if(is_b11) {
+            token_children.push_back(t11);
+            t11->postprocess();
+        }
+        if(is_b12) {
+            token_children.push_back(t12);
+            t12->postprocess();
         }
     }
     literal_hex* literal_hex::parse() {
