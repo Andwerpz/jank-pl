@@ -289,6 +289,12 @@ bool ReturnStatement::is_well_formed() {
     
     //see if we need to return something
     if(!ft->equals(primitives::_void)) {
+        // - are we actually returning something?
+        if(!opt_expr.has_value()) {
+            std::cout << "Return has to return something for non-void function : " << enclosing_function->resolve_function_signature()->to_string() << "\n";
+            return false;
+        }
+
         assert(opt_expr.has_value());
         Expression *expr = opt_expr.value();
         Identifier *vid = new Identifier(create_new_tmp_variable_name());

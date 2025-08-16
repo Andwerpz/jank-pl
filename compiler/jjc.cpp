@@ -771,6 +771,7 @@ high priority: fix function call resolution
 
 
 some miscellaneous features:
+ - pointer arithmetic
  - array literals
  - better semantic error messages. 
    - would be nice if on failure, could print out the relevant code or smth. 

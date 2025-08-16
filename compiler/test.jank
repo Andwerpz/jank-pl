@@ -4,81 +4,13 @@
 #include <iostream>;
 #include <assert>;
 
-i32 glob = 100;
-
-struct A {
-    i32 foo;
-    u64 bar;
-
-    void do_stuff() {
-        asm!("movw $141, {this.foo}");
-        asm!("movq $0x1893, {this.bar}");
-    }
-}
-
-void test_basic() {
-    {
-        i32 x = 10;
-        asm!("movw $20, {x}");
-        assert(x == 20);
-    }
-
-    {
-        i32 x = 10;
-        i32& y = x;
-        asm!("movw $100, {y}");
-        assert(x == 100);
-        assert(y == 100);
-
-        i32& z = y;
-        asm!("movw $140, {x}");
-        assert(x == y && y == z && z == 140);
-    }
-
-    {
-        asm!("movw $25, {glob}");
-        assert(glob == 25);
-    }
-
-    {
-        i32* x = $i32* malloc(sizeof(i32));
-        asm!("movw $234, {*x}");
-        assert(*x == 234);
-        free($void* x, sizeof(i32));
-    }
-
-    {
-        A foo = new A();
-        asm!("movw $12, {foo.foo}");
-        asm!("movq $0x100, {foo.bar}");
-        assert(foo.foo == 12);
-        assert(foo.bar == 0x100);
-    }
-    
-    {
-        A* foo = $A* malloc(sizeof(A));
-        *foo := new A();
-        asm!("movw $139, {foo->foo}");
-        asm!("movq $0x1203, {foo->bar}");
-        assert(foo->foo == 139);
-        assert(foo->bar == 0x1203);
-        foo->~();
-        free($void* foo, sizeof(A));
-    }
-
-    {
-        A foo = new A();
-        foo.do_stuff();
-        assert(foo.foo == 141);
-        assert(foo.bar == 0x1893);
-    }
-
-    cout << "test basic passed\n";
+u64 test() {
+    return;
 }
 
 i32 main() {
 
-    test_basic();
+    test();
     cout << "all tests passed\n";
 
     return 0;
