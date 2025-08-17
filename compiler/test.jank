@@ -4,14 +4,25 @@
 #include <iostream>;
 #include <assert>;
 
-u64 test() {
-    return;
-}
-
 i32 main() {
 
-    test();
-    cout << "all tests passed\n";
+    {
+        u32 a = $u32 10;
+        u32 b = $u32 100;
+        cout << (b / a) << "\n";
+        b /= $u32 3;
+        cout << b << "\n";
+        cout << (a * b) << "\n";
+    }
+    
+    {
+        u16 a = $u16 10;
+        u16 b = $u16 100;
+        cout << (b / a) << "\n";
+        b /= $u16 3;
+        cout << b << "\n";
+        cout << (a * b) << "\n";
+    }
 
     return 0;
 }

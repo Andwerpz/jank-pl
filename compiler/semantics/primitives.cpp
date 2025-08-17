@@ -133,7 +133,7 @@ namespace primitives {
             else assert(false);
         }
 
-        //binary * / %
+        //binary / %
         if(is_signed) {
             if(sz_bytes < 4) {
                 add_operator_implementation(new OperatorSignature(p_int, "/", p_int), new BuiltinOperator(p_int, {
@@ -228,7 +228,7 @@ namespace primitives {
             else assert(false);
         }
         else {
-            if(sz_bytes < 8) {
+            if(sz_bytes < 4) {
                 add_operator_implementation(new OperatorSignature(p_int, "/", p_int), new BuiltinOperator(p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
@@ -259,6 +259,38 @@ namespace primitives {
                     "div %rbx",
                     "mov %rdx, %rax",
                     movz + " " + rax + ", %rax",
+                    mov + " " + rax + ", (%rcx)",
+                }));
+            }
+            else if(sz_bytes == 4) {
+                add_operator_implementation(new OperatorSignature(p_int, "/", p_int), new BuiltinOperator(p_int, {
+                    movs + " " + rax + ", %rax",
+                    movs + " " + rbx + ", %rbx",
+                    "cqo",
+                    "div %rbx",
+                    "mov %eax, %eax",
+                }));
+                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "/=", p_int), new BuiltinOperator(p_int, {
+                    movs + " " + rax + ", %rax",
+                    movs + " " + rbx + ", %rbx",
+                    "cqo",
+                    "div %rbx",
+                    "mov %eax, %eax",
+                    mov + " " + rax + ", (%rcx)",
+                }));
+                add_operator_implementation(new OperatorSignature(p_int, "%", p_int), new BuiltinOperator(p_int, {
+                    movs + " " + rax + ", %rax",
+                    movs + " " + rbx + ", %rbx",
+                    "cqo",
+                    "div %rbx",
+                    "mov %edx, %eax",
+                }));
+                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "%=", p_int), new BuiltinOperator(p_int, {
+                    movs + " " + rax + ", %rax",
+                    movs + " " + rbx + ", %rbx",
+                    "cqo",
+                    "div %rbx",
+                    "mov %edx, %eax",
                     mov + " " + rax + ", (%rcx)",
                 }));
             }
