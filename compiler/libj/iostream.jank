@@ -164,7 +164,17 @@ ostream& operator<<(ostream& stream, u8* s) {
     return stream;
 }
 
+ostream& operator<<(ostream& stream, i64 x) {
+    stream.write_to_fd(to_string(x));
+    return stream;
+}
+
 ostream& operator<<(ostream& stream, i32 x) {
+    stream.write_to_fd(to_string(x));
+    return stream;
+}
+
+ostream& operator<<(ostream& stream, i16 x) {
     stream.write_to_fd(to_string(x));
     return stream;
 }

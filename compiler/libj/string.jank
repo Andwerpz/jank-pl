@@ -226,6 +226,23 @@ string to_string(i32 x) {
     return ret;
 }
 
+string to_string(i16 x) {
+    if(x == $i16 0) return new string("0");
+    string ret = new string();
+    i32 is_neg = 0;
+    if(x < $i16 0) {
+        is_neg = 1;
+        x *= $i16 -1;
+    }
+    while(x) {
+        ret.push_back('0' + $u8 (x % $i16 10));
+        x /= $i16 10;
+    }
+    if(is_neg) ret.push_back('-');
+    ret.reverse();
+    return ret;
+}
+
 //jank implementation of float to string
 //each float consists of
 // - 1 sign bit

@@ -4,58 +4,79 @@
 #include <iostream>;
 #include <assert>;
 
-i32 glob = 100;
-
-struct A {
-    i32 foo;
-    u64 bar;
-}
-
-void test_basic() {
-    {
-        i32 x = 10;
-        asm!("movw $20, {x}");
-        assert(x == 20);
-    }
-
-    {
-        asm!("movw $25, {glob}");
-        assert(glob == 25);
-    }
-
-    {
-        i32* x = $i32* malloc(sizeof(i32));
-        asm!("movw $234, {*x}");
-        assert(*x == 234);
-        free($void* x, sizeof(i32));
-    }
-
-    {
-        A foo = new A();
-        asm!("movw $12, {foo.foo}");
-        asm!("movq $0x100, {foo.bar}");
-        assert(foo.foo == 12);
-        assert(foo.bar == 0x100);
-    }
-    
-    {
-        A* foo = $A* malloc(sizeof(A));
-        *foo := new A();
-        asm!("movw $139, {foo->foo}");
-        asm!("movq $0x1203, {foo->bar}");
-        assert(foo->foo == 139);
-        assert(foo->bar == 0x1203);
-        foo->~();
-        free($void* foo, sizeof(A));
-    }
-    
-    cout << "test basic passed\n";
-}
-
 i32 main() {
 
-    test_basic();
-    cout << "all tests passed\n";
+    {
+        cout << "u64\n";
+        u64 a = $u64 10;
+        u64 b = $u64 100;
+        cout << (b / a) << "\n";
+        b /= $u64 3;
+        cout << b << "\n";
+        cout << (a * b) << "\n";
+        u64 c = $u64 17;
+        cout << (b % c) << "\n";
+    }
+
+    {   
+        cout << "u32\n";
+        u32 a = $u32 10;
+        u32 b = $u32 100;
+        cout << (b / a) << "\n";
+        b /= $u32 3;
+        cout << b << "\n";
+        cout << (a * b) << "\n";
+        u32 c = $u32 17;
+        cout << (b % c) << "\n";
+    }
+    
+    {   
+        cout << "u16\n";
+        u16 a = $u16 10;
+        u16 b = $u16 100;
+        cout << (b / a) << "\n";
+        b /= $u16 3;
+        cout << b << "\n";
+        cout << (a * b) << "\n";
+        u16 c = $u16 17;
+        cout << (b % c) << "\n";
+    }
+
+    {   
+        cout << "i64\n";
+        i64 a = $i64 10;
+        i64 b = $i64 100;
+        cout << (b / a) << "\n";
+        b /= $i64 3;
+        cout << b << "\n";
+        cout << (a * b) << "\n";
+        i64 c = $i64 17;
+        cout << (b % c) << "\n";
+    }
+
+    {   
+        cout << "i32\n";
+        i32 a = $i32 10;
+        i32 b = $i32 100;
+        cout << (b / a) << "\n";
+        b /= $i32 3;
+        cout << b << "\n";
+        cout << (a * b) << "\n";
+        i32 c = $i32 17;
+        cout << (b % c) << "\n";
+    }
+
+    {   
+        cout << "i16\n";
+        i16 a = $i16 10;
+        i16 b = $i16 100;
+        cout << (b / a) << "\n";
+        b /= $i16 3;
+        cout << b << "\n";
+        cout << (a * b) << "\n";
+        i16 c = $i16 17;
+        cout << (b % c) << "\n";
+    }
 
     return 0;
 }
