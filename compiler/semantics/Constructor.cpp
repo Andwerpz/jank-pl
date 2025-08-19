@@ -9,6 +9,7 @@
 #include "Expression.h"
 #include "primitives.h"
 #include "Literal.h"
+#include "Declaration.h"
 
 Constructor* Constructor::convert(parser::constructor *c) {
     Type *type = BaseType::convert(c->t0->t0);
@@ -35,16 +36,6 @@ StructConstructor::StructConstructor(Type* _type, std::vector<Parameter*> _param
     assert(body != nullptr);
 }
 
-ArrayConstructor::ArrayConstructor(ArrayType *_type, bool _is_copy_constructor) {
-    type = _type;
-    is_copy_constructor = _is_copy_constructor;
-    assert(type != nullptr);
-
-    if(is_copy_constructor) {
-        parameters.push_back(new Parameter(new ReferenceType(type->make_copy()), new Identifier("x")));
-    }
-}
-
 PrimitiveConstructor::PrimitiveConstructor(Type *_type, bool _is_copy_constructor) {
     type = _type;
     is_copy_constructor = _is_copy_constructor;
@@ -69,12 +60,6 @@ ConstructorSignature* Constructor::resolve_constructor_signature() const {
 bool StructConstructor::equals(Constructor* _other) const {
     if(!dynamic_cast<StructConstructor*>(_other)) return false;
     StructConstructor *other = dynamic_cast<StructConstructor*>(_other);
-    return this->resolve_constructor_signature()->equals(other->resolve_constructor_signature());
-}
-
-bool ArrayConstructor::equals(Constructor* _other) const {
-    if(!dynamic_cast<ArrayConstructor*>(_other)) return false;
-    ArrayConstructor *other = dynamic_cast<ArrayConstructor*>(_other);
     return this->resolve_constructor_signature()->equals(other->resolve_constructor_signature());
 }
 
@@ -182,104 +167,6 @@ bool StructConstructor::is_well_formed() {
     return true;
 }
 
-bool ArrayConstructor::is_well_formed() {
-    ConstructorSignature *cc = resolve_constructor_signature();
-    std::cout << "CHECKING ARRAY CONSTRUCTOR : " << cc->to_string() << std::endl;
-
-    // - can all the templates be resolved?
-    if(!look_for_templates()) {
-        std::cout << "Cannot resolve all templates in constructor : " << resolve_constructor_signature()->to_string();
-        return false;
-    }
-
-    push_declaration_stack();
-
-    if(asm_debug) {
-        fout << "# " << cc->to_string() << "\n";
-    }
-    std::string label = get_constructor_label(cc);
-    fout << label << ":\n";
-
-    //setup stack frame
-    fout << indent() << "push %rbp\n";  //should not be managed by local_offset
-    fout << indent() << "mov %rsp, %rbp\n";
-
-    // - is the base type of the array declared?
-    ArrayType *atype = dynamic_cast<ArrayType*>(type);
-    assert(atype != nullptr);
-    if(!is_type_declared(atype->type)) {
-        std::cout << "Undeclared type : " << atype->type->to_string() << "\n";
-    }
-
-    //register self as variable (Type& this)
-    local_offset = 8 + 8 * parameters.size();
-    {
-        //adjust local offset for 'extra variable'
-        local_offset += 8;
-
-        //register self as variable (Type& this)
-        Type *vt = new ReferenceType(this->type->make_copy());
-        Identifier *vid = new Identifier("this");
-        Variable* v = add_variable(vt, vid);
-        if(v == nullptr) {
-            std::cout << "Unable to add variable : " << vt << " " << vid << "\n";
-            return false;
-        }
-        v->addr = std::to_string(local_offset) + "(%rbp)";
-        local_offset -= 8;
-    }
-    for(int i = 0; i < parameters.size(); i++){
-        Variable* v = add_variable(parameters[i]->type, parameters[i]->id);
-        if(v == nullptr) {
-            std::cout << "Unable to add variable : " << parameters[i]->type->to_string() << " " << parameters[i]->id->name << "\n";
-            return false;
-        }
-        v->addr = std::to_string(local_offset) + "(%rbp)";
-        local_offset -= 8;
-    }
-
-    //set local offset equal to %rsp
-    local_offset = 0;
-
-    //check that the local stack is empty so far
-    assert(stack_desc.size() == 0);
-
-    if(is_copy_constructor) {
-        assert(parameters.size() == 1);
-        assert(parameters[0]->type->equals(new ReferenceType(type)));
-
-        //call copy constructor on each element of other
-        Identifier *xid = parameters[0]->id;
-        Identifier *thisid = new Identifier("this");
-
-        for(int i = 0; i < atype->amt; i++){
-            Expression *cpy_expr = new Expression(
-                new ExprBinary(
-                    new ExprPostfix(new ExprPrimary(thisid), new Expression(new ExprPrimary(new IntegerLiteral(i)))),
-                    "=",
-                    new ExprPostfix(new ExprPrimary(xid), new Expression(new ExprPrimary(new IntegerLiteral(i))))
-                )
-            );
-            assert(cpy_expr->resolve_type() != nullptr);
-            cpy_expr->emit_asm();
-        }
-    }
-
-    //add trailing return
-    fout << indent() << "pop %rbp\n";   //should not be managed by local_offset
-    fout << indent() << "ret\n";
-
-    fout << "\n";
-
-    //unregister parameters as variables
-    pop_declaration_stack();
-
-    //local stack should be empty before returning
-    assert(stack_desc.size() == 0);
-
-    return true;
-}
-
 bool PrimitiveConstructor::is_well_formed() {
     assert(is_type_primitive(type));
     ConstructorSignature *cs = this->resolve_constructor_signature();
@@ -351,10 +238,6 @@ Constructor* StructConstructor::make_copy() {
     return new StructConstructor(_type, _parameters, _body);
 }
 
-Constructor* ArrayConstructor::make_copy() {
-    return new ArrayConstructor(dynamic_cast<ArrayType*>(type->make_copy()), is_copy_constructor);
-}
-
 Constructor* PrimitiveConstructor::make_copy() {
     return new PrimitiveConstructor(type->make_copy(), is_copy_constructor);
 }
@@ -367,12 +250,6 @@ bool StructConstructor::replace_templated_types(TemplateMapping *mapping) {
         if(!parameters[i]->replace_templated_types(mapping)) return false;
     }
     if(!body->replace_templated_types(mapping)) return false;
-    return true;
-}
-
-bool ArrayConstructor::replace_templated_types(TemplateMapping *mapping) {
-    if(auto x = mapping->find_mapped_type(type)) type = x;
-    else if(!type->replace_templated_types(mapping)) return false;
     return true;
 }
 
@@ -395,11 +272,6 @@ bool StructConstructor::look_for_templates() {
         if(!parameters[i]->look_for_templates()) return false;
     }
     if(!body->look_for_templates()) return false;
-    return true;
-}
-
-bool ArrayConstructor::look_for_templates() {
-    if(!type->look_for_templates()) return false;
     return true;
 }
 

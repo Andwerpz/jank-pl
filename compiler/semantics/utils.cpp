@@ -25,6 +25,7 @@
 #include "Statement.h"
 #include "Literal.h"
 #include "Parameter.h"
+#include "Declaration.h"
 
 ld current_time_seconds() {
     using namespace std::chrono;
@@ -1137,9 +1138,6 @@ bool create_arraytype(ArrayType *t) {
         return false;
     }
 
-    //does every non-primitive type have to have a StructDefinition?
-    //I don't think it's correct for every non-primitive type to have a struct definition. 
-    //struct definitions are only used right now to generate StructLayouts . 
     //generate type
     //  - default constructor
     //  - copy constructor
@@ -1151,8 +1149,33 @@ bool create_arraytype(ArrayType *t) {
         return false;
     }
 
-    Constructor *default_constructor = new ArrayConstructor(t, false);
-    Constructor *copy_constructor = new ArrayConstructor(t, true);
+    Constructor *default_constructor = new StructConstructor(t, {}, new CompoundStatement({}));
+
+    Identifier *xid = new Identifier("x");
+    Identifier *thisid = new Identifier("this");
+    Identifier *iid = new Identifier("i");
+
+    Constructor *copy_constructor = new StructConstructor(
+        t,
+        {new Parameter(new ReferenceType(t->make_copy()), xid->make_copy())},
+        new CompoundStatement({
+            new ForStatement(
+                new Declaration(primitives::i32->make_copy(), iid->make_copy(), new Expression(new ExprPrimary(new IntegerLiteral(0)))),
+                new Expression(new ExprBinary(new ExprPrimary(iid->make_copy()), "<", new ExprPrimary(new IntegerLiteral(t->amt)))),
+                new Expression(new ExprPostfix(new ExprPrimary(iid->make_copy()), "++")),
+                new CompoundStatement({
+                    new ExpressionStatement(new Expression(
+                        new ExprBinary(
+                            new ExprPostfix(new ExprPrimary(thisid), new Expression(new ExprPrimary(iid->make_copy()))),
+                            "=",
+                            new ExprPostfix(new ExprPrimary(xid), new Expression(new ExprPrimary(iid->make_copy())))
+                        )
+                    ))
+                })
+            )
+        })
+    );
+
     Destructor *destructor = new Destructor(t, new CompoundStatement({}));
 
     add_constructor(default_constructor);
@@ -1400,7 +1423,6 @@ bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_
     }
 
     //get struct definition
-    std::cout << t->to_string() << "\n";
     StructDefinition *sd = get_struct_definition(t);
     assert(sd != nullptr);
 
@@ -1433,10 +1455,13 @@ bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_
     struct_layout_map.push_back({t, sl});
     assert(get_struct_layout(t) != nullptr);
 
-    std::cout << "STRUCT LAYOUT : " << t->to_string() << " : " << size << "\n";
-    for(int i = 0; i < offset_map.size(); i++){
-        std::cout << offset_map[i].first->name << " " << offset_map[i].second << "\n";
+    if(debug) {
+        std::cout << "STRUCT LAYOUT : " << t->to_string() << " : " << size << "\n";
+        for(int i = 0; i < offset_map.size(); i++){
+            std::cout << offset_map[i].first->name << " " << offset_map[i].second << "\n";
+        }
     }
+    
 
     return true;
 }
@@ -1534,7 +1559,7 @@ void emit_initialize_primitive(Type *t) {
 //expects memory address in %rax, initializes struct, returns with memory address in %rax
 //expects memory to already have been allocated
 void emit_initialize_array(ArrayType *t) {
-    std::cout << "EMIT INITIALIZE ARRAY : " << t->to_string() << std::endl;
+    if(debug) std::cout << "EMIT INITIALIZE ARRAY : " << t->to_string() << std::endl;
     if(asm_debug) fout << indent() << "# initialize array " << t->to_string() << "\n";
 
     emit_push("%rax", "emit_initialize_array() :: save original %rax");
@@ -1542,7 +1567,6 @@ void emit_initialize_array(ArrayType *t) {
     Type *bt = t->type;
     int bt_sz = bt->calc_size();
 
-    std::cout << "ARRAY BASETYPE : " << bt->to_string() << "\n";
     for(int i = 0; i < t->amt; i++){
         if(is_type_primitive(bt)) {
             emit_initialize_primitive(bt);

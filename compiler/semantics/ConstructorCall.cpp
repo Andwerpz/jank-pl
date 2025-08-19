@@ -59,7 +59,7 @@ void ConstructorCall::emit_asm(bool alloc_new) {
     assert(c != nullptr);
 
     if(!is_type_primitive(type)) {
-        assert(dynamic_cast<StructConstructor*>(c) != nullptr || dynamic_cast<ArrayConstructor*>(c) != nullptr);
+        assert(dynamic_cast<StructConstructor*>(c) != nullptr);
 
         //create new instance of the object
         //address should be placed into %rax
