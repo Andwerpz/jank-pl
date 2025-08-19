@@ -53,7 +53,9 @@ TemplateMapping* TemplatedStructDefinition::calc_mapping(TemplatedType *type) {
 
     //a mapping should always exist
     for(int i = 0; i < header->types.size(); i++){
-        assert(mapping->add_mapping(header->types[i], type->template_types[i]));
+        if(!mapping->add_mapping(header->types[i], type->template_types[i])) {
+            assert(false);
+        }
     }
     assert(mapping->mapping.size() == header->types.size());
 
@@ -71,7 +73,9 @@ StructDefinition* TemplatedStructDefinition::gen_struct_def(TemplatedType* type)
     if(mapping == nullptr) return nullptr;
 
     // - replace struct basetype with templated version
-    assert(mapping->add_mapping(this->struct_def->type, type));
+    if(!mapping->add_mapping(this->struct_def->type, type)) {
+        assert(false);
+    }
     
     //try to construct
     StructDefinition *n_struct_def = this->struct_def->make_copy();

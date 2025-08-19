@@ -39,7 +39,10 @@ Typedef* Typedef::make_copy() {
 
 bool Typedef::replace_templated_types(TemplateMapping *mapping) {
     //the base type in a typedef should never be replaced
-    assert(mapping->find_mapped_type(base_type) == nullptr);
+    if(!(mapping->find_mapped_type(base_type) == nullptr)) {
+        assert(false);
+        return false;
+    }
     if(auto x = mapping->find_mapped_type(type)) type = x;
     else if(!type->replace_templated_types(mapping)) return false;
     return true;

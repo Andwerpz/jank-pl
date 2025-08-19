@@ -377,8 +377,14 @@ bool ArrayConstructor::replace_templated_types(TemplateMapping *mapping) {
 }
 
 bool PrimitiveConstructor::replace_templated_types(TemplateMapping *mapping) {
-    assert(!mapping->find_mapped_type(type));
-    assert(type->replace_templated_types(mapping));
+    if(mapping->find_mapped_type(type)) {
+        assert(false);
+        return false;
+    }
+    if(!type->replace_templated_types(mapping)) {
+        assert(false);
+        return false;
+    }   
     return true;
 }
 
@@ -398,6 +404,9 @@ bool ArrayConstructor::look_for_templates() {
 }
 
 bool PrimitiveConstructor::look_for_templates() {
-    assert(type->look_for_templates());
+    if(!type->look_for_templates()) {
+        assert(false);
+        return false;
+    }
     return true;
 }

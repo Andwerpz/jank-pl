@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX := g++
-CXXFLAGS := -std=c++17 -Iinclude -g
+CXXFLAGS := -std=c++17 -Iinclude -g -O2
 
 # Entry point
 ENTRY := ./jjc.cpp

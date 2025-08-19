@@ -516,14 +516,22 @@ bool is_declarable(Type *A, Expression *expr) {
             goto done;
         }
 
-        // otherwise, can look for type conversions
-        Expression *a_expr = new Expression(new ExprBinary(new ExprPrimary(new ReferenceType(A)), "=", new ExprPrimary(expr)));
-        if(a_expr->resolve_type() != nullptr) {
+        // otherwise, we just have to match the type exactly
+        if(A->equals(et)) {
             ans = true;
             goto done;
         }
         ans = false;
         goto done;
+
+        // // otherwise, can look for type conversions
+        // Expression *a_expr = new Expression(new ExprBinary(new ExprPrimary(new ReferenceType(A)), "=", new ExprPrimary(expr)));
+        // if(a_expr->resolve_type() != nullptr) {
+        //     ans = true;
+        //     goto done;
+        // }
+        // ans = false;
+        // goto done;
     }
     done: {}
 
@@ -1137,7 +1145,11 @@ bool create_arraytype(ArrayType *t) {
     //  - copy constructor
     //  - destructor
     //  - struct layout (this is generated lazily)
-    assert(add_arraytype(t));
+    if(!add_arraytype(t)) {
+        std::cout << "add_arraytype(t) failed : " << t->to_string() << "\n";
+        assert(false);
+        return false;
+    }
 
     Constructor *default_constructor = new ArrayConstructor(t, false);
     Constructor *copy_constructor = new ArrayConstructor(t, true);
