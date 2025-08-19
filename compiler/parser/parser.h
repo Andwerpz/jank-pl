@@ -1,4 +1,4 @@
-// Date Generated : 08-13-2025 17:49:08
+// Date Generated : 08-18-2025 22:29:04
 #pragma once
 #include <vector>
 #include <string>
@@ -154,15 +154,28 @@ namespace parser {
         void postprocess() override;
     };
 
-    // function = function_definition , ows , compound_statement ;
+    // function = [ "export" , rws ] , function_definition , ows , compound_statement ;
     struct function : public token {
-        function_definition *t0;
-        ows *t1;
-        compound_statement *t2;
-        function(function_definition *_t0, ows *_t1, compound_statement *_t2) {
+        struct a0 : public token {
+            terminal *t0;
+            rws *t1;
+            a0(terminal *_t0, rws *_t1) {
+                t0 = _t0;
+                t1 = _t1;
+            }
+            static a0* parse();
+            std::string to_string();
+            void postprocess() override;
+        };
+        a0 *t0;
+        function_definition *t1;
+        ows *t2;
+        compound_statement *t3;
+        function(a0 *_t0, function_definition *_t1, ows *_t2, compound_statement *_t3) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
+            t3 = _t3;
         }
         static function* parse();
         std::string to_string();

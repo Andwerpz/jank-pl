@@ -13,12 +13,13 @@ struct TemplateMapping;
 
 struct Function {    
     std::optional<Type*> enclosing_type;
+    bool is_export;         //if true, will generate label equal to function id
     Type *type;
     Identifier *id;
     std::vector<Parameter*> parameters;
     CompoundStatement *body;
 
-    Function(std::optional<Type*> _enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body);
+    Function(std::optional<Type*> _enclosing_type, bool _is_export, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body);
 
     //use when inputting pre-defined asm functions (sys functions)
     Function(Type *_type, Identifier *_id, std::vector<Type*> input_types);

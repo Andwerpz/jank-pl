@@ -11,13 +11,16 @@
 #include "Program.h"
 #include "Declaration.h"
 #include "Expression.h"
-#include <algorithm>
 #include "GlobalNode.h"
+#include "utils.h"
+
+#include <algorithm>
 #include <map>
 #include <queue>
 
-Function::Function(std::optional<Type*> _enclosing_type, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
+Function::Function(std::optional<Type*> _enclosing_type, bool _is_export, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
     enclosing_type = _enclosing_type;
+    is_export = _is_export;
     id = _id;
     type = _type;
     parameters = _parameters;
@@ -61,7 +64,8 @@ bool Function::operator!=(const Function& other) const {
 }
 
 Function* Function::convert(parser::function *f) {
-    parser::function_definition *def = f->t0;
+    bool is_export = f->t0 != nullptr;
+    parser::function_definition *def = f->t1;
     parser::parameter_list *pl = def->t6;
     Type *type = Type::convert(def->t0);
     Identifier *name = new Identifier(def->t2->to_string());
@@ -73,8 +77,8 @@ Function* Function::convert(parser::function *f) {
             parameters.push_back(Parameter::convert(tmp[i]->t3));
         }
     }
-    CompoundStatement *body = CompoundStatement::convert(f->t2);
-    return new Function(std::nullopt, type, name, parameters, body);
+    CompoundStatement *body = CompoundStatement::convert(f->t3);
+    return new Function(std::nullopt, is_export, type, name, parameters, body);
 }
 
 bool Function::is_well_formed() {
@@ -85,6 +89,12 @@ bool Function::is_well_formed() {
         return true;
     }
     std::cout << "CHECKING FUNCTION : " << fs->to_string() << std::endl;
+
+    // - struct member functions cannot have export modifier
+    if(enclosing_type.has_value() && is_export) {
+        std::cout << "Struct member functions cannot have export modifier : " << resolve_function_signature()->to_string() << "\n";
+        return false;
+    }
 
     // - are templates all resolvable?
     if(!look_for_templates()) {
@@ -347,7 +357,7 @@ Function* Function::make_copy() {
         _parameters.push_back(parameters[i]->make_copy());
     }
     CompoundStatement *_body = dynamic_cast<CompoundStatement*>(body->make_copy());
-    return new Function(_enclosing_type, _type, _id, _parameters, _body);
+    return new Function(_enclosing_type, is_export, _type, _id, _parameters, _body);
 }
 
 bool Function::replace_templated_types(TemplateMapping *mapping) {

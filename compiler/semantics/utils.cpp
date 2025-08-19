@@ -1,3 +1,7 @@
+#include <chrono>
+#include <algorithm>
+#include <iomanip>
+
 #include "utils.h"
 #include "Type.h"
 #include "Function.h"
@@ -21,6 +25,26 @@
 #include "Statement.h"
 #include "Literal.h"
 #include "Parameter.h"
+
+ld current_time_seconds() {
+    using namespace std::chrono;
+    auto now = system_clock::now().time_since_epoch();
+    return duration_cast<duration<ld>>(now).count();
+}
+
+std::vector<std::pair<std::string, ld>> duration_stats;
+void add_duration_stat(std::string name, ld dur) {
+    duration_stats.push_back({name, dur});
+}
+
+void print_duration_stats() {
+    std::sort(duration_stats.begin(), duration_stats.end(), [](std::pair<std::string, ld> a, std::pair<std::string, ld> b) -> bool {
+        return a.second < b.second;
+    });
+    for(int i = 0; i < duration_stats.size(); i++){
+        std::cout << duration_stats[i].first << " : " << std::fixed << std::setprecision(3) << duration_stats[i].second << "\n";
+    }
+}
 
 Variable::Variable(bool _is_extern, Type *_type, Identifier *_id) {
     is_extern = _is_extern;
@@ -747,6 +771,14 @@ Function* get_function(FunctionSignature *fs) {
 Function* get_called_function(FunctionCall *fc) {
     assert(fc != nullptr);
 
+    //TODO
+    //flow should be like this instead:
+    // - go through all functions and see if there is an existing one that works. 
+    // - go through all templated functions and gather all that work
+    // - find 'most specialized' templated functions. If there are more than one, then
+    //   this function call is ambiguous
+    // - generate function, ensure that the generated function actually works. 
+
     //see if we can make some templated function out of fc
     //TODO check if some function call is ambiguous due to templating. 
     for(int i = 0; i < declared_templated_functions.size(); i++){
@@ -1123,8 +1155,11 @@ bool add_function(Function *f){
     FunctionSignature *fs = f->resolve_function_signature();
     if(is_function_declared(fs)) return false;
     declared_functions.push_back(f);
-    if(!f->enclosing_type.has_value() && f->parameters.size() == 0) function_label_map.insert({fs, f->id->name});
+
+    //generate function label
+    if(f->is_export) function_label_map.insert({fs, f->id->name});
     else function_label_map.insert({fs, create_new_label()});
+    
     std::cout << "ADD FUNCTION : " << fs->to_string() << std::endl;
     return true;
 }

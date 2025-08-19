@@ -1,6 +1,7 @@
 #include "jank.ebnf" ;
 
 function_definition = type , rws , identifier , ows , "(" , ows , parameter_list , ows , ")" ;
-function = [ template_header , ows ] , [ "export" , rws ] , function_definition , ows , compound_statement ;
+function = [ "export" , rws ] , function_definition , ows , compound_statement ;
+templated_function = template_header , ows , function ;
 function_call = identifier , ows , "(" , ows , argument_list , ows , ")" ;
 function_pointer_call = "#" , identifier , ows , "(" , ows , argument_list , ows , ")" ;

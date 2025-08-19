@@ -41,6 +41,12 @@ struct FunctionOperator;
 struct StructLayout;
 struct LoopContext;
 
+// -- GENERAL UTILS --
+typedef long double ld;
+long double current_time_seconds();
+void add_duration_stat(std::string name, ld dur);
+void print_duration_stats();
+
 // -- HASHING STRUCTS --
 namespace {
     struct TypeHash;

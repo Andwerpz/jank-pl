@@ -9,6 +9,7 @@
 #include "Identifier.h"
 #include "FunctionSignature.h"
 #include "Parameter.h"
+#include "Statement.h"
 
 TemplatedFunction::TemplatedFunction(TemplateHeader *_header, Function *_function) {
     assert(_header != nullptr);
@@ -25,6 +26,12 @@ TemplatedFunction* TemplatedFunction::convert(parser::templated_function *f) {
 }
 
 bool TemplatedFunction::is_well_formed() {
+    // - templated functions cannot have export modifier
+    if(function->is_export) {
+        std::cout << "Templated functions cannot have export modifier : " << function->resolve_function_signature()->to_string() << "\n";
+        return false;
+    }
+
     // - are all of the templated basetypes not declared?
     for(int i = 0; i < header->types.size(); i++){
         if(is_basetype_declared(header->types[i])) {

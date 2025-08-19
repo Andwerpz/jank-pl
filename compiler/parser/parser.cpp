@@ -1,4 +1,4 @@
-// Date Generated : 08-13-2025 17:49:08
+// Date Generated : 08-18-2025 22:29:04
 #include "parser.h"
 
 namespace parser {
@@ -227,17 +227,47 @@ namespace parser {
         t8->postprocess();
     }
 
+    function::a0* function::a0::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("export");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rws *_t1 = rws::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        function::a0* retval = new function::a0(_t0, _t1);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string function::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        return ans;
+    }
+
+    void function::a0::postprocess() {
+        token_type = "function::a0";
+        token_children.push_back(t0);
+        t0->postprocess();
+        token_children.push_back(t1);
+        t1->postprocess();
+    }
+
     function* function::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        function_definition *_t0 = function_definition::parse();
-        if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t1 = ows::parse();
+        function::a0 *_t0 = function::a0::parse();
+        function_definition *_t1 = function_definition::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        compound_statement *_t2 = compound_statement::parse();
+        ows *_t2 = ows::parse();
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        compound_statement *_t3 = compound_statement::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        function* retval = new function(_t0, _t1, _t2);
+        function* retval = new function(_t0, _t1, _t2, _t3);
         retval->start_ctx = _start_ctx;
         retval->end_ctx = get_ctx();
         return retval;
@@ -245,20 +275,25 @@ namespace parser {
 
     std::string function::to_string() {
         std::string ans = "";
-        ans += t0->to_string();
+        if(t0 != nullptr) ans += t0->to_string();
         ans += t1->to_string();
         ans += t2->to_string();
+        ans += t3->to_string();
         return ans;
     }
 
     void function::postprocess() {
         token_type = "function";
-        token_children.push_back(t0);
-        t0->postprocess();
+        if(t0 != nullptr) {
+            token_children.push_back(t0);
+            t0->postprocess();
+        }
         token_children.push_back(t1);
         t1->postprocess();
         token_children.push_back(t2);
         t2->postprocess();
+        token_children.push_back(t3);
+        t3->postprocess();
     }
 
     templated_function* templated_function::parse() {

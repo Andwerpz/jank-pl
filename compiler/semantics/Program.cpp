@@ -360,6 +360,7 @@ bool Program::is_well_formed() {
     int destructor_ptr = 0;
     while(function_ptr < declared_functions.size() || constructor_ptr < declared_constructors.size() || overload_ptr < declared_overloads.size()) {
         while(function_ptr < declared_functions.size()) {
+            ld process_start_time = current_time_seconds();
             Function *f = declared_functions[function_ptr ++];
             enclosing_function = f;
             if(!f->is_well_formed()) {
@@ -367,26 +368,34 @@ bool Program::is_well_formed() {
                 return false;
             }
             enclosing_function = nullptr;
+            add_duration_stat("FUNCTION " + f->resolve_function_signature()->to_string(), current_time_seconds() - process_start_time);
         }
         while(constructor_ptr < declared_constructors.size()) {
+            ld process_start_time = current_time_seconds();
             Constructor *c = declared_constructors[constructor_ptr ++];
             if(!c->is_well_formed()) {
                 return false;
             }
+            add_duration_stat("CONSTRUCTOR " + c->resolve_constructor_signature()->to_string(), current_time_seconds() - process_start_time);
         }
         while(overload_ptr < declared_overloads.size()) {
+            ld process_start_time = current_time_seconds();
             Overload *o = declared_overloads[overload_ptr ++];
             enclosing_overload = o;
             if(!o->is_well_formed()) {
                 return false;
             }
             enclosing_overload = nullptr;
+            add_duration_stat("OVERLOAD " + o->resolve_operator_signature()->to_string(), current_time_seconds() - process_start_time);
+    
         }
         while(destructor_ptr < declared_destructors.size()) {
+            ld process_start_time = current_time_seconds();
             Destructor *d = declared_destructors[destructor_ptr ++];
             if(!d->is_well_formed()) {
                 return false;
             }
+            add_duration_stat("DESTRUCTOR " + d->type->to_string() + "::~()", current_time_seconds() - process_start_time);
         }
     }
 

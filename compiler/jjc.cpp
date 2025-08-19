@@ -13,6 +13,7 @@
 #include <unordered_set>
 #include <queue>
 #include <set>
+#include <iomanip>
 
 #include "semantics/Program.h"
 #include "semantics/StructDefinition.h"
@@ -35,6 +36,8 @@
 #include <limits.h>
 #include <libgen.h>
 #include <sys/stat.h>
+
+bool print_timing_info = false;
 
 std::string compiler_dir;
 std::string cwd_dir;
@@ -110,7 +113,10 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
     std::cout << "--- GATHERING FILES ---" << std::endl;
     std::string program_str = "";
     Program *program = new Program();
+    ld parse_duration;
     {
+        ld parse_start_time = current_time_seconds();
+
         std::queue<std::string> to_parse;
         std::set<std::string> parsed_paths;
 
@@ -169,49 +175,36 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
                 to_parse.push(npath);
             }
         }
+
+        parse_duration = current_time_seconds() - parse_start_time;
     }   
-    std::cout << "--- DONE GATHERING FILES ---" << std::endl;
 
-    std::cout << "--- STRUCT DEFINITIONS ---" << std::endl;
-    for(int i = 0; i < program->structs.size(); i++){
-        StructDefinition *sd = program->structs[i];
-        std::cout << "NAME : " << sd->type->to_string() << std::endl;
-        std::cout << "MEMBER VARIABLES : \n";
-        for(int j = 0; j < sd->member_variables.size(); j++) {
-            MemberVariable *mv = sd->member_variables[j];
-            std::cout << mv->type->to_string() << " " << mv->id->name << "\n";
-        }
-        std::cout << "MEMBER CONSTRUCTORS : \n";
-        for(int j = 0; j < sd->constructors.size(); j++){
-            std::cout << sd->constructors[j]->resolve_constructor_signature()->to_string() << "\n";
-        }
-        std::cout << "MEMBER FUNCTIONS : \n";
-        for(int j = 0; j < sd->functions.size(); j++){
-            std::cout << sd->functions[j]->resolve_function_signature()->to_string() << "\n";
-        }
-        std::cout << "\n";
-    }
-   
-    std::cout << "--- GLOBAL FUNCTION DEFINITIONS ---" << std::endl;
-    for(int i = 0; i < program->functions.size(); i++){
-        std::cout << "NAME : " << program->functions[i]->id->name << ", TYPE : " << program->functions[i]->type->to_string() << ", PARAMS :\n";
-        for(int j = 0; j < program->functions[i]->parameters.size(); j++){
-            Parameter *param = program->functions[i]->parameters[j];
-            std::cout << param->type->to_string() << " " << param->id->name << "\n";
-        }
-        std::cout << "NR STATEMENTS : " << program->functions[i]->body->statements.size() << std::endl;
-        std::cout << "\n";
-    }
+    std::cout << "--- CHECK PROGRAM SEMANTICS ---" << std::endl;
+    ld semantics_duration;
+    {
+        ld semantics_start_time = current_time_seconds();
 
-    std::cout << "CHECK PROGRAM SEMANTICS" << std::endl;
-    fout = std::ofstream(tmp_filename);
-    if(!program->is_well_formed()) {
-        std::cout << "Program not well formed\n";
+        fout = std::ofstream(tmp_filename);
+        if(!program->is_well_formed()) {
+            std::cout << "Program not well formed\n";
+            fout.close();
+            return 1;
+        }
+        std::cout << "Program is well formed\n";
         fout.close();
-        return 1;
+
+        semantics_duration = current_time_seconds() - semantics_start_time;
+        
     }
-    std::cout << "Program is well formed\n";
-    fout.close();
+
+    if(print_timing_info) {
+        std::cout << "--- TIMING INFO ---" << "\n";
+        print_duration_stats();
+        
+        std::cout << "--- TIMING OVERALL ---" << "\n";
+        std::cout << std::fixed << std::setprecision(3) << "Parse Duration : " << parse_duration << "\n";
+        std::cout << std::fixed << std::setprecision(3) << "Semantics Duration : " << semantics_duration << "\n";
+    }
 
     return 0;
 }
@@ -309,6 +302,9 @@ int main(int argc, char* argv[]) {
         }
         else if(arg == "-ad") {
             asm_debug = true;
+        }
+        else if(arg == "-time") {
+            print_timing_info = true;
         }
         else {
             std::cout << "Unrecognized commandline argument : " << arg << "\n";
