@@ -748,7 +748,7 @@ it's sitting somewhere in between, Overload is more like a function, while Overl
 
 So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
 
-high priority: fix function call resolution
+fix function call resolution
 - want to be able to have both 'void foo(i32 a)' and 'void foo(i32& a)'. Then, foo(0) would resolve to the first one and foo(x) would
     resolve to the second one. 
 - ok, let's not worry about references for now, the bigger issue is templating. For each function call, I want to find a unique
@@ -764,7 +764,19 @@ high priority: fix function call resolution
 - so to find a called function, a minimal function must exist for the call, and that minimal function must be callable by the 
     given arguments. 
 - what if we just make it so that no two functions can share the same name ... no, that would be way too restrictive
+- ok, have template specialization implemented, however still am not handling references properly. 
+- T maps to anything T& can map to. T& is strictly more restrictive. T& only handles l-values, T handles both l-values and r-values
+- what about when generating the mappings, we convert any l-value arguments into T& in the arg_types list. Then, T in the fc can map to both T& and T, however
+  T& can only map to T&. This is done as pre-check before we strip all references. 
+- to ensure we don't accidentally duplicate functions, we can't just shove all generated functions in a pool, need to do stricter partial ordering stuff
+- or maybe we can prove that we can use the current method
+- OKOK FIXED YAYY (still need to fix overload resolution)
 
+ideas to optimize compilation times
+ - an expression node should only resolve to one type. Perhaps just cache the result whenever we generate it. 
+   - need to watch out when using expressions abnormally. Expressions can resolve to different types if we take the
+     identifiers out of context. 
+   - we then also need to ensure we make copies of everything. 
 
 some miscellaneous features:
  - pointer arithmetic
@@ -905,6 +917,7 @@ type = templated_type , [ "&" ] ;
      <defined_type> -> <type> mappings. Finally, just do a lil replace templated types on the entire program. 
    - we'll need to do this step after we register all the structs so we can tell what's an existing type 
    - typedef types should be basetypes. 
+ - function export modifier. Makes it so that generated label equals function id
 
 Struct member functions should be called with 'this' as a pointer to the target struct. 
 The actual location of the struct is hard to control relative to %rbp. This makes it so I can 

@@ -8,6 +8,7 @@ struct BaseType;
 struct Constructor;
 struct TemplateMapping;
 struct Destructor;
+struct TemplatedFunction;
 
 struct MemberVariable {
     Type *type;
@@ -22,10 +23,10 @@ struct MemberVariable {
 struct StructDefinition {
     Type *type;
     std::vector<MemberVariable*> member_variables;
-    std::vector<Function*> functions;
+    std::vector<TemplatedFunction*> functions;
     std::vector<Constructor*> constructors;
     std::vector<Destructor*> destructors;
-    StructDefinition(Type *_type, std::vector<MemberVariable*> _member_variables, std::vector<Function*> _functions, std::vector<Constructor*> _constructors, std::vector<Destructor*> _destructors);
+    StructDefinition(Type *_type, std::vector<MemberVariable*> _member_variables, std::vector<TemplatedFunction*> _functions, std::vector<Constructor*> _constructors, std::vector<Destructor*> _destructors);
     static StructDefinition* convert(parser::struct_definition *s);
     bool is_well_formed(); 
     StructDefinition* make_copy();

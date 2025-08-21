@@ -9,6 +9,7 @@
 #include "ConstructorSignature.h"
 #include "TemplateMapping.h"
 #include "Destructor.h"
+#include "TemplatedFunction.h"
 
 MemberVariable::MemberVariable(Type *_type, Identifier *_id) {
     type = _type;
@@ -36,7 +37,7 @@ bool MemberVariable::look_for_templates(){
 }
 
 
-StructDefinition::StructDefinition(Type *_type, std::vector<MemberVariable*> _member_variables, std::vector<Function*> _functions, std::vector<Constructor*> _constructors, std::vector<Destructor*> _destructors) {
+StructDefinition::StructDefinition(Type *_type, std::vector<MemberVariable*> _member_variables, std::vector<TemplatedFunction*> _functions, std::vector<Constructor*> _constructors, std::vector<Destructor*> _destructors) {
     type = _type;
     member_variables = _member_variables;
     functions = _functions;
@@ -49,7 +50,7 @@ StructDefinition::StructDefinition(Type *_type, std::vector<MemberVariable*> _me
 StructDefinition* StructDefinition::convert(parser::struct_definition *s) {
     BaseType *type = BaseType::convert(s->t2);
     std::vector<MemberVariable*> member_variables;
-    std::vector<Function*> functions;
+    std::vector<TemplatedFunction*> functions;
     std::vector<Constructor*> constructors;
     std::vector<Destructor*> destructors;
     for(int i = 0; i < s->t6.size(); i++){
@@ -57,8 +58,8 @@ StructDefinition* StructDefinition::convert(parser::struct_definition *s) {
             member_variables.push_back(MemberVariable::convert(s->t6[i]->t0->t0->t0));
         }
         else if(s->t6[i]->t0->is_c1) {  //function
-            Function *f = Function::convert(s->t6[i]->t0->t1->t0);
-            f->enclosing_type = type;
+            TemplatedFunction *f = TemplatedFunction::convert(s->t6[i]->t0->t1->t0);
+            f->function->enclosing_type = type->make_copy();
             functions.push_back(f);
         }
         else if(s->t6[i]->t0->is_c2) {  //constructor
@@ -107,38 +108,6 @@ bool StructDefinition::is_well_formed() {
             return false;
         }
     }
-
-    // -- no longer required, if these don't exist, default ones are created --
-    // // - is there a default constructor?
-    // {
-    //     ConstructorSignature *cid = new ConstructorSignature(type->make_copy(), {});
-    //     if(!is_constructor_declared(cid)) {
-    //         std::cout << "Default constructor for " << type->to_string() << " not defined\n";
-    //         return false;
-    //     }
-    // }
-    // // - is there a copy constructor?
-    // {
-    //     ConstructorSignature *cid = new ConstructorSignature(type->make_copy(), {new ReferenceType(type->make_copy())});
-    //     if(!is_constructor_declared(cid)) {
-    //         std::cout << "Copy constructor for " << type->to_string() << " not defined\n";
-    //         return false;
-    //     }
-    // }
-
-    // // - are all the destructors actually destructing this type?
-    // for(int i = 0; i < destructors.size(); i++){
-    //     if(!type->equals(destructors[i]->type)) {
-    //         std::cout << "Destructor in " << type->to_string() << " is of wrong type : " << destructors[i]->type->to_string() << "\n";
-    //         return false;
-    //     }
-    // }
-
-    // // - is there exactly 1 destructor?
-    // if(destructors.size() != 1) {
-    //     std::cout << "There must be exactly one destructor for struct " << type->to_string() << "\n";
-    //     return false;
-    // }
     
     return true;
 }
@@ -146,7 +115,7 @@ bool StructDefinition::is_well_formed() {
 StructDefinition* StructDefinition::make_copy() {
     Type *_type = type->make_copy();
     std::vector<MemberVariable*> _member_variables;
-    std::vector<Function*> _functions;
+    std::vector<TemplatedFunction*> _functions;
     std::vector<Constructor*> _constructors;
     std::vector<Destructor*> _destructors;
     for(int i = 0; i < member_variables.size(); i++){
@@ -185,7 +154,6 @@ bool StructDefinition::replace_templated_types(TemplateMapping *mapping) {
 bool StructDefinition::look_for_templates() {
     if(!type->look_for_templates()) return false;
     for(int i = 0; i < member_variables.size(); i++) if(!member_variables[i]->look_for_templates()) return false;
-    for(int i = 0; i < functions.size(); i++) if(!functions[i]->look_for_templates()) return false;
     for(int i = 0; i < constructors.size(); i++) if(!constructors[i]->look_for_templates()) return false;
     for(int i = 0; i < destructors.size(); i++) if(!destructors[i]->look_for_templates()) return false;
     return true;

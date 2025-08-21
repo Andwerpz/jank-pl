@@ -11,4 +11,5 @@ struct TemplateHeader {
 
     static TemplateHeader* convert(parser::template_header *h);
     std::string to_string();
+    TemplateHeader* make_copy();
 };

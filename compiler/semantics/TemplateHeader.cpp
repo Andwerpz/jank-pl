@@ -25,3 +25,9 @@ std::string TemplateHeader::to_string() {
     res += ">";
     return res;
 }
+
+TemplateHeader* TemplateHeader::make_copy() {
+    std::vector<BaseType*> _types;
+    for(int i = 0; i < types.size(); i++) _types.push_back(dynamic_cast<BaseType*>(types[i]->make_copy()));
+    return new TemplateHeader(_types);
+}

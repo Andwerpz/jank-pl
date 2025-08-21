@@ -30,9 +30,8 @@ Program::Program() {
     // do nothing
 }
 
-Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*> _functions, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> _overloads, std::vector<TemplatedOverload*> _templated_overloads, std::vector<Include*> _includes, std::vector<GlobalDeclaration*> _global_declarations, std::vector<GlobalNode*> _global_nodes, std::vector<Typedef*> _typedefs) {
+Program::Program(std::vector<StructDefinition*> _structs, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> _overloads, std::vector<TemplatedOverload*> _templated_overloads, std::vector<Include*> _includes, std::vector<GlobalDeclaration*> _global_declarations, std::vector<GlobalNode*> _global_nodes, std::vector<Typedef*> _typedefs) {
     structs = _structs;
-    functions = _functions;
     overloads = _overloads;
 
     templated_structs = _templated_structs;
@@ -49,7 +48,6 @@ Program::Program(std::vector<StructDefinition*> _structs, std::vector<Function*>
 
 Program* Program::convert(parser::program *p) {
     std::vector<StructDefinition*> structs;
-    std::vector<Function*> functions;
     std::vector<Overload*> overloads;
 
     std::vector<TemplatedStructDefinition*> templated_structs;
@@ -64,44 +62,40 @@ Program* Program::convert(parser::program *p) {
     std::vector<Typedef*> typedefs;
 
     for(int i = 0; i < p->t0.size(); i++){
-        if(p->t0[i]->t1->is_c0) {   //function
-            functions.push_back(Function::convert(p->t0[i]->t1->t0->t0));
+        if(p->t0[i]->t1->is_c0) {  //struct definition
+            structs.push_back(StructDefinition::convert(p->t0[i]->t1->t0->t0));
         }
-        else if(p->t0[i]->t1->is_c1) {  //struct definition
-            structs.push_back(StructDefinition::convert(p->t0[i]->t1->t1->t0));
+        else if(p->t0[i]->t1->is_c1) {  //templated function
+            templated_functions.push_back(TemplatedFunction::convert(p->t0[i]->t1->t1->t0));
         }
-        else if(p->t0[i]->t1->is_c2) {  //templated function
-            templated_functions.push_back(TemplatedFunction::convert(p->t0[i]->t1->t2->t0));
+        else if(p->t0[i]->t1->is_c2) {  //templated struct definition
+            templated_structs.push_back(TemplatedStructDefinition::convert(p->t0[i]->t1->t2->t0));
         }
-        else if(p->t0[i]->t1->is_c3) {  //templated struct definition
-            templated_structs.push_back(TemplatedStructDefinition::convert(p->t0[i]->t1->t3->t0));
+        else if(p->t0[i]->t1->is_c3) {  //overload
+            overloads.push_back(Overload::convert(p->t0[i]->t1->t3->t0));
         }
-        else if(p->t0[i]->t1->is_c4) {  //overload
-            overloads.push_back(Overload::convert(p->t0[i]->t1->t4->t0));
+        else if(p->t0[i]->t1->is_c4) {  //templated overload
+            templated_overloads.push_back(TemplatedOverload::convert(p->t0[i]->t1->t4->t0));
         }
-        else if(p->t0[i]->t1->is_c5) {  //templated overload
-            templated_overloads.push_back(TemplatedOverload::convert(p->t0[i]->t1->t5->t0));
+        else if(p->t0[i]->t1->is_c5) {  //include
+            includes.push_back(Include::convert(p->t0[i]->t1->t5->t0));
         }
-        else if(p->t0[i]->t1->is_c6) {  //include
-            includes.push_back(Include::convert(p->t0[i]->t1->t6->t0));
+        else if(p->t0[i]->t1->is_c6) {  //global declaration
+            global_declarations.push_back(GlobalDeclaration::convert(p->t0[i]->t1->t6->t0));
         }
-        else if(p->t0[i]->t1->is_c7) {  //global declaration
-            global_declarations.push_back(GlobalDeclaration::convert(p->t0[i]->t1->t7->t0));
+        else if(p->t0[i]->t1->is_c7) {  //global node
+            global_nodes.push_back(GlobalNode::convert(p->t0[i]->t1->t7->t0));
         }
-        else if(p->t0[i]->t1->is_c8) {  //global node
-            global_nodes.push_back(GlobalNode::convert(p->t0[i]->t1->t8->t0));
-        }
-        else if(p->t0[i]->t1->is_c9) {  //typedef
-            typedefs.push_back(Typedef::convert(p->t0[i]->t1->t9->t0));
+        else if(p->t0[i]->t1->is_c8) {  //typedef
+            typedefs.push_back(Typedef::convert(p->t0[i]->t1->t8->t0));
         }
         else assert(false);
     }
-    return new Program(structs, functions, templated_structs, templated_functions, overloads, templated_overloads, includes, global_declarations, global_nodes, typedefs);
+    return new Program(structs, templated_structs, templated_functions, overloads, templated_overloads, includes, global_declarations, global_nodes, typedefs);
 }
 
 void Program::add_all(Program *other) {
     for(int i = 0; i < other->structs.size(); i++) structs.push_back(other->structs[i]);
-    for(int i = 0; i < other->functions.size(); i++) functions.push_back(other->functions[i]);
     for(int i = 0; i < other->overloads.size(); i++) overloads.push_back(other->overloads[i]);
 
     for(int i = 0; i < other->templated_structs.size(); i++) templated_structs.push_back(other->templated_structs[i]);
@@ -222,13 +216,17 @@ bool Program::is_well_formed() {
         }
 
         //go through everything and replace typedef types
-        for(int i = 0; i < structs.size(); i++) structs[i]->replace_templated_types(mapping);
-        for(int i = 0; i < functions.size(); i++) functions[i]->replace_templated_types(mapping);
-        for(int i = 0; i < overloads.size(); i++) overloads[i]->replace_templated_types(mapping);
-        for(int i = 0; i < templated_structs.size(); i++) templated_structs[i]->replace_templated_types(mapping);
-        for(int i = 0; i < templated_functions.size(); i++) templated_functions[i]->replace_templated_types(mapping);
-        for(int i = 0; i < templated_overloads.size(); i++) templated_overloads[i]->replace_templated_types(mapping);
-        for(int i = 0; i < global_declarations.size(); i++) global_declarations[i]->replace_templated_types(mapping);
+        bool success = true;
+        for(int i = 0; i < structs.size(); i++) success &= structs[i]->replace_templated_types(mapping);
+        for(int i = 0; i < overloads.size(); i++) success &= overloads[i]->replace_templated_types(mapping);
+        for(int i = 0; i < templated_structs.size(); i++) success &= templated_structs[i]->replace_templated_types(mapping);
+        for(int i = 0; i < templated_functions.size(); i++) success &= templated_functions[i]->replace_templated_types(mapping);
+        for(int i = 0; i < templated_overloads.size(); i++) success &= templated_overloads[i]->replace_templated_types(mapping);
+        for(int i = 0; i < global_declarations.size(); i++) success &= global_declarations[i]->replace_templated_types(mapping);
+        if(!success) {
+            std::cout << "Failed to resolve typedefs\n";
+            return false;
+        }
     }
 
     //for all templated structs add them as templated structs
@@ -311,15 +309,6 @@ bool Program::is_well_formed() {
     for(int i = 0; i < templated_overloads.size(); i++){
         if(!templated_overloads[i]->is_well_formed()) {
             std::cout << "Templated overload not well formed : " << templated_overloads[i]->overload->resolve_operator_signature()->to_string() << "\n";
-            return false;
-        }
-    }
-
-    // - are there any duplicate global function definitions?
-    std::cout << "ADDING FUNCTIONS" << std::endl;
-    for(int i = 0; i < functions.size(); i++) {
-        if(!add_function(functions[i])) {
-            std::cout << "Failed to add global function : " << functions[i]->resolve_function_signature()->to_string() << "\n";
             return false;
         }
     }

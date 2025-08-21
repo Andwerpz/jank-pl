@@ -13,6 +13,7 @@
 #include "Expression.h"
 #include "GlobalNode.h"
 #include "utils.h"
+#include "FunctionCall.h"
 
 #include <algorithm>
 #include <map>
@@ -402,4 +403,34 @@ bool Function::is_main() {
     FunctionSignature *fs = resolve_function_signature();
     assert(fs != nullptr);
     return fs->equals(new FunctionSignature(new Identifier("main"), {}));
+}
+
+bool Function::is_valid_call(FunctionCall *fc) {
+    // - do the identifiers match?
+    if(!this->id->equals(fc->id)) {
+        return false;
+    }
+    // - do the argument counts match?
+    if(this->parameters.size() != fc->argument_list.size()) {
+        return false;
+    }
+    // - does enclosing_type match? (must match exactly)
+    if(this->enclosing_type.has_value() != fc->target_type.has_value()) {
+        return false;
+    }
+    if(this->enclosing_type.has_value() && !this->enclosing_type.value()->equals(fc->target_type.value())) {
+        return false;
+    }
+
+    // - can all the arguments somehow be converted into nfs?
+    bool is_viable = true;
+    for(int i = 0; i < this->parameters.size(); i++) {
+        Type *nt = this->parameters[i]->type;
+        if(!is_declarable(nt, fc->argument_list[i])) {
+            return false;
+        }
+    }
+    
+    //all checks passed
+    return true;
 }

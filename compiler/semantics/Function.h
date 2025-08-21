@@ -10,6 +10,7 @@ struct FunctionSignature;
 struct OperatorSignature;
 struct Parameter;
 struct TemplateMapping;
+struct FunctionCall;
 
 struct Function {    
     std::optional<Type*> enclosing_type;
@@ -39,4 +40,5 @@ struct Function {
     std::string to_string();
 
     bool is_main();
+    bool is_valid_call(FunctionCall *fc);       //returns true if the given function call can be used to call the function
 };

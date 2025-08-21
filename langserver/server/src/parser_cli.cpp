@@ -5,7 +5,7 @@
 #include <set>
 
 std::set<std::string> keywords = {
-	"for", "while", "if", "else", "return", "struct", "template", "operator", "extern", "export",
+	"for", "while", "if", "else", "return", "struct", "template", "operator", "extern", "export", "new",
 	"typedef", "#include", "#global_node",
 	"syscall", "sizeof", "asm!",
 };

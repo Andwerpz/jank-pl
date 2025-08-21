@@ -9,5 +9,5 @@ constructor_call = "new" , rws , type , ows , "(" , ows , argument_list , ows , 
 
 destructor = "~" , base_type , ows , "()" , ows , compound_statement ;
 
-struct_definition = "struct" , ows , base_type , ows , "{" , ows , { ( member_variable_declaration | function | constructor | destructor ) , ows } , "}" ;
+struct_definition = "struct" , ows , base_type , ows , "{" , ows , { ( member_variable_declaration | templated_function | constructor | destructor ) , ows } , "}" ;
 templated_struct_definition = template_header , ows , struct_definition ;

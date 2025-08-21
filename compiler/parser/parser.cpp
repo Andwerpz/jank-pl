@@ -1,4 +1,4 @@
-// Date Generated : 08-18-2025 22:29:04
+// Date Generated : 08-21-2025 16:12:07
 #include "parser.h"
 
 namespace parser {
@@ -296,17 +296,43 @@ namespace parser {
         t3->postprocess();
     }
 
-    templated_function* templated_function::parse() {
+    templated_function::a0* templated_function::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
         template_header *_t0 = template_header::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         ows *_t1 = ows::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        function *_t2 = function::parse();
-        if(_t2 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        templated_function* retval = new templated_function(_t0, _t1, _t2);
+        templated_function::a0* retval = new templated_function::a0(_t0, _t1);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string templated_function::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        return ans;
+    }
+
+    void templated_function::a0::postprocess() {
+        token_type = "templated_function::a0";
+        token_children.push_back(t0);
+        t0->postprocess();
+        token_children.push_back(t1);
+        t1->postprocess();
+    }
+
+    templated_function* templated_function::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        templated_function::a0 *_t0 = templated_function::a0::parse();
+        function *_t1 = function::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        templated_function* retval = new templated_function(_t0, _t1);
         retval->start_ctx = _start_ctx;
         retval->end_ctx = get_ctx();
         return retval;
@@ -314,20 +340,19 @@ namespace parser {
 
     std::string templated_function::to_string() {
         std::string ans = "";
-        ans += t0->to_string();
+        if(t0 != nullptr) ans += t0->to_string();
         ans += t1->to_string();
-        ans += t2->to_string();
         return ans;
     }
 
     void templated_function::postprocess() {
         token_type = "templated_function";
-        token_children.push_back(t0);
-        t0->postprocess();
+        if(t0 != nullptr) {
+            token_children.push_back(t0);
+            t0->postprocess();
+        }
         token_children.push_back(t1);
         t1->postprocess();
-        token_children.push_back(t2);
-        t2->postprocess();
     }
 
     function_call* function_call::parse() {
@@ -2509,7 +2534,7 @@ namespace parser {
     struct_definition::a0::b0::c1* struct_definition::a0::b0::c1::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        function *_t0 = function::parse();
+        templated_function *_t0 = templated_function::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         struct_definition::a0::b0::c1* retval = new struct_definition::a0::b0::c1(_t0);
@@ -15851,7 +15876,7 @@ namespace parser {
     program::a0::b0::c0* program::a0::b0::c0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        function *_t0 = function::parse();
+        struct_definition *_t0 = struct_definition::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         program::a0::b0::c0* retval = new program::a0::b0::c0(_t0);
@@ -15875,7 +15900,7 @@ namespace parser {
     program::a0::b0::c1* program::a0::b0::c1::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        struct_definition *_t0 = struct_definition::parse();
+        templated_function *_t0 = templated_function::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         program::a0::b0::c1* retval = new program::a0::b0::c1(_t0);
@@ -15899,7 +15924,7 @@ namespace parser {
     program::a0::b0::c2* program::a0::b0::c2::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        templated_function *_t0 = templated_function::parse();
+        templated_struct_definition *_t0 = templated_struct_definition::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         program::a0::b0::c2* retval = new program::a0::b0::c2(_t0);
@@ -15923,7 +15948,7 @@ namespace parser {
     program::a0::b0::c3* program::a0::b0::c3::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        templated_struct_definition *_t0 = templated_struct_definition::parse();
+        overload *_t0 = overload::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         program::a0::b0::c3* retval = new program::a0::b0::c3(_t0);
@@ -15947,7 +15972,7 @@ namespace parser {
     program::a0::b0::c4* program::a0::b0::c4::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        overload *_t0 = overload::parse();
+        templated_overload *_t0 = templated_overload::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         program::a0::b0::c4* retval = new program::a0::b0::c4(_t0);
@@ -15971,7 +15996,7 @@ namespace parser {
     program::a0::b0::c5* program::a0::b0::c5::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        templated_overload *_t0 = templated_overload::parse();
+        include *_t0 = include::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         program::a0::b0::c5* retval = new program::a0::b0::c5(_t0);
@@ -15995,7 +16020,7 @@ namespace parser {
     program::a0::b0::c6* program::a0::b0::c6::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        include *_t0 = include::parse();
+        global_declaration *_t0 = global_declaration::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         program::a0::b0::c6* retval = new program::a0::b0::c6(_t0);
@@ -16019,7 +16044,7 @@ namespace parser {
     program::a0::b0::c7* program::a0::b0::c7::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        global_declaration *_t0 = global_declaration::parse();
+        global_node *_t0 = global_node::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         program::a0::b0::c7* retval = new program::a0::b0::c7(_t0);
@@ -16043,7 +16068,7 @@ namespace parser {
     program::a0::b0::c8* program::a0::b0::c8::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        global_node *_t0 = global_node::parse();
+        _typedef *_t0 = _typedef::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         program::a0::b0::c8* retval = new program::a0::b0::c8(_t0);
@@ -16060,30 +16085,6 @@ namespace parser {
 
     void program::a0::b0::c8::postprocess() {
         token_type = "program::a0::b0::c8";
-        token_children.push_back(t0);
-        t0->postprocess();
-    }
-
-    program::a0::b0::c9* program::a0::b0::c9::parse() {
-        parse_context _start_ctx = get_ctx();
-        push_stack();
-        _typedef *_t0 = _typedef::parse();
-        if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        rm_stack();
-        program::a0::b0::c9* retval = new program::a0::b0::c9(_t0);
-        retval->start_ctx = _start_ctx;
-        retval->end_ctx = get_ctx();
-        return retval;
-    }
-
-    std::string program::a0::b0::c9::to_string() {
-        std::string ans = "";
-        ans += t0->to_string();
-        return ans;
-    }
-
-    void program::a0::b0::c9::postprocess() {
-        token_type = "program::a0::b0::c9";
         token_children.push_back(t0);
         t0->postprocess();
     }
@@ -16144,12 +16145,6 @@ namespace parser {
             retval->end_ctx = get_ctx();
             return retval;
         }
-        if(auto x = program::a0::b0::c9::parse()) {
-            program::a0::b0* retval = new program::a0::b0(x);
-            retval->start_ctx = _start_ctx;
-            retval->end_ctx = get_ctx();
-            return retval;
-        }
         return nullptr;
     }
 
@@ -16163,7 +16158,6 @@ namespace parser {
         if(is_c6) return t6->to_string();
         if(is_c7) return t7->to_string();
         if(is_c8) return t8->to_string();
-        if(is_c9) return t9->to_string();
         assert(false);
     }
 
@@ -16204,10 +16198,6 @@ namespace parser {
         if(is_c8) {
             token_children.push_back(t8);
             t8->postprocess();
-        }
-        if(is_c9) {
-            token_children.push_back(t9);
-            t9->postprocess();
         }
     }
     program::a0* program::a0::parse() {

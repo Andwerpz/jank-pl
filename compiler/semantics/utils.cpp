@@ -1,6 +1,7 @@
 #include <chrono>
 #include <algorithm>
 #include <iomanip>
+#include <functional>
 
 #include "utils.h"
 #include "Type.h"
@@ -26,6 +27,7 @@
 #include "Literal.h"
 #include "Parameter.h"
 #include "Declaration.h"
+#include "TemplateHeader.h"
 
 ld current_time_seconds() {
     using namespace std::chrono;
@@ -774,85 +776,62 @@ Function* get_function(FunctionSignature *fs) {
     return nullptr;
 }
 
-//finds all viable functions with parameter conversions
+//finds all viable functions given some function call
 // - If there is exactly one, returns that one
 // - If there are multiple or zero, returns nullptr
 Function* get_called_function(FunctionCall *fc) {
     assert(fc != nullptr);
-
-    //TODO
-    //flow should be like this instead:
-    // - go through all functions and see if there is an existing one that works. 
-    // - go through all templated functions and gather all that work
-    // - find 'most specialized' templated functions. If there are more than one, then
-    //   this function call is ambiguous
-    // - generate function, ensure that the generated function actually works. 
-
-    //see if we can make some templated function out of fc
-    //TODO check if some function call is ambiguous due to templating. 
+    //we convert all l-values into references. 
+    //within templated function, we handle reference logic. (T cannot be assigned to T&)
+    //Due to how the partial ordering works, this results in decent reference semantics. 
+    
+    // - gather all templated functions that work
+    std::vector<TemplatedFunction*> viable;
     for(int i = 0; i < declared_templated_functions.size(); i++){
-        Function* nf = declared_templated_functions[i]->gen_function(fc);
-        if(nf == nullptr) {
-            continue;
-        }
-
-        //ok, we've generated a new function. Add it
-        if(!add_function(nf)) {
-            //duplicate function signature is bad?
-            // std::cout << "Generated duplicate function signature from templated function : " << nf->resolve_function_signature()->to_string() << "\n";
-            // return nullptr;
+        TemplatedFunction *tf = declared_templated_functions[i];
+        if(tf->calc_mapping(fc)) {
+            viable.push_back(tf);
         }
     }
 
-    std::optional<Type*> enclosing_type = fc->target_type;
-    Identifier *id = fc->id;
-    std::vector<Expression*> args = fc->argument_list;
-    if(enclosing_type.has_value()) assert(enclosing_type.value() != nullptr);
-    assert(id != nullptr);
-
-    std::vector<Function*> viable;
-    for(int i = 0; i < declared_functions.size(); i++){
-        FunctionSignature *nfs = declared_functions[i]->resolve_function_signature();
-
-        // - do the identifiers match?
-        if(*id != *(nfs->id)) {
-            continue;
+    // - find 'most specialized' templated function
+    //there exists directed edge (A, B) iff A is a superset of B. 
+    //we can tell if A is a superset of B if we can generate a template mapping from A using B's templated signature
+    //then, we just look for all functions with outdegree of 0
+    std::vector<int> outdeg(viable.size(), 0);
+    for(int i = 0; i < viable.size(); i++){
+        TemplatedFunction *tf = viable[i];
+        std::vector<Type*> arg_types(tf->function->parameters.size());
+        for(int j = 0; j < tf->function->parameters.size(); j++){
+            arg_types[j] = tf->function->parameters[j]->type->make_copy();
         }
-        // - do the argument counts match?
-        if(args.size() != nfs->input_types.size()) {
-            continue;
-        }
-        // - does enclosing_type match? (must match exactly)
-        if(enclosing_type.has_value() != nfs->enclosing_type.has_value()) {
-            continue;
-        }
-        if(enclosing_type.has_value() && *(enclosing_type.value()) != *(nfs->enclosing_type.value())) {
-            continue;
-        }
-
-        // - can all the arguments somehow be converted into nfs?
-        bool is_viable = true;
-        for(int j = 0; j < args.size(); j++) {
-            Type *nt = nfs->input_types[j];
-            if(!is_declarable(nt, args[j])) {
-                is_viable = false;
+        for(int j = 0; j < viable.size(); j++){
+            if(i == j) continue;
+            if(viable[j]->calc_mapping(arg_types)) {
+                outdeg[j] ++;
             }
         }
-        if(!is_viable) continue;
-
-        //all checks passed
-        viable.push_back(declared_functions[i]);
     }
-
-    if(viable.size() == 0) {
+    std::vector<TemplatedFunction*> best;
+    for(int i = 0; i < viable.size(); i++) {
+        if(outdeg[i] == 0) best.push_back(viable[i]);
+    }
+    if(best.size() == 0) {
         std::cout << "No matching function for signature : " << fc->to_string() << "\n";
         return nullptr;
     }
-    else if(viable.size() > 1) {
+    else if(best.size() > 1) {
         std::cout << "Ambiguous function call : " << fc->to_string() << "\n";
         return nullptr;
     }
-    return viable[0];
+
+    // - generate function
+    assert(best.size() == 1);
+    Function *f = best[0]->gen_function(fc);
+    assert(f != nullptr);
+    assert(f->is_valid_call(fc));
+
+    return f;
 }
 
 //pretty much exactly the same as get_called_function
@@ -974,9 +953,9 @@ bool add_struct_type(StructDefinition *sd) {
 
     //add all functions and constructors
     for(int i = 0; i < sd->functions.size(); i++){
-        Function *f = sd->functions[i];
-        if(!add_function(f)) {
-            std::cout << "Failed to add struct member function : " << f->resolve_function_signature()->to_string() << "\n";
+        TemplatedFunction *f = sd->functions[i];
+        if(!add_templated_function(f)) {
+            std::cout << "Failed to add struct member function : " << f->function->resolve_function_signature()->to_string() << "\n";
             return false;
         } 
     }
@@ -1078,7 +1057,48 @@ bool add_templated_struct(TemplatedStructDefinition *t) {
 
 bool add_templated_function(TemplatedFunction *f) {
     assert(f != nullptr);
+
+    //check if this is a duplicate of another templated function
+    //do this by seeing if we can draw a bijection between the sets of calls that f and another function can handle
+    std::vector<Type*> farg_list;
+    for(int i = 0; i < f->function->parameters.size(); i++){
+        farg_list.push_back(f->function->parameters[i]->type->make_copy());
+    }
+    for(int i = 0; i < declared_templated_functions.size(); i++){
+        TemplatedFunction *of = declared_templated_functions[i];
+
+        // - do they have the same identifier?
+        if(!f->function->id->equals(of->function->id)) {
+            continue;
+        }
+
+        // - are enclosing types the same?
+        if(f->function->enclosing_type.has_value() != of->function->enclosing_type.has_value()) continue;
+        if(f->function->enclosing_type.has_value() && !f->function->enclosing_type.value()->equals(of->function->enclosing_type.value())) continue;
+
+        // - can they both map to eachother?
+        std::vector<Type*> arg_list;    
+        for(int j = 0; j < of->function->parameters.size(); j++){
+            arg_list.push_back(of->function->parameters[j]->type->make_copy());
+        }
+        if(of->calc_mapping(farg_list) == nullptr || f->calc_mapping(arg_list) == nullptr) {
+            continue;
+        }
+
+        //found bijection
+        std::cout << "Duplicate functions : " << f->function->resolve_function_signature()->to_string() << " : " << of->function->resolve_function_signature()->to_string() << "\n";
+        return false;
+    }
+
+    //ok, good to go
     declared_templated_functions.push_back(f);
+
+    //if this isn't really a templated function (empty header), go ahead and register it as function
+    if(f->header->types.size() == 0) {
+        add_function(f->function);
+        f->generated_functions.push_back(f->function);
+    }
+
     std::cout << "ADD TEMPLATED FUNCTION : " << f->function->resolve_function_signature()->to_string() << "\n";
     return true;
 }

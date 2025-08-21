@@ -4,18 +4,56 @@
 #include <iostream>;
 #include <assert>;
 
-export void test_function_1() {
-    cout << "bello1\n";
+void foo(u64 x) {
+    cout << "foo(u64)\n";
 }
 
-export void test_function_2() {
-    cout << "bello2\n";
+void foo(u64& x) {
+    cout << "foo(u64&)\n";
+}
+
+template<T>
+void foo(T x) {
+    cout << "foo(T)\n";
+}
+
+template<T>
+void foo(vector<T> x) {
+    cout << "foo(vector<T>)\n";
+}
+
+void foo(vector<i32> x){
+    cout << "foo(vector<i32>)\n";
+}
+
+template<T, U>
+void foo(T x, U y) {
+    cout << "foo(T, U)\n";
+}
+
+template<T>
+void foo(T x, T y) {
+    cout << "foo(T, T)\n";
+}
+
+template<T>
+void foo(T& x, T y) {
+    cout << "foo(T&, T)\n";
 }
 
 i32 main() {
 
-    asm!("call test_function_1");
-    asm!("call test_function_2");
+    foo(1);                         //foo(T)
+    foo(new vector<i32>());         //foo(vector<i32>)
+    foo(new vector<u64>());         //foo(vector<T>)
+    foo(0x10);                      //foo(u64)
+    foo(1, 2);                      //foo(T, T)
+    foo(1, 0x1);                    //foo(T, U)
+
+    u64 x = 0x0;
+    foo(x);                         //foo(u64&)
+    foo(x, 0x0);                    //foo(T&, T)
+    foo(0x0, x);                    //foo(T, T)
 
     return 0;
 }
