@@ -8,11 +8,12 @@
 #include "Function.h"
 #include "ConstructorCall.h"
 #include "TemplateMapping.h"
-#include "OverloadCall.h"
+#include "OperatorCall.h"
 #include "StructLayout.h"
 #include "primitives.h"
 #include "DestructorCall.h"
 #include "Destructor.h"
+#include "Operator.h"
 
 // -- CONSTRUCTOR --
 ExprPrimary::ExprPrimary(val_t _val) {
@@ -255,7 +256,13 @@ Expression* Expression::convert(parser::expression *e) {
 }
 
 // -- RESOLVE_TYPE --
-Type* ExprPrimary::resolve_type() {
+Type* ExprNode::resolve_type() {
+    if(resolve_type_cache.has_value()) return resolve_type_cache.value();
+    resolve_type_cache = this->_resolve_type();
+    return resolve_type_cache.value();
+}
+
+Type* ExprPrimary::_resolve_type() {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *f = std::get<FunctionCall*>(val);
         Type *res = f->resolve_type();
@@ -279,8 +286,8 @@ Type* ExprPrimary::resolve_type() {
         }
         return res;
     }
-    else if(std::holds_alternative<OverloadCall*>(val)) {
-        OverloadCall *o = std::get<OverloadCall*>(val);
+    else if(std::holds_alternative<OperatorCall*>(val)) {
+        OperatorCall *o = std::get<OperatorCall*>(val);
         Type *res = o->resolve_type();
         if(res == nullptr){
             std::cout << "Overload does not resolve to type : " << o->to_string() << "\n";
@@ -327,7 +334,7 @@ Type* ExprPrimary::resolve_type() {
     else assert(false);
 }
 
-Type* ExprBinary::resolve_type() {
+Type* ExprBinary::_resolve_type() {
     Type *lt = left->resolve_type(), *rt = right->resolve_type();
     if(lt == nullptr || rt == nullptr) return nullptr;    
     if(std::holds_alternative<std::string>(op)) {
@@ -362,7 +369,7 @@ Type* ExprBinary::resolve_type() {
     else assert(false);
 }
 
-Type* ExprPrefix::resolve_type() {
+Type* ExprPrefix::_resolve_type() {
     Type *rt = right->resolve_type();
     if(rt == nullptr) return nullptr;
     if(std::holds_alternative<std::string>(op)) {
@@ -407,8 +414,8 @@ Type* ExprPrefix::resolve_type() {
         Type *cast_t = std::get<Type*>(op);
 
         //try to find cast operator implementation
-        OperatorImplementation *oi = find_typecast_implementation(rt, cast_t);
-        if(oi == nullptr) {
+        Operator *o = get_called_typecast(rt, cast_t);
+        if(o == nullptr) {
             std::cout << "Cannot cast from " << rt->to_string() << " to " << cast_t->to_string() << "\n";
             return nullptr;
         }
@@ -418,7 +425,7 @@ Type* ExprPrefix::resolve_type() {
     else assert(false);
 }
 
-Type* ExprPostfix::resolve_type() {
+Type* ExprPostfix::_resolve_type() {
     Type *lt = left->resolve_type();
     if(lt == nullptr) return nullptr;
     if(std::holds_alternative<Expression*>(op)) {   //indexing
@@ -437,7 +444,7 @@ Type* ExprPostfix::resolve_type() {
         }
 
         //default behaviour
-        if(find_typecast_implementation(et, primitives::u64) == nullptr) {
+        if(get_called_typecast(et, primitives::u64) == nullptr) {
             std::cout << "Builtin indexing expression must be convertible to u64\n";
             return nullptr;
         }
@@ -589,7 +596,13 @@ Type* Expression::resolve_type() {
 }
 
 // -- IS_LVALUE --
-bool ExprPrimary::is_lvalue() {
+bool ExprNode::is_lvalue() {
+    if(is_lvalue_cache.has_value()) return is_lvalue_cache.value();
+    is_lvalue_cache = this->_is_lvalue();
+    return is_lvalue_cache.value();
+}
+
+bool ExprPrimary::_is_lvalue() {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *fc = std::get<FunctionCall*>(val);
         Type *t = fc->resolve_type();
@@ -601,8 +614,8 @@ bool ExprPrimary::is_lvalue() {
     else if(std::holds_alternative<ConstructorCall*>(val)) {
         return false;
     }
-    else if(std::holds_alternative<OverloadCall*>(val)) {
-        OverloadCall *o = std::get<OverloadCall*>(val);
+    else if(std::holds_alternative<OperatorCall*>(val)) {
+        OperatorCall *o = std::get<OperatorCall*>(val);
         Type *t = o->resolve_type();
         if(t == nullptr) return false;
         //if return type is reference, auto-dereference
@@ -627,7 +640,7 @@ bool ExprPrimary::is_lvalue() {
     else assert(false);
 }
 
-bool ExprBinary::is_lvalue() {
+bool ExprBinary::_is_lvalue() {
     Type *lt = left->resolve_type(), *rt = right->resolve_type();
     if(lt == nullptr || rt == nullptr) return false;
     if(std::holds_alternative<std::string>(op)) {
@@ -645,7 +658,7 @@ bool ExprBinary::is_lvalue() {
     else assert(false);
 }
 
-bool ExprPrefix::is_lvalue() {
+bool ExprPrefix::_is_lvalue() {
     Type *rt = right->resolve_type();
     if(!right->is_lvalue()) return false;
     if(std::holds_alternative<std::string>(op)) {
@@ -672,7 +685,7 @@ bool ExprPrefix::is_lvalue() {
     else assert(false);
 }
 
-bool ExprPostfix::is_lvalue() {
+bool ExprPostfix::_is_lvalue() {
     Type *lt = left->resolve_type();
     if(lt == nullptr) return false;
     if(std::holds_alternative<Expression*>(op)) {   //indexing
@@ -753,7 +766,7 @@ void ExprPrimary::elaborate(ExprNode*& self) {
     else if(std::holds_alternative<ConstructorCall*>(val)) {
         //do nothing
     }
-    else if(std::holds_alternative<OverloadCall*>(val)) {
+    else if(std::holds_alternative<OperatorCall*>(val)) {
         //do nothing
     }
     else if(std::holds_alternative<Identifier*>(val)) {
@@ -777,10 +790,9 @@ void ExprBinary::elaborate(ExprNode*& self) {
         std::string str_op = std::get<std::string>(op);
 
         //convert overloads into overload calls
-        OperatorImplementation *oe = find_operator_implementation(left, str_op, right);
-        if(auto fo = dynamic_cast<OverloadedOperator*>(oe)) {
-            Overload *o = fo->overload;
-            OverloadCall *oc = new OverloadCall(left, str_op, right);
+        Operator *o = get_called_operator(left, str_op, right);
+        if(dynamic_cast<OperatorOverload*>(o) != nullptr) {
+            OperatorCall *oc = new OperatorCall(left, str_op, right);
             self = new ExprPrimary(oc);
             return;
         }
@@ -797,10 +809,9 @@ void ExprPrefix::elaborate(ExprNode*& self) {
         std::string str_op = std::get<std::string>(op);
 
         //convert overloads into overload calls
-        OperatorImplementation *oe = find_operator_implementation(std::nullopt, str_op, right);
-        if(auto fo = dynamic_cast<OverloadedOperator*>(oe)) {
-            Overload *o = fo->overload;
-            OverloadCall *oc = new OverloadCall(std::nullopt, str_op, right);
+        Operator *o = get_called_operator(std::nullopt, str_op, right);
+        if(dynamic_cast<OperatorOverload*>(o) != nullptr) {
+            OperatorCall *oc = new OperatorCall(std::nullopt, str_op, right);
             self = new ExprPrimary(oc);
             return;
         }
@@ -810,7 +821,7 @@ void ExprPrefix::elaborate(ExprNode*& self) {
         Type *rt = right->resolve_type();
 
         //for now, assume that all typecasts are builtin
-        OperatorImplementation *oe = find_typecast_implementation(rt, cast_t);
+        Operator *oe = get_called_typecast(rt, cast_t);
         assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
     }
     else assert(false);
@@ -825,10 +836,9 @@ void ExprPostfix::elaborate(ExprNode*& self) {
         assert(expr->resolve_type() != nullptr);
 
         //convert overloads into overload calls
-        OperatorImplementation *oe = find_operator_implementation(left, "[]", expr->expr_node);
-        if(auto fo = dynamic_cast<OverloadedOperator*>(oe)) {
-            Overload *o = fo->overload;
-            OverloadCall *oc = new OverloadCall(left, "[]", expr->expr_node);
+        Operator *o = get_called_operator(left, "[]", expr->expr_node);
+        if(dynamic_cast<OperatorOverload*>(o) != nullptr) {
+            OperatorCall *oc = new OperatorCall(left, "[]", expr->expr_node);
             self = new ExprPrimary(oc);
             return;
         }
@@ -843,10 +853,9 @@ void ExprPostfix::elaborate(ExprNode*& self) {
         std::string str_op = std::get<std::string>(op);
 
         //convert overloads into overload calls
-        OperatorImplementation *oe = find_operator_implementation(left, str_op, std::nullopt);
-        if(auto fo = dynamic_cast<OverloadedOperator*>(oe)) {
-            Overload *o = fo->overload;
-            OverloadCall *oc = new OverloadCall(left, str_op, std::nullopt);
+        Operator *o = get_called_operator(left, str_op, std::nullopt);
+        if(dynamic_cast<OperatorOverload*>(o) != nullptr) {
+            OperatorCall *oc = new OperatorCall(left, str_op, std::nullopt);
             self = new ExprPrimary(oc);
             return;
         }
@@ -889,8 +898,8 @@ void ExprPrimary::emit_asm() {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
         c->emit_asm(true);
     }
-    else if(std::holds_alternative<OverloadCall*>(val)) {
-        OverloadCall *o = std::get<OverloadCall*>(val);
+    else if(std::holds_alternative<OperatorCall*>(val)) {
+        OperatorCall *o = std::get<OperatorCall*>(val);
         o->emit_asm();
 
         Type *ot = o->resolve_type();
@@ -958,7 +967,7 @@ void ExprBinary::emit_asm() {
                 fout << indent() << "mov %rax, %rbx\n";
                 emit_pop("%rax", "ExprBinary::emit_asm() : || save left");
 
-                OperatorImplementation *oe = find_operator_implementation(left, str_op, right);
+                Operator *oe = get_called_operator(left, str_op, right);
                 assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
                 dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
             }
@@ -980,7 +989,7 @@ void ExprBinary::emit_asm() {
                 fout << indent() << "mov %rax, %rbx\n";
                 emit_pop("%rax", "ExprBinary::emit_asm() : && save left");
 
-                OperatorImplementation *oe = find_operator_implementation(left, str_op, right);
+                Operator *oe = get_called_operator(left, str_op, right);
                 assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
                 dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
             }
@@ -1066,12 +1075,12 @@ void ExprBinary::emit_asm() {
             left->emit_asm();
             emit_pop("%rbx", "ExprBinary::emit_asm() : save right");
             
-            OperatorImplementation *oe = find_operator_implementation(left, str_op, right);
-            assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
-            dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
+            Operator *o = get_called_operator(left, str_op, right);
+            assert(dynamic_cast<BuiltinOperator*>(o) != nullptr);
+            dynamic_cast<BuiltinOperator*>(o)->emit_asm();
 
             //if this is a reference, dereference it
-            Type *res = oe->res_type;
+            Type *res = o->type;
             if(dynamic_cast<ReferenceType*>(res) != nullptr) {
                 emit_dereference(res);
             }
@@ -1101,12 +1110,12 @@ void ExprPrefix::emit_asm() {
             }
         }
         else {
-            OperatorImplementation *oe = find_operator_implementation(std::nullopt, str_op, right);
-            assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
-            dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
+            Operator *o = get_called_operator(std::nullopt, str_op, right);
+            assert(dynamic_cast<BuiltinOperator*>(o) != nullptr);
+            dynamic_cast<BuiltinOperator*>(o)->emit_asm();
 
             //if this is a reference, dereference it
-            Type *res = oe->res_type;
+            Type *res = o->type;
             if(dynamic_cast<ReferenceType*>(res) != nullptr) {
                 emit_dereference(res);
             }
@@ -1116,7 +1125,7 @@ void ExprPrefix::emit_asm() {
         Type *cast_t = std::get<Type*>(op);
 
         //for now, assume all typecasts are builtin
-        OperatorImplementation *oi = find_typecast_implementation(rt, cast_t);
+        Operator *oi = get_called_typecast(rt, cast_t);
         assert(dynamic_cast<BuiltinOperator*>(oi) != nullptr);
         dynamic_cast<BuiltinOperator*>(oi)->emit_asm();
     }
@@ -1149,7 +1158,7 @@ void ExprPostfix::emit_asm() {
         expr->emit_asm();
 
         //convert et to u64
-        BuiltinOperator *cast_op = dynamic_cast<BuiltinOperator*>(find_typecast_implementation(et, primitives::u64));
+        BuiltinOperator *cast_op = dynamic_cast<BuiltinOperator*>(get_called_typecast(et, primitives::u64));
         assert(cast_op != nullptr);
         cast_op->emit_asm();
 
@@ -1274,12 +1283,12 @@ void ExprPostfix::emit_asm() {
         }
         else {
             //evaluate operator
-            OperatorImplementation *oe = find_operator_implementation(left, str_op, std::nullopt);
-            assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
-            dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
+            Operator *o = get_called_operator(left, str_op, std::nullopt);
+            assert(dynamic_cast<BuiltinOperator*>(o) != nullptr);
+            dynamic_cast<BuiltinOperator*>(o)->emit_asm();
 
             //if this is a reference, dereference it
-            Type *res = oe->res_type;
+            Type *res = o->type;
             if(dynamic_cast<ReferenceType*>(res) != nullptr) {
                 emit_dereference(res);
             }
@@ -1342,8 +1351,8 @@ std::string ExprPrimary::to_string() {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
         return c->to_string();
     }
-    else if(std::holds_alternative<OverloadCall*>(val)) {
-        OverloadCall *o = std::get<OverloadCall*>(val);
+    else if(std::holds_alternative<OperatorCall*>(val)) {
+        OperatorCall *o = std::get<OperatorCall*>(val);
         return o->to_string();
     }
     else if(std::holds_alternative<Identifier*>(val)) {
@@ -1429,8 +1438,8 @@ size_t ExprPrimary::hash() {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
         return c->hash();
     }
-    else if(std::holds_alternative<OverloadCall*>(val)) {
-        OverloadCall *o = std::get<OverloadCall*>(val);
+    else if(std::holds_alternative<OperatorCall*>(val)) {
+        OperatorCall *o = std::get<OperatorCall*>(val);
         return o->hash();
     }
     else if(std::holds_alternative<Identifier*>(val)) {
@@ -1531,9 +1540,9 @@ bool ExprPrimary::equals(ExprNode* _other) {
         ConstructorCall *oc = std::get<ConstructorCall*>(other->val);
         return c->equals(oc);
     }
-    else if(std::holds_alternative<OverloadCall*>(val)) {
-        OverloadCall *o = std::get<OverloadCall*>(val);
-        OverloadCall *oo = std::get<OverloadCall*>(other->val);
+    else if(std::holds_alternative<OperatorCall*>(val)) {
+        OperatorCall *o = std::get<OperatorCall*>(val);
+        OperatorCall *oo = std::get<OperatorCall*>(other->val);
         return o->equals(oo);
     }
     else if(std::holds_alternative<Identifier*>(val)) {
@@ -1656,8 +1665,8 @@ void ExprPrimary::id_to_type() {
             c->argument_list[i]->id_to_type();
         }
     }
-    else if(std::holds_alternative<OverloadCall*>(val)) {
-        OverloadCall *o = std::get<OverloadCall*>(val);
+    else if(std::holds_alternative<OperatorCall*>(val)) {
+        OperatorCall *o = std::get<OperatorCall*>(val);
         
         //turn both arguments to type
         if(o->left.has_value()) o->left.value()->id_to_type();
@@ -1740,8 +1749,8 @@ ExprNode* ExprPrimary::make_copy() {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
         return new ExprPrimary(c->make_copy());
     }
-    else if(std::holds_alternative<OverloadCall*>(val)) {
-        OverloadCall *o = std::get<OverloadCall*>(val);
+    else if(std::holds_alternative<OperatorCall*>(val)) {
+        OperatorCall *o = std::get<OperatorCall*>(val);
         return new ExprPrimary(o->make_copy());
     }
     else if(std::holds_alternative<Identifier*>(val)) {
@@ -1819,8 +1828,8 @@ bool ExprPrimary::replace_templated_types(TemplateMapping *mapping) {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
         return c->replace_templated_types(mapping);
     }
-    else if(std::holds_alternative<OverloadCall*>(val)) {
-        OverloadCall *o = std::get<OverloadCall*>(val);
+    else if(std::holds_alternative<OperatorCall*>(val)) {
+        OperatorCall *o = std::get<OperatorCall*>(val);
         return o->replace_templated_types(mapping);
     }
     else if(std::holds_alternative<Identifier*>(val)) {
@@ -1913,8 +1922,8 @@ bool ExprPrimary::look_for_templates() {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
         if(!c->look_for_templates()) return false;
     }
-    else if(std::holds_alternative<OverloadCall*>(val)) {
-        OverloadCall *o = std::get<OverloadCall*>(val);
+    else if(std::holds_alternative<OperatorCall*>(val)) {
+        OperatorCall *o = std::get<OperatorCall*>(val);
         if(!o->look_for_templates()) return false;
     }
     else if(std::holds_alternative<Identifier*>(val)) {

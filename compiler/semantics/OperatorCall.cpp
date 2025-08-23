@@ -1,60 +1,66 @@
-#include "OverloadCall.h"
+#include "OperatorCall.h"
 #include "utils.h"
 #include "Expression.h"
-#include "Overload.h"
+#include "Operator.h"
 #include "Identifier.h"
 #include "Parameter.h"
+#include "Operator.h"
+#include "Type.h"
+#include "OperatorSignature.h"
 
-OverloadCall::OverloadCall(std::optional<ExprNode*> _left, std::string _op, std::optional<ExprNode*> _right) {
+OperatorCall::OperatorCall(std::optional<ExprNode*> _left, std::string _op, std::optional<ExprNode*> _right) {
     left = _left;
     op = _op;
     right = _right;
 }
 
-Overload* OverloadCall::resolve_called_overload() {
-    OperatorImplementation *oi = find_operator_implementation(left, op, right);
-    if(auto x = dynamic_cast<OverloadedOperator*>(oi)) return x->overload;
-    return nullptr;
+Operator* OperatorCall::resolve_called_operator() {
+    return get_called_operator(left, op, right);
 }
 
-Type* OverloadCall::resolve_type() {
-    Overload *o = resolve_called_overload();
+Type* OperatorCall::resolve_type() {
+    Operator *o = this->resolve_called_operator();
     if(o == nullptr) {
-        std::cout << "Cannot resolve overload call : " << to_string() << "\n";
+        std::cout << "Cannot resolve operator call : " << to_string() << "\n";
         return nullptr;
     }
-    return o->type;
+    return o->type->make_copy();
 }
 
-void OverloadCall::emit_asm() {
+//only works for overloads. Builtins should be handled with Expression
+//the name is kinda misleading, but we do use this to resolve called operators so ¯\_(:3)_/¯
+void OperatorCall::emit_asm() {
     if(asm_debug) fout << indent() << "# calling overload : \n";
 
-    Overload *o = this->resolve_called_overload();
+    OperatorOverload *o = dynamic_cast<OperatorOverload*>(resolve_called_operator());
     assert(o != nullptr);
+    OperatorSignature *os = o->resolve_operator_signature();
+    assert(os != nullptr);
 
     //create temp variables for all arguments
     push_declaration_stack();
-    int param_ptr = 0;
     if(left.has_value()) {
+        assert(os->left.has_value());
         Identifier *id = new Identifier(create_new_tmp_variable_name());
-        Variable *v = emit_initialize_stack_variable(o->parameters[param_ptr ++]->type, id, new Expression(left.value()));
+        Variable *v = emit_initialize_stack_variable(os->left.value(), id, new Expression(left.value()));
         assert(v != nullptr);
     }
     if(right.has_value()) {
+        assert(os->right.has_value());
         Identifier *id = new Identifier(create_new_tmp_variable_name());
-        Variable *v = emit_initialize_stack_variable(o->parameters[param_ptr ++]->type, id, new Expression(right.value()));
+        Variable *v = emit_initialize_stack_variable(os->right.value(), id, new Expression(right.value()));
         assert(v != nullptr);
     }
 
     //call overload
-    std::string label = get_overload_label(o->resolve_operator_signature());
+    std::string label = get_operator_label(o->resolve_operator_signature());
     fout << indent() << "call " << label << "\n";
 
     //clean up temp variables
     pop_declaration_stack();
 }
 
-std::string OverloadCall::to_string() {
+std::string OperatorCall::to_string() {
     std::string res = "";
     res += "operator" + op;
     res += "(";
@@ -65,7 +71,7 @@ std::string OverloadCall::to_string() {
     return res;
 }
 
-size_t OverloadCall::hash() {
+size_t OperatorCall::hash() {
     size_t hash = 0;
     if(left.has_value()) hash_combine(hash, left.value()->hash());
     else hash_combine(hash, 0);
@@ -75,7 +81,7 @@ size_t OverloadCall::hash() {
     return hash;
 }
 
-bool OverloadCall::equals(OverloadCall *other) {
+bool OperatorCall::equals(OperatorCall *other) {
     if(left.has_value() != other->left.has_value()) return false;
     if(left.has_value() && !left.value()->equals(other->left.value())) return false;
     if(op != other->op) return false;
@@ -84,22 +90,22 @@ bool OverloadCall::equals(OverloadCall *other) {
     return true;
 }
 
-OverloadCall* OverloadCall::make_copy() {
+OperatorCall* OperatorCall::make_copy() {
     std::optional<ExprNode*> _left = std::nullopt;
     std::optional<ExprNode*> _right = std::nullopt;
     std::string _op = op;
     if(left.has_value()) _left = left.value()->make_copy();
     if(right.has_value()) _right = right.value()->make_copy();
-    return new OverloadCall(_left, _op, _right);
+    return new OperatorCall(_left, _op, _right);
 }
 
-bool OverloadCall::replace_templated_types(TemplateMapping *mapping) {
+bool OperatorCall::replace_templated_types(TemplateMapping *mapping) {
     if(left.has_value()) if(!left.value()->replace_templated_types(mapping)) return false;
     if(right.has_value()) if(!right.value()->replace_templated_types(mapping)) return false;
     return true;
 }
 
-bool OverloadCall::look_for_templates() {
+bool OperatorCall::look_for_templates() {
     if(left.has_value()) if(!left.value()->look_for_templates()) return false;
     if(right.has_value()) if(!right.value()->look_for_templates()) return false;
     return true;

@@ -4,6 +4,7 @@
 #include <iostream>
 #include <string>
 #include <map>
+#include "Operator.h"
 
 namespace primitives {
 
@@ -50,82 +51,82 @@ namespace primitives {
         }
 
         //prefix operators
-        add_operator_implementation(new OperatorSignature("+", p_int), new BuiltinOperator(p_int, {}));
-        add_operator_implementation(new OperatorSignature("-", p_int), new BuiltinOperator(p_int, {"neg " + rax}));
-        add_operator_implementation(new OperatorSignature("~", p_int), new BuiltinOperator(p_int, {"not " + rax}));
-        add_operator_implementation(new OperatorSignature("!", p_int), new BuiltinOperator(i32, {
+        add_builtin_operator(new BuiltinOperator(p_int, std::nullopt, "+", p_int, {}));
+        add_builtin_operator(new BuiltinOperator(p_int, std::nullopt, "-", p_int, {"neg " + rax}));
+        add_builtin_operator(new BuiltinOperator(p_int, std::nullopt, "~", p_int, {"not " + rax}));
+        add_builtin_operator(new BuiltinOperator(i32, std::nullopt, "!", p_int, {
             "test " + rax + ", " + rax,
             "sete %al",
             "movzx %al, %rax",
         }));
 
         //pre and post increment / decrement
-        add_operator_implementation(new OperatorSignature("++", new ReferenceType(p_int)), new BuiltinOperator(new ReferenceType(p_int), {
+        add_builtin_operator(new BuiltinOperator(new ReferenceType(p_int), std::nullopt, "++", new ReferenceType(p_int), {
             inc + " (%rcx)",
             "mov %rcx, %rax",
         }));
-        add_operator_implementation(new OperatorSignature("--", new ReferenceType(p_int)), new BuiltinOperator(new ReferenceType(p_int), {
+        add_builtin_operator(new BuiltinOperator(new ReferenceType(p_int), std::nullopt, "--", new ReferenceType(p_int), {
             dec + " (%rcx)",
             "mov %rcx, %rax",
         }));
-        add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "++"), new BuiltinOperator(p_int, {inc + " (%rcx)"}));
-        add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "--"), new BuiltinOperator(p_int, {dec + " (%rcx)"}));
+        add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "++", std::nullopt, {inc + " (%rcx)"}));
+        add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "--", std::nullopt, {dec + " (%rcx)"}));
 
         // binary +, -
-        add_operator_implementation(new OperatorSignature(p_int, "+", p_int), new BuiltinOperator(p_int, {"add " + rbx + ", " + rax}));
-        add_operator_implementation(new OperatorSignature(p_int, "-", p_int), new BuiltinOperator(p_int, {"sub " + rbx + ", " + rax}));
-        add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "+=", p_int), new BuiltinOperator(p_int, {
+        add_builtin_operator(new BuiltinOperator(p_int, p_int, "+", p_int, {"add " + rbx + ", " + rax}));
+        add_builtin_operator(new BuiltinOperator(p_int, p_int, "-", p_int, {"sub " + rbx + ", " + rax}));
+        add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "+=", p_int, {
             "add " + rbx + ", " + rax,
             mov + " " + rax + ", (%rcx)",
         }));
-        add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "-=", p_int), new BuiltinOperator(p_int, {
+        add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "-=", p_int, {
             "sub " + rbx + ", " + rax,
             mov + " " + rax + ", (%rcx)",
         }));
         
         //binary *
         if(is_signed) {
-            add_operator_implementation(new OperatorSignature(p_int, "*", p_int), new BuiltinOperator(p_int, {"imul " + rbx + ", " + rax}));
-            add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "*=", p_int), new BuiltinOperator(p_int, {
+            add_builtin_operator(new BuiltinOperator(p_int, p_int, "*", p_int, {"imul " + rbx + ", " + rax}));
+            add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "*=", p_int, {
                 "imul " + rbx + ", " + rax,
                 mov + " " + rax + ", (%rcx)",
             }));
         }
         else {
             if(sz_bytes == 1) {
-                add_operator_implementation(new OperatorSignature(p_int, "*", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "*", p_int, {
                     "mul %bl",
                     "movzbq %al, %rax",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "*=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "*=", p_int, {
                     "mul %bl",
                     "movzbq %al, %rax",
                     "movb %al, (%rcx)",
                 }));
             }
             else if(sz_bytes == 2){
-                add_operator_implementation(new OperatorSignature(p_int, "*", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "*", p_int, {
                     "mul %bx",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "*=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "*=", p_int, {
                     "mul %bx",
                     "movw %ax, (%rcx)",
                 }));
             }
             else if(sz_bytes == 4){
-                add_operator_implementation(new OperatorSignature(p_int, "*", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "*", p_int, {
                     "mul %ebx",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "*=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "*=", p_int, {
                     "mul %ebx",
                     "movl %eax, (%rcx)",
                 }));
             }
             else if(sz_bytes == 8) {
-                add_operator_implementation(new OperatorSignature(p_int, "*", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "*", p_int, {
                     "mul %rbx",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "*=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "*=", p_int, {
                     "mul %rbx",
                     "movq %rax, (%rcx)",
                 }));
@@ -136,14 +137,14 @@ namespace primitives {
         //binary / %
         if(is_signed) {
             if(sz_bytes < 4) {
-                add_operator_implementation(new OperatorSignature(p_int, "/", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "/", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
                     "idiv %rbx",
                     movz + " " + rax + ", %rax",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "/=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "/=", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
@@ -151,7 +152,7 @@ namespace primitives {
                     movz + " " + rax + ", %rax",
                     mov + " " + rax + ", (%rcx)",
                 }));
-                add_operator_implementation(new OperatorSignature(p_int, "%", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "%", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
@@ -159,7 +160,7 @@ namespace primitives {
                     "mov %rdx, %rax",
                     movz + " " + rax + ", %rax",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "%=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "%=", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
@@ -171,14 +172,14 @@ namespace primitives {
             }
             else if(sz_bytes == 4) {
                 //writing to a 32 bit register automatically zeroes out the upper 32 bits. 
-                add_operator_implementation(new OperatorSignature(p_int, "/", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "/", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
                     "idiv %rbx",
                     "mov %eax, %eax",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "/=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "/=", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
@@ -186,14 +187,14 @@ namespace primitives {
                     "mov %eax, %eax",
                     mov + " " + rax + ", (%rcx)",
                 }));
-                add_operator_implementation(new OperatorSignature(p_int, "%", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "%", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
                     "idiv %rbx",
                     "mov %edx, %eax",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "%=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "%=", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
@@ -204,21 +205,21 @@ namespace primitives {
             }
             else if(sz_bytes == 8) {
                 //cqo does sign extension on %rax to %rdx
-                add_operator_implementation(new OperatorSignature(p_int, "/", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "/", p_int, {
                     "cqo",
                     "idiv %rbx",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "/=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "/=", p_int, {
                     "cqo",
                     "idiv %rbx",
                     mov + " " + rax + ", (%rcx)",
                 }));
-                add_operator_implementation(new OperatorSignature(p_int, "%", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "%", p_int, {
                     "cqo",
                     "idiv %rbx",
                     "mov %rdx, %rax",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "%=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "%=", p_int, {
                     "cqo",
                     "idiv %rbx",
                     "mov %rdx, %rax",
@@ -229,14 +230,14 @@ namespace primitives {
         }
         else {
             if(sz_bytes < 4) {
-                add_operator_implementation(new OperatorSignature(p_int, "/", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "/", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
                     "div %rbx",
                     movz + " " + rax + ", %rax",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "/=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "/=", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
@@ -244,7 +245,7 @@ namespace primitives {
                     movz + " " + rax + ", %rax",
                     mov + " " + rax + ", (%rcx)",
                 }));
-                add_operator_implementation(new OperatorSignature(p_int, "%", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "%", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
@@ -252,7 +253,7 @@ namespace primitives {
                     "mov %rdx, %rax",
                     movz + " " + rax + ", %rax",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "%=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "%=", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
@@ -263,14 +264,14 @@ namespace primitives {
                 }));
             }
             else if(sz_bytes == 4) {
-                add_operator_implementation(new OperatorSignature(p_int, "/", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "/", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
                     "div %rbx",
                     "mov %eax, %eax",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "/=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "/=", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
@@ -278,14 +279,14 @@ namespace primitives {
                     "mov %eax, %eax",
                     mov + " " + rax + ", (%rcx)",
                 }));
-                add_operator_implementation(new OperatorSignature(p_int, "%", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "%", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
                     "div %rbx",
                     "mov %edx, %eax",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "%=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "%=", p_int, {
                     movs + " " + rax + ", %rax",
                     movs + " " + rbx + ", %rbx",
                     "cqo",
@@ -296,21 +297,21 @@ namespace primitives {
             }
             else if(sz_bytes == 8) {
                 //need to clear out upper bits
-                add_operator_implementation(new OperatorSignature(p_int, "/", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "/", p_int, {
                     "xor %rdx, %rdx",
                     "div %rbx",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "/=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "/=", p_int, {
                     "xor %rdx, %rdx",
                     "div %rbx",
                     mov + " " + rax + ", (%rcx)",
                 }));
-                add_operator_implementation(new OperatorSignature(p_int, "%", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, p_int, "%", p_int, {
                     "xor %rdx, %rdx",
                     "div %rbx",
                     "mov %rdx, %rax",
                 }));
-                add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "%=", p_int), new BuiltinOperator(p_int, {
+                add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "%=", p_int, {
                     "xor %rdx, %rdx",
                     "div %rbx",
                     "mov %rdx, %rax",
@@ -321,23 +322,23 @@ namespace primitives {
         }
 
         //just do bitwise operations on the whole register. 
-        add_operator_implementation(new OperatorSignature(p_int, "&", p_int), new BuiltinOperator(p_int, {"and %rbx, %rax"}));
-        add_operator_implementation(new OperatorSignature(p_int, "^", p_int), new BuiltinOperator(p_int, {"xor %rbx, %rax"}));
-        add_operator_implementation(new OperatorSignature(p_int, "|", p_int), new BuiltinOperator(p_int, {"or %rbx, %rax"}));
-        add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "&=", p_int), new BuiltinOperator(p_int, {
+        add_builtin_operator(new BuiltinOperator(p_int, p_int, "&", p_int, {"and %rbx, %rax"}));
+        add_builtin_operator(new BuiltinOperator(p_int, p_int, "^", p_int, {"xor %rbx, %rax"}));
+        add_builtin_operator(new BuiltinOperator(p_int, p_int, "|", p_int, {"or %rbx, %rax"}));
+        add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "&=", p_int, {
             "and %rbx, %rax",
             mov + " " + rax + ", (%rcx)",
         }));
-        add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "^=", p_int), new BuiltinOperator(p_int, {
+        add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "^=", p_int, {
             "xor %rbx, %rax",
             mov + " " + rax + ", (%rcx)",
         }));
-        add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "|=", p_int), new BuiltinOperator(p_int, {
+        add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "|=", p_int, {
             "or %rbx, %rax",
             mov + " " + rax + ", (%rcx)",
         }));
 
-        add_operator_implementation(new OperatorSignature(p_int, "&&", p_int), new BuiltinOperator(i32, {
+        add_builtin_operator(new BuiltinOperator(i32, p_int, "&&", p_int, {
             "test " + rax + ", " + rax,
             "setne %al",
             "movzx %al, %rax",
@@ -346,7 +347,7 @@ namespace primitives {
             "movzx %bl, %rbx",
             "and %rbx, %rax",
         }));    
-        add_operator_implementation(new OperatorSignature(p_int, "||", p_int), new BuiltinOperator(i32, {
+        add_builtin_operator(new BuiltinOperator(i32, p_int, "||", p_int, {
             "test " + rax + ", " + rax,
             "setne %al",
             "movzx %al, %rax",
@@ -356,12 +357,12 @@ namespace primitives {
             "or %rbx, %rax",
         }));  
 
-        add_operator_implementation(new OperatorSignature(p_int, "==", p_int), new BuiltinOperator(i32, {
+        add_builtin_operator(new BuiltinOperator(i32, p_int, "==", p_int, {
             "cmp " + rbx + ", " + rax,
             "sete %al",
             "movzx %al, %rax",
         }));  
-        add_operator_implementation(new OperatorSignature(p_int, "!=", p_int), new BuiltinOperator(i32, {
+        add_builtin_operator(new BuiltinOperator(i32, p_int, "!=", p_int, {
             "cmp " + rbx + ", " + rax,
             "setne %al",
             "movzx %al, %rax",
@@ -369,44 +370,44 @@ namespace primitives {
 
         //for comparison, it depends on the interpretation of the integers. 
         if(is_signed) {
-            add_operator_implementation(new OperatorSignature(p_int, "<", p_int), new BuiltinOperator(i32, {
+            add_builtin_operator(new BuiltinOperator(i32, p_int, "<", p_int, {
                 "cmp " + rbx + ", " + rax,
                 "setl %al",
                 "movzx %al, %rax"
             }));  
-            add_operator_implementation(new OperatorSignature(p_int, ">", p_int), new BuiltinOperator(i32, {
+            add_builtin_operator(new BuiltinOperator(i32, p_int, ">", p_int, {
                 "cmp " + rbx + ", " + rax,
                 "setg %al",
                 "movzx %al, %rax"
             }));
-            add_operator_implementation(new OperatorSignature(p_int, "<=", p_int), new BuiltinOperator(i32, {
+            add_builtin_operator(new BuiltinOperator(i32, p_int, "<=", p_int, {
                 "cmp " + rbx + ", " + rax,
                 "setle %al",
                 "movzx %al, %rax"
             }));
-            add_operator_implementation(new OperatorSignature(p_int, ">=", p_int), new BuiltinOperator(i32, {
+            add_builtin_operator(new BuiltinOperator(i32, p_int, ">=", p_int, {
                 "cmp " + rbx + ", " + rax,
                 "setge %al",
                 "movzx %al, %rax"
             }));
         }
         else {
-            add_operator_implementation(new OperatorSignature(p_int, "<", p_int), new BuiltinOperator(i32, {
+            add_builtin_operator(new BuiltinOperator(i32, p_int, "<", p_int, {
                 "cmp " + rbx + ", " + rax,
                 "setb %al",
                 "movzx %al, %rax"
             }));  
-            add_operator_implementation(new OperatorSignature(p_int, ">", p_int), new BuiltinOperator(i32, {
+            add_builtin_operator(new BuiltinOperator(i32, p_int, ">", p_int, {
                 "cmp " + rbx + ", " + rax,
                 "seta %al",
                 "movzx %al, %rax"
             }));
-            add_operator_implementation(new OperatorSignature(p_int, "<=", p_int), new BuiltinOperator(i32, {
+            add_builtin_operator(new BuiltinOperator(i32, p_int, "<=", p_int, {
                 "cmp " + rbx + ", " + rax,
                 "setbe %al",
                 "movzx %al, %rax"
             }));
-            add_operator_implementation(new OperatorSignature(p_int, ">=", p_int), new BuiltinOperator(i32, {
+            add_builtin_operator(new BuiltinOperator(i32, p_int, ">=", p_int, {
                 "cmp " + rbx + ", " + rax,
                 "setae %al",
                 "movzx %al, %rax"
@@ -415,26 +416,26 @@ namespace primitives {
         
         //also need to do signed aware behaviour for shifting
         if(is_signed) {
-            add_operator_implementation(new OperatorSignature(p_int, "<<", p_int), new BuiltinOperator(p_int, {
+            add_builtin_operator(new BuiltinOperator(p_int, p_int, "<<", p_int, {
                 "push %rcx",
                 "mov %rbx, %rcx",
                 "sal %cl, " + rax,
                 "pop %rcx",
             }));
-            add_operator_implementation(new OperatorSignature(p_int, ">>", p_int), new BuiltinOperator(p_int, {
+            add_builtin_operator(new BuiltinOperator(p_int, p_int, ">>", p_int, {
                 "push %rcx",
                 "mov %rbx, %rcx",
                 "sar %cl, " + rax,
                 "pop %rcx",
             }));
-            add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "<<=", p_int), new BuiltinOperator(p_int, {
+            add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "<<=", p_int, {
                 "push %rcx",
                 "mov %rbx, %rcx",
                 "sal %cl, " + rax,
                 "pop %rcx",
                 mov + " " + rax + ", (%rcx)",
             }));
-            add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), ">>=", p_int), new BuiltinOperator(p_int, {
+            add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), ">>=", p_int, {
                 "push %rcx",
                 "mov %rbx, %rcx",
                 "sar %cl, " + rax,
@@ -443,26 +444,26 @@ namespace primitives {
             }));
         }
         else {
-            add_operator_implementation(new OperatorSignature(p_int, "<<", p_int), new BuiltinOperator(p_int, {
+            add_builtin_operator(new BuiltinOperator(p_int, p_int, "<<", p_int, {
                 "push %rcx",
                 "mov %rbx, %rcx",
                 "shl %cl, " + rax,
                 "pop %rcx",
             }));
-            add_operator_implementation(new OperatorSignature(p_int, ">>", p_int), new BuiltinOperator(p_int, {
+            add_builtin_operator(new BuiltinOperator(p_int, p_int, ">>", p_int, {
                 "push %rcx",
                 "mov %rbx, %rcx",
                 "shr %cl, " + rax,
                 "pop %rcx",
             }));
-            add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), "<<=", p_int), new BuiltinOperator(p_int, {
+            add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "<<=", p_int, {
                 "push %rcx",
                 "mov %rbx, %rcx",
                 "shl %cl, " + rax,
                 "pop %rcx",
                 mov + " " + rax + ", (%rcx)",
             }));
-            add_operator_implementation(new OperatorSignature(new ReferenceType(p_int), ">>=", p_int), new BuiltinOperator(p_int, {
+            add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), ">>=", p_int, {
                 "push %rcx",
                 "mov %rbx, %rcx",
                 "shr %cl, " + rax,
@@ -544,13 +545,13 @@ namespace primitives {
                     //need to sign extend
                     std::string mov = "movs" + sz_to_suf[sza] + sz_to_suf[szb];
                     if(mov == "movslq") mov = "movsxd";
-                    add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + ra + ", " + rb}));
+                    add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {mov + " " + ra + ", " + rb}));
                 }
                 else if(sza > szb) {
                     //need to truncate
                     std::string mov = "movz" + sz_to_suf[szb] + "q";
-                    if(mov == "movzlq") add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {"mov %eax, %eax"}));
-                    else add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + rb + ", %rax"}));
+                    if(mov == "movzlq") add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {"mov %eax, %eax"}));
+                    else add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {mov + " " + rb + ", %rax"}));
                 }
                 else assert(false);
             }
@@ -566,14 +567,14 @@ namespace primitives {
                 if(sza < szb) {
                     //need to zero extend
                     std::string mov = "movz" + sz_to_suf[sza] + sz_to_suf[szb];
-                    if(mov == "movzlq") add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {"mov %eax, %eax"}));
-                    else add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + ra + ", " + rb}));
+                    if(mov == "movzlq") add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {"mov %eax, %eax"}));
+                    else add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {mov + " " + ra + ", " + rb}));
                 }
                 else if(sza > szb) {
                     //need to truncate
                     std::string mov = "movz" + sz_to_suf[szb] + "q";
-                    if(mov == "movzlq") add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {"mov %eax, %eax"}));
-                    else add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + rb + ", %rax"}));
+                    if(mov == "movzlq") add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {"mov %eax, %eax"}));
+                    else add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {mov + " " + rb + ", %rax"}));
                 }
                 else assert(false);
             }
@@ -589,17 +590,17 @@ namespace primitives {
                     //sign extend
                     std::string mov = "movs" + sz_to_suf[sza] + sz_to_suf[szb];
                     if(mov == "movslq") mov = "movsxd";
-                    add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + ra + ", " + rb}));
+                    add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {mov + " " + ra + ", " + rb}));
                 }
                 else if(sza > szb) {
                     //truncate
                     std::string mov = "movz" + sz_to_suf[szb] + "q";
-                    if(mov == "movzlq") add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {"mov %eax, %eax"}));
-                    else add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + rb + ", %rax"}));
+                    if(mov == "movzlq") add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {"mov %eax, %eax"}));
+                    else add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {mov + " " + rb + ", %rax"}));
                 }
                 else {
                     //do nothing
-                    add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {}));
+                    add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {}));
                 }
             }
         }
@@ -613,18 +614,18 @@ namespace primitives {
                 if(sza < szb) {
                     //need to zero extend
                     std::string mov = "movz" + sz_to_suf[sza] + sz_to_suf[szb];
-                    if(mov == "movzlq") add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {"mov %eax, %eax"}));
-                    else add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + ra + ", " + rb}));
+                    if(mov == "movzlq") add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {"mov %eax, %eax"}));
+                    else add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {mov + " " + ra + ", " + rb}));
                 }
                 else if(sza > szb) {
                     //need to truncate
                     std::string mov = "movz" + sz_to_suf[szb] + "q";
-                    if(mov == "movzlq") add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {"mov %eax, %eax"}));
-                    else add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {mov + " " + rb + ", %rax"}));
+                    if(mov == "movzlq") add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {"mov %eax, %eax"}));
+                    else add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {mov + " " + rb + ", %rax"}));
                 }
                 else {
                     //do nothing
-                    add_operator_implementation(new OperatorSignature(ta, tb), new BuiltinOperator(tb, {}));
+                    add_builtin_operator(new BuiltinOperator(tb, ta, "$", tb, {}));
                 }
             }
         }
@@ -642,58 +643,58 @@ namespace primitives {
         //use 'movd <src> <dest>' when moving to and from general purpose registers
 
         // +x -x
-        add_operator_implementation(new OperatorSignature("+", f32), new BuiltinOperator(f32, {}));
-        add_operator_implementation(new OperatorSignature("-", f32), new BuiltinOperator(f32, {
+        add_builtin_operator(new BuiltinOperator(f32, std::nullopt, "+", f32, {}));
+        add_builtin_operator(new BuiltinOperator(f32, std::nullopt, "-", f32, {
             "xor $0x80000000, %eax",    //flip the sign bit
         }));
 
         // + - * / += -= *= /= 
-        add_operator_implementation(new OperatorSignature(f32, "+", f32), new BuiltinOperator(f32, {
+        add_builtin_operator(new BuiltinOperator(f32, f32, "+", f32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "addss %xmm1, %xmm0",
             "movd %xmm0, %eax",
         }));
-        add_operator_implementation(new OperatorSignature(f32, "-", f32), new BuiltinOperator(f32, {
+        add_builtin_operator(new BuiltinOperator(f32, f32, "-", f32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "subss %xmm1, %xmm0",
             "movd %xmm0, %eax",
         }));
-        add_operator_implementation(new OperatorSignature(f32, "*", f32), new BuiltinOperator(f32, {
+        add_builtin_operator(new BuiltinOperator(f32, f32, "*", f32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "mulss %xmm1, %xmm0",
             "movd %xmm0, %eax",
         }));
-        add_operator_implementation(new OperatorSignature(f32, "/", f32), new BuiltinOperator(f32, {
+        add_builtin_operator(new BuiltinOperator(f32, f32, "/", f32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "divss %xmm1, %xmm0",
             "movd %xmm0, %eax",
         }));
-        add_operator_implementation(new OperatorSignature(new ReferenceType(f32), "+=", f32), new BuiltinOperator(f32, {
+        add_builtin_operator(new BuiltinOperator(f32, new ReferenceType(f32), "+=", f32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "addss %xmm1, %xmm0",
             "movd %xmm0, %eax",
             "movl %eax, (%rcx)",
         }));
-        add_operator_implementation(new OperatorSignature(new ReferenceType(f32), "-=", f32), new BuiltinOperator(f32, {
+        add_builtin_operator(new BuiltinOperator(f32, new ReferenceType(f32), "-=", f32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "subss %xmm1, %xmm0",
             "movd %xmm0, %eax",
             "movl %eax, (%rcx)",
         }));
-        add_operator_implementation(new OperatorSignature(new ReferenceType(f32), "*=", f32), new BuiltinOperator(f32, {
+        add_builtin_operator(new BuiltinOperator(f32, new ReferenceType(f32), "*=", f32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "mulss %xmm1, %xmm0",
             "movd %xmm0, %eax",
             "movl %eax, (%rcx)",
         }));
-        add_operator_implementation(new OperatorSignature(new ReferenceType(f32), "/=", f32), new BuiltinOperator(f32, {
+        add_builtin_operator(new BuiltinOperator(f32, new ReferenceType(f32), "/=", f32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "divss %xmm1, %xmm0",
@@ -702,42 +703,42 @@ namespace primitives {
         }));
 
         // == != < > <= >= 
-        add_operator_implementation(new OperatorSignature(f32, "==", f32), new BuiltinOperator(i32, {
+        add_builtin_operator(new BuiltinOperator(i32, f32, "==", f32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "ucomiss %xmm1, %xmm0",
             "sete %al",
             "movzx %al, %rax",
         }));
-        add_operator_implementation(new OperatorSignature(f32, "!=", f32), new BuiltinOperator(i32, {
+        add_builtin_operator(new BuiltinOperator(i32, f32, "!=", f32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "ucomiss %xmm1, %xmm0",
             "setne %al",
             "movzx %al, %rax",
         }));
-        add_operator_implementation(new OperatorSignature(f32, "<", f32), new BuiltinOperator(i32, {
+        add_builtin_operator(new BuiltinOperator(i32, f32, "<", f32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "ucomiss %xmm1, %xmm0",
             "setb %al",
             "movzx %al, %rax",
         }));
-        add_operator_implementation(new OperatorSignature(f32, ">", f32), new BuiltinOperator(i32, {
+        add_builtin_operator(new BuiltinOperator(i32, f32, ">", f32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "ucomiss %xmm1, %xmm0",
             "seta %al",
             "movzx %al, %rax",
         }));
-        add_operator_implementation(new OperatorSignature(f32, "<=", f32), new BuiltinOperator(i32, {
+        add_builtin_operator(new BuiltinOperator(i32, f32, "<=", f32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "ucomiss %xmm1, %xmm0",
             "setbe %al",
             "movzx %al, %rax",
         }));
-        add_operator_implementation(new OperatorSignature(f32, ">=", f32), new BuiltinOperator(i32, {
+        add_builtin_operator(new BuiltinOperator(i32, f32, ">=", f32, {
             "movd %eax, %xmm0",
             "movd %ebx, %xmm1",
             "ucomiss %xmm1, %xmm0",
@@ -748,41 +749,41 @@ namespace primitives {
         //convert float into signed integer
         // cvttss2si : ConVerT with Truncation Scalar Single precision floating point 2 Signed Integer
         // cvtsi2ss : ConVerT Scalar Signed Integer 2 Scalar Single precision floating point
-        add_operator_implementation(new OperatorSignature(f32, i8), new BuiltinOperator(i8, {
+        add_builtin_operator(new BuiltinOperator(i8, f32, "$", i8, {
             "movd %eax, %xmm0",
             "cvtsi2ss %xmm0, %eax",
             "movzx %al, %rax",
         }));
-        add_operator_implementation(new OperatorSignature(f32, i16), new BuiltinOperator(i16, {
+        add_builtin_operator(new BuiltinOperator(i16, f32, "$", i16, {
             "movd %eax, %xmm0",
             "cvttss2si %xmm0, %eax",
             "movzx %ax, %rax",
         }));
-        add_operator_implementation(new OperatorSignature(f32, i32), new BuiltinOperator(i32, {
+        add_builtin_operator(new BuiltinOperator(i32, f32, "$", i32, {
             "movd %eax, %xmm0",
             "cvttss2si %xmm0, %eax",
         }));
-        add_operator_implementation(new OperatorSignature(f32, i64), new BuiltinOperator(i64, {
+        add_builtin_operator(new BuiltinOperator(i64, f32, "$", i64, {
             "movd %eax, %xmm0",
             "cvttss2si %xmm0, %rax",
         }));
 
         //convert signed integer into float
-        add_operator_implementation(new OperatorSignature(i8, f32), new BuiltinOperator(f32, {
+        add_builtin_operator(new BuiltinOperator(f32, i8, "$", f32, {
             "movsbl %al, %eax",
             "cvtsi2ss %eax, %xmm0",
             "movd %xmm0, %eax",
         }));
-        add_operator_implementation(new OperatorSignature(i16, f32), new BuiltinOperator(f32, {
+        add_builtin_operator(new BuiltinOperator(f32, i16, "$", f32, {
             "movswl %ax, %eax",
             "cvtsi2ss %eax, %xmm0",
             "movd %xmm0, %eax",
         }));
-        add_operator_implementation(new OperatorSignature(i32, f32), new BuiltinOperator(f32, {
+        add_builtin_operator(new BuiltinOperator(f32, i32, "$", f32, {
             "cvtsi2ss %eax, %xmm0",
             "movd %xmm0, %eax",
         }));
-        add_operator_implementation(new OperatorSignature(i64, f32), new BuiltinOperator(f32, {
+        add_builtin_operator(new BuiltinOperator(f32, i64, "$", f32, {
             "cvtsi2ss %rax, %xmm0",
             "movd %xmm0, %eax",
         }));

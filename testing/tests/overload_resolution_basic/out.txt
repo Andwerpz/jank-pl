@@ -1,0 +1,3 @@
+operator+(A&, A&)
+operator+(A, A)
+operator+(A, A)

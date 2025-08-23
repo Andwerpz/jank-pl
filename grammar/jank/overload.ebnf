@@ -12,4 +12,4 @@ overloadable_operator = "++x" | "--x" | "x++" | "x--" |
 
 overload_definition = type , rws , "operator" , overloadable_operator , ows , "(" , ows , parameter_list , ows , ")" ;
 overload = overload_definition , ows , compound_statement ;
-templated_overload = template_header , ows , overload ;
+templated_overload = [ template_header , ows ] , overload ;

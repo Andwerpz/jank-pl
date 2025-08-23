@@ -15,8 +15,7 @@
 #include "TemplatedFunction.h"
 #include "Constructor.h"
 #include "ConstructorSignature.h"
-#include "Overload.h"
-#include "TemplatedOverload.h"
+#include "TemplatedOperator.h"
 #include "primitives.h"
 #include "Include.h"
 #include "GlobalDeclaration.h"
@@ -25,18 +24,19 @@
 #include "GlobalNode.h"
 #include "Typedef.h"
 #include "TemplateMapping.h"
+#include "Operator.h"
+#include "OperatorSignature.h"
 
 Program::Program() {
     // do nothing
 }
 
-Program::Program(std::vector<StructDefinition*> _structs, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<Overload*> _overloads, std::vector<TemplatedOverload*> _templated_overloads, std::vector<Include*> _includes, std::vector<GlobalDeclaration*> _global_declarations, std::vector<GlobalNode*> _global_nodes, std::vector<Typedef*> _typedefs) {
+Program::Program(std::vector<StructDefinition*> _structs, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<TemplatedOperator*> _templated_operators, std::vector<Include*> _includes, std::vector<GlobalDeclaration*> _global_declarations, std::vector<GlobalNode*> _global_nodes, std::vector<Typedef*> _typedefs) {
     structs = _structs;
-    overloads = _overloads;
 
     templated_structs = _templated_structs;
     templated_functions = _templated_functions;
-    templated_overloads = _templated_overloads;
+    templated_operators = _templated_operators;
 
     includes = _includes;
 
@@ -52,7 +52,7 @@ Program* Program::convert(parser::program *p) {
 
     std::vector<TemplatedStructDefinition*> templated_structs;
     std::vector<TemplatedFunction*> templated_functions;
-    std::vector<TemplatedOverload*> templated_overloads;
+    std::vector<TemplatedOperator*> templated_operators;
 
     std::vector<Include*> includes;
 
@@ -71,36 +71,32 @@ Program* Program::convert(parser::program *p) {
         else if(p->t0[i]->t1->is_c2) {  //templated struct definition
             templated_structs.push_back(TemplatedStructDefinition::convert(p->t0[i]->t1->t2->t0));
         }
-        else if(p->t0[i]->t1->is_c3) {  //overload
-            overloads.push_back(Overload::convert(p->t0[i]->t1->t3->t0));
+        else if(p->t0[i]->t1->is_c3) {  //templated overload
+            templated_operators.push_back(TemplatedOperator::convert(p->t0[i]->t1->t3->t0));
         }
-        else if(p->t0[i]->t1->is_c4) {  //templated overload
-            templated_overloads.push_back(TemplatedOverload::convert(p->t0[i]->t1->t4->t0));
+        else if(p->t0[i]->t1->is_c4) {  //include
+            includes.push_back(Include::convert(p->t0[i]->t1->t4->t0));
         }
-        else if(p->t0[i]->t1->is_c5) {  //include
-            includes.push_back(Include::convert(p->t0[i]->t1->t5->t0));
+        else if(p->t0[i]->t1->is_c5) {  //global declaration
+            global_declarations.push_back(GlobalDeclaration::convert(p->t0[i]->t1->t5->t0));
         }
-        else if(p->t0[i]->t1->is_c6) {  //global declaration
-            global_declarations.push_back(GlobalDeclaration::convert(p->t0[i]->t1->t6->t0));
+        else if(p->t0[i]->t1->is_c6) {  //global node
+            global_nodes.push_back(GlobalNode::convert(p->t0[i]->t1->t6->t0));
         }
-        else if(p->t0[i]->t1->is_c7) {  //global node
-            global_nodes.push_back(GlobalNode::convert(p->t0[i]->t1->t7->t0));
-        }
-        else if(p->t0[i]->t1->is_c8) {  //typedef
-            typedefs.push_back(Typedef::convert(p->t0[i]->t1->t8->t0));
+        else if(p->t0[i]->t1->is_c7) {  //typedef
+            typedefs.push_back(Typedef::convert(p->t0[i]->t1->t7->t0));
         }
         else assert(false);
     }
-    return new Program(structs, templated_structs, templated_functions, overloads, templated_overloads, includes, global_declarations, global_nodes, typedefs);
+    return new Program(structs, templated_structs, templated_functions, templated_operators, includes, global_declarations, global_nodes, typedefs);
 }
 
 void Program::add_all(Program *other) {
     for(int i = 0; i < other->structs.size(); i++) structs.push_back(other->structs[i]);
-    for(int i = 0; i < other->overloads.size(); i++) overloads.push_back(other->overloads[i]);
 
     for(int i = 0; i < other->templated_structs.size(); i++) templated_structs.push_back(other->templated_structs[i]);
     for(int i = 0; i < other->templated_functions.size(); i++) templated_functions.push_back(other->templated_functions[i]);
-    for(int i = 0; i < other->templated_overloads.size(); i++) templated_overloads.push_back(other->templated_overloads[i]);
+    for(int i = 0; i < other->templated_operators.size(); i++) templated_operators.push_back(other->templated_operators[i]);
 
     for(int i = 0; i < other->includes.size(); i++) includes.push_back(other->includes[i]);
     
@@ -218,10 +214,9 @@ bool Program::is_well_formed() {
         //go through everything and replace typedef types
         bool success = true;
         for(int i = 0; i < structs.size(); i++) success &= structs[i]->replace_templated_types(mapping);
-        for(int i = 0; i < overloads.size(); i++) success &= overloads[i]->replace_templated_types(mapping);
         for(int i = 0; i < templated_structs.size(); i++) success &= templated_structs[i]->replace_templated_types(mapping);
         for(int i = 0; i < templated_functions.size(); i++) success &= templated_functions[i]->replace_templated_types(mapping);
-        for(int i = 0; i < templated_overloads.size(); i++) success &= templated_overloads[i]->replace_templated_types(mapping);
+        for(int i = 0; i < templated_operators.size(); i++) success &= templated_operators[i]->replace_templated_types(mapping);
         for(int i = 0; i < global_declarations.size(); i++) success &= global_declarations[i]->replace_templated_types(mapping);
         if(!success) {
             std::cout << "Failed to resolve typedefs\n";
@@ -260,9 +255,9 @@ bool Program::is_well_formed() {
 
     //for all templated overloads add them
     std::cout << "ADDING TEMPLATED OVERLOADS" << std::endl;
-    for(int i = 0; i < templated_overloads.size(); i++){
-        if(!add_templated_overload(templated_overloads[i])) {
-            std::cout << "Failed to add templated overload : " << templated_overloads[i]->overload->resolve_operator_signature()->to_string() << "\n";
+    for(int i = 0; i < templated_operators.size(); i++){
+        if(!add_templated_operator(templated_operators[i])) {
+            std::cout << "Failed to add templated overload : " << templated_operators[i]->op->resolve_operator_signature()->to_string() << "\n";
             return false;
         }
     }
@@ -306,18 +301,9 @@ bool Program::is_well_formed() {
 
     // - are all the templated overloads well formed?
     std::cout << "CHECKING TEMPLATED OVERLOADS WELL FORMED" << std::endl;
-    for(int i = 0; i < templated_overloads.size(); i++){
-        if(!templated_overloads[i]->is_well_formed()) {
-            std::cout << "Templated overload not well formed : " << templated_overloads[i]->overload->resolve_operator_signature()->to_string() << "\n";
-            return false;
-        }
-    }
-
-    // - are there any duplicate overloads?
-    std::cout << "ADDING OVERLOADS" << std::endl;
-    for(int i = 0; i < overloads.size(); i++){
-        if(!add_operator_implementation(overloads[i])) {
-            std::cout << "Failed to add overload : " << overloads[i]->resolve_operator_signature()->to_string() << "\n";
+    for(int i = 0; i < templated_operators.size(); i++){
+        if(!templated_operators[i]->is_well_formed()) {
+            std::cout << "Templated overload not well formed : " << templated_operators[i]->op->resolve_operator_signature()->to_string() << "\n";
             return false;
         }
     }
@@ -345,9 +331,9 @@ bool Program::is_well_formed() {
     // - check all functions and constructors, make sure they're well formed
     int function_ptr = 0;
     int constructor_ptr = 0;
-    int overload_ptr = 0;
+    int operator_ptr = 0;
     int destructor_ptr = 0;
-    while(function_ptr < declared_functions.size() || constructor_ptr < declared_constructors.size() || overload_ptr < declared_overloads.size()) {
+    while(function_ptr < declared_functions.size() || constructor_ptr < declared_constructors.size() || operator_ptr < declared_operators.size()) {
         while(function_ptr < declared_functions.size()) {
             ld process_start_time = current_time_seconds();
             Function *f = declared_functions[function_ptr ++];
@@ -367,11 +353,14 @@ bool Program::is_well_formed() {
             }
             add_duration_stat("CONSTRUCTOR " + c->resolve_constructor_signature()->to_string(), current_time_seconds() - process_start_time);
         }
-        while(overload_ptr < declared_overloads.size()) {
+        while(operator_ptr < declared_operators.size()) {
             ld process_start_time = current_time_seconds();
-            Overload *o = declared_overloads[overload_ptr ++];
-            enclosing_overload = o;
-            if(!o->is_well_formed()) {
+            Operator *o = declared_operators[operator_ptr ++];
+            if(dynamic_cast<OperatorOverload*>(o) == nullptr) continue; //only process overloads
+            OperatorOverload *oo = dynamic_cast<OperatorOverload*>(o);
+            assert(oo != nullptr);
+            enclosing_overload = oo;
+            if(!oo->is_well_formed()) {
                 return false;
             }
             enclosing_overload = nullptr;

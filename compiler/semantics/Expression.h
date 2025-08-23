@@ -2,6 +2,7 @@
 #include "../parser/parser.h"
 #include <string>
 #include <variant>
+#include <optional>
 
 struct ExprNode;
 struct ExprPrimary;
@@ -17,7 +18,8 @@ struct FunctionSignature;
 struct OperatorSignature;
 struct ConstructorCall;
 struct TemplateMapping;
-struct OverloadCall;
+struct OperatorCall;
+struct Operator;
 
 struct ExprNode {
     static ExprNode* convert(parser::expr_primary *e);
@@ -35,8 +37,13 @@ struct ExprNode {
     static ExprNode* convert(parser::expr_logical_or *e);
     static ExprNode* convert(parser::expr_assignment *e);
 
-    virtual Type* resolve_type() = 0;                   // - no modify
-    virtual bool is_lvalue() = 0;                       // - no modify
+    std::optional<Type*> resolve_type_cache = std::nullopt;
+    Type* resolve_type();                               
+    virtual Type* _resolve_type() = 0;                  // - no modify
+
+    std::optional<bool> is_lvalue_cache = std::nullopt;
+    bool is_lvalue();                                   
+    virtual bool _is_lvalue() = 0;                      // - no modify
 
     // - can modify, but should not change return value of resolve_type(), is_lvalue()
     // - should remove all overloads, after this stage the only operators should be hardcoded or Builtin. 
@@ -49,6 +56,7 @@ struct ExprNode {
 
     // turns all Identifiers in ExprPrimary to Type. Useful for caching results.
     // If you don't do this, you'll be comparing Identifiers. 
+    // if this expression is used within the same context, this should not change result of resolve_type(), is_lvalue()
     virtual void id_to_type() = 0;
     virtual ExprNode* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
@@ -58,12 +66,12 @@ struct ExprNode {
 //Type* is just a placeholder for a variable of that type. It's just used for type conversion purposes. 
 //if there is a Type* and it tries to emit_asm(), it will assert(false). 
 struct ExprPrimary : ExprNode {
-    using val_t = std::variant<FunctionCall*, ConstructorCall*, OverloadCall*, Identifier*, Literal*, Expression*, Type*>;
+    using val_t = std::variant<FunctionCall*, ConstructorCall*, OperatorCall*, Identifier*, Literal*, Expression*, Type*>;
     val_t val;
     ExprPrimary(val_t _val);
 
-    Type* resolve_type() override;
-    bool is_lvalue() override;
+    Type* _resolve_type() override;
+    bool _is_lvalue() override;
     void elaborate(ExprNode*& self) override;
     void emit_asm() override;
     std::string to_string() override;
@@ -82,8 +90,8 @@ struct ExprBinary : ExprNode {
     ExprNode *right;
     ExprBinary(ExprNode *_left, op_t _op, ExprNode *_right);
 
-    Type* resolve_type() override;
-    bool is_lvalue() override;
+    Type* _resolve_type() override;
+    bool _is_lvalue() override;
     void elaborate(ExprNode*& self) override;
     void emit_asm() override;
     std::string to_string() override;
@@ -101,8 +109,8 @@ struct ExprPrefix : ExprNode {
     ExprNode *right;
     ExprPrefix(op_t _op, ExprNode *_right);
 
-    Type* resolve_type() override;
-    bool is_lvalue() override;
+    Type* _resolve_type() override;
+    bool _is_lvalue() override;
     void elaborate(ExprNode*& self) override;
     void emit_asm() override;
     std::string to_string() override;
@@ -120,8 +128,8 @@ struct ExprPostfix : ExprNode {
     op_t op;
     ExprPostfix(ExprNode *_left, op_t _op);
 
-    Type* resolve_type() override;
-    bool is_lvalue() override;
+    Type* _resolve_type() override;
+    bool _is_lvalue() override;
     void elaborate(ExprNode*& self) override;
     void emit_asm() override;
     std::string to_string() override;

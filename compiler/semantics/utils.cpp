@@ -17,8 +17,6 @@
 #include "TemplatedStructDefinition.h"
 #include "Program.h"
 #include "TemplatedFunction.h"
-#include "Overload.h"
-#include "TemplatedOverload.h"
 #include "StructLayout.h"
 #include "primitives.h"
 #include "Destructor.h"
@@ -28,6 +26,10 @@
 #include "Parameter.h"
 #include "Declaration.h"
 #include "TemplateHeader.h"
+#include "OperatorSignature.h"
+#include "Operator.h"
+#include "TemplatedOperator.h"
+#include "OperatorCall.h"
 
 ld current_time_seconds() {
     using namespace std::chrono;
@@ -60,91 +62,6 @@ LoopContext::LoopContext(std::string _start_label, std::string _assignment_label
     assignment_label = _assignment_label;
     end_label = _end_label;
     declaration_layer = _declaration_layer;
-}
-
-OperatorSignature::OperatorSignature(Type *_left, std::string _op, Type *_right) {
-    assert(_left != nullptr);
-    assert(_right != nullptr);
-    left = _left;
-    op = _op;
-    right = _right;
-}
-
-OperatorSignature::OperatorSignature(std::string _op, Type *_right) {
-    assert(_right != nullptr);
-    left = std::nullopt;
-    op = _op;
-    right = _right;
-}
-
-OperatorSignature::OperatorSignature(Type *_left, std::string _op) {
-    assert(_left != nullptr);
-    left = _left;
-    op = _op;
-    right = std::nullopt;
-}
-
-OperatorSignature::OperatorSignature(Type *from, Type *to) {
-    left = from;
-    op = "$";
-    right = to;
-}
-
-size_t OperatorSignature::hash() const {
-    size_t hash = 0;
-    if(left.has_value()) hash_combine(hash, left.value()->hash());
-    else hash_combine(hash, 0);
-    hash_combine(hash, std::hash<std::string>()(op));
-    if(right.has_value()) hash_combine(hash, right.value()->hash());
-    else hash_combine(hash, 0);
-    return hash;
-}
-
-bool OperatorSignature::equals(const OperatorSignature* other) const {
-    if(left.has_value() != other->left.has_value()) return false;
-    if(left.has_value() && *(left.value()) != *(other->left.value())) return false;
-    if(right.has_value() != other->right.has_value()) return false;
-    if(right.has_value() && *(right.value()) != *(other->right.value())) return false;
-    return op == other->op;
-}
-
-bool OperatorSignature::operator==(const OperatorSignature& other) const {
-    return this->equals(&other);
-}
-
-bool OperatorSignature::operator!=(const OperatorSignature& other) const {
-    return !this->equals(&other);
-}
-
-std::string OperatorSignature::to_string() {
-    std::string res = "";
-    if(left.has_value()) res += left.value()->to_string() + " ";
-    res += op;
-    if(right.has_value()) res += " " + right.value()->to_string();
-    return res;
-}
-
-OperatorImplementation::OperatorImplementation(Type *_res_type) {
-    assert(_res_type != nullptr);
-    res_type = _res_type;
-}
-
-Type* OperatorImplementation::get_res_type() {
-    return this->res_type;
-}
-
-BuiltinOperator::BuiltinOperator(Type *_res_type, std::vector<std::string> _instructions) : OperatorImplementation(_res_type) {
-    instructions = _instructions;
-}
-
-void BuiltinOperator::emit_asm() {
-    for(int i = 0; i < instructions.size(); i++){
-        fout << indent() << instructions[i] << "\n";
-    }
-}
-
-OverloadedOperator::OverloadedOperator(Overload *_overload) : OperatorImplementation((assert(_overload != nullptr), _overload->type)) {
-    overload = _overload;
 }
 
 //define hash and eq structs in anon
@@ -226,18 +143,16 @@ namespace {
 }
 
 std::vector<Type*> declared_types;
-std::vector<Function*> declared_sys_functions;
 std::vector<TemplatedStructDefinition*> declared_templated_structs;
 std::vector<TemplatedFunction*> declared_templated_functions;
-std::vector<TemplatedOverload*> declared_templated_overloads;
+std::vector<TemplatedOperator*> declared_templated_operators;
 std::vector<BaseType*> declared_basetypes;
 std::unordered_set<Type*, TypeHash, TypeEquals> primitive_base_types;
 std::vector<std::pair<Type*, StructLayout*>> struct_layout_map;
 std::unordered_map<FunctionSignature*, std::string, FunctionSignatureHash, FunctionSignatureEquals> function_label_map;
 std::unordered_map<ConstructorSignature*, std::string, ConstructorSignatureHash, ConstructorSignatureEquals> constructor_label_map;
 std::unordered_map<Type*, std::string, TypeHash, TypeEquals> destructor_label_map;
-std::unordered_map<OperatorSignature*, std::string, OperatorSignatureHash, OperatorSignatureEquals> overload_label_map;
-std::unordered_map<OperatorSignature*, OperatorImplementation*, OperatorSignatureHash, OperatorSignatureEquals> conversion_map;  
+std::unordered_map<OperatorSignature*, std::string, OperatorSignatureHash, OperatorSignatureEquals> operator_label_map;
 std::unordered_map<std::string, std::string> string_literal_label_map;
 
 int label_counter;
@@ -249,17 +164,17 @@ void reset_controller() {
     declared_types.clear();
     declared_basetypes.clear();
     declared_structs.clear();
-    declared_overloads.clear();
-    declared_functions.clear();
     declared_templated_structs.clear();
     declared_templated_functions.clear();
-    declared_templated_overloads.clear();
-    declared_sys_functions.clear();
+    declared_templated_operators.clear();
     primitive_base_types.clear();
     struct_layout_map.clear();
 
     declared_functions.clear();
     function_label_map.clear();
+
+    declared_operators.clear();
+    operator_label_map.clear();
 
     declared_constructors.clear();
     constructor_label_map.clear();
@@ -269,7 +184,6 @@ void reset_controller() {
     
     declared_variables.clear();
     while(declaration_stack.size()) declaration_stack.pop_back();
-    conversion_map.clear();
 
     local_offset = 0;
     stack_desc.clear();
@@ -542,110 +456,16 @@ bool is_declarable(Type *A, Expression *expr) {
     return ans;
 }
 
-//requires that the types exactly match
-OperatorImplementation* find_typecast_implementation(Type *from, Type *to) {
-    //special cases
-    // - from and to are the same type
-    if(*from == *to) {
-        return new BuiltinOperator(to, {});     //do nothing
-    }
-    Type* voidptr_t = new PointerType(primitives::_void->make_copy());
-    // - from is a pointer, to is void*
-    if(dynamic_cast<PointerType*>(from) != nullptr && *to == *voidptr_t) {
-        return new BuiltinOperator(to, {});     //do nothing
-    }
-    // - from is void*, to is a pointer
-    if(*from == *voidptr_t && dynamic_cast<PointerType*>(to) != nullptr) {
-        return new BuiltinOperator(to, {});     //do nothing
-    }
-    // - from is a pointer, to is a pointer
-    if(dynamic_cast<PointerType*>(from) != nullptr && dynamic_cast<PointerType*>(to) != nullptr) {
-        return new BuiltinOperator(to, {});     //do nothing
-    }
-    // - from is a pointer, to is an u64
-    if(dynamic_cast<PointerType*>(from) != nullptr && to->equals(primitives::u64)) {
-        return new BuiltinOperator(to, {});     //do nothing
-    }
-    // - from is an u64, to is a pointer
-    if(from->equals(primitives::u64) && dynamic_cast<PointerType*>(to) != nullptr) {
-        return new BuiltinOperator(to, {});     //do nothing
-    }
-    // - from is a function pointer, to is an u64
-    if(dynamic_cast<FunctionPointerType*>(from) != nullptr && to->equals(primitives::u64)) {
-        return new BuiltinOperator(to, {});     //do nothing
-    }
-
-    //look through all conversions to see if we have an exact match
-    std::vector<OperatorImplementation*> viable;
-    OperatorSignature *key = new OperatorSignature(from, to);
-    for(auto i = conversion_map.begin(); i != conversion_map.end(); i++){
-        OperatorSignature *nkey = i->first;
-        if(*key == *nkey) viable.push_back(i->second);
-    }
-    if(viable.size() != 1) return nullptr;
-    return viable[0];
-}
-
-//looks through all operator implementations and finds all that matches
-//same idea as get_function() for all conversions except for direct casting. 
-OperatorImplementation* find_operator_implementation(std::optional<Expression*> left, std::string op, std::optional<Expression*> right) {
-    //some sanity checks
-    //one of left or right has to have a value
-    assert(left.has_value() || right.has_value());
-    //check that the values are not nullptr
-    if(left.has_value()) assert(left.value() != nullptr);
-    if(right.has_value()) assert(right.value() != nullptr);
-    //this should not be the casting operator
-    assert(op != "$");
-
-    //try to construct templated overload
-    for(int i = 0; i < declared_templated_overloads.size(); i++){
-        Overload *no = declared_templated_overloads[i]->gen_overload(left, op, right);
-        if(no == nullptr) {
-            continue;
-        }
-        add_operator_implementation(no);
-    }
-
-    std::vector<OperatorImplementation*> viable;
-    for(auto i = conversion_map.begin(); i != conversion_map.end(); i++){
-        OperatorSignature *nkey = i->first;
-        //does the operator match
-        if(op != nkey->op) continue;
-        //is the left argument convertible
-        if(left.has_value() != nkey->left.has_value()) continue;
-        if(left.has_value() && !is_declarable(nkey->left.value(), left.value())) continue;
-        //is the right argument convertible
-        if(right.has_value() != nkey->right.has_value()) continue;
-        if(right.has_value() && !is_declarable(nkey->right.value(), right.value())) continue;
-        viable.push_back(i->second);
-    }
-    if(viable.size() != 1) {
-        return nullptr;
-    }
-    return viable[0];
-}
-
-OperatorImplementation* find_operator_implementation(std::optional<ExprNode*> left, std::string op, std::optional<ExprNode*> right) {
-    if(left.has_value()) assert(left.value() != nullptr);
-    if(right.has_value()) assert(right.value() != nullptr);
-    std::optional<Expression*> _left = std::nullopt;
-    if(left.has_value()) _left = new Expression(left.value());
-    std::optional<Expression*> _right = std::nullopt;
-    if(right.has_value()) _right = new Expression(right.value());
-    return find_operator_implementation(_left, op, _right);
-}
-
 Type* find_resulting_type(std::optional<Expression*> left, std::string op, std::optional<Expression*> right) {
-    OperatorImplementation *oe = find_operator_implementation(left, op, right);
-    if(oe == nullptr) return nullptr;
-    return oe->res_type;
+    Operator *o = get_called_operator(left, op, right);
+    if(o == nullptr) return nullptr;
+    return o->type;
 }
 
 Type* find_resulting_type(std::optional<ExprNode*> left, std::string op, std::optional<ExprNode*> right) {
-    OperatorImplementation *oe = find_operator_implementation(left, op, right);
-    if(oe == nullptr) return nullptr;
-    return oe->res_type;
+    Operator *o = get_called_operator(left, op, right);
+    if(o == nullptr) return nullptr;
+    return o->type;
 }
 
 Type* find_variable_type(Identifier *id) {
@@ -729,9 +549,9 @@ bool is_function_declared(FunctionSignature *fs) {
     return false;
 }
 
-bool is_sys_function(FunctionSignature *fs) {
-    for(int i = 0; i < declared_sys_functions.size(); i++){
-        if(fs->equals(declared_sys_functions[i]->resolve_function_signature())) {
+bool is_operator_declared(OperatorSignature *os) {
+    for(int i = 0; i < declared_operators.size(); i++){
+        if(os->equals(declared_operators[i]->resolve_operator_signature())) {
             return true;
         }
     }
@@ -834,6 +654,120 @@ Function* get_called_function(FunctionCall *fc) {
     return f;
 }
 
+//this doesn't handle the cast operator, there are some special rules with that one. 
+Operator* get_called_operator(OperatorCall *oc) {
+    // std::cout << "GET CALLED OPERATOR : " << oc->to_string() << "\n";
+    //some sanity checks
+    //one of left or right has to have a value
+    assert(oc->left.has_value() || oc->right.has_value());
+    //check that the values are not nullptr
+    if(oc->left.has_value()) assert(oc->left.value() != nullptr);
+    if(oc->right.has_value()) assert(oc->right.value() != nullptr);
+    //this should not be the casting operator
+    assert(oc->op != "$");
+
+    // - gather all templated operators that work
+    std::vector<TemplatedOperator*> viable;
+    for(int i = 0; i < declared_templated_operators.size(); i++){
+        TemplatedOperator *to = declared_templated_operators[i];
+        if(to->calc_mapping(oc)) {
+            viable.push_back(to);
+        }
+    }
+
+    // - find 'most specialized' templated operator
+    std::vector<int> outdeg(viable.size(), 0);
+    for(int i = 0; i < viable.size(); i++){
+        OperatorSignature *os = viable[i]->op->resolve_operator_signature();
+        for(int j = 0; j < viable.size(); j++){
+            if(i == j) continue;
+            if(viable[j]->calc_mapping(os) != nullptr) {
+                outdeg[j] ++;
+            }
+        }
+    }
+    std::vector<TemplatedOperator*> best;
+    for(int i = 0; i < viable.size(); i++){
+        if(outdeg[i] == 0) {
+            best.push_back(viable[i]);
+        }
+    }
+    if(best.size() == 0) {
+        return nullptr;
+    }
+    else if(best.size() > 1) {
+        return nullptr;
+    }
+
+    // - generate operator
+    assert(best.size() == 1);
+    Operator *o = best[0]->gen_operator(oc);
+    assert(o != nullptr);
+    assert(o->is_valid_call(oc));
+
+    // std::cout << "FOUND OPERATOR : " << o->resolve_operator_signature()->to_string() << "\n";
+
+    return o;
+}
+
+Operator* get_called_operator(std::optional<Expression*> _left, std::string op, std::optional<Expression*> _right) {
+    std::optional<ExprNode*> left = std::nullopt, right = std::nullopt;
+    if(_left.has_value()) left = _left.value()->expr_node;
+    if(_right.has_value()) right = _right.value()->expr_node;
+    OperatorCall *oc = new OperatorCall(left, op, right);
+    return get_called_operator(oc);
+}
+
+Operator* get_called_operator(std::optional<ExprNode*> left, std::string op, std::optional<ExprNode*> right) {
+    OperatorCall *oc = new OperatorCall(left, op, right);
+    return get_called_operator(oc);
+}
+
+//requires that the types exactly match
+Operator* get_called_typecast(Type *from, Type *to) {
+    //special cases
+    // - from and to are the same type
+    if(*from == *to) {
+        return new BuiltinOperator(to->make_copy(), from->make_copy(), "$", to->make_copy(), {});     //do nothing
+    }
+    Type* voidptr_t = new PointerType(primitives::_void->make_copy());
+    // - from is a pointer, to is void*
+    if(dynamic_cast<PointerType*>(from) != nullptr && *to == *voidptr_t) {
+        return new BuiltinOperator(to->make_copy(), from->make_copy(), "$", to->make_copy(), {});     //do nothing
+    }
+    // - from is void*, to is a pointer
+    if(*from == *voidptr_t && dynamic_cast<PointerType*>(to) != nullptr) {
+        return new BuiltinOperator(to->make_copy(), from->make_copy(), "$", to->make_copy(), {});     //do nothing
+    }
+    // - from is a pointer, to is a pointer
+    if(dynamic_cast<PointerType*>(from) != nullptr && dynamic_cast<PointerType*>(to) != nullptr) {
+        return new BuiltinOperator(to->make_copy(), from->make_copy(), "$", to->make_copy(), {});     //do nothing
+    }
+    // - from is a pointer, to is an u64
+    if(dynamic_cast<PointerType*>(from) != nullptr && to->equals(primitives::u64)) {
+        return new BuiltinOperator(to->make_copy(), from->make_copy(), "$", to->make_copy(), {});     //do nothing
+    }
+    // - from is an u64, to is a pointer
+    if(from->equals(primitives::u64) && dynamic_cast<PointerType*>(to) != nullptr) {
+        return new BuiltinOperator(to->make_copy(), from->make_copy(), "$", to->make_copy(), {});     //do nothing
+    }
+    // - from is a function pointer, to is an u64
+    if(dynamic_cast<FunctionPointerType*>(from) != nullptr && to->equals(primitives::u64)) {
+        return new BuiltinOperator(to->make_copy(), from->make_copy(), "$", to->make_copy(), {});     //do nothing
+    }
+
+    //look through all conversions to see if we have an exact match
+    std::vector<Operator*> viable;
+    OperatorSignature *key = new OperatorSignature(from, to);
+    for(int i = 0; i < declared_operators.size(); i++){
+        if(key->equals(declared_operators[i]->resolve_operator_signature())) {
+            viable.push_back(declared_operators[i]);
+        }
+    }
+    if(viable.size() != 1) return nullptr;
+    return viable[0];
+}
+
 //pretty much exactly the same as get_called_function
 //has some special logic with primitive 
 Constructor* get_called_constructor(ConstructorCall *cc) {
@@ -929,10 +863,10 @@ std::string get_destructor_label(Type *t) {
     return destructor_label_map[t];
 }
 
-std::string get_overload_label(OperatorSignature *os) {
+std::string get_operator_label(OperatorSignature *os) {
     assert(os != nullptr);
-    assert(overload_label_map.count(os));
-    return overload_label_map[os];
+    assert(operator_label_map.count(os));
+    return operator_label_map[os];
 }
 
 Variable* get_variable(Identifier *id) {
@@ -1098,15 +1032,44 @@ bool add_templated_function(TemplatedFunction *f) {
         add_function(f->function);
         f->generated_functions.push_back(f->function);
     }
+    else {
+        std::cout << "ADD TEMPLATED FUNCTION : " << f->function->resolve_function_signature()->to_string() << "\n";
+    }
 
-    std::cout << "ADD TEMPLATED FUNCTION : " << f->function->resolve_function_signature()->to_string() << "\n";
     return true;
 }
 
-bool add_templated_overload(TemplatedOverload *o) {
+bool add_templated_operator(TemplatedOperator *o) {
     assert(o != nullptr);
-    declared_templated_overloads.push_back(o);
-    std::cout << "ADD TEMPLATED OVERLOAD : " << o->overload->resolve_operator_signature()->to_string() << "\n";
+
+    //check if this is a duplicate of another templated operator
+    OperatorSignature *os = o->op->resolve_operator_signature();
+    for(int i = 0; i < declared_templated_operators.size(); i++){
+        TemplatedOperator *oo = declared_templated_operators[i];
+        OperatorSignature *oos = oo->op->resolve_operator_signature();
+
+        // - can they both map to eachother?
+        if(o->calc_mapping(oos) == nullptr || oo->calc_mapping(os) == nullptr) {
+            continue;
+        }
+
+        //found bijection
+        std::cout << "Duplicate operators : " << os->to_string() << " : " << oos->to_string() << "\n";
+        return false;
+    }
+
+    //ok, good to go
+    declared_templated_operators.push_back(o);
+
+    //if this doesn't have any template variables, register it as an operator
+    if(o->header->types.size() == 0) {
+        add_operator(o->op);
+        o->generated_operators.push_back(o->op);
+    }
+    else {
+        std::cout << "ADD TEMPLATED OPERATOR : " << o->op->resolve_operator_signature()->to_string() << "\n";
+    }
+
     return true;
 }   
 
@@ -1219,13 +1182,31 @@ bool add_function(Function *f){
     return true;
 }
 
-bool add_sys_function(Function *f) {
-    assert(f != nullptr);
-    FunctionSignature *fs = f->resolve_function_signature();
-    if(is_function_declared(fs)) assert(false);
-    declared_functions.push_back(f);
-    declared_sys_functions.push_back(f);
-    function_label_map.insert({fs, f->id->name});
+bool add_operator(Operator *o) {
+    assert(o != nullptr);
+    OperatorSignature *os = o->resolve_operator_signature();
+    if(is_operator_declared(os)) return false;
+    declared_operators.push_back(o);
+
+    //if operator is an overload, generate function label
+    if(dynamic_cast<OperatorOverload*>(o)) {
+        operator_label_map.insert({os, create_new_label()});
+    }
+
+    std::cout << "ADD OPERATOR : " << os->to_string() << std::endl;
+    return true;
+}
+
+bool add_builtin_operator(BuiltinOperator *o) {
+    assert(o != nullptr);
+
+    //just wrap this in a TemplatedOperator with no templating. 
+    TemplatedOperator *to = new TemplatedOperator(new TemplateHeader({}), o);
+
+    if(!add_templated_operator(to)) {
+        assert(false);
+    }
+
     return true;
 }
 
@@ -1235,7 +1216,7 @@ bool add_constructor(Constructor *c) {
     if(is_constructor_declared(cs)) return false;   
     declared_constructors.push_back(c);
     constructor_label_map.insert({cs, create_new_label()});
-    std::cout << "ADD CONSTRUCTOR : " << cs->to_string() << " " << declared_constructors.size() << std::endl;
+    std::cout << "ADD CONSTRUCTOR : " << cs->to_string() << std::endl;
     return true;
 }
 
@@ -1810,53 +1791,6 @@ void emit_dereference(Type *rt) {
         int sz = t->calc_size();
         emit_mem_retrieve(sz); 
     }
-}
-
-bool add_operator_implementation(OperatorSignature *os, OperatorImplementation *oi){
-    if(conversion_map.count(os)) {
-        return false;
-    }
-    conversion_map[os] = oi;
-    if(dynamic_cast<BuiltinOperator*>(oi)) {
-        std::cout << "ADD BUILTIN OPERATOR : " << os->to_string() << std::endl;
-    }
-    return true;
-}
-
-bool add_operator_implementation(Overload *o){
-    assert(o != nullptr);
-    OperatorSignature *os = o->resolve_operator_signature();
-    if(os == nullptr) return false;
-    OverloadedOperator *oo = new OverloadedOperator(o);
-    if(!add_operator_implementation(os, oo)) return false;
-    declared_overloads.push_back(o);
-    overload_label_map.insert({os, create_new_label()});
-    std::cout << "ADD OVERLOAD : " << o->resolve_operator_signature()->to_string() << std::endl;
-    return true;
-}
-
-void remove_operator_implementation(OperatorSignature *os, OperatorImplementation *oi) {
-    assert(conversion_map.count(os));
-    conversion_map.erase(os);
-}
-
-void remove_operator_implementation(Overload *o) {
-    assert(o != nullptr);
-    OperatorSignature *os = o->resolve_operator_signature();
-    assert(os != nullptr);
-    OverloadedOperator *oo = new OverloadedOperator(o);
-    remove_operator_implementation(os, oo);
-    {
-        int ind = -1;
-        for(int i = 0; i < declared_overloads.size(); i++){
-            if(o->resolve_operator_signature()->equals(declared_overloads[i]->resolve_operator_signature())) {
-                ind = i;
-            }
-        }   
-        assert(ind != -1);
-        declared_overloads.erase(declared_overloads.begin() + ind);
-    }
-    overload_label_map.erase(os);
 }
 
 bool add_string_literal(std::string str) {

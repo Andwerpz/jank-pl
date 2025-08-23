@@ -6,10 +6,10 @@
 #include "Identifier.h"
 #include "FunctionSignature.h"
 #include "utils.h"
-#include "Overload.h"
 #include "primitives.h"
 #include "Literal.h"
 #include "InlineASMAccess.h"
+#include "Operator.h"
 
 // -- CONSTRUCTOR --
 DeclarationStatement::DeclarationStatement(Declaration *_declaration) {
