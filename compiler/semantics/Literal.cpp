@@ -138,16 +138,8 @@ StringLiteral* StringLiteral::convert(parser::literal_string *lit) {
 SyscallLiteral* SyscallLiteral::convert(parser::literal_syscall *lit) {
     IntegerLiteral *ilit = IntegerLiteral::convert(lit->t4);
     int syscall_id = ilit->val;
-    std::vector<Expression*> arguments(0);
-    if(lit->t9 != nullptr) {
-        parser::argument_list *arglist = lit->t9->t3;
-        if(arglist->t0 != nullptr) {
-            arguments.push_back(Expression::convert(arglist->t0->t0));
-            for(int i = 0; i < arglist->t0->t1.size(); i++){
-                arguments.push_back(Expression::convert(arglist->t0->t1[i]->t3));
-            }
-        }
-    }
+    std::vector<Expression*> arguments;
+    if(lit->t9.has_value()) arguments = convert_argument_list(lit->t9.value()->t3);
     Type *type = Type::convert(lit->t8);  
     return new SyscallLiteral(syscall_id, arguments, type);
 }

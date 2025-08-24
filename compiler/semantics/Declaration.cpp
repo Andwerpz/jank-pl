@@ -19,8 +19,8 @@ Declaration* Declaration::convert(parser::declaration *d) {
     Type *type = Type::convert(d->t0);
     Identifier *name = Identifier::convert(d->t2);
     std::optional<Expression*> expr = std::nullopt;
-    if(d->t3 != nullptr) {
-        expr = Expression::convert(d->t3->t3);
+    if(d->t3.has_value()) {
+        expr = Expression::convert(d->t3.value()->t3);
     }
     return new Declaration(type, name, expr);
 }

@@ -399,6 +399,181 @@ int main(int argc, char* argv[]) {
     return 0;
 }
 
+/*
+
+fix function call resolution
+- want to be able to have both 'void foo(i32 a)' and 'void foo(i32& a)'. Then, foo(0) would resolve to the first one and foo(x) would
+    resolve to the second one. 
+- ok, let's not worry about references for now, the bigger issue is templating. For each function call, I want to find a unique
+    templated function to match to. 
+- define S(A) as the set of function calls that a function A can match to. 
+- suppose we have two functions A and B. I define A < B if S(A) \subset S(B). Then for a function call F, gather all functions A_i
+    such that F \in S(A_i). Then, we have a unique function if there exists some A_i where A_i < A_j for all other j. 
+- when doing template comparisons, we remove reference wrappers, that is T and T& are identical when doing this. 
+- should probably not make them identical... what if a function call has an r-value argument? Then we might find some minimal function, but
+    it doesn't work because the parameter is an l-value
+- ok, we first strip all references off of the top layer. Then, have some utility that takes a function signature and some
+    arguments and lets us know if the method is callable using those arguments. 
+- so to find a called function, a minimal function must exist for the call, and that minimal function must be callable by the 
+    given arguments. 
+- what if we just make it so that no two functions can share the same name ... no, that would be way too restrictive
+- ok, have template specialization implemented, however still am not handling references properly. 
+- T maps to anything T& can map to. T& is strictly more restrictive. T& only handles l-values, T handles both l-values and r-values
+- what about when generating the mappings, we convert any l-value arguments into T& in the arg_types list. Then, T in the fc can map to both T& and T, however
+  T& can only map to T&. This is done as pre-check before we strip all references. 
+- to ensure we don't accidentally duplicate functions, we can't just shove all generated functions in a pool, need to do stricter partial ordering stuff
+- or maybe we can prove that we can use the current method
+- OKOK FIXED YAYY (still need to fix overload resolution)
+
+ideas to optimize compilation times
+ - an expression node should only resolve to one type. Perhaps just cache the result whenever we generate it. 
+   - need to watch out when using expressions abnormally. Expressions can resolve to different types if we take the
+     identifiers out of context. 
+   - we then also need to ensure we make copies of everything. 
+
+some miscellaneous features:
+ - pointer arithmetic
+ - array literals
+ - better semantic error messages. 
+   - would be nice if on failure, could print out the relevant code or smth. 
+   - how would we even do that? perhaps take advantage of the 'to_string()'?
+   - would need to store line information along with everything D:
+ - default struct member variable declarations
+   - this would be implemented in emit_initialize_struct(), right after we call each member variable's default constructor
+ - multi declarations, we can separate multiple variable declarations on the same line with commas
+ - expression comma operator
+   - will need to fix function/constructor call grammar to not interfere with commas separating function call arguments. 
+   - and eventually also multi declarations as well
+ - implement const
+ - have some reserved keywords (break, continue, sizeof)
+   - these should be kept seperately? check basetypes, identifiers against keywords?
+ - goto statement
+ - make id_to_type() return a bool so that it doesn't fail an assert when a variable doesn't exist
+ - extension to inline assembly: have a way to print out the address of any local (or global) variable. 
+ - templated function calls? like hash<T>(T a)? as an alternative to automated resolution
+ - think about how to handle user defined typecasts (and typecasts in general). Perhaps typecasting
+   shouldn't be treated the same as other operators. The input type has to exactly match, and the
+   output type cannot be a reference type. 
+ - think about if I want auto type conversions on function calls, overloads, assignments, etc. Seems like it will make writing code much easier
+ - namespaces
+   - maybe for now, make it so that all references to functions must be fully qualified. That is, namespaces
+     act as part of the identifier. 
+
+implemented misc features:
+ - replace type grammar with this:
+base_type = alpha , { alpha | digit | "_" } ;
+templated_type = base_type , [ "<" , ows , templated_type , { ows , "," , ows , templated_type } , ows , ">" ] , { "*" }
+type = templated_type , [ "&" ] ;
+   I don't want reference types contained within templates, or pointed to. Reference should be the outer layer of a type. 
+   Probably should enforce this semantically. 
+   So really, a type doesn't contain references, but we can have a reference to a type...
+   Actually, I don't see why we can't have type vector<int&>. After all, references are simply syntactic sugar for
+   pointers that get auto-dereferenced. But to make things simpler, I should probably prohibit this behaviour. 
+ - primitive constructors
+ - cast operator
+ - reference operator
+ - change int, float into i64 - i8, u64 - u8, f32.
+ - floats
+ - importing other files
+ - anything that takes in a truth value should be able to accept anything. Just check if the register is 0.
+ - inline assembly
+ - continue, break (loop control statements)
+   - keep a stack to maintain the nearest exit label of the loop we're in
+   - also need to keep track of how many local variables we need to deallocate
+   - these should be control statements, so they shouldn't have to deallocate any temp stuff
+ - global variables
+   - the order in which we initialize global variables should not matter. 
+   - we can achieve this by not registering global variables as variables until we initialize all of them. 
+   - but we might want some global variables to depend on others, like 'cout' might depend on 'STDOUT'
+   - we can introduce 'tiers'. We initialize all globals of one tier before moving onto the next one. 
+     so now, the ordering in which we initialize global variables within a tier should not matter. 
+ - add a 'syscall()' builtin expression primary that can take in a bunch of arguments and emit code to do the syscall. 
+   - will have to think about how to record the return value tho
+   - perhaps can pass in a type as the last argument and that will be the assumed return type?
+   - 'syscall(<syscall number>, <return type>, <arg list>)'
+   - we won't do any checking on the syscall number and argument types. That's the user's issue. 
+ - after implementing free, add struct destructors. 
+   - currently, I assume that cleaning up the local variable declaration stack does not affect any
+     of the registers. This will no longer be true after implementing struct destructors.
+   - examples where I use this assumption are in FunctionCall::emit_asm() and SyscallLiteral::emit_asm() 
+     - perhaps can make it so that pop_declaration_stack() specifically saves %rax, %rcx. This is enough for 
+       expression evaluation to still work. 
+   - variables should get destructed when they go out of scope. Should modify pop_declaration_stack() to do this. 
+   - will also have to think about how to free temp variables. 
+     - primitives (i32, f32, etc.) are simple and don't need destruction
+     - overloaded operators and constructor calls are already wrapped in function calls during the elaboration phase
+     - therefore, any temporary structs produced within subexpressions will have been bound to named temporaries or returned 
+       from an overload/constructor, which means the only destructible temporary I need to explicitly handle is the final 
+       value on the right-hand side of an assignment if it is an rvalue struct
+     - actually, I don't even need to specifically handle these temp variables at all, as in the '=' operator, I bind 
+       the temp variable to a named temporary reference, so if I just handle cleaning up named variables then I should be fine. 
+   - use mmap and munmap syscalls to implement malloc and free. 
+   - okok, now we just have to clean up unused r-values from expressions.
+     - i changed the default assignment operator to instead return an l-value. So now, if I see any leftover
+       r-values, I can confidently just clean them up. 
+ - array type. Array types should not be primitive. We can treat them like structs, they'll have layouts, 
+   constructors, destructors. 
+   - T[<int>] a = new T[<int>]();
+   - so the size of the array is part of the type information. 
+   - This also means we can only have fixed size arrays
+   - array layouts, constructors, destructors, should be added when we lookup if the type exists. 
+     - we should always lookup if a type exists before using it right??
+     - or maybe, we can add array layouts, constructors, destructors on the fly. We just have to make sure
+       their base type exists.
+     - maybe can hijack find_templates() and use that to also generate array types?
+   - ok, made array struct layouts lazily generated when calling get_struct_layout()
+ - default declarations, so the expression portion of a declaration should be optional
+ - syntax error reporting, keep track of the deepest parse.
+   - also have some pretty printing when parse fails pointing to exact deepest parse position 
+ - make string literals point to rodata instead of allocating more memory every time. 
+   - should maybe consider implementing const? so a string literal would be of type const u8*
+   - instead of string literals emitting their current initialization, I'll just have them load a pointer onto the stack
+     and load into the controller that we need to allocate that string. Then after everything has been emitted, put the
+     .data section and actually create the strings. 
+ - autogenerated default and copy constructors, destructors. Just initialize everything to 0 and copy the struct memory blindly
+ - 'kernel mode'
+   - in the kernel, we don't have access to malloc, free, sys_exit(). Should replace these calls with other stuff.
+   - can't use rip relative addressing
+   - maybe should emit some alignment code?
+ - unsigned integer literals in different bases
+   - hex literals, like 0x00FFFFFF
+   - binary literals, like 0b000101
+ - extern, ability to define variables read directly from memory
+   - extern in C allows to reference some variable that can be defined anywhere else. 
+   - in my case, I just want to use extern to access variables that are defined using labels in linked assembly. 
+   - a label represents an address, if you use extern, you simply assume that the given address is defined elsewhere and
+     use it as if it's defined. 
+   - should probably give some error if the extern label conflicts with any existing label. (have a bank of used labels)
+   - should probably give a warning if the extern label uses my label naming scheme (not too sure about this one)
+   - an extern variable should always be a pointer? so 'extern T* x;'
+   - externs are going to be put into the controller before globals?
+   - no, externs are just going to have different memory addresses compared to their stack declared counterparts. 
+     otherwise, they'll behave exactly the same. 
+ - function pointers, so we can pass in interrupt handlers and stuff. 
+   - function pointer type : 'fn<i32(i32, i32)>'
+ - construct-in-place operator ':='
+ - manual destructor calls (very hardcoded and jank (holy moly jank!!!) right now)
+ - better global variable dependency stuff
+   - ability to declare nodes, can bind variables to nodes. 
+   - nodes can depend on other nodes
+   - '#global_node <id> [<id_list>]'
+   - force the user to initialize all their nodes to avoid typos
+   - allow the user to not bind a global to a node, these globals will be initialized last
+   - maybe have a label that is guaranteed to initialize first? '__GLOBAL_FIRST__'. It's illegal to make it 
+     depend on anything else. 
+ - typedefs. Just have them be pretty much resolved template variables
+   - 'typedef <type> <basetype>'
+   - I just need to check typedefs against all existing basetypes right? can't reuse a basetype
+   - in C++, typedefs can depend on eachother. Either have to make the same system with global variables, or just say they can't depend on eachother. 
+   - since typedefs are relatively self contained, we can do dynamic typedef resolution. For each typedef, we
+     figure out what typedefs it depends on. Then, topological sort all the typedefs and then turn them all into 
+     <defined_type> -> <type> mappings. Finally, just do a lil replace templated types on the entire program. 
+   - we'll need to do this step after we register all the structs so we can tell what's an existing type 
+   - typedef types should be basetypes. 
+ - function export modifier. Makes it so that generated label equals function id
+
+*/
+
 
 /*
 Takes in a .jank file, generates AST using jank_parser, then makes sure the program is well formed 
@@ -748,176 +923,6 @@ it's sitting somewhere in between, Overload is more like a function, while Overl
 
 So, I still need to implement more generous function call resolution with partial ordering of the function definitions. 
 
-fix function call resolution
-- want to be able to have both 'void foo(i32 a)' and 'void foo(i32& a)'. Then, foo(0) would resolve to the first one and foo(x) would
-    resolve to the second one. 
-- ok, let's not worry about references for now, the bigger issue is templating. For each function call, I want to find a unique
-    templated function to match to. 
-- define S(A) as the set of function calls that a function A can match to. 
-- suppose we have two functions A and B. I define A < B if S(A) \subset S(B). Then for a function call F, gather all functions A_i
-    such that F \in S(A_i). Then, we have a unique function if there exists some A_i where A_i < A_j for all other j. 
-- when doing template comparisons, we remove reference wrappers, that is T and T& are identical when doing this. 
-- should probably not make them identical... what if a function call has an r-value argument? Then we might find some minimal function, but
-    it doesn't work because the parameter is an l-value
-- ok, we first strip all references off of the top layer. Then, have some utility that takes a function signature and some
-    arguments and lets us know if the method is callable using those arguments. 
-- so to find a called function, a minimal function must exist for the call, and that minimal function must be callable by the 
-    given arguments. 
-- what if we just make it so that no two functions can share the same name ... no, that would be way too restrictive
-- ok, have template specialization implemented, however still am not handling references properly. 
-- T maps to anything T& can map to. T& is strictly more restrictive. T& only handles l-values, T handles both l-values and r-values
-- what about when generating the mappings, we convert any l-value arguments into T& in the arg_types list. Then, T in the fc can map to both T& and T, however
-  T& can only map to T&. This is done as pre-check before we strip all references. 
-- to ensure we don't accidentally duplicate functions, we can't just shove all generated functions in a pool, need to do stricter partial ordering stuff
-- or maybe we can prove that we can use the current method
-- OKOK FIXED YAYY (still need to fix overload resolution)
-
-ideas to optimize compilation times
- - an expression node should only resolve to one type. Perhaps just cache the result whenever we generate it. 
-   - need to watch out when using expressions abnormally. Expressions can resolve to different types if we take the
-     identifiers out of context. 
-   - we then also need to ensure we make copies of everything. 
-
-some miscellaneous features:
- - pointer arithmetic
- - array literals
- - better semantic error messages. 
-   - would be nice if on failure, could print out the relevant code or smth. 
-   - how would we even do that? perhaps take advantage of the 'to_string()'?
-   - would need to store line information along with everything D:
- - default struct member variable declarations
-   - this would be implemented in emit_initialize_struct(), right after we call each member variable's default constructor
- - multi declarations, we can separate multiple variable declarations on the same line with commas
- - expression comma operator
-   - will need to fix function/constructor call grammar to not interfere with commas separating function call arguments. 
-   - and eventually also multi declarations as well
- - implement const
- - have some reserved keywords (break, continue, sizeof)
-   - these should be kept seperately? check basetypes, identifiers against keywords?
- - goto statement
- - make id_to_type() return a bool so that it doesn't fail an assert when a variable doesn't exist
- - extension to inline assembly: have a way to print out the address of any local (or global) variable. 
- - templated function calls? like hash<T>(T a)? as an alternative to automated resolution
- - think about how to handle user defined typecasts (and typecasts in general). Perhaps typecasting
-   shouldn't be treated the same as other operators. The input type has to exactly match, and the
-   output type cannot be a reference type. 
- - think about if I want auto type conversions on function calls, overloads, assignments, etc. Seems like it will make writing code much easier
- - namespaces
-   - maybe for now, make it so that all references to functions must be fully qualified. That is, namespaces
-     act as part of the identifier. 
-
-implemented misc features:
- - replace type grammar with this:
-base_type = alpha , { alpha | digit | "_" } ;
-templated_type = base_type , [ "<" , ows , templated_type , { ows , "," , ows , templated_type } , ows , ">" ] , { "*" }
-type = templated_type , [ "&" ] ;
-   I don't want reference types contained within templates, or pointed to. Reference should be the outer layer of a type. 
-   Probably should enforce this semantically. 
-   So really, a type doesn't contain references, but we can have a reference to a type...
-   Actually, I don't see why we can't have type vector<int&>. After all, references are simply syntactic sugar for
-   pointers that get auto-dereferenced. But to make things simpler, I should probably prohibit this behaviour. 
- - primitive constructors
- - cast operator
- - reference operator
- - change int, float into i64 - i8, u64 - u8, f32.
- - floats
- - importing other files
- - anything that takes in a truth value should be able to accept anything. Just check if the register is 0.
- - inline assembly
- - continue, break (loop control statements)
-   - keep a stack to maintain the nearest exit label of the loop we're in
-   - also need to keep track of how many local variables we need to deallocate
-   - these should be control statements, so they shouldn't have to deallocate any temp stuff
- - global variables
-   - the order in which we initialize global variables should not matter. 
-   - we can achieve this by not registering global variables as variables until we initialize all of them. 
-   - but we might want some global variables to depend on others, like 'cout' might depend on 'STDOUT'
-   - we can introduce 'tiers'. We initialize all globals of one tier before moving onto the next one. 
-     so now, the ordering in which we initialize global variables within a tier should not matter. 
- - add a 'syscall()' builtin expression primary that can take in a bunch of arguments and emit code to do the syscall. 
-   - will have to think about how to record the return value tho
-   - perhaps can pass in a type as the last argument and that will be the assumed return type?
-   - 'syscall(<syscall number>, <return type>, <arg list>)'
-   - we won't do any checking on the syscall number and argument types. That's the user's issue. 
- - after implementing free, add struct destructors. 
-   - currently, I assume that cleaning up the local variable declaration stack does not affect any
-     of the registers. This will no longer be true after implementing struct destructors.
-   - examples where I use this assumption are in FunctionCall::emit_asm() and SyscallLiteral::emit_asm() 
-     - perhaps can make it so that pop_declaration_stack() specifically saves %rax, %rcx. This is enough for 
-       expression evaluation to still work. 
-   - variables should get destructed when they go out of scope. Should modify pop_declaration_stack() to do this. 
-   - will also have to think about how to free temp variables. 
-     - primitives (i32, f32, etc.) are simple and don't need destruction
-     - overloaded operators and constructor calls are already wrapped in function calls during the elaboration phase
-     - therefore, any temporary structs produced within subexpressions will have been bound to named temporaries or returned 
-       from an overload/constructor, which means the only destructible temporary I need to explicitly handle is the final 
-       value on the right-hand side of an assignment if it is an rvalue struct
-     - actually, I don't even need to specifically handle these temp variables at all, as in the '=' operator, I bind 
-       the temp variable to a named temporary reference, so if I just handle cleaning up named variables then I should be fine. 
-   - use mmap and munmap syscalls to implement malloc and free. 
-   - okok, now we just have to clean up unused r-values from expressions.
-     - i changed the default assignment operator to instead return an l-value. So now, if I see any leftover
-       r-values, I can confidently just clean them up. 
- - array type. Array types should not be primitive. We can treat them like structs, they'll have layouts, 
-   constructors, destructors. 
-   - T[<int>] a = new T[<int>]();
-   - so the size of the array is part of the type information. 
-   - This also means we can only have fixed size arrays
-   - array layouts, constructors, destructors, should be added when we lookup if the type exists. 
-     - we should always lookup if a type exists before using it right??
-     - or maybe, we can add array layouts, constructors, destructors on the fly. We just have to make sure
-       their base type exists.
-     - maybe can hijack find_templates() and use that to also generate array types?
-   - ok, made array struct layouts lazily generated when calling get_struct_layout()
- - default declarations, so the expression portion of a declaration should be optional
- - syntax error reporting, keep track of the deepest parse.
-   - also have some pretty printing when parse fails pointing to exact deepest parse position 
- - make string literals point to rodata instead of allocating more memory every time. 
-   - should maybe consider implementing const? so a string literal would be of type const u8*
-   - instead of string literals emitting their current initialization, I'll just have them load a pointer onto the stack
-     and load into the controller that we need to allocate that string. Then after everything has been emitted, put the
-     .data section and actually create the strings. 
- - autogenerated default and copy constructors, destructors. Just initialize everything to 0 and copy the struct memory blindly
- - 'kernel mode'
-   - in the kernel, we don't have access to malloc, free, sys_exit(). Should replace these calls with other stuff.
-   - can't use rip relative addressing
-   - maybe should emit some alignment code?
- - unsigned integer literals in different bases
-   - hex literals, like 0x00FFFFFF
-   - binary literals, like 0b000101
- - extern, ability to define variables read directly from memory
-   - extern in C allows to reference some variable that can be defined anywhere else. 
-   - in my case, I just want to use extern to access variables that are defined using labels in linked assembly. 
-   - a label represents an address, if you use extern, you simply assume that the given address is defined elsewhere and
-     use it as if it's defined. 
-   - should probably give some error if the extern label conflicts with any existing label. (have a bank of used labels)
-   - should probably give a warning if the extern label uses my label naming scheme (not too sure about this one)
-   - an extern variable should always be a pointer? so 'extern T* x;'
-   - externs are going to be put into the controller before globals?
-   - no, externs are just going to have different memory addresses compared to their stack declared counterparts. 
-     otherwise, they'll behave exactly the same. 
- - function pointers, so we can pass in interrupt handlers and stuff. 
-   - function pointer type : 'fn<i32(i32, i32)>'
- - construct-in-place operator ':='
- - manual destructor calls (very hardcoded and jank (holy moly jank!!!) right now)
- - better global variable dependency stuff
-   - ability to declare nodes, can bind variables to nodes. 
-   - nodes can depend on other nodes
-   - '#global_node <id> [<id_list>]'
-   - force the user to initialize all their nodes to avoid typos
-   - allow the user to not bind a global to a node, these globals will be initialized last
-   - maybe have a label that is guaranteed to initialize first? '__GLOBAL_FIRST__'. It's illegal to make it 
-     depend on anything else. 
- - typedefs. Just have them be pretty much resolved template variables
-   - 'typedef <type> <basetype>'
-   - I just need to check typedefs against all existing basetypes right? can't reuse a basetype
-   - in C++, typedefs can depend on eachother. Either have to make the same system with global variables, or just say they can't depend on eachother. 
-   - since typedefs are relatively self contained, we can do dynamic typedef resolution. For each typedef, we
-     figure out what typedefs it depends on. Then, topological sort all the typedefs and then turn them all into 
-     <defined_type> -> <type> mappings. Finally, just do a lil replace templated types on the entire program. 
-   - we'll need to do this step after we register all the structs so we can tell what's an existing type 
-   - typedef types should be basetypes. 
- - function export modifier. Makes it so that generated label equals function id
 
 Struct member functions should be called with 'this' as a pointer to the target struct. 
 The actual location of the struct is hard to control relative to %rbp. This makes it so I can 
@@ -1001,4 +1006,38 @@ CODE GENERATION
  - the caller must save any registers they wish to maintain
  - the caller must pass the arguments onto the stack. 
  - the callee is responsible for setting up and returning the base pointer
+
+
+
+ok, next big thing to do is inserting an IR layer after semantic analysis. Some benefits include:
+ - easier time generating assembly
+ - easier time supporting other CPU architectures (we just have to modify the IR layer, and eventually just the codegen layer)
+ - better for optimizations, all the syntactic sugar should be taken out at this point so we can do stuff like
+   - resolving const expressions
+   - detecting if a function is pure
+   - removing duplicate calls to pure functions
+   - turning div / mult by powers of 2 into bitshifts
+   - turning x * 0 into 0
+to do this, we need to replace emit_asm() with something like gen_ir(). Since we're already generating all the stuff
+required to emit assembly code directly, it shouldn't be too hard to instead just generate the ir representation. 
+It should be strictly less information required. 
+
+will also need to figure out what IR nodes I want to support. also, should I name this tree_ir instead of just ir, 
+as I might also want to implement a lower level IR. 
+
+control         - LOOP, SCOPE, IF, CONTINUE, BREAK
+control 2       - SCOPE, JMP, CJMP
+misc            - ASM,
+mem access      - MEMREAD, MEMWRITE, 
+expression      - ADD, SUB, MUL, DIV, MOD, SHL, SHR, AND, OR, XOR, REF, DEREF, CALL, SYSCALL,
+                  FADD, FSUB, FMUL, FDIV
+mem access?     - MALLOC?, FREE?            should these just be replaced by function calls?
+expr terminals  - CONST, VAR, 
+
+stack stuff will be enforced by IR? will have to redo all that emitting, however it should be less emitting code overall. 
+will local variable cleanup have to be done by IR? then we have to encode variable scope into the tree. 
+
+also, since IR has no idea what types are, will we have to also encode different widths and signedness of instructions?
+seems rather annoying. 
+
 */

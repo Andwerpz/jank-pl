@@ -82,9 +82,9 @@ Statement* Statement::convert(parser::statement *s) {
 SimpleStatement* SimpleStatement::convert(parser::simple_statement *s) {
     if(s->is_a0) { //return 
         Expression *expr = nullptr;
-        if(s->t0->t1 != nullptr) {
+        if(s->t0->t1.has_value()) {
             //non-void return
-            expr = Expression::convert(s->t0->t1->t1);
+            expr = Expression::convert(s->t0->t1.value()->t1);
         }
         return new ReturnStatement(expr);
     }
@@ -129,15 +129,15 @@ ControlStatement* ControlStatement::convert(parser::control_statement *s) {
             assert(ptr->is_a0);
             exprs.push_back(Expression::convert(ptr->t0->t4));
             statements.push_back(Statement::convert(ptr->t0->t8));
-            if(ptr->t0->t9 == nullptr) break;   //else doesn't exist
-            Statement* tmp_stmt = Statement::convert(ptr->t0->t9->t3);
-            if(!ptr->t0->t9->t3->is_a1) {  //statement isn't control statement
-                else_statement = Statement::convert(ptr->t0->t9->t3);
+            if(!ptr->t0->t9.has_value()) break;   //else doesn't exist
+            Statement* tmp_stmt = Statement::convert(ptr->t0->t9.value()->t3);
+            if(!ptr->t0->t9.value()->t3->is_a1) {  //statement isn't control statement
+                else_statement = Statement::convert(ptr->t0->t9.value()->t3);
                 break;
             }
-            parser::control_statement *nxt_ptr = ptr->t0->t9->t3->t1->t0;
+            parser::control_statement *nxt_ptr = ptr->t0->t9.value()->t3->t1->t0;
             if(!nxt_ptr->is_a0) {   //statement isn't if statement
-                else_statement = Statement::convert(ptr->t0->t9->t3);
+                else_statement = Statement::convert(ptr->t0->t9.value()->t3);
                 break;
             }
             ptr = nxt_ptr;
@@ -151,11 +151,11 @@ ControlStatement* ControlStatement::convert(parser::control_statement *s) {
     }
     else if(s->is_a2) { //for statement
         Declaration *declaration = nullptr;
-        if(s->t2->t4 != nullptr) declaration = Declaration::convert(s->t2->t4->t0);
+        if(s->t2->t4.has_value()) declaration = Declaration::convert(s->t2->t4.value()->t0);
         Expression *expr1 = nullptr;
-        if(s->t2->t8 != nullptr) expr1 = Expression::convert(s->t2->t8->t0);
+        if(s->t2->t8.has_value()) expr1 = Expression::convert(s->t2->t8.value()->t0);
         Expression *expr2 = nullptr;
-        if(s->t2->t12 != nullptr) expr2 = Expression::convert(s->t2->t12->t0);
+        if(s->t2->t12.has_value()) expr2 = Expression::convert(s->t2->t12.value()->t0);
         Statement *statement = Statement::convert(s->t2->t16);
         return new ForStatement(declaration, expr1, expr2, statement);
     }

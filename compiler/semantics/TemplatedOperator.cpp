@@ -18,7 +18,7 @@ TemplatedOperator::TemplatedOperator(TemplateHeader *_header, Operator *_op) {
 
 TemplatedOperator* TemplatedOperator::convert(parser::templated_overload *o) {
     TemplateHeader *header = new TemplateHeader({});
-    if(o->t0 != nullptr) header = TemplateHeader::convert(o->t0->t0);
+    if(o->t0.has_value()) header = TemplateHeader::convert(o->t0.value()->t0);
     Operator *op = OperatorOverload::convert(o->t1);
     return new TemplatedOperator(header, op);
 }

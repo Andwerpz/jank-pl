@@ -18,13 +18,7 @@ ConstructorCall::ConstructorCall(Type *_type, std::vector<Expression*> _argument
 ConstructorCall* ConstructorCall::convert(parser::constructor_call *c) {
     Type *type = Type::convert(c->t2);
     parser::argument_list *al = c->t6;
-    std::vector<Expression*> argument_list;
-    if(al->t0 != nullptr) {
-        argument_list.push_back(Expression::convert(al->t0->t0));
-        for(int i = 0; i < al->t0->t1.size(); i++){
-            argument_list.push_back(Expression::convert(al->t0->t1[i]->t3));
-        }
-    }
+    std::vector<Expression*> argument_list = convert_argument_list(al);
     return new ConstructorCall(type, argument_list);
 }
 

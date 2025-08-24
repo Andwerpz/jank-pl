@@ -21,7 +21,7 @@ TemplatedFunction::TemplatedFunction(TemplateHeader *_header, Function *_functio
 
 TemplatedFunction* TemplatedFunction::convert(parser::templated_function *f) {
     TemplateHeader *header = new TemplateHeader({});
-    if(f->t0 != nullptr) header = TemplateHeader::convert(f->t0->t0);
+    if(f->t0.has_value()) header = TemplateHeader::convert(f->t0.value()->t0);
     Function *function = Function::convert(f->t1);
     return new TemplatedFunction(header, function);
 }

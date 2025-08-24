@@ -36,14 +36,7 @@ OperatorOverload* OperatorOverload::convert(parser::overload *o) {
     parser::parameter_list *pl = def->t7;
     Type *type = Type::convert(def->t0);
     std::string op = def->t3->to_string();
-    std::vector<Parameter*> parameters;
-    if(pl->t0 != nullptr) {
-        parameters.push_back(Parameter::convert(pl->t0->t0));
-        std::vector<parser::parameter_list::a0::b0*> tmp = pl->t0->t1;
-        for(int i = 0; i < tmp.size(); i++){
-            parameters.push_back(Parameter::convert(tmp[i]->t3));
-        }
-    }
+    std::vector<Parameter*> parameters = convert_parameter_list(pl);
     CompoundStatement *body = CompoundStatement::convert(o->t2);
     return new OperatorOverload(type, op, parameters, body);
 }

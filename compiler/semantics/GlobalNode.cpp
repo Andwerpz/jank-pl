@@ -12,8 +12,8 @@ GlobalNode::GlobalNode(Identifier *_id, std::vector<Identifier*> _dependencies) 
 GlobalNode* GlobalNode::convert(parser::global_node *gn) {
     Identifier *id = Identifier::convert(gn->t2);
     std::vector<Identifier*> dependencies;
-    if(gn->t3 != nullptr) {
-        dependencies = convert_identifier_list(gn->t3->t2);
+    if(gn->t3.has_value()) {
+        dependencies = convert_identifier_list(gn->t3.value()->t2);
     }
     return new GlobalNode(id, dependencies);
 }

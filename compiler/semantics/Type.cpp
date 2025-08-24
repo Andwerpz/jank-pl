@@ -249,11 +249,11 @@ Type* FunctionPointerType::make_copy() {
 // -- CONVERT --
 Type* Type::convert(parser::templated_type *t) {
     Type *res = BaseType::convert(t->t0);
-    if(t->t1 != nullptr) {  //template types
+    if(t->t1.has_value()) {  //template types
         std::vector<Type*> template_types;
-        template_types.push_back(Type::convert(t->t1->t2));
-        for(int i = 0; i < t->t1->t3.size(); i++){
-            template_types.push_back(Type::convert(t->t1->t3[i]->t3));
+        template_types.push_back(Type::convert(t->t1.value()->t2));
+        for(int i = 0; i < t->t1.value()->t3.size(); i++){
+            template_types.push_back(Type::convert(t->t1.value()->t3[i]->t3));
         }
         res = new TemplatedType(dynamic_cast<BaseType*>(res), template_types);
     }
@@ -281,7 +281,7 @@ Type* Type::convert(parser::type *t) {
     }
     else assert(false);
     assert(res != nullptr);
-    if(t->t1 != nullptr) {
+    if(t->t1.has_value()) {
         res = new ReferenceType(res);
     }
     return res;

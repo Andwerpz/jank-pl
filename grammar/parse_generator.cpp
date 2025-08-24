@@ -1209,7 +1209,7 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
             cout << indent() << type_sid[i] << " *" << var_sid[i] << ";\n";
         }
         else if(t->is_zo) {
-            cout << indent() << type_sid[i] << " *" << var_sid[i] << ";\n";
+            cout << indent() << "std::optional<" << type_sid[i] << "*> " << var_sid[i] << ";\n";
         }
         else if(t->is_zm) {
             cout << indent() << "std::vector<" << type_sid[i] << "*> " << var_sid[i] << ";\n";
@@ -1234,7 +1234,7 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
             cout << type_sid[i] << " *_" << var_sid[i];
         }
         else if(t->is_zo) {
-            cout << type_sid[i] << " *_" << var_sid[i];
+            cout << "std::optional<" << type_sid[i] << "*> _" << var_sid[i];
         }
         else if(t->is_zm) {
             cout << "std::vector<" << type_sid[i] << "*> _" << var_sid[i];
@@ -1265,7 +1265,7 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
     cout << indent() << "static " << struct_name << "* parse();\n";
 
     //to_string declaration
-    cout << indent() << "std::string to_string();\n";
+    cout << indent() << "std::string to_string() override;\n";
 
     //postprocess declaration
     cout << indent() << "void postprocess() override;\n";
@@ -1385,7 +1385,8 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
             cout << indent() << "if(_" << var_sid[i] << " == nullptr) {pop_stack(); return nullptr;}\n";
         }
         else if(t->is_zo) {
-            cout << indent() << type_sid[i] << " *_" << var_sid[i] << " = " << type_sid[i] << "::parse();\n";
+            cout << indent() << "std::optional<" << type_sid[i] << "*> _" << var_sid[i] << " = std::nullopt;\n";
+            cout << indent() << "if(auto x = " << type_sid[i] << "::parse()) _" << var_sid[i] << " = x;\n";
         }
         else if(t->is_zm) {
             cout << indent() << "std::vector<" << type_sid[i] << "*> _" << var_sid[i] << ";\n";
@@ -1447,7 +1448,7 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
             cout << indent() << "ans += " << var_sid[i] << "->to_string();\n";
         }
         else if(t->is_zo) {
-            cout << indent() << "if(" << var_sid[i] << " != nullptr) ans += " << var_sid[i] << "->to_string();\n";
+            cout << indent() << "if(" << var_sid[i] << ".has_value()) ans += " << var_sid[i] << ".value()->to_string();\n";
         }
         else if(t->is_zm) {
             cout << indent() << "for(int i = 0; i < " << var_sid[i] << ".size(); i++) ans += " << var_sid[i] << "[i]->to_string();\n";
@@ -1479,10 +1480,10 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
             cout << indent() << var_sid[i] << "->postprocess();\n";
         }
         else if(t->is_zo) {
-            cout << indent() << "if(" << var_sid[i] << " != nullptr) {\n";
+            cout << indent() << "if(" << var_sid[i] << ".has_value()) {\n";
             indent_level ++;
-            cout << indent() << "token_children.push_back(" << var_sid[i] << ");\n";
-            cout << indent() << var_sid[i] << "->postprocess();\n";
+            cout << indent() << "token_children.push_back(" << var_sid[i] << ".value());\n";
+            cout << indent() << var_sid[i] << ".value()->postprocess();\n";
             indent_level --;
             cout << indent() << "}\n";
         }
@@ -1614,6 +1615,7 @@ void generate_h(grammar *g) {
     cout << "#include <fstream>\n";
     cout << "#include <sstream>\n";
     cout << "#include <stdexcept>\n";
+    cout << "#include <optional>\n";
     cout << "\n";
     
     cout << "namespace parser {\n";

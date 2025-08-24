@@ -65,19 +65,12 @@ bool Function::operator!=(const Function& other) const {
 }
 
 Function* Function::convert(parser::function *f) {
-    bool is_export = f->t0 != nullptr;
+    bool is_export = f->t0.has_value();
     parser::function_definition *def = f->t1;
     parser::parameter_list *pl = def->t6;
     Type *type = Type::convert(def->t0);
     Identifier *name = new Identifier(def->t2->to_string());
-    std::vector<Parameter*> parameters;
-    if(pl->t0 != nullptr) {
-        parameters.push_back(Parameter::convert(pl->t0->t0));
-        std::vector<parser::parameter_list::a0::b0*> tmp = pl->t0->t1;
-        for(int i = 0; i < tmp.size(); i++){
-            parameters.push_back(Parameter::convert(tmp[i]->t3));
-        }
-    }
+    std::vector<Parameter*> parameters = convert_parameter_list(pl);
     CompoundStatement *body = CompoundStatement::convert(f->t3);
     return new Function(std::nullopt, is_export, type, name, parameters, body);
 }

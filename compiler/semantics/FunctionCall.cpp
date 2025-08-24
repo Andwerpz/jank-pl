@@ -28,14 +28,7 @@ FunctionCall::FunctionCall(std::optional<Type*> _target_type, Identifier *_id, s
 
 FunctionCall* FunctionCall::convert(parser::function_call *f) {
     Identifier *fname = Identifier::convert(f->t0);
-    std::vector<Expression*> argument_list;
-    parser::argument_list *arglist = f->t4;
-    if(arglist->t0 != nullptr) {
-        argument_list.push_back(Expression::convert(arglist->t0->t0));
-        for(int i = 0; i < arglist->t0->t1.size(); i++){
-            argument_list.push_back(Expression::convert(arglist->t0->t1[i]->t3));
-        }
-    }
+    std::vector<Expression*> argument_list = convert_argument_list(f->t4);
     return new FunctionCall(fname, argument_list);
 }
 

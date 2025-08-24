@@ -1,4 +1,4 @@
-// Date Generated : 08-21-2025 22:01:50
+// Date Generated : 08-24-2025 14:31:46
 #pragma once
 #include <vector>
 #include <string>
@@ -8,6 +8,7 @@
 #include <fstream>
 #include <sstream>
 #include <stdexcept>
+#include <optional>
 
 namespace parser {
     struct parse_context;
@@ -150,7 +151,7 @@ namespace parser {
             t8 = _t8;
         }
         static function_definition* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -164,21 +165,21 @@ namespace parser {
                 t1 = _t1;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
-        a0 *t0;
+        std::optional<a0*> t0;
         function_definition *t1;
         ows *t2;
         compound_statement *t3;
-        function(a0 *_t0, function_definition *_t1, ows *_t2, compound_statement *_t3) {
+        function(std::optional<a0*> _t0, function_definition *_t1, ows *_t2, compound_statement *_t3) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
             t3 = _t3;
         }
         static function* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -192,17 +193,17 @@ namespace parser {
                 t1 = _t1;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
-        a0 *t0;
+        std::optional<a0*> t0;
         function *t1;
-        templated_function(a0 *_t0, function *_t1) {
+        templated_function(std::optional<a0*> _t0, function *_t1) {
             t0 = _t0;
             t1 = _t1;
         }
         static templated_function* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -225,7 +226,7 @@ namespace parser {
             t6 = _t6;
         }
         static function_call* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -250,7 +251,7 @@ namespace parser {
             t7 = _t7;
         }
         static function_pointer_call* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -273,7 +274,7 @@ namespace parser {
             t6 = _t6;
         }
         static literal_sizeof* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -285,7 +286,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         std::vector<a0*> t0;
@@ -293,7 +294,7 @@ namespace parser {
             t0 = _t0;
         }
         static literal_integer* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -305,7 +306,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -314,7 +315,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         std::vector<a0*> t0;
@@ -326,7 +327,7 @@ namespace parser {
             t2 = _t2;
         }
         static literal_float* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -339,7 +340,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -348,7 +349,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b2 : public token {
@@ -357,7 +358,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b2* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b3 : public token {
@@ -366,7 +367,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b3* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b4 : public token {
@@ -375,7 +376,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b4* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -421,7 +422,7 @@ namespace parser {
             t2 = _t2;
         }
         static literal_char* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -434,7 +435,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -443,7 +444,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b2 : public token {
@@ -452,7 +453,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b2* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b3 : public token {
@@ -461,7 +462,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b3* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b4 : public token {
@@ -470,7 +471,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b4* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -516,7 +517,7 @@ namespace parser {
             t2 = _t2;
         }
         static literal_string* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -534,7 +535,7 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         terminal *t0;
@@ -546,10 +547,10 @@ namespace parser {
         terminal *t6;
         ows *t7;
         type *t8;
-        a0 *t9;
+        std::optional<a0*> t9;
         ows *t10;
         terminal *t11;
-        literal_syscall(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, literal_integer *_t4, ows *_t5, terminal *_t6, ows *_t7, type *_t8, a0 *_t9, ows *_t10, terminal *_t11) {
+        literal_syscall(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, literal_integer *_t4, ows *_t5, terminal *_t6, ows *_t7, type *_t8, std::optional<a0*> _t9, ows *_t10, terminal *_t11) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -564,7 +565,7 @@ namespace parser {
             t11 = _t11;
         }
         static literal_syscall* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -577,7 +578,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -586,7 +587,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b2 : public token {
@@ -595,7 +596,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b2* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b3 : public token {
@@ -604,7 +605,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b3* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b4 : public token {
@@ -613,7 +614,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b4* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b5 : public token {
@@ -622,7 +623,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b5* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b6 : public token {
@@ -631,7 +632,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b6* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b7 : public token {
@@ -640,7 +641,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b7* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b8 : public token {
@@ -649,7 +650,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b8* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b9 : public token {
@@ -658,7 +659,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b9* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b10 : public token {
@@ -667,7 +668,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b10* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b11 : public token {
@@ -676,7 +677,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b11* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b12 : public token {
@@ -685,7 +686,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b12* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -777,7 +778,7 @@ namespace parser {
             t1 = _t1;
         }
         static literal_hex* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -790,7 +791,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -799,7 +800,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -825,7 +826,7 @@ namespace parser {
             t1 = _t1;
         }
         static literal_binary* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -858,7 +859,7 @@ namespace parser {
             t11 = _t11;
         }
         static literal_function_pointer* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -870,7 +871,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -879,7 +880,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a2 : public token {
@@ -888,7 +889,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a2* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a3 : public token {
@@ -897,7 +898,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a3* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a4 : public token {
@@ -906,7 +907,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a4* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a5 : public token {
@@ -915,7 +916,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a5* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a6 : public token {
@@ -924,7 +925,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a6* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a7 : public token {
@@ -933,7 +934,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a7* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a8 : public token {
@@ -942,7 +943,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a8* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         bool is_a0 = false;
@@ -1017,7 +1018,7 @@ namespace parser {
             t3 = _t3;
         }
         static member_variable_declaration* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -1040,7 +1041,7 @@ namespace parser {
             t6 = _t6;
         }
         static constructor_definition* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -1055,7 +1056,7 @@ namespace parser {
             t2 = _t2;
         }
         static constructor* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -1082,7 +1083,7 @@ namespace parser {
             t8 = _t8;
         }
         static constructor_call* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -1103,7 +1104,7 @@ namespace parser {
             t5 = _t5;
         }
         static destructor* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -1117,7 +1118,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c0* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c1 : public token {
@@ -1126,7 +1127,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c1* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c2 : public token {
@@ -1135,7 +1136,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c2* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c3 : public token {
@@ -1144,7 +1145,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c3* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 bool is_c0 = false;
@@ -1182,7 +1183,7 @@ namespace parser {
                 t1 = _t1;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         terminal *t0;
@@ -1204,7 +1205,7 @@ namespace parser {
             t7 = _t7;
         }
         static struct_definition* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -1219,7 +1220,7 @@ namespace parser {
             t2 = _t2;
         }
         static templated_struct_definition* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -1231,7 +1232,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -1240,7 +1241,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a2 : public token {
@@ -1249,7 +1250,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a2* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a3 : public token {
@@ -1258,7 +1259,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a3* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a4 : public token {
@@ -1275,7 +1276,7 @@ namespace parser {
                 t4 = _t4;
             }
             static a4* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         bool is_a0 = false;
@@ -1331,7 +1332,7 @@ namespace parser {
                         t4 = _t4;
                     }
                     static c0* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c1 : public token {
@@ -1344,7 +1345,7 @@ namespace parser {
                         t2 = _t2;
                     }
                     static c1* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c2 : public token {
@@ -1357,7 +1358,7 @@ namespace parser {
                         t2 = _t2;
                     }
                     static c2* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c3 : public token {
@@ -1370,7 +1371,7 @@ namespace parser {
                         t2 = _t2;
                     }
                     static c3* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c4 : public token {
@@ -1383,7 +1384,7 @@ namespace parser {
                         t2 = _t2;
                     }
                     static c4* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c5 : public token {
@@ -1392,7 +1393,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c5* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c6 : public token {
@@ -1401,7 +1402,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c6* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c7 : public token {
@@ -1414,7 +1415,7 @@ namespace parser {
                         t2 = _t2;
                     }
                     static c7* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c8 : public token {
@@ -1427,7 +1428,7 @@ namespace parser {
                         t2 = _t2;
                     }
                     static c8* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c9 : public token {
@@ -1440,7 +1441,7 @@ namespace parser {
                         t2 = _t2;
                     }
                     static c9* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 bool is_c0 = false;
@@ -1514,7 +1515,7 @@ namespace parser {
                 t1 = _t1;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         expr_primary *t0;
@@ -1524,7 +1525,7 @@ namespace parser {
             t1 = _t1;
         }
         static expr_postfix* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -1538,7 +1539,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c0* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c1 : public token {
@@ -1547,7 +1548,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c1* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c2 : public token {
@@ -1556,7 +1557,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c2* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c3 : public token {
@@ -1565,7 +1566,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c3* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c4 : public token {
@@ -1574,7 +1575,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c4* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c5 : public token {
@@ -1583,7 +1584,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c5* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c6 : public token {
@@ -1592,7 +1593,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c6* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c7 : public token {
@@ -1601,7 +1602,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c7* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c8 : public token {
@@ -1612,7 +1613,7 @@ namespace parser {
                         t1 = _t1;
                     }
                     static c8* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 bool is_c0 = false;
@@ -1682,7 +1683,7 @@ namespace parser {
                 t2 = _t2;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -1691,7 +1692,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         bool is_a0 = false;
@@ -1721,7 +1722,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c0* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c1 : public token {
@@ -1730,7 +1731,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c1* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c2 : public token {
@@ -1739,7 +1740,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c2* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 bool is_c0 = false;
@@ -1775,7 +1776,7 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         expr_unary *t0;
@@ -1785,7 +1786,7 @@ namespace parser {
             t1 = _t1;
         }
         static expr_multiplicative* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -1799,7 +1800,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c0* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c1 : public token {
@@ -1808,7 +1809,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c1* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 bool is_c0 = false;
@@ -1838,7 +1839,7 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         expr_multiplicative *t0;
@@ -1848,7 +1849,7 @@ namespace parser {
             t1 = _t1;
         }
         static expr_additive* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -1862,7 +1863,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c0* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c1 : public token {
@@ -1871,7 +1872,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c1* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 bool is_c0 = false;
@@ -1901,7 +1902,7 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         expr_additive *t0;
@@ -1911,7 +1912,7 @@ namespace parser {
             t1 = _t1;
         }
         static expr_shift* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -1925,7 +1926,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c0* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c1 : public token {
@@ -1934,7 +1935,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c1* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c2 : public token {
@@ -1943,7 +1944,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c2* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c3 : public token {
@@ -1952,7 +1953,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c3* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 bool is_c0 = false;
@@ -1994,7 +1995,7 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         expr_shift *t0;
@@ -2004,7 +2005,7 @@ namespace parser {
             t1 = _t1;
         }
         static expr_relational* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -2018,7 +2019,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c0* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c1 : public token {
@@ -2027,7 +2028,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c1* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 bool is_c0 = false;
@@ -2057,7 +2058,7 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         expr_relational *t0;
@@ -2067,7 +2068,7 @@ namespace parser {
             t1 = _t1;
         }
         static expr_equality* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -2085,7 +2086,7 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         expr_equality *t0;
@@ -2095,7 +2096,7 @@ namespace parser {
             t1 = _t1;
         }
         static expr_bit_and* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -2113,7 +2114,7 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         expr_bit_and *t0;
@@ -2123,7 +2124,7 @@ namespace parser {
             t1 = _t1;
         }
         static expr_bit_xor* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -2141,7 +2142,7 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         expr_bit_xor *t0;
@@ -2151,7 +2152,7 @@ namespace parser {
             t1 = _t1;
         }
         static expr_bit_or* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -2169,7 +2170,7 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         expr_bit_or *t0;
@@ -2179,7 +2180,7 @@ namespace parser {
             t1 = _t1;
         }
         static expr_logical_and* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -2197,7 +2198,7 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         expr_logical_and *t0;
@@ -2207,7 +2208,7 @@ namespace parser {
             t1 = _t1;
         }
         static expr_logical_or* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -2221,7 +2222,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c0* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c1 : public token {
@@ -2230,7 +2231,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c1* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c2 : public token {
@@ -2239,7 +2240,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c2* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c3 : public token {
@@ -2248,7 +2249,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c3* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c4 : public token {
@@ -2257,7 +2258,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c4* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c5 : public token {
@@ -2266,7 +2267,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c5* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c6 : public token {
@@ -2275,7 +2276,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c6* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c7 : public token {
@@ -2284,7 +2285,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c7* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c8 : public token {
@@ -2293,7 +2294,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c8* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c9 : public token {
@@ -2302,7 +2303,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c9* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c10 : public token {
@@ -2311,7 +2312,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c10* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c11 : public token {
@@ -2320,7 +2321,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c11* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 bool is_c0 = false;
@@ -2410,7 +2411,7 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         expr_logical_or *t0;
@@ -2420,7 +2421,7 @@ namespace parser {
             t1 = _t1;
         }
         static expr_assignment* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -2431,7 +2432,7 @@ namespace parser {
             t0 = _t0;
         }
         static expression* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -2443,7 +2444,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -2452,7 +2453,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a2 : public token {
@@ -2461,7 +2462,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a2* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a3 : public token {
@@ -2470,7 +2471,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a3* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a4 : public token {
@@ -2479,7 +2480,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a4* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a5 : public token {
@@ -2488,7 +2489,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a5* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a6 : public token {
@@ -2497,7 +2498,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a6* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a7 : public token {
@@ -2506,7 +2507,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a7* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a8 : public token {
@@ -2515,7 +2516,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a8* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a9 : public token {
@@ -2524,7 +2525,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a9* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a10 : public token {
@@ -2533,7 +2534,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a10* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a11 : public token {
@@ -2542,7 +2543,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a11* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a12 : public token {
@@ -2551,7 +2552,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a12* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a13 : public token {
@@ -2560,7 +2561,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a13* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a14 : public token {
@@ -2569,7 +2570,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a14* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a15 : public token {
@@ -2578,7 +2579,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a15* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a16 : public token {
@@ -2587,7 +2588,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a16* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a17 : public token {
@@ -2596,7 +2597,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a17* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a18 : public token {
@@ -2605,7 +2606,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a18* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a19 : public token {
@@ -2614,7 +2615,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a19* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a20 : public token {
@@ -2623,7 +2624,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a20* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a21 : public token {
@@ -2632,7 +2633,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a21* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a22 : public token {
@@ -2641,7 +2642,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a22* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a23 : public token {
@@ -2650,7 +2651,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a23* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a24 : public token {
@@ -2659,7 +2660,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a24* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a25 : public token {
@@ -2668,7 +2669,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a25* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a26 : public token {
@@ -2677,7 +2678,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a26* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a27 : public token {
@@ -2686,7 +2687,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a27* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a28 : public token {
@@ -2695,7 +2696,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a28* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a29 : public token {
@@ -2704,7 +2705,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a29* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a30 : public token {
@@ -2713,7 +2714,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a30* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a31 : public token {
@@ -2722,7 +2723,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a31* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a32 : public token {
@@ -2731,7 +2732,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a32* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         bool is_a0 = false;
@@ -2962,7 +2963,7 @@ namespace parser {
             t9 = _t9;
         }
         static overload_definition* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -2977,7 +2978,7 @@ namespace parser {
             t2 = _t2;
         }
         static overload* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -2991,17 +2992,17 @@ namespace parser {
                 t1 = _t1;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
-        a0 *t0;
+        std::optional<a0*> t0;
         overload *t1;
-        templated_overload(a0 *_t0, overload *_t1) {
+        templated_overload(std::optional<a0*> _t0, overload *_t1) {
             t0 = _t0;
             t1 = _t1;
         }
         static templated_overload* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -3012,7 +3013,7 @@ namespace parser {
             t0 = _t0;
         }
         static inline_variable* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -3025,7 +3026,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -3034,7 +3035,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -3062,7 +3063,7 @@ namespace parser {
             t2 = _t2;
         }
         static inline_member_variable* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -3077,7 +3078,7 @@ namespace parser {
             t2 = _t2;
         }
         static inline_dereferencing* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -3089,7 +3090,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -3098,7 +3099,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a2 : public token {
@@ -3107,7 +3108,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a2* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a3 : public token {
@@ -3116,7 +3117,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a3* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a4 : public token {
@@ -3125,7 +3126,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a4* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a5 : public token {
@@ -3134,7 +3135,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a5* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a6 : public token {
@@ -3143,7 +3144,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a6* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a7 : public token {
@@ -3152,7 +3153,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a7* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a8 : public token {
@@ -3161,7 +3162,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a8* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a9 : public token {
@@ -3170,7 +3171,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a9* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a10 : public token {
@@ -3179,7 +3180,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a10* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a11 : public token {
@@ -3188,7 +3189,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a11* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a12 : public token {
@@ -3197,7 +3198,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a12* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a13 : public token {
@@ -3206,7 +3207,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a13* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a14 : public token {
@@ -3215,7 +3216,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a14* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a15 : public token {
@@ -3224,7 +3225,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a15* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a16 : public token {
@@ -3233,7 +3234,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a16* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a17 : public token {
@@ -3242,7 +3243,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a17* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a18 : public token {
@@ -3251,7 +3252,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a18* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a19 : public token {
@@ -3260,7 +3261,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a19* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a20 : public token {
@@ -3269,7 +3270,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a20* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a21 : public token {
@@ -3278,7 +3279,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a21* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a22 : public token {
@@ -3287,7 +3288,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a22* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a23 : public token {
@@ -3296,7 +3297,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a23* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a24 : public token {
@@ -3305,7 +3306,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a24* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a25 : public token {
@@ -3314,7 +3315,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a25* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a26 : public token {
@@ -3323,7 +3324,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a26* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         bool is_a0 = false;
@@ -3502,7 +3503,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -3511,7 +3512,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b2 : public token {
@@ -3520,7 +3521,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b2* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -3558,7 +3559,7 @@ namespace parser {
             t4 = _t4;
         }
         static inline_access* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -3571,7 +3572,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -3582,7 +3583,7 @@ namespace parser {
                             t0 = _t0;
                         }
                         static d0* parse();
-                        std::string to_string();
+                        std::string to_string() override;
                         void postprocess() override;
                     };
                     struct d1 : public token {
@@ -3591,7 +3592,7 @@ namespace parser {
                             t0 = _t0;
                         }
                         static d1* parse();
-                        std::string to_string();
+                        std::string to_string() override;
                         void postprocess() override;
                     };
                     struct d2 : public token {
@@ -3600,7 +3601,7 @@ namespace parser {
                             t0 = _t0;
                         }
                         static d2* parse();
-                        std::string to_string();
+                        std::string to_string() override;
                         void postprocess() override;
                     };
                     struct d3 : public token {
@@ -3609,7 +3610,7 @@ namespace parser {
                             t0 = _t0;
                         }
                         static d3* parse();
-                        std::string to_string();
+                        std::string to_string() override;
                         void postprocess() override;
                     };
                     bool is_d0 = false;
@@ -3645,7 +3646,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -3673,7 +3674,7 @@ namespace parser {
             t2 = _t2;
         }
         static inline_asm_string* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -3692,7 +3693,7 @@ namespace parser {
             t4 = _t4;
         }
         static inline_asm* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -3704,7 +3705,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -3713,7 +3714,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a2 : public token {
@@ -3722,7 +3723,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a2* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a3 : public token {
@@ -3731,7 +3732,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a3* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a4 : public token {
@@ -3740,7 +3741,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a4* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a5 : public token {
@@ -3749,7 +3750,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a5* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a6 : public token {
@@ -3758,7 +3759,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a6* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a7 : public token {
@@ -3767,7 +3768,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a7* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a8 : public token {
@@ -3776,7 +3777,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a8* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a9 : public token {
@@ -3785,7 +3786,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a9* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a10 : public token {
@@ -3794,7 +3795,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a10* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a11 : public token {
@@ -3803,7 +3804,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a11* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a12 : public token {
@@ -3812,7 +3813,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a12* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a13 : public token {
@@ -3821,7 +3822,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a13* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a14 : public token {
@@ -3830,7 +3831,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a14* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a15 : public token {
@@ -3839,7 +3840,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a15* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a16 : public token {
@@ -3848,7 +3849,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a16* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a17 : public token {
@@ -3857,7 +3858,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a17* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a18 : public token {
@@ -3866,7 +3867,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a18* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a19 : public token {
@@ -3875,7 +3876,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a19* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a20 : public token {
@@ -3884,7 +3885,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a20* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a21 : public token {
@@ -3893,7 +3894,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a21* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a22 : public token {
@@ -3902,7 +3903,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a22* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a23 : public token {
@@ -3911,7 +3912,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a23* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a24 : public token {
@@ -3920,7 +3921,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a24* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a25 : public token {
@@ -3929,7 +3930,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a25* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a26 : public token {
@@ -3938,7 +3939,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a26* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a27 : public token {
@@ -3947,7 +3948,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a27* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a28 : public token {
@@ -3956,7 +3957,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a28* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a29 : public token {
@@ -3965,7 +3966,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a29* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a30 : public token {
@@ -3974,7 +3975,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a30* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a31 : public token {
@@ -3983,7 +3984,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a31* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a32 : public token {
@@ -3992,7 +3993,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a32* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a33 : public token {
@@ -4001,7 +4002,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a33* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a34 : public token {
@@ -4010,7 +4011,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a34* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a35 : public token {
@@ -4019,7 +4020,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a35* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a36 : public token {
@@ -4028,7 +4029,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a36* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a37 : public token {
@@ -4037,7 +4038,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a37* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a38 : public token {
@@ -4046,7 +4047,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a38* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a39 : public token {
@@ -4055,7 +4056,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a39* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a40 : public token {
@@ -4064,7 +4065,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a40* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a41 : public token {
@@ -4073,7 +4074,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a41* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a42 : public token {
@@ -4082,7 +4083,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a42* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a43 : public token {
@@ -4091,7 +4092,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a43* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a44 : public token {
@@ -4100,7 +4101,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a44* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a45 : public token {
@@ -4109,7 +4110,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a45* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a46 : public token {
@@ -4118,7 +4119,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a46* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a47 : public token {
@@ -4127,7 +4128,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a47* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a48 : public token {
@@ -4136,7 +4137,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a48* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a49 : public token {
@@ -4145,7 +4146,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a49* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a50 : public token {
@@ -4154,7 +4155,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a50* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a51 : public token {
@@ -4163,7 +4164,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a51* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         bool is_a0 = false;
@@ -4491,7 +4492,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -4500,7 +4501,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a2 : public token {
@@ -4509,7 +4510,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a2* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a3 : public token {
@@ -4518,7 +4519,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a3* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a4 : public token {
@@ -4527,7 +4528,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a4* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a5 : public token {
@@ -4536,7 +4537,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a5* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a6 : public token {
@@ -4545,7 +4546,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a6* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a7 : public token {
@@ -4554,7 +4555,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a7* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a8 : public token {
@@ -4563,7 +4564,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a8* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a9 : public token {
@@ -4572,7 +4573,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a9* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         bool is_a0 = false;
@@ -4649,7 +4650,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -4658,7 +4659,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b2 : public token {
@@ -4667,7 +4668,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b2* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b3 : public token {
@@ -4676,7 +4677,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b3* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b4 : public token {
@@ -4685,7 +4686,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b4* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b5 : public token {
@@ -4694,7 +4695,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b5* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b6 : public token {
@@ -4703,7 +4704,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b6* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b7 : public token {
@@ -4712,7 +4713,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b7* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b8 : public token {
@@ -4721,7 +4722,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b8* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -4789,7 +4790,7 @@ namespace parser {
             t1 = _t1;
         }
         static escape* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -4801,7 +4802,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -4810,7 +4811,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a2 : public token {
@@ -4819,7 +4820,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a2* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a3 : public token {
@@ -4828,7 +4829,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a3* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a4 : public token {
@@ -4837,7 +4838,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a4* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a5 : public token {
@@ -4846,7 +4847,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a5* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a6 : public token {
@@ -4855,7 +4856,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a6* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a7 : public token {
@@ -4864,7 +4865,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a7* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a8 : public token {
@@ -4873,7 +4874,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a8* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a9 : public token {
@@ -4882,7 +4883,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a9* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a10 : public token {
@@ -4891,7 +4892,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a10* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a11 : public token {
@@ -4900,7 +4901,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a11* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a12 : public token {
@@ -4909,7 +4910,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a12* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a13 : public token {
@@ -4918,7 +4919,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a13* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a14 : public token {
@@ -4927,7 +4928,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a14* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a15 : public token {
@@ -4936,7 +4937,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a15* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a16 : public token {
@@ -4945,7 +4946,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a16* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a17 : public token {
@@ -4954,7 +4955,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a17* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a18 : public token {
@@ -4963,7 +4964,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a18* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a19 : public token {
@@ -4972,7 +4973,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a19* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a20 : public token {
@@ -4981,7 +4982,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a20* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a21 : public token {
@@ -4990,7 +4991,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a21* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a22 : public token {
@@ -4999,7 +5000,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a22* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a23 : public token {
@@ -5008,7 +5009,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a23* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a24 : public token {
@@ -5017,7 +5018,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a24* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a25 : public token {
@@ -5026,7 +5027,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a25* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a26 : public token {
@@ -5035,7 +5036,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a26* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a27 : public token {
@@ -5044,7 +5045,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a27* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a28 : public token {
@@ -5053,7 +5054,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a28* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         bool is_a0 = false;
@@ -5244,7 +5245,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -5253,7 +5254,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b2 : public token {
@@ -5262,7 +5263,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b2* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b3 : public token {
@@ -5271,7 +5272,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b3* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b4 : public token {
@@ -5280,7 +5281,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b4* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b5 : public token {
@@ -5289,7 +5290,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b5* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b6 : public token {
@@ -5298,7 +5299,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b6* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -5356,7 +5357,7 @@ namespace parser {
             t2 = _t2;
         }
         static line_comment* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -5369,7 +5370,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -5378,7 +5379,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b2 : public token {
@@ -5387,7 +5388,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b2* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b3 : public token {
@@ -5396,7 +5397,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b3* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -5436,7 +5437,7 @@ namespace parser {
             t2 = _t2;
         }
         static multiline_comment* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -5448,7 +5449,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -5457,7 +5458,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a2 : public token {
@@ -5466,7 +5467,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a2* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a3 : public token {
@@ -5475,7 +5476,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a3* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a4 : public token {
@@ -5484,7 +5485,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a4* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a5 : public token {
@@ -5493,7 +5494,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a5* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a6 : public token {
@@ -5502,7 +5503,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a6* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a7 : public token {
@@ -5511,7 +5512,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a7* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         bool is_a0 = false;
@@ -5575,7 +5576,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         std::vector<a0*> t0;
@@ -5583,7 +5584,7 @@ namespace parser {
             t0 = _t0;
         }
         static rws* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -5595,7 +5596,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         std::vector<a0*> t0;
@@ -5603,7 +5604,7 @@ namespace parser {
             t0 = _t0;
         }
         static ows* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -5616,7 +5617,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -5625,7 +5626,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b2 : public token {
@@ -5634,7 +5635,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b2* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -5666,7 +5667,7 @@ namespace parser {
             t1 = _t1;
         }
         static base_type* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -5685,7 +5686,7 @@ namespace parser {
                     t3 = _t3;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             terminal *t0;
@@ -5703,7 +5704,7 @@ namespace parser {
                 t5 = _t5;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -5713,7 +5714,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -5726,7 +5727,7 @@ namespace parser {
                     t2 = _t2;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -5746,15 +5747,15 @@ namespace parser {
             void postprocess() override;
         };
         base_type *t0;
-        a0 *t1;
+        std::optional<a0*> t1;
         std::vector<a1*> t2;
-        templated_type(base_type *_t0, a0 *_t1, std::vector<a1*> _t2) {
+        templated_type(base_type *_t0, std::optional<a0*> _t1, std::vector<a1*> _t2) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
         }
         static templated_type* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -5787,7 +5788,7 @@ namespace parser {
             t11 = _t11;
         }
         static function_pointer_type* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -5800,7 +5801,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -5809,7 +5810,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -5834,17 +5835,17 @@ namespace parser {
                 t0 = _t0;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         a0 *t0;
-        a1 *t1;
-        type(a0 *_t0, a1 *_t1) {
+        std::optional<a1*> t1;
+        type(a0 *_t0, std::optional<a1*> _t1) {
             t0 = _t0;
             t1 = _t1;
         }
         static type* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -5862,7 +5863,7 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         terminal *t0;
@@ -5884,7 +5885,7 @@ namespace parser {
             t7 = _t7;
         }
         static template_header* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -5897,7 +5898,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -5906,7 +5907,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -5932,7 +5933,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -5941,7 +5942,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b2 : public token {
@@ -5950,7 +5951,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b2* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -5982,7 +5983,7 @@ namespace parser {
             t1 = _t1;
         }
         static identifier* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -6000,21 +6001,21 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         type *t0;
         rws *t1;
         identifier *t2;
-        a0 *t3;
-        declaration(type *_t0, rws *_t1, identifier *_t2, a0 *_t3) {
+        std::optional<a0*> t3;
+        declaration(type *_t0, rws *_t1, identifier *_t2, std::optional<a0*> _t3) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
             t3 = _t3;
         }
         static declaration* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -6029,7 +6030,7 @@ namespace parser {
             t2 = _t2;
         }
         static parameter* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -6048,7 +6049,7 @@ namespace parser {
                     t3 = _t3;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             type *t0;
@@ -6058,15 +6059,15 @@ namespace parser {
                 t1 = _t1;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
-        a0 *t0;
-        type_list(a0 *_t0) {
+        std::optional<a0*> t0;
+        type_list(std::optional<a0*> _t0) {
             t0 = _t0;
         }
         static type_list* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -6085,7 +6086,7 @@ namespace parser {
                     t3 = _t3;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             parameter *t0;
@@ -6095,15 +6096,15 @@ namespace parser {
                 t1 = _t1;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
-        a0 *t0;
-        parameter_list(a0 *_t0) {
+        std::optional<a0*> t0;
+        parameter_list(std::optional<a0*> _t0) {
             t0 = _t0;
         }
         static parameter_list* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -6122,7 +6123,7 @@ namespace parser {
                     t3 = _t3;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             expression *t0;
@@ -6132,15 +6133,15 @@ namespace parser {
                 t1 = _t1;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
-        a0 *t0;
-        argument_list(a0 *_t0) {
+        std::optional<a0*> t0;
+        argument_list(std::optional<a0*> _t0) {
             t0 = _t0;
         }
         static argument_list* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -6159,7 +6160,7 @@ namespace parser {
                     t3 = _t3;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             identifier *t0;
@@ -6169,15 +6170,15 @@ namespace parser {
                 t1 = _t1;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
-        a0 *t0;
-        identifier_list(a0 *_t0) {
+        std::optional<a0*> t0;
+        identifier_list(std::optional<a0*> _t0) {
             t0 = _t0;
         }
         static identifier_list* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -6189,7 +6190,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -6198,7 +6199,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a2 : public token {
@@ -6207,7 +6208,7 @@ namespace parser {
                 t0 = _t0;
             }
             static a2* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         bool is_a0 = false;
@@ -6244,21 +6245,21 @@ namespace parser {
                     t1 = _t1;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             terminal *t0;
-            b0 *t1;
+            std::optional<b0*> t1;
             ows *t2;
             terminal *t3;
-            a0(terminal *_t0, b0 *_t1, ows *_t2, terminal *_t3) {
+            a0(terminal *_t0, std::optional<b0*> _t1, ows *_t2, terminal *_t3) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -6271,7 +6272,7 @@ namespace parser {
                 t2 = _t2;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a2 : public token {
@@ -6284,7 +6285,7 @@ namespace parser {
                 t2 = _t2;
             }
             static a2* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a3 : public token {
@@ -6297,7 +6298,7 @@ namespace parser {
                 t2 = _t2;
             }
             static a3* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a4 : public token {
@@ -6310,7 +6311,7 @@ namespace parser {
                 t2 = _t2;
             }
             static a4* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a5 : public token {
@@ -6323,7 +6324,7 @@ namespace parser {
                 t2 = _t2;
             }
             static a5* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         bool is_a0 = false;
@@ -6382,7 +6383,7 @@ namespace parser {
                     t3 = _t3;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             terminal *t0;
@@ -6394,8 +6395,8 @@ namespace parser {
             terminal *t6;
             ows *t7;
             statement *t8;
-            b0 *t9;
-            a0(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, expression *_t4, ows *_t5, terminal *_t6, ows *_t7, statement *_t8, b0 *_t9) {
+            std::optional<b0*> t9;
+            a0(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, expression *_t4, ows *_t5, terminal *_t6, ows *_t7, statement *_t8, std::optional<b0*> _t9) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -6408,7 +6409,7 @@ namespace parser {
                 t9 = _t9;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -6433,7 +6434,7 @@ namespace parser {
                 t8 = _t8;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a2 : public token {
@@ -6443,7 +6444,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -6452,7 +6453,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b2 : public token {
@@ -6461,27 +6462,27 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b2* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             terminal *t0;
             ows *t1;
             terminal *t2;
             ows *t3;
-            b0 *t4;
+            std::optional<b0*> t4;
             ows *t5;
             terminal *t6;
             ows *t7;
-            b1 *t8;
+            std::optional<b1*> t8;
             ows *t9;
             terminal *t10;
             ows *t11;
-            b2 *t12;
+            std::optional<b2*> t12;
             ows *t13;
             terminal *t14;
             ows *t15;
             statement *t16;
-            a2(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, b0 *_t4, ows *_t5, terminal *_t6, ows *_t7, b1 *_t8, ows *_t9, terminal *_t10, ows *_t11, b2 *_t12, ows *_t13, terminal *_t14, ows *_t15, statement *_t16) {
+            a2(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, std::optional<b0*> _t4, ows *_t5, terminal *_t6, ows *_t7, std::optional<b1*> _t8, ows *_t9, terminal *_t10, ows *_t11, std::optional<b2*> _t12, ows *_t13, terminal *_t14, ows *_t15, statement *_t16) {
                 t0 = _t0;
                 t1 = _t1;
                 t2 = _t2;
@@ -6501,7 +6502,7 @@ namespace parser {
                 t16 = _t16;
             }
             static a2* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         bool is_a0 = false;
@@ -6537,7 +6538,7 @@ namespace parser {
                 t1 = _t1;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         terminal *t0;
@@ -6551,7 +6552,7 @@ namespace parser {
             t3 = _t3;
         }
         static compound_statement* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -6566,7 +6567,7 @@ namespace parser {
             t2 = _t2;
         }
         static library_path* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -6579,7 +6580,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b0* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             struct b1 : public token {
@@ -6588,7 +6589,7 @@ namespace parser {
                     t0 = _t0;
                 }
                 static b1* parse();
-                std::string to_string();
+                std::string to_string() override;
                 void postprocess() override;
             };
             bool is_b0 = false;
@@ -6620,7 +6621,7 @@ namespace parser {
             t4 = _t4;
         }
         static include* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -6643,7 +6644,7 @@ namespace parser {
             t6 = _t6;
         }
         static _typedef* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -6661,16 +6662,16 @@ namespace parser {
                 t3 = _t3;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         terminal *t0;
         rws *t1;
         identifier *t2;
-        a0 *t3;
+        std::optional<a0*> t3;
         ows *t4;
         terminal *t5;
-        global_node(terminal *_t0, rws *_t1, identifier *_t2, a0 *_t3, ows *_t4, terminal *_t5) {
+        global_node(terminal *_t0, rws *_t1, identifier *_t2, std::optional<a0*> _t3, ows *_t4, terminal *_t5) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -6679,7 +6680,7 @@ namespace parser {
             t5 = _t5;
         }
         static global_node* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -6701,7 +6702,7 @@ namespace parser {
                 t5 = _t5;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         struct a1 : public token {
@@ -6712,15 +6713,15 @@ namespace parser {
                 t1 = _t1;
             }
             static a1* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
-        a0 *t0;
-        a1 *t1;
+        std::optional<a0*> t0;
+        std::optional<a1*> t1;
         declaration *t2;
         ows *t3;
         terminal *t4;
-        global_declaration(a0 *_t0, a1 *_t1, declaration *_t2, ows *_t3, terminal *_t4) {
+        global_declaration(std::optional<a0*> _t0, std::optional<a1*> _t1, declaration *_t2, ows *_t3, terminal *_t4) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -6728,7 +6729,7 @@ namespace parser {
             t4 = _t4;
         }
         static global_declaration* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 
@@ -6742,7 +6743,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c0* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c1 : public token {
@@ -6751,7 +6752,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c1* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c2 : public token {
@@ -6760,7 +6761,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c2* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c3 : public token {
@@ -6769,7 +6770,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c3* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c4 : public token {
@@ -6778,7 +6779,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c4* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c5 : public token {
@@ -6787,7 +6788,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c5* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c6 : public token {
@@ -6796,7 +6797,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c6* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 struct c7 : public token {
@@ -6805,7 +6806,7 @@ namespace parser {
                         t0 = _t0;
                     }
                     static c7* parse();
-                    std::string to_string();
+                    std::string to_string() override;
                     void postprocess() override;
                 };
                 bool is_c0 = false;
@@ -6867,7 +6868,7 @@ namespace parser {
                 t1 = _t1;
             }
             static a0* parse();
-            std::string to_string();
+            std::string to_string() override;
             void postprocess() override;
         };
         std::vector<a0*> t0;
@@ -6877,7 +6878,7 @@ namespace parser {
             t1 = _t1;
         }
         static program* parse();
-        std::string to_string();
+        std::string to_string() override;
         void postprocess() override;
     };
 

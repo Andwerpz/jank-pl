@@ -1839,10 +1839,10 @@ void emit_data_section() {
 
 std::vector<Type*> convert_type_list(parser::type_list *t) {
     std::vector<Type*> arr;
-    if(t->t0 != nullptr) {
-        arr.push_back(Type::convert(t->t0->t0));
-        for(int i = 0; i < t->t0->t1.size(); i++){
-            arr.push_back(Type::convert(t->t0->t1[i]->t3));
+    if(t->t0.has_value()) {
+        arr.push_back(Type::convert(t->t0.value()->t0));
+        for(int i = 0; i < t->t0.value()->t1.size(); i++){
+            arr.push_back(Type::convert(t->t0.value()->t1[i]->t3));
         }
     }
     return arr;
@@ -1850,10 +1850,10 @@ std::vector<Type*> convert_type_list(parser::type_list *t) {
 
 std::vector<Parameter*> convert_parameter_list(parser::parameter_list *t) {
     std::vector<Parameter*> arr;
-    if(t->t0 != nullptr) {
-        arr.push_back(Parameter::convert(t->t0->t0));
-        for(int i = 0; i < t->t0->t1.size(); i++){
-            arr.push_back(Parameter::convert(t->t0->t1[i]->t3));
+    if(t->t0.has_value()) {
+        arr.push_back(Parameter::convert(t->t0.value()->t0));
+        for(int i = 0; i < t->t0.value()->t1.size(); i++){
+            arr.push_back(Parameter::convert(t->t0.value()->t1[i]->t3));
         }
     }
     return arr;
@@ -1861,10 +1861,10 @@ std::vector<Parameter*> convert_parameter_list(parser::parameter_list *t) {
 
 std::vector<Expression*> convert_argument_list(parser::argument_list *t) {
     std::vector<Expression*> arr;
-    if(t->t0 != nullptr) {
-        arr.push_back(Expression::convert(t->t0->t0));
-        for(int i = 0; i < t->t0->t1.size(); i++){
-            arr.push_back(Expression::convert(t->t0->t1[i]->t3));
+    if(t->t0.has_value()) {
+        arr.push_back(Expression::convert(t->t0.value()->t0));
+        for(int i = 0; i < t->t0.value()->t1.size(); i++){
+            arr.push_back(Expression::convert(t->t0.value()->t1[i]->t3));
         }
     }
     return arr;
@@ -1872,10 +1872,10 @@ std::vector<Expression*> convert_argument_list(parser::argument_list *t) {
 
 std::vector<Identifier*> convert_identifier_list(parser::identifier_list *t) {
     std::vector<Identifier*> arr;
-    if(t->t0 != nullptr) {
-        arr.push_back(Identifier::convert(t->t0->t0));
-        for(int i = 0; i < t->t0->t1.size(); i++){
-            arr.push_back(Identifier::convert(t->t0->t1[i]->t3));
+    if(t->t0.has_value()) {
+        arr.push_back(Identifier::convert(t->t0.value()->t0));
+        for(int i = 0; i < t->t0.value()->t1.size(); i++){
+            arr.push_back(Identifier::convert(t->t0.value()->t1[i]->t3));
         }
     }
     return arr;

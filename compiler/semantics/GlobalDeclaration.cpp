@@ -17,8 +17,8 @@ GlobalDeclaration::GlobalDeclaration(std::optional<Identifier*> _node_id, bool _
 
 GlobalDeclaration* GlobalDeclaration::convert(parser::global_declaration *gd) {
     std::optional<Identifier*> node_id = std::nullopt;
-    if(gd->t0 != nullptr) node_id = Identifier::convert(gd->t0->t2);
-    bool is_extern = gd->t1 != nullptr;
+    if(gd->t0.has_value()) node_id = Identifier::convert(gd->t0.value()->t2);
+    bool is_extern = gd->t1.has_value();
     Declaration *declaration = Declaration::convert(gd->t2);
     return new GlobalDeclaration(node_id, is_extern, declaration);
 }

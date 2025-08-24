@@ -1,4 +1,4 @@
-// Date Generated : 08-21-2025 22:01:50
+// Date Generated : 08-24-2025 14:31:46
 #include "parser.h"
 
 namespace parser {
@@ -259,7 +259,8 @@ namespace parser {
     function* function::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        function::a0 *_t0 = function::a0::parse();
+        std::optional<function::a0*> _t0 = std::nullopt;
+        if(auto x = function::a0::parse()) _t0 = x;
         function_definition *_t1 = function_definition::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
         ows *_t2 = ows::parse();
@@ -275,7 +276,7 @@ namespace parser {
 
     std::string function::to_string() {
         std::string ans = "";
-        if(t0 != nullptr) ans += t0->to_string();
+        if(t0.has_value()) ans += t0.value()->to_string();
         ans += t1->to_string();
         ans += t2->to_string();
         ans += t3->to_string();
@@ -284,9 +285,9 @@ namespace parser {
 
     void function::postprocess() {
         token_type = "function";
-        if(t0 != nullptr) {
-            token_children.push_back(t0);
-            t0->postprocess();
+        if(t0.has_value()) {
+            token_children.push_back(t0.value());
+            t0.value()->postprocess();
         }
         token_children.push_back(t1);
         t1->postprocess();
@@ -328,7 +329,8 @@ namespace parser {
     templated_function* templated_function::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        templated_function::a0 *_t0 = templated_function::a0::parse();
+        std::optional<templated_function::a0*> _t0 = std::nullopt;
+        if(auto x = templated_function::a0::parse()) _t0 = x;
         function *_t1 = function::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
@@ -340,16 +342,16 @@ namespace parser {
 
     std::string templated_function::to_string() {
         std::string ans = "";
-        if(t0 != nullptr) ans += t0->to_string();
+        if(t0.has_value()) ans += t0.value()->to_string();
         ans += t1->to_string();
         return ans;
     }
 
     void templated_function::postprocess() {
         token_type = "templated_function";
-        if(t0 != nullptr) {
-            token_children.push_back(t0);
-            t0->postprocess();
+        if(t0.has_value()) {
+            token_children.push_back(t0.value());
+            t0.value()->postprocess();
         }
         token_children.push_back(t1);
         t1->postprocess();
@@ -1181,7 +1183,8 @@ namespace parser {
         if(_t7 == nullptr) {pop_stack(); return nullptr;}
         type *_t8 = type::parse();
         if(_t8 == nullptr) {pop_stack(); return nullptr;}
-        literal_syscall::a0 *_t9 = literal_syscall::a0::parse();
+        std::optional<literal_syscall::a0*> _t9 = std::nullopt;
+        if(auto x = literal_syscall::a0::parse()) _t9 = x;
         ows *_t10 = ows::parse();
         if(_t10 == nullptr) {pop_stack(); return nullptr;}
         terminal *_t11 = terminal::parse(")");
@@ -1204,7 +1207,7 @@ namespace parser {
         ans += t6->to_string();
         ans += t7->to_string();
         ans += t8->to_string();
-        if(t9 != nullptr) ans += t9->to_string();
+        if(t9.has_value()) ans += t9.value()->to_string();
         ans += t10->to_string();
         ans += t11->to_string();
         return ans;
@@ -1230,9 +1233,9 @@ namespace parser {
         t7->postprocess();
         token_children.push_back(t8);
         t8->postprocess();
-        if(t9 != nullptr) {
-            token_children.push_back(t9);
-            t9->postprocess();
+        if(t9.has_value()) {
+            token_children.push_back(t9.value());
+            t9.value()->postprocess();
         }
         token_children.push_back(t10);
         t10->postprocess();
@@ -7021,7 +7024,8 @@ namespace parser {
     templated_overload* templated_overload::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        templated_overload::a0 *_t0 = templated_overload::a0::parse();
+        std::optional<templated_overload::a0*> _t0 = std::nullopt;
+        if(auto x = templated_overload::a0::parse()) _t0 = x;
         overload *_t1 = overload::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
@@ -7033,16 +7037,16 @@ namespace parser {
 
     std::string templated_overload::to_string() {
         std::string ans = "";
-        if(t0 != nullptr) ans += t0->to_string();
+        if(t0.has_value()) ans += t0.value()->to_string();
         ans += t1->to_string();
         return ans;
     }
 
     void templated_overload::postprocess() {
         token_type = "templated_overload";
-        if(t0 != nullptr) {
-            token_children.push_back(t0);
-            t0->postprocess();
+        if(t0.has_value()) {
+            token_children.push_back(t0.value());
+            t0.value()->postprocess();
         }
         token_children.push_back(t1);
         t1->postprocess();
@@ -13468,7 +13472,8 @@ namespace parser {
         push_stack();
         base_type *_t0 = base_type::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        templated_type::a0 *_t1 = templated_type::a0::parse();
+        std::optional<templated_type::a0*> _t1 = std::nullopt;
+        if(auto x = templated_type::a0::parse()) _t1 = x;
         std::vector<templated_type::a1*> _t2;
         while(true) {
             templated_type::a1 *tmp = templated_type::a1::parse();
@@ -13485,7 +13490,7 @@ namespace parser {
     std::string templated_type::to_string() {
         std::string ans = "";
         ans += t0->to_string();
-        if(t1 != nullptr) ans += t1->to_string();
+        if(t1.has_value()) ans += t1.value()->to_string();
         for(int i = 0; i < t2.size(); i++) ans += t2[i]->to_string();
         return ans;
     }
@@ -13494,9 +13499,9 @@ namespace parser {
         token_type = "templated_type";
         token_children.push_back(t0);
         t0->postprocess();
-        if(t1 != nullptr) {
-            token_children.push_back(t1);
-            t1->postprocess();
+        if(t1.has_value()) {
+            token_children.push_back(t1.value());
+            t1.value()->postprocess();
         }
         for(int i = 0; i < t2.size(); i++) {
             token_children.push_back(t2[i]);
@@ -13694,7 +13699,8 @@ namespace parser {
         push_stack();
         type::a0 *_t0 = type::a0::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        type::a1 *_t1 = type::a1::parse();
+        std::optional<type::a1*> _t1 = std::nullopt;
+        if(auto x = type::a1::parse()) _t1 = x;
         rm_stack();
         type* retval = new type(_t0, _t1);
         retval->start_ctx = _start_ctx;
@@ -13705,7 +13711,7 @@ namespace parser {
     std::string type::to_string() {
         std::string ans = "";
         ans += t0->to_string();
-        if(t1 != nullptr) ans += t1->to_string();
+        if(t1.has_value()) ans += t1.value()->to_string();
         return ans;
     }
 
@@ -13713,9 +13719,9 @@ namespace parser {
         token_type = "type";
         token_children.push_back(t0);
         t0->postprocess();
-        if(t1 != nullptr) {
-            token_children.push_back(t1);
-            t1->postprocess();
+        if(t1.has_value()) {
+            token_children.push_back(t1.value());
+            t1.value()->postprocess();
         }
     }
 
@@ -14105,7 +14111,8 @@ namespace parser {
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
         identifier *_t2 = identifier::parse();
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        declaration::a0 *_t3 = declaration::a0::parse();
+        std::optional<declaration::a0*> _t3 = std::nullopt;
+        if(auto x = declaration::a0::parse()) _t3 = x;
         rm_stack();
         declaration* retval = new declaration(_t0, _t1, _t2, _t3);
         retval->start_ctx = _start_ctx;
@@ -14118,7 +14125,7 @@ namespace parser {
         ans += t0->to_string();
         ans += t1->to_string();
         ans += t2->to_string();
-        if(t3 != nullptr) ans += t3->to_string();
+        if(t3.has_value()) ans += t3.value()->to_string();
         return ans;
     }
 
@@ -14130,9 +14137,9 @@ namespace parser {
         t1->postprocess();
         token_children.push_back(t2);
         t2->postprocess();
-        if(t3 != nullptr) {
-            token_children.push_back(t3);
-            t3->postprocess();
+        if(t3.has_value()) {
+            token_children.push_back(t3.value());
+            t3.value()->postprocess();
         }
     }
 
@@ -14247,7 +14254,8 @@ namespace parser {
     type_list* type_list::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        type_list::a0 *_t0 = type_list::a0::parse();
+        std::optional<type_list::a0*> _t0 = std::nullopt;
+        if(auto x = type_list::a0::parse()) _t0 = x;
         rm_stack();
         type_list* retval = new type_list(_t0);
         retval->start_ctx = _start_ctx;
@@ -14257,15 +14265,15 @@ namespace parser {
 
     std::string type_list::to_string() {
         std::string ans = "";
-        if(t0 != nullptr) ans += t0->to_string();
+        if(t0.has_value()) ans += t0.value()->to_string();
         return ans;
     }
 
     void type_list::postprocess() {
         token_type = "type_list";
-        if(t0 != nullptr) {
-            token_children.push_back(t0);
-            t0->postprocess();
+        if(t0.has_value()) {
+            token_children.push_back(t0.value());
+            t0.value()->postprocess();
         }
     }
 
@@ -14346,7 +14354,8 @@ namespace parser {
     parameter_list* parameter_list::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        parameter_list::a0 *_t0 = parameter_list::a0::parse();
+        std::optional<parameter_list::a0*> _t0 = std::nullopt;
+        if(auto x = parameter_list::a0::parse()) _t0 = x;
         rm_stack();
         parameter_list* retval = new parameter_list(_t0);
         retval->start_ctx = _start_ctx;
@@ -14356,15 +14365,15 @@ namespace parser {
 
     std::string parameter_list::to_string() {
         std::string ans = "";
-        if(t0 != nullptr) ans += t0->to_string();
+        if(t0.has_value()) ans += t0.value()->to_string();
         return ans;
     }
 
     void parameter_list::postprocess() {
         token_type = "parameter_list";
-        if(t0 != nullptr) {
-            token_children.push_back(t0);
-            t0->postprocess();
+        if(t0.has_value()) {
+            token_children.push_back(t0.value());
+            t0.value()->postprocess();
         }
     }
 
@@ -14445,7 +14454,8 @@ namespace parser {
     argument_list* argument_list::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        argument_list::a0 *_t0 = argument_list::a0::parse();
+        std::optional<argument_list::a0*> _t0 = std::nullopt;
+        if(auto x = argument_list::a0::parse()) _t0 = x;
         rm_stack();
         argument_list* retval = new argument_list(_t0);
         retval->start_ctx = _start_ctx;
@@ -14455,15 +14465,15 @@ namespace parser {
 
     std::string argument_list::to_string() {
         std::string ans = "";
-        if(t0 != nullptr) ans += t0->to_string();
+        if(t0.has_value()) ans += t0.value()->to_string();
         return ans;
     }
 
     void argument_list::postprocess() {
         token_type = "argument_list";
-        if(t0 != nullptr) {
-            token_children.push_back(t0);
-            t0->postprocess();
+        if(t0.has_value()) {
+            token_children.push_back(t0.value());
+            t0.value()->postprocess();
         }
     }
 
@@ -14544,7 +14554,8 @@ namespace parser {
     identifier_list* identifier_list::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        identifier_list::a0 *_t0 = identifier_list::a0::parse();
+        std::optional<identifier_list::a0*> _t0 = std::nullopt;
+        if(auto x = identifier_list::a0::parse()) _t0 = x;
         rm_stack();
         identifier_list* retval = new identifier_list(_t0);
         retval->start_ctx = _start_ctx;
@@ -14554,15 +14565,15 @@ namespace parser {
 
     std::string identifier_list::to_string() {
         std::string ans = "";
-        if(t0 != nullptr) ans += t0->to_string();
+        if(t0.has_value()) ans += t0.value()->to_string();
         return ans;
     }
 
     void identifier_list::postprocess() {
         token_type = "identifier_list";
-        if(t0 != nullptr) {
-            token_children.push_back(t0);
-            t0->postprocess();
+        if(t0.has_value()) {
+            token_children.push_back(t0.value());
+            t0.value()->postprocess();
         }
     }
 
@@ -14717,7 +14728,8 @@ namespace parser {
         push_stack();
         terminal *_t0 = terminal::parse("return");
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        simple_statement::a0::b0 *_t1 = simple_statement::a0::b0::parse();
+        std::optional<simple_statement::a0::b0*> _t1 = std::nullopt;
+        if(auto x = simple_statement::a0::b0::parse()) _t1 = x;
         ows *_t2 = ows::parse();
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
         terminal *_t3 = terminal::parse(";");
@@ -14732,7 +14744,7 @@ namespace parser {
     std::string simple_statement::a0::to_string() {
         std::string ans = "";
         ans += t0->to_string();
-        if(t1 != nullptr) ans += t1->to_string();
+        if(t1.has_value()) ans += t1.value()->to_string();
         ans += t2->to_string();
         ans += t3->to_string();
         return ans;
@@ -14742,9 +14754,9 @@ namespace parser {
         token_type = "simple_statement::a0";
         token_children.push_back(t0);
         t0->postprocess();
-        if(t1 != nullptr) {
-            token_children.push_back(t1);
-            t1->postprocess();
+        if(t1.has_value()) {
+            token_children.push_back(t1.value());
+            t1.value()->postprocess();
         }
         token_children.push_back(t2);
         t2->postprocess();
@@ -15060,7 +15072,8 @@ namespace parser {
         if(_t7 == nullptr) {pop_stack(); return nullptr;}
         statement *_t8 = statement::parse();
         if(_t8 == nullptr) {pop_stack(); return nullptr;}
-        control_statement::a0::b0 *_t9 = control_statement::a0::b0::parse();
+        std::optional<control_statement::a0::b0*> _t9 = std::nullopt;
+        if(auto x = control_statement::a0::b0::parse()) _t9 = x;
         rm_stack();
         control_statement::a0* retval = new control_statement::a0(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9);
         retval->start_ctx = _start_ctx;
@@ -15079,7 +15092,7 @@ namespace parser {
         ans += t6->to_string();
         ans += t7->to_string();
         ans += t8->to_string();
-        if(t9 != nullptr) ans += t9->to_string();
+        if(t9.has_value()) ans += t9.value()->to_string();
         return ans;
     }
 
@@ -15103,9 +15116,9 @@ namespace parser {
         t7->postprocess();
         token_children.push_back(t8);
         t8->postprocess();
-        if(t9 != nullptr) {
-            token_children.push_back(t9);
-            t9->postprocess();
+        if(t9.has_value()) {
+            token_children.push_back(t9.value());
+            t9.value()->postprocess();
         }
     }
 
@@ -15256,21 +15269,24 @@ namespace parser {
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
         ows *_t3 = ows::parse();
         if(_t3 == nullptr) {pop_stack(); return nullptr;}
-        control_statement::a2::b0 *_t4 = control_statement::a2::b0::parse();
+        std::optional<control_statement::a2::b0*> _t4 = std::nullopt;
+        if(auto x = control_statement::a2::b0::parse()) _t4 = x;
         ows *_t5 = ows::parse();
         if(_t5 == nullptr) {pop_stack(); return nullptr;}
         terminal *_t6 = terminal::parse(";");
         if(_t6 == nullptr) {pop_stack(); return nullptr;}
         ows *_t7 = ows::parse();
         if(_t7 == nullptr) {pop_stack(); return nullptr;}
-        control_statement::a2::b1 *_t8 = control_statement::a2::b1::parse();
+        std::optional<control_statement::a2::b1*> _t8 = std::nullopt;
+        if(auto x = control_statement::a2::b1::parse()) _t8 = x;
         ows *_t9 = ows::parse();
         if(_t9 == nullptr) {pop_stack(); return nullptr;}
         terminal *_t10 = terminal::parse(";");
         if(_t10 == nullptr) {pop_stack(); return nullptr;}
         ows *_t11 = ows::parse();
         if(_t11 == nullptr) {pop_stack(); return nullptr;}
-        control_statement::a2::b2 *_t12 = control_statement::a2::b2::parse();
+        std::optional<control_statement::a2::b2*> _t12 = std::nullopt;
+        if(auto x = control_statement::a2::b2::parse()) _t12 = x;
         ows *_t13 = ows::parse();
         if(_t13 == nullptr) {pop_stack(); return nullptr;}
         terminal *_t14 = terminal::parse(")");
@@ -15292,15 +15308,15 @@ namespace parser {
         ans += t1->to_string();
         ans += t2->to_string();
         ans += t3->to_string();
-        if(t4 != nullptr) ans += t4->to_string();
+        if(t4.has_value()) ans += t4.value()->to_string();
         ans += t5->to_string();
         ans += t6->to_string();
         ans += t7->to_string();
-        if(t8 != nullptr) ans += t8->to_string();
+        if(t8.has_value()) ans += t8.value()->to_string();
         ans += t9->to_string();
         ans += t10->to_string();
         ans += t11->to_string();
-        if(t12 != nullptr) ans += t12->to_string();
+        if(t12.has_value()) ans += t12.value()->to_string();
         ans += t13->to_string();
         ans += t14->to_string();
         ans += t15->to_string();
@@ -15318,9 +15334,9 @@ namespace parser {
         t2->postprocess();
         token_children.push_back(t3);
         t3->postprocess();
-        if(t4 != nullptr) {
-            token_children.push_back(t4);
-            t4->postprocess();
+        if(t4.has_value()) {
+            token_children.push_back(t4.value());
+            t4.value()->postprocess();
         }
         token_children.push_back(t5);
         t5->postprocess();
@@ -15328,9 +15344,9 @@ namespace parser {
         t6->postprocess();
         token_children.push_back(t7);
         t7->postprocess();
-        if(t8 != nullptr) {
-            token_children.push_back(t8);
-            t8->postprocess();
+        if(t8.has_value()) {
+            token_children.push_back(t8.value());
+            t8.value()->postprocess();
         }
         token_children.push_back(t9);
         t9->postprocess();
@@ -15338,9 +15354,9 @@ namespace parser {
         t10->postprocess();
         token_children.push_back(t11);
         t11->postprocess();
-        if(t12 != nullptr) {
-            token_children.push_back(t12);
-            t12->postprocess();
+        if(t12.has_value()) {
+            token_children.push_back(t12.value());
+            t12.value()->postprocess();
         }
         token_children.push_back(t13);
         t13->postprocess();
@@ -15733,7 +15749,8 @@ namespace parser {
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
         identifier *_t2 = identifier::parse();
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        global_node::a0 *_t3 = global_node::a0::parse();
+        std::optional<global_node::a0*> _t3 = std::nullopt;
+        if(auto x = global_node::a0::parse()) _t3 = x;
         ows *_t4 = ows::parse();
         if(_t4 == nullptr) {pop_stack(); return nullptr;}
         terminal *_t5 = terminal::parse(";");
@@ -15750,7 +15767,7 @@ namespace parser {
         ans += t0->to_string();
         ans += t1->to_string();
         ans += t2->to_string();
-        if(t3 != nullptr) ans += t3->to_string();
+        if(t3.has_value()) ans += t3.value()->to_string();
         ans += t4->to_string();
         ans += t5->to_string();
         return ans;
@@ -15764,9 +15781,9 @@ namespace parser {
         t1->postprocess();
         token_children.push_back(t2);
         t2->postprocess();
-        if(t3 != nullptr) {
-            token_children.push_back(t3);
-            t3->postprocess();
+        if(t3.has_value()) {
+            token_children.push_back(t3.value());
+            t3.value()->postprocess();
         }
         token_children.push_back(t4);
         t4->postprocess();
@@ -15855,8 +15872,10 @@ namespace parser {
     global_declaration* global_declaration::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        global_declaration::a0 *_t0 = global_declaration::a0::parse();
-        global_declaration::a1 *_t1 = global_declaration::a1::parse();
+        std::optional<global_declaration::a0*> _t0 = std::nullopt;
+        if(auto x = global_declaration::a0::parse()) _t0 = x;
+        std::optional<global_declaration::a1*> _t1 = std::nullopt;
+        if(auto x = global_declaration::a1::parse()) _t1 = x;
         declaration *_t2 = declaration::parse();
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
         ows *_t3 = ows::parse();
@@ -15872,8 +15891,8 @@ namespace parser {
 
     std::string global_declaration::to_string() {
         std::string ans = "";
-        if(t0 != nullptr) ans += t0->to_string();
-        if(t1 != nullptr) ans += t1->to_string();
+        if(t0.has_value()) ans += t0.value()->to_string();
+        if(t1.has_value()) ans += t1.value()->to_string();
         ans += t2->to_string();
         ans += t3->to_string();
         ans += t4->to_string();
@@ -15882,13 +15901,13 @@ namespace parser {
 
     void global_declaration::postprocess() {
         token_type = "global_declaration";
-        if(t0 != nullptr) {
-            token_children.push_back(t0);
-            t0->postprocess();
+        if(t0.has_value()) {
+            token_children.push_back(t0.value());
+            t0.value()->postprocess();
         }
-        if(t1 != nullptr) {
-            token_children.push_back(t1);
-            t1->postprocess();
+        if(t1.has_value()) {
+            token_children.push_back(t1.value());
+            t1.value()->postprocess();
         }
         token_children.push_back(t2);
         t2->postprocess();
