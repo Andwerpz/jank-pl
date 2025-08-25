@@ -32,11 +32,20 @@ ows = { ws } ;                                            (* optional whitespace
 terminal_char = letter | digit | symbol | escape | " " ;
 terminal = "\"" , < terminal_char > , "\"" ;
 
+(* consumes characters until it finds a match with either of the two rules *)
+(* the first rule is the STOP rule, when it finds the match it stops immediately *)
+(* the second rule is the CONSUME rule, when it finds the match, it consumes the rule and continues *)
+(* if this parses 0 characters, it's considered a parse failure *)
+(* STOP is prioritized over CONSUME *)
+(* STOP is useful for handling enclosing delimiters and CONSUME is useful for internal delimiters *)
+error = "error(" , rws , [ alternation , rws ] , "&" , [ rws , alternation ] , rws , ")" ;        
+
 term = "(" , rws , alternation , rws , ")"      (* grouping *)
      | "[" , rws , alternation , rws , "]"      (* zero or one *)
      | "{" , rws , alternation , rws , "}"      (* zero or more *)
      | "<" , rws , alternation , rws , ">"      (* one or more *)
      | terminal
+     | error
      | identifier ;                     
 
 concatenation = term , { rws , "," , rws , term } ;

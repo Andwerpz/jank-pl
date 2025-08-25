@@ -5,11 +5,15 @@ import {
 	InitializeParams,
 	TextDocumentSyncKind,
 	InitializeResult,
+	Connection,
+	PublishDiagnosticsParams,
 } from "vscode-languageserver/node";
 
 import { spawn } from 'child_process';
 
 import { TextDocument } from "vscode-languageserver-textdocument";
+import { Diagnostic, DiagnosticSeverity } from "vscode-languageserver/node";
+import { json } from 'stream/consumers';
 
 // Create a connection for the server, using Node's IPC as a transport.
 // Also include all preview / proposed LSP features.
@@ -39,17 +43,42 @@ connection.onInitialize((params: InitializeParams) => {
 });
 
 connection.languages.semanticTokens.on(async (params) => {
-	const document = documents.get(params.textDocument.uri);
+	const uri = params.textDocument.uri;
+	const document = documents.get(uri);
 	if (!document) return { data: [] };
 
 	const text = document.getText();
-	const tokens = await runParserCLI(text); 
-	const data = encodeTokensLSP(tokens);
+	const parse_res = await runParserCLI(text);
+	const highlight_tokens = parse_res["highlight_tokens"];
+	const highlight_data = encodeHighlightTokensLSP(highlight_tokens);
 
-	return { data: data };
+	const error_tokens = parse_res["error_tokens"];
+	sendDiagnostics(connection, uri, encodeDiagnostics(error_tokens));
+
+	return { data: highlight_data };
 });
 
-function runParserCLI(text: string): Promise<any[]> {
+function sendDiagnostics(connection: Connection, uri: string, diagnostics: Diagnostic[]): void {
+  const params: PublishDiagnosticsParams = {
+    uri,
+    diagnostics
+  };
+  connection.sendDiagnostics(params);
+}
+
+function encodeDiagnostics(errors: any[]): Diagnostic[] {
+	return errors.map(e => ({
+		message: e.message,
+		severity: DiagnosticSeverity.Error,  // can also be Warning, Info, Hint
+		range: {
+			start: { line: e.start_line, character: e.start_col },
+			end: { line: e.end_line, character: e.end_col }
+		},
+		source: "parser"
+	}));
+}
+
+function runParserCLI(text: string): Promise<any> {
 	return new Promise((resolve, reject) => {
 		const parserPath = __dirname + "/parser_cli";
 		const proc = spawn(parserPath);
@@ -68,13 +97,13 @@ function runParserCLI(text: string): Promise<any[]> {
 	});
 }
 
-function encodeTokensLSP(tokens: any[]): number[] {
+function encodeHighlightTokensLSP(tokens: any[]): number[] {
 	const data: number[] = [];
 	let prev_line = 0;
 	let prev_col = 0;
 
 	for (const t of tokens) {
-		console.log("ENCODING TOKEN : " + JSON.stringify(t));
+		// console.log("ENCODING TOKEN : " + JSON.stringify(t));
 
 		const delta_line = t.line - prev_line;
 		const delta_col = delta_line === 0 ? t.col - prev_col : t.col;

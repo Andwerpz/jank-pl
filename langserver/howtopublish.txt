@@ -1,4 +1,16 @@
 
+ - install npm
+sudo apt install npm
+ 
+ - install nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+ - then follow the instructions (have to run some commands)
+ - update npm to v20
+nvm install 20
+nvm use 20
+
+ - do initial build (ctrl + shift + b)
+
  - install vsce
 npm install -g vsce
 

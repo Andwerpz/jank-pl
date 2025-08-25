@@ -1,4 +1,4 @@
-// Date Generated : 08-24-2025 14:31:46
+// Date Generated : 08-25-2025 12:05:49
 #include "parser.h"
 
 namespace parser {
@@ -19,12 +19,29 @@ namespace parser {
     //the stack should be unaffected by any parse function. 
     std::stack<parse_context> ctx_stack;
 
+    //generated during the postprocess phase
+    //list of all error tokens within the CST
+    std::vector<error*> errors;
+
+    std::vector<error*> get_errors() {
+        return errors;
+    }
+    
+    //if true, will try to parse errors
+    //if false, error::parse() will always fail
+    bool gen_errors = false;
+
+    void set_gen_errors(bool b) {
+        gen_errors = b;
+    }
+
     //initializes the parse controller
     void set_s(std::string& ns) {
         s = ns;
         max_parse = 0;
         ctx = {0, 0, 0};
         while(ctx_stack.size() != 0) ctx_stack.pop();
+        errors.clear();
     }
 
     //does nice printout of lines surrounding the position where ind is
@@ -141,6 +158,10 @@ namespace parser {
         std::string ans(n, '\0');
         for(int i = 0; i < n; i++) ans[i] = next_char();
         return ans;
+    }
+    
+    bool is_eof() {
+        return ctx.ptr == s.size();
     }
 
     terminal* terminal::parse(std::string val) {
@@ -862,6 +883,7 @@ namespace parser {
             t4->postprocess();
         }
     }
+
     literal_char* literal_char::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -1083,6 +1105,7 @@ namespace parser {
             t4->postprocess();
         }
     }
+
     literal_string* literal_string::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -1710,6 +1733,7 @@ namespace parser {
             t12->postprocess();
         }
     }
+
     literal_hex* literal_hex::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -1828,6 +1852,7 @@ namespace parser {
             t1->postprocess();
         }
     }
+
     literal_binary* literal_binary::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -2270,6 +2295,7 @@ namespace parser {
             t8->postprocess();
         }
     }
+
     member_variable_declaration* member_variable_declaration::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -2662,6 +2688,7 @@ namespace parser {
             t3->postprocess();
         }
     }
+
     struct_definition::a0* struct_definition::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -2997,6 +3024,7 @@ namespace parser {
             t4->postprocess();
         }
     }
+
     expr_postfix::a0::b0::c0* expr_postfix::a0::b0::c0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -3449,6 +3477,7 @@ namespace parser {
             t9->postprocess();
         }
     }
+
     expr_postfix::a0* expr_postfix::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -3845,6 +3874,7 @@ namespace parser {
             t8->postprocess();
         }
     }
+
     expr_unary::a0* expr_unary::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -3937,6 +3967,7 @@ namespace parser {
             t1->postprocess();
         }
     }
+
     expr_multiplicative::a0::b0::c0* expr_multiplicative::a0::b0::c0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -4054,6 +4085,7 @@ namespace parser {
             t2->postprocess();
         }
     }
+
     expr_multiplicative::a0* expr_multiplicative::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -4210,6 +4242,7 @@ namespace parser {
             t1->postprocess();
         }
     }
+
     expr_additive::a0* expr_additive::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -4366,6 +4399,7 @@ namespace parser {
             t1->postprocess();
         }
     }
+
     expr_shift::a0* expr_shift::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -4592,6 +4626,7 @@ namespace parser {
             t3->postprocess();
         }
     }
+
     expr_relational::a0* expr_relational::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -4748,6 +4783,7 @@ namespace parser {
             t1->postprocess();
         }
     }
+
     expr_equality::a0* expr_equality::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -5624,6 +5660,7 @@ namespace parser {
             t11->postprocess();
         }
     }
+
     expr_assignment::a0* expr_assignment::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -6889,6 +6926,7 @@ namespace parser {
             t32->postprocess();
         }
     }
+
     overload_definition* overload_definition::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -7158,6 +7196,7 @@ namespace parser {
             t1->postprocess();
         }
     }
+
     inline_member_variable* inline_member_variable::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -8183,6 +8222,7 @@ namespace parser {
             t26->postprocess();
         }
     }
+
     inline_access::a0::b0* inline_access::a0::b0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -8300,6 +8340,7 @@ namespace parser {
             t2->postprocess();
         }
     }
+
     inline_access* inline_access::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -8520,6 +8561,7 @@ namespace parser {
             t3->postprocess();
         }
     }
+
     inline_asm_string::a0::b1* inline_asm_string::a0::b1::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -8578,6 +8620,7 @@ namespace parser {
             t1->postprocess();
         }
     }
+
     inline_asm_string* inline_asm_string::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -10494,6 +10537,7 @@ namespace parser {
             t51->postprocess();
         }
     }
+
     digit::a0* digit::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -10856,6 +10900,7 @@ namespace parser {
             t9->postprocess();
         }
     }
+
     escape::a0::b0* escape::a0::b0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -11183,6 +11228,7 @@ namespace parser {
             t8->postprocess();
         }
     }
+
     escape* escape::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -12239,6 +12285,7 @@ namespace parser {
             t28->postprocess();
         }
     }
+
     line_comment::a0::b0* line_comment::a0::b0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -12496,6 +12543,7 @@ namespace parser {
             t6->postprocess();
         }
     }
+
     line_comment* line_comment::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -12688,6 +12736,7 @@ namespace parser {
             t3->postprocess();
         }
     }
+
     multiline_comment* multiline_comment::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -13020,6 +13069,7 @@ namespace parser {
             t7->postprocess();
         }
     }
+
     rws::a0* rws::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -13246,6 +13296,7 @@ namespace parser {
             t2->postprocess();
         }
     }
+
     base_type* base_type::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -13467,6 +13518,7 @@ namespace parser {
             t1->postprocess();
         }
     }
+
     templated_type* templated_type::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -13670,6 +13722,7 @@ namespace parser {
             t1->postprocess();
         }
     }
+
     type::a1* type::a1::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -13911,6 +13964,7 @@ namespace parser {
             t1->postprocess();
         }
     }
+
     identifier::a1::b0* identifier::a1::b0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -14028,6 +14082,7 @@ namespace parser {
             t2->postprocess();
         }
     }
+
     identifier* identifier::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -14694,6 +14749,7 @@ namespace parser {
             t2->postprocess();
         }
     }
+
     simple_statement::a0::b0* simple_statement::a0::b0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -15012,6 +15068,7 @@ namespace parser {
             t5->postprocess();
         }
     }
+
     control_statement::a0::b0* control_statement::a0::b0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -15413,10 +15470,175 @@ namespace parser {
             t2->postprocess();
         }
     }
-    compound_statement::a0* compound_statement::a0::parse() {
+
+    compound_statement::a0::b0::c0* compound_statement::a0::b0::c0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
         statement *_t0 = statement::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        compound_statement::a0::b0::c0* retval = new compound_statement::a0::b0::c0(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string compound_statement::a0::b0::c0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void compound_statement::a0::b0::c0::postprocess() {
+        token_type = "compound_statement::a0::b0::c0";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    compound_statement::a0::b0::c1::d0::e0* compound_statement::a0::b0::c1::d0::e0::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("}");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        compound_statement::a0::b0::c1::d0::e0* retval = new compound_statement::a0::b0::c1::d0::e0(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string compound_statement::a0::b0::c1::d0::e0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void compound_statement::a0::b0::c1::d0::e0::postprocess() {
+        token_type = "compound_statement::a0::b0::c1::d0::e0";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    compound_statement::a0::b0::c1::d0::e1* compound_statement::a0::b0::c1::d0::e1::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse(";");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        compound_statement::a0::b0::c1::d0::e1* retval = new compound_statement::a0::b0::c1::d0::e1(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string compound_statement::a0::b0::c1::d0::e1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void compound_statement::a0::b0::c1::d0::e1::postprocess() {
+        token_type = "compound_statement::a0::b0::c1::d0::e1";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    compound_statement::a0::b0::c1::d0* compound_statement::a0::b0::c1::d0::parse() {
+        if(!gen_errors) return nullptr;
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        std::string val = "";
+        while(!is_eof()) {
+            push_stack();
+            compound_statement::a0::b0::c1::d0::e0 *tmp0 = compound_statement::a0::b0::c1::d0::e0::parse();
+            pop_stack();
+            if(tmp0 != nullptr) break;
+            push_stack();
+            compound_statement::a0::b0::c1::d0::e1 *tmp1 = compound_statement::a0::b0::c1::d0::e1::parse();
+            pop_stack();
+            if(tmp1 != nullptr) {val += next_chars(tmp1->end_ctx.ptr - get_ctx().ptr); break;}
+            val.push_back(next_char());
+        }
+        if(val.size() == 0) {pop_stack(); return nullptr;}
+        rm_stack();
+        compound_statement::a0::b0::c1::d0* retval = new compound_statement::a0::b0::c1::d0(val);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string compound_statement::a0::b0::c1::d0::to_string() {
+        return val;
+    }
+
+    void compound_statement::a0::b0::c1::d0::postprocess() {
+        token_type = "error";
+        errors.push_back(this);
+    }
+
+    compound_statement::a0::b0::c1* compound_statement::a0::b0::c1::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        compound_statement::a0::b0::c1::d0 *_t0 = compound_statement::a0::b0::c1::d0::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        compound_statement::a0::b0::c1* retval = new compound_statement::a0::b0::c1(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string compound_statement::a0::b0::c1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void compound_statement::a0::b0::c1::postprocess() {
+        token_type = "compound_statement::a0::b0::c1";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    compound_statement::a0::b0* compound_statement::a0::b0::parse() {
+        parse_context _start_ctx = get_ctx();
+        if(auto x = compound_statement::a0::b0::c0::parse()) {
+            compound_statement::a0::b0* retval = new compound_statement::a0::b0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = compound_statement::a0::b0::c1::parse()) {
+            compound_statement::a0::b0* retval = new compound_statement::a0::b0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        return nullptr;
+    }
+
+    std::string compound_statement::a0::b0::to_string() {
+        if(is_c0) return t0->to_string();
+        if(is_c1) return t1->to_string();
+        assert(false);
+    }
+
+    void compound_statement::a0::b0::postprocess() {
+        token_type = "compound_statement::a0::b0";
+        if(is_c0) {
+            token_children.push_back(t0);
+            t0->postprocess();
+        }
+        if(is_c1) {
+            token_children.push_back(t1);
+            t1->postprocess();
+        }
+    }
+
+    compound_statement::a0* compound_statement::a0::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        compound_statement::a0::b0 *_t0 = compound_statement::a0::b0::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         ows *_t1 = ows::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
@@ -15603,6 +15825,7 @@ namespace parser {
             t1->postprocess();
         }
     }
+
     include* include::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -16109,6 +16332,142 @@ namespace parser {
         t0->postprocess();
     }
 
+    program::a0::b0::c8::d0::e1::f0* program::a0::b0::c8::d0::e1::f0::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse(";");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        program::a0::b0::c8::d0::e1::f0* retval = new program::a0::b0::c8::d0::e1::f0(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string program::a0::b0::c8::d0::e1::f0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void program::a0::b0::c8::d0::e1::f0::postprocess() {
+        token_type = "program::a0::b0::c8::d0::e1::f0";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    program::a0::b0::c8::d0::e1::f1* program::a0::b0::c8::d0::e1::f1::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("}");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        program::a0::b0::c8::d0::e1::f1* retval = new program::a0::b0::c8::d0::e1::f1(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string program::a0::b0::c8::d0::e1::f1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void program::a0::b0::c8::d0::e1::f1::postprocess() {
+        token_type = "program::a0::b0::c8::d0::e1::f1";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    program::a0::b0::c8::d0::e1* program::a0::b0::c8::d0::e1::parse() {
+        parse_context _start_ctx = get_ctx();
+        if(auto x = program::a0::b0::c8::d0::e1::f0::parse()) {
+            program::a0::b0::c8::d0::e1* retval = new program::a0::b0::c8::d0::e1(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = program::a0::b0::c8::d0::e1::f1::parse()) {
+            program::a0::b0::c8::d0::e1* retval = new program::a0::b0::c8::d0::e1(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        return nullptr;
+    }
+
+    std::string program::a0::b0::c8::d0::e1::to_string() {
+        if(is_f0) return t0->to_string();
+        if(is_f1) return t1->to_string();
+        assert(false);
+    }
+
+    void program::a0::b0::c8::d0::e1::postprocess() {
+        token_type = "program::a0::b0::c8::d0::e1";
+        if(is_f0) {
+            token_children.push_back(t0);
+            t0->postprocess();
+        }
+        if(is_f1) {
+            token_children.push_back(t1);
+            t1->postprocess();
+        }
+    }
+
+    program::a0::b0::c8::d0* program::a0::b0::c8::d0::parse() {
+        if(!gen_errors) return nullptr;
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        std::string val = "";
+        while(!is_eof()) {
+            push_stack();
+            program::a0::b0::c8::d0::e1 *tmp1 = program::a0::b0::c8::d0::e1::parse();
+            pop_stack();
+            if(tmp1 != nullptr) {val += next_chars(tmp1->end_ctx.ptr - get_ctx().ptr); break;}
+            val.push_back(next_char());
+        }
+        if(val.size() == 0) {pop_stack(); return nullptr;}
+        rm_stack();
+        program::a0::b0::c8::d0* retval = new program::a0::b0::c8::d0(val);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string program::a0::b0::c8::d0::to_string() {
+        return val;
+    }
+
+    void program::a0::b0::c8::d0::postprocess() {
+        token_type = "error";
+        errors.push_back(this);
+    }
+
+    program::a0::b0::c8* program::a0::b0::c8::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        program::a0::b0::c8::d0 *_t0 = program::a0::b0::c8::d0::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        program::a0::b0::c8* retval = new program::a0::b0::c8(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string program::a0::b0::c8::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void program::a0::b0::c8::postprocess() {
+        token_type = "program::a0::b0::c8";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
     program::a0::b0* program::a0::b0::parse() {
         parse_context _start_ctx = get_ctx();
         if(auto x = program::a0::b0::c0::parse()) {
@@ -16159,6 +16518,12 @@ namespace parser {
             retval->end_ctx = get_ctx();
             return retval;
         }
+        if(auto x = program::a0::b0::c8::parse()) {
+            program::a0::b0* retval = new program::a0::b0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
         return nullptr;
     }
 
@@ -16171,6 +16536,7 @@ namespace parser {
         if(is_c5) return t5->to_string();
         if(is_c6) return t6->to_string();
         if(is_c7) return t7->to_string();
+        if(is_c8) return t8->to_string();
         assert(false);
     }
 
@@ -16208,7 +16574,12 @@ namespace parser {
             token_children.push_back(t7);
             t7->postprocess();
         }
+        if(is_c8) {
+            token_children.push_back(t8);
+            t8->postprocess();
+        }
     }
+
     program::a0* program::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();

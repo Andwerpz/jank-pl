@@ -11,6 +11,7 @@
 #include <iomanip>
 #include <chrono>
 #include <functional>
+#include <optional>
 using namespace std;
 
 /*
@@ -31,6 +32,7 @@ struct rwspace;
 struct owspace;
 struct terminal_char;
 struct terminal;
+struct error;
 struct term;
 struct concatenation;
 struct alternation;
@@ -184,16 +186,26 @@ struct terminal {
     }
 };
 
+struct error {
+    std::optional<alternation*> a0, a1;
+    error(std::optional<alternation*> _a0, std::optional<alternation*> _a1) {
+        a0 = _a0;
+        a1 = _a1;
+    }
+};
+
 struct term {
     bool is_grouping = false;
     bool is_zo = false;
     bool is_zm = false;
     bool is_om = false;
     bool is_terminal = false;
+    bool is_error = false;
     bool is_identifier = false;
 
     alternation *a;
     terminal *t;
+    error *e;
     identifier *i;
 
     term(string type, alternation *_a) {
@@ -208,6 +220,11 @@ struct term {
     term(terminal *_t){
         is_terminal = true;
         t = _t;
+    }
+
+    term (error *_e) {
+        is_error = true;
+        e = _e;
     }
 
     term(identifier *_i) {
@@ -312,6 +329,7 @@ rwspace* parse_rwspace();
 owspace* parse_owspace();
 terminal_char* parse_terminal_char();
 terminal* parse_terminal();
+error* parse_error();
 term* parse_term();
 concatenation* parse_concatenation();
 alternation* parse_alternation();
@@ -521,6 +539,67 @@ terminal* parse_terminal() {
     return new terminal(cs);
 }
 
+error* parse_error() {
+    std::optional<alternation*> a0 = std::nullopt, a1 = std::nullopt;
+    push_stack();
+    if(next_chars(6) != "error(") {
+        pop_stack();
+        return nullptr;
+    }
+    rwspace *ws1 = parse_rwspace();
+    if(ws1 == nullptr) {
+        pop_stack();
+        return nullptr;
+    }
+    while(1){
+        push_stack();
+        alternation *a = parse_alternation();
+        if(a == nullptr) {
+            pop_stack();
+            break;
+        }
+        rwspace *ws2 = parse_rwspace();
+        if(ws2 == nullptr) {
+            pop_stack();
+            break;
+        }
+        rm_stack();
+        a0 = a;
+        break;
+    }
+    if(next_char() != '&') {
+        pop_stack();
+        return nullptr;
+    }
+    while(1) {
+        push_stack();
+        rwspace *ws3 = parse_rwspace();
+        if(ws3 == nullptr) {
+            pop_stack();
+            break;
+        }
+        alternation *a = parse_alternation();
+        if(a == nullptr) {
+            pop_stack();
+            break;
+        }
+        rm_stack();
+        a1 = a;
+        break;
+    }
+    rwspace *ws4 = parse_rwspace();
+    if(ws4 == nullptr) {
+        pop_stack();
+        return nullptr;
+    }
+    if(next_char() != ')') {
+        pop_stack();
+        return nullptr;
+    }
+    rm_stack();
+    return new error(a0, a1);
+}
+
 term* parse_term() {
     do {    // grouping
         push_stack();
@@ -635,6 +714,7 @@ term* parse_term() {
         return new term("<>", a);
     } while(false);
     if(auto t = parse_terminal()) return new term(t);
+    if(auto e = parse_error()) return new term(e);
     if(auto i = parse_identifier()) return new term(i);
     return nullptr;
 }
@@ -854,6 +934,7 @@ string print_rwspace(rwspace *w);
 string print_owspace(owspace *o);
 string print_terminal_char(terminal_char *c);
 string print_terminal(terminal *t);
+string print_error(error *e);
 string print_term(term *t);
 string print_concatenation(concatenation *c);
 string print_alternation(alternation *a);
@@ -940,6 +1021,16 @@ string print_terminal(terminal *t) {
     return ans;
 }
 
+string print_error(error *e) {
+    string ans = "";
+    ans += "error( ";
+    if(e->a0.has_value()) ans += print_alternation(e->a0.value()) + " ";
+    ans += "&";
+    if(e->a1.has_value()) ans += " " + print_alternation(e->a1.value());
+    ans += " )";
+    return ans;
+}
+
 string print_term(term *t) {
     string ans = "";
     if(t->is_grouping) {
@@ -963,6 +1054,7 @@ string print_term(term *t) {
         ans += " >";
     }
     else if(t->is_terminal) ans += print_terminal(t->t);
+    else if(t->is_error) ans += print_error(t->e);
     else if(t->is_identifier) ans += print_identifier(t->i);
     else assert(false);
     return ans;
@@ -1134,10 +1226,12 @@ parse functions, then all the parse functions will be defined afterwards.
 //struct depth controller
 int struct_depth;
 
+void generate_struct_from_error(error *e, string struct_name);
 void generate_struct_from_concatenation(concatenation *c, string struct_name);
 void generate_struct_from_alternation(alternation *a, string struct_name);
 void generate_struct_from_rule(rule *r);
 
+void generate_fndef_from_error(error *e, string struct_name);
 void generate_fndef_from_concatenation(concatenation *c, string struct_name);
 void generate_fndef_from_alternation(alternation *a, string struct_name);
 void generate_fndef_from_rule(rule *r);
@@ -1161,6 +1255,37 @@ string process_escapes(string s) {
         i ++;
     }
     return res;
+}
+
+void generate_struct_from_error(error *e, string struct_name) {
+    cout << indent() << "struct " << struct_name << " : public error {\n";
+    struct_depth ++;
+    indent_level ++;
+
+    //substructs
+    string layer_char = string(1, 'a' + struct_depth - 1);
+    if(e->a0.has_value()) generate_struct_from_alternation(e->a0.value(), layer_char + "0");
+    if(e->a1.has_value()) generate_struct_from_alternation(e->a1.value(), layer_char + "1");
+
+    //constructor
+    cout << indent() << struct_name << "(std::string _val) {\n";
+    indent_level ++;
+    cout << indent() << "val = _val;\n";
+    indent_level --;
+    cout << indent() << "}\n";
+
+    //parser declaration
+    cout << indent() << "static " << struct_name << "* parse();\n";
+
+    //to_string declaration
+    cout << indent() << "std::string to_string() override;\n";
+
+    //postprocess declaration
+    cout << indent() << "void postprocess() override;\n";
+
+    indent_level --;
+    struct_depth --;
+    cout << indent() << "};\n";
 }
 
 void generate_struct_from_concatenation(concatenation *c, string struct_name){
@@ -1194,6 +1319,10 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
         else if(t->is_terminal) {
             ctype = "terminal";
         }
+        else if(t->is_error) {
+            ctype = layer_char + to_string(substr_ind ++);
+            generate_struct_from_error(t->e, ctype);
+        }
         else if(t->is_identifier) {
             ctype = print_identifier(t->i);
         }
@@ -1220,6 +1349,9 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
         else if(t->is_terminal) {
             cout << indent() << type_sid[i] << " *" << var_sid[i] << ";\n";
         }
+        else if(t->is_error) {
+            cout << indent() << type_sid[i] << " *" << var_sid[i] << ";\n";
+        }
         else if(t->is_identifier) {
             cout << indent() << type_sid[i] << " *" << var_sid[i] << ";\n";
         }
@@ -1243,6 +1375,9 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
             cout << "std::vector<" << type_sid[i] << "*> _" << var_sid[i];
         }
         else if(t->is_terminal) {
+            cout << type_sid[i] << " *_" << var_sid[i];
+        }
+        else if(t->is_error) {
             cout << type_sid[i] << " *_" << var_sid[i];
         }
         else if(t->is_identifier) {
@@ -1316,7 +1451,7 @@ void generate_struct_from_alternation(alternation *a, string struct_name){
         cout << indent() << "static " << struct_name << "* parse();\n";
 
         //to_string declaration
-        cout << indent() << "std::string to_string();\n";
+        cout << indent() << "std::string to_string() override;\n";
 
         //postprocess declaration
         cout << indent() << "void postprocess() override;\n";
@@ -1334,6 +1469,70 @@ void generate_struct_from_rule(rule *r){
     alternation *a = r->a;
     cout << indent() << "// " << print_rule(r) << "\n";
     generate_struct_from_alternation(a, print_identifier(id));
+}
+
+void generate_fndef_from_error(error *e, string struct_name) {
+    struct_depth ++;
+
+    //gather info, generate child parser
+    string layer_char = string(1, 'a' + struct_depth - 1);
+    string type_sid0 = struct_name + "::" + layer_char + "0";
+    string type_sid1 = struct_name + "::" + layer_char + "1";
+    if(e->a0.has_value()) generate_fndef_from_alternation(e->a0.value(), type_sid0);
+    if(e->a1.has_value()) generate_fndef_from_alternation(e->a1.value(), type_sid1);
+
+    //generate parser
+    cout << indent() << struct_name << "* " << struct_name << "::parse() {\n";
+    indent_level ++;
+    cout << indent() << "if(!gen_errors) return nullptr;\n";
+    cout << indent() << "parse_context _start_ctx = get_ctx();\n";
+    cout << indent() << "push_stack();\n";
+    cout << indent() << "std::string val = \"\";\n";
+    cout << indent() << "while(!is_eof()) {\n";
+    indent_level ++;
+    if(e->a0.has_value()) {
+        cout << indent() << "push_stack();\n";
+        cout << indent() << type_sid0 << " *tmp0 = " << type_sid0 << "::parse();\n";
+        cout << indent() << "pop_stack();\n";
+        cout << indent() << "if(tmp0 != nullptr) break;\n";
+    }
+    if(e->a1.has_value()) {
+        cout << indent() << "push_stack();\n";
+        cout << indent() << type_sid1 << " *tmp1 = " << type_sid1 << "::parse();\n";
+        cout << indent() << "pop_stack();\n";
+        cout << indent() << "if(tmp1 != nullptr) {val += next_chars(tmp1->end_ctx.ptr - get_ctx().ptr); break;}\n";
+    }
+    cout << indent() << "val.push_back(next_char());\n";
+    indent_level --;
+    cout << indent() << "}\n";
+    cout << indent() << "if(val.size() == 0) {pop_stack(); return nullptr;}\n";
+    cout << indent() << "rm_stack();\n";
+    cout << indent() << struct_name << "* retval = new " << struct_name << "(val);\n";
+    cout << indent() << "retval->start_ctx = _start_ctx;\n";
+    cout << indent() << "retval->end_ctx = get_ctx();\n";
+    cout << indent() << "return retval;\n";
+    indent_level --;
+    cout << indent() << "}\n";
+    cout << "\n";
+
+    //generate to_string
+    cout << indent() << "std::string " << struct_name << "::to_string() {\n";
+    indent_level ++;
+    cout << indent() << "return val;\n";
+    indent_level --;
+    cout << indent() << "}\n";
+    cout << "\n";
+
+    //generate postprocess
+    cout << indent() << "void " << struct_name << "::postprocess() {\n";
+    indent_level ++;
+    cout << indent() << "token_type = \"error\";\n";
+    cout << indent() << "errors.push_back(this);\n";
+    indent_level --;
+    cout << indent() << "}\n";
+    cout << "\n";
+
+    struct_depth --;
 }
 
 void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
@@ -1364,6 +1563,10 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
         }
         else if(t->is_terminal) {
             ctype = "terminal";
+        }
+        else if(t->is_error) {
+            ctype = struct_name + "::" + layer_char + to_string(substr_ind);
+            generate_fndef_from_error(t->e, struct_name + "::" + layer_char + to_string(substr_ind ++));
         }
         else if(t->is_identifier) {
             ctype = print_identifier(t->i);
@@ -1416,6 +1619,10 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
             cout << indent() << "terminal *_" << var_sid[i] << " = terminal::parse(" << terminal_str << ");\n";
             cout << indent() << "if(_" << var_sid[i] << " == nullptr) {pop_stack(); return nullptr;}\n";
         }
+        else if(t->is_error) {
+            cout << indent() << type_sid[i] << " *_" << var_sid[i] << " = " << type_sid[i] << "::parse();\n";
+            cout << indent() << "if(_" << var_sid[i] << " == nullptr) {pop_stack(); return nullptr;}\n";
+        }
         else if(t->is_identifier) {
             cout << indent() << type_sid[i] << " *_" << var_sid[i] << " = " << type_sid[i] << "::parse();\n";
             cout << indent() << "if(_" << var_sid[i] << " == nullptr) {pop_stack(); return nullptr;}\n";
@@ -1457,6 +1664,9 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
             cout << indent() << "for(int i = 0; i < " << var_sid[i] << ".size(); i++) ans += " << var_sid[i] << "[i]->to_string();\n";
         }
         else if(t->is_terminal) {
+            cout << indent() << "ans += " << var_sid[i] << "->to_string();\n";
+        }
+        else if(t->is_error) {
             cout << indent() << "ans += " << var_sid[i] << "->to_string();\n";
         }
         else if(t->is_identifier) {
@@ -1504,6 +1714,10 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
             cout << indent() << "}\n";
         }
         else if(t->is_terminal) {
+            cout << indent() << "token_children.push_back(" << var_sid[i] << ");\n";
+            cout << indent() << var_sid[i] << "->postprocess();\n";
+        }
+        else if(t->is_error) {
             cout << indent() << "token_children.push_back(" << var_sid[i] << ");\n";
             cout << indent() << var_sid[i] << "->postprocess();\n";
         }
@@ -1580,6 +1794,7 @@ void generate_fndef_from_alternation(alternation *a, string struct_name) {
         }
         indent_level --;
         cout << indent() << "}\n";
+        cout << "\n";
 
         struct_depth --;
     }
@@ -1624,10 +1839,13 @@ void generate_h(grammar *g) {
     {   
         cout << indent() << "struct parse_context;\n";
         cout << indent() << "struct token;\n";
+        cout << indent() << "struct error;\n";
         cout << "\n";
         cout << indent() << "void set_s(std::string& ns);\n";
         cout << indent() << "bool check_finished_parsing(bool prettyprint);\n";
         cout << indent() << "parse_context get_ctx();\n";
+        cout << indent() << "std::vector<error*> get_errors();\n";
+        cout << indent() << "void set_gen_errors(bool b);\n";
 
         string tmp = 
     R"(
@@ -1650,7 +1868,7 @@ void generate_h(grammar *g) {
         virtual std::string to_string() = 0;
     };
     
-    struct terminal : public token{
+    struct terminal : public token {
         std::string val;
         terminal(std::string _val) {
             val = _val;
@@ -1658,6 +1876,10 @@ void generate_h(grammar *g) {
         static terminal* parse(std::string val);
         std::string to_string() override;
         void postprocess() override;
+    };
+
+    struct error : public token {
+        std::string val;
     };
     )";
         cout << tmp << "\n";
@@ -1710,12 +1932,29 @@ void generate_cpp(grammar *g) {
     //the stack should be unaffected by any parse function. 
     std::stack<parse_context> ctx_stack;
 
+    //generated during the postprocess phase
+    //list of all error tokens within the CST
+    std::vector<error*> errors;
+
+    std::vector<error*> get_errors() {
+        return errors;
+    }
+    
+    //if true, will try to parse errors
+    //if false, error::parse() will always fail
+    bool gen_errors = false;
+
+    void set_gen_errors(bool b) {
+        gen_errors = b;
+    }
+
     //initializes the parse controller
     void set_s(std::string& ns) {
         s = ns;
         max_parse = 0;
         ctx = {0, 0, 0};
         while(ctx_stack.size() != 0) ctx_stack.pop();
+        errors.clear();
     }
 
     //does nice printout of lines surrounding the position where ind is
@@ -1833,6 +2072,10 @@ void generate_cpp(grammar *g) {
         for(int i = 0; i < n; i++) ans[i] = next_char();
         return ans;
     }
+    
+    bool is_eof() {
+        return ctx.ptr == s.size();
+    }
 
     terminal* terminal::parse(std::string val) {
         parse_context _start_ctx = get_ctx();
@@ -1901,6 +2144,7 @@ bool do_semantic_checks(grammar *g) {
     // - are there identifiers that aren't defined in a rule
     {
         function<bool(identifier*)> is_valid_identifier;
+        function<bool(error*)> is_valid_error;
         function<bool(term*)> is_valid_term;
         function<bool(concatenation*)> is_valid_concatenation;
         function<bool(alternation*)> is_valid_alternation;
@@ -1913,6 +2157,12 @@ bool do_semantic_checks(grammar *g) {
                 cout << "UNDEFINED IDENTIFIER : " << istr << "\n";
                 return false;
             } 
+            return true;
+        };
+
+        is_valid_error = [&](error *e) -> bool {
+            if(e->a0.has_value() && !is_valid_alternation(e->a0.value())) return false;
+            if(e->a1.has_value() && !is_valid_alternation(e->a1.value())) return false;
             return true;
         };
 
@@ -1932,6 +2182,9 @@ bool do_semantic_checks(grammar *g) {
             }
             else if(t->is_terminal) {
                 //do nothing
+            }
+            else if(t->is_error) {
+                ans = is_valid_error(t->e);
             }
             else if(t->is_identifier) {
                 ans = is_valid_identifier(t->i);

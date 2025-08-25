@@ -166,7 +166,8 @@ CompoundStatement* CompoundStatement::convert(parser::compound_statement *s) {
     std::vector<Statement*> statements;
     std::vector<parser::compound_statement::a0*> slist = s->t2;
     for(int i = 0; i < slist.size(); i++){
-        statements.push_back(Statement::convert(slist[i]->t0));
+        assert(slist[i]->t0->is_c0);
+        statements.push_back(Statement::convert(slist[i]->t0->t0->t0));
     }
     return new CompoundStatement(statements);
 }

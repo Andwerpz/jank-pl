@@ -152,8 +152,9 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
             program_str += code;
 
             parser::set_s(code);
+            parser::set_gen_errors(false);
             parser::program *pp = parser::program::parse();
-            if(!parser::check_finished_parsing(true)) {
+            if(!parser::check_finished_parsing(true) || parser::get_errors().size() != 0) {
                 std::cout << "SYNTAX ERROR\n";
                 return 1;
             }
@@ -1025,13 +1026,14 @@ It should be strictly less information required.
 will also need to figure out what IR nodes I want to support. also, should I name this tree_ir instead of just ir, 
 as I might also want to implement a lower level IR. 
 
-control         - LOOP, SCOPE, IF, CONTINUE, BREAK
-control 2       - SCOPE, JMP, CJMP
+control         - LOOP, SCOPE, IF, CONTINUE, BREAK, RETURN, DECLARE
 misc            - ASM,
 mem access      - MEMREAD, MEMWRITE, 
-expression      - ADD, SUB, MUL, DIV, MOD, SHL, SHR, AND, OR, XOR, REF, DEREF, CALL, SYSCALL,
-                  FADD, FSUB, FMUL, FDIV
-mem access?     - MALLOC?, FREE?            should these just be replaced by function calls?
+expression      - NEG, ADD, SUB, MUL, DIV, MOD, SHL, SHR, AND, OR, NOT, XOR, INC, DEC, 
+                  LAND, LOR, LNOT, 
+                  REF, DEREF,
+                  FADD, FSUB, FMUL, FDIV, FNEG,
+                  CALL, SYSCALL,
 expr terminals  - CONST, VAR, 
 
 stack stuff will be enforced by IR? will have to redo all that emitting, however it should be less emitting code overall. 
@@ -1039,5 +1041,23 @@ will local variable cleanup have to be done by IR? then we have to encode variab
 
 also, since IR has no idea what types are, will we have to also encode different widths and signedness of instructions?
 seems rather annoying. 
+
+ok, seems like if we want to maintain a tree structure of IR, we can't break all the high level control constructs 
+into JMP / CJMP nodes. HIR is just there to provide a standard interface for codegen or further lowering. 
+
+so function calls, overload calls, constructor calls, destructor calls, are all going to get lowered into the CALL
+HIR node. I should rewrite constructors / destructors so that all the alloc / free logic takes place inside of the 
+constructor / destructor itself, not the call. 
+
+instead of initializing all global functions within main(), we should have a prelude where all the globals are initialized,
+then do a call to main()
+
+we also need to keep track of variables and scopes? all the scope checking can be done during semantic analysis, but
+in HIR we still need to keep track of it, but we can just assert everything. 
+
+since we're still relatively far from 'low level', doing register allocation here probably isn't too good of an idea
+we can maintain our hardcoded register allocation for now. When we do LIR, we can do 3-address-code and do register management. 
+
+
 
 */
