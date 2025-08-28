@@ -4,31 +4,30 @@
 #include <iostream>;
 #include <assert>;
 
-struct A {
-    i32 foo;
-
-    A(i32 _foo) {
-        this.foo = _foo;
-    }
-}
-
-A operator+(A& x, A& y) {
-    cout << "operator+(A&, A&)\n";
-    return new A(x.foo + y.foo);
-}
-
-A operator+(A x, A y) {
-    cout << "operator+(A, A)\n";
-    return new A(x.foo + y.foo);
-}
+//testing that control flow statements insert implicit scopes. 
+//this should compile
 
 i32 main() {
 
-    A x = new A();
-    A y = new A();
-    A a = x + y;                // operator+(A&, A&)
-    A b = new A() + new A();    // operator+(A, A)
-    A c = x + new A();          // operator+(A, A)
+    {
+        if(1) i32 x = 0;
+        else if(1 == 0) i32 x = 0;
+        else i32 x = 10;
+        i32 x = 5;
+        cout << x << "\n";
+    }
+    
+    {
+        for(i32 i = 0; i < 10; i++) i32 x = 0;
+        i32 x = 5;
+        cout << x << "\n";
+    }
+
+    {
+        while(0) i32 x = 0;
+        i32 x = 5;
+        cout << x << "\n";
+    }
 
     return 0;
 }

@@ -1058,6 +1058,12 @@ in HIR we still need to keep track of it, but we can just assert everything.
 since we're still relatively far from 'low level', doing register allocation here probably isn't too good of an idea
 we can maintain our hardcoded register allocation for now. When we do LIR, we can do 3-address-code and do register management. 
 
+how to handle function pointer calls? function pointers are pretty much callable addresses. normally, the CALL node
+should have the argument expressions, and some handle to the function being called. However, for function pointers
+calls, they should just omit the function handle. So we can't do pure function optimizations on function pointers. 
 
+should local variable cleanup be encoded explicitly into HIR, or should that be left explicit? Seems like we have a 
+SCOPE node, so it should be implicit? then I'll need to keep track of the type of each variable ... but high level
+types should all disappear. So it should be explicit?
 
 */

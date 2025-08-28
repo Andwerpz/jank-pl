@@ -199,20 +199,24 @@ bool ContinueStatement::is_always_returning() {
 }
 
 bool IfStatement::is_always_returning() {
+	//if we don't have else, then we're not guaranteed to go into any branch
+	if(!else_statement.has_value()) return false;
+	
     //every statement must return 
     for(int i = 0; i < statements.size(); i++){
         if(!statements[i]->is_always_returning()) return false;
     }
-    if(else_statement.has_value() && !else_statement.value()->is_always_returning()) return false;
+    if(!else_statement.value()->is_always_returning()) return false;
+	
     return true;
 }
 
 bool WhileStatement::is_always_returning() {
-    return statement->is_always_returning();
+    return false;	//TODO need to check if we actually enter the loop
 }
 
 bool ForStatement::is_always_returning() {
-    return statement->is_always_returning();
+    return false;	//TODO need to check if we actually enter the loop
 }
 
 bool CompoundStatement::is_always_returning() {
@@ -462,20 +466,25 @@ bool IfStatement::is_well_formed() {
     else fout << indent() << "jmp " << end_if_label << "\n";
 
     // - are all of the statements well formed?
+    //each statement should implicitly introduce a scope
     for(int i = 0; i < statements.size(); i++){
         fout << labels[i] << ":\n";
+        push_declaration_stack();
         if(!statements[i]->is_well_formed()) {
             return false;
         }
+        pop_declaration_stack();
         fout << indent() << "jmp " << end_if_label << "\n";
     }
 
     // - is else statement well formed?
     if(else_statement.has_value()) {
         fout << else_label << ":\n";
+        push_declaration_stack();
         if(!else_statement.value()->is_well_formed()) {
             return false;
         }
+        pop_declaration_stack();
         fout << indent() << "jmp " << end_if_label << "\n";
     }
 
@@ -507,9 +516,11 @@ bool WhileStatement::is_well_formed() {
     fout << indent() << "je " << loop_end_label << "\n";
 
     // - is the statement well formed?
+    push_declaration_stack();
     if(!statement->is_well_formed()) {
         return false;
     }
+    pop_declaration_stack();
 
     //loop variable assignment (just for continue)
     fout << loop_assignment_label << ":\n";
@@ -569,9 +580,11 @@ bool ForStatement::is_well_formed() {
     }
 
     // - is the statement well formed?
+    push_declaration_stack();
     if(!statement->is_well_formed()) {
         return false;
     }
+    pop_declaration_stack();
 
     //loop variable assignment
     fout << loop_assignment_label << ":\n";
@@ -591,16 +604,15 @@ bool ForStatement::is_well_formed() {
 }
 
 bool CompoundStatement::is_well_formed() {
-    push_declaration_stack();
-
     // - are all statements within well formed?
+    push_declaration_stack();
     for(int i = 0; i < statements.size(); i++){
         if(!statements[i]->is_well_formed()) {
             return false;
         }
     }
-
     pop_declaration_stack();
+
     return true;
 }
 
