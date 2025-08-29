@@ -4,30 +4,19 @@
 #include <iostream>;
 #include <assert>;
 
-//testing that control flow statements insert implicit scopes. 
-//this should compile
+template<T>
+struct B {
+    A<A<T>> foo;
+}
+
+template<T>
+struct A {
+    B<T> foo;
+}
 
 i32 main() {
 
-    {
-        if(1) i32 x = 0;
-        else if(1 == 0) i32 x = 0;
-        else i32 x = 10;
-        i32 x = 5;
-        cout << x << "\n";
-    }
-    
-    {
-        for(i32 i = 0; i < 10; i++) i32 x = 0;
-        i32 x = 5;
-        cout << x << "\n";
-    }
-
-    {
-        while(0) i32 x = 0;
-        i32 x = 5;
-        cout << x << "\n";
-    }
+    A<i32> a = new A<i32>();
 
     return 0;
 }
