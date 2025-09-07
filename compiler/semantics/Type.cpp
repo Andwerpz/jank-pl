@@ -320,7 +320,11 @@ bool ArrayType::replace_templated_types(TemplateMapping *mapping) {
 
 bool TemplatedType::replace_templated_types(TemplateMapping *mapping) {
     //right now, I'm not supporting template template parameters
-    //template <template <typename> class T>
+    //in C++, template <template <typename> class T>
+    //template<T>
+    //struct A {
+    //    T<i32> foo;
+    //}
     if(mapping->find_mapped_type(base_type)) {
         std::cout << "Currently not supporting template template parameters\n";
         return false;

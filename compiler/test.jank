@@ -4,31 +4,19 @@
 #include <iostream>;
 #include <assert>;
 
+template<T>
+struct B {
+    A<A<T>> foo;
+}
+
+template<T>
 struct A {
-    i32 foo;
-
-    A(i32 _foo) {
-        this.foo = _foo;
-    }
-}
-
-A operator+(A& x, A& y) {
-    cout << "operator+(A&, A&)\n";
-    return new A(x.foo + y.foo);
-}
-
-A operator+(A x, A y) {
-    cout << "operator+(A, A)\n";
-    return new A(x.foo + y.foo);
+    B<T> foo;
 }
 
 i32 main() {
 
-    A x = new A();
-    A y = new A();
-    A a = x + y;                // operator+(A&, A&)
-    A b = new A() + new A();    // operator+(A, A)
-    A c = x + new A();          // operator+(A, A)
+    A<i32> a = new A<i32>();
 
     return 0;
 }
