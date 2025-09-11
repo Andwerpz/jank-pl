@@ -146,7 +146,7 @@ bool TemplatedFunction::replace_templated_types(TemplateMapping *mapping) {
     for(int i = 0; i < header->types.size(); i++){
         Type *t = header->types[i]->make_copy();
         for(int j = 0; j < mapping->mapping.size(); j++){
-            Type *mt = mapping->mapping[i].first->make_copy();
+            Type *mt = mapping->mapping[j].first->make_copy();
             if(t->equals(mt)) return false;
         }
     }

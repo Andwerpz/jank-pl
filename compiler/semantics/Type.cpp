@@ -447,6 +447,12 @@ TemplateMapping* ArrayType::generate_mapping(Type *_t, TemplateHeader *header) {
     else {
         if(dynamic_cast<ArrayType*>(_t) == nullptr) return nullptr;
         ArrayType *t = dynamic_cast<ArrayType*>(_t);
+
+        // - array sizes must match
+        if(this->amt != t->amt) {
+            return nullptr;
+        }
+
         return this->type->generate_mapping(t->type, header);
     }
 }

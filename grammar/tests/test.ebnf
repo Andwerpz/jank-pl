@@ -1,7 +1,6 @@
-#include "../ebnf/ebnf.ebnf" ;
+expr   = term , { "+" , term } ;
+term   = number | "(" , expr , ")" ;
+number = digit , { digit } ;
+digit  = "0" | "1" | "2" | "3" | "4" | 
+         "5" | "6" | "7" | "8" | "9" ;
 
-(* amount of rules defined in the grammar *)
-(* amount of rules that should successfully parse *)
-number = < digit > ;
-test_description = number , rws , number ;
-test = test_description , rws , grammar ;

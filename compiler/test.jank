@@ -1,22 +1,6 @@
-#include <put>;
-#include <jstring>;
-#include <vector>;
 #include <iostream>;
-#include <assert>;
-
-template<T>
-struct B {
-    A<A<T>> foo;
-}
-
-template<T>
-struct A {
-    B<T> foo;
-}
 
 i32 main() {
-
-    A<i32> a = new A<i32>();
-
+    cout << "Hello World!\n";
     return 0;
 }
