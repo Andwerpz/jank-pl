@@ -19,11 +19,6 @@ struct pair {
         this.second = new U(_second);
     }
 
-    pair(T& _first, U& _second) {
-        this.first = new T(_first);
-        this.second = new U(_second);
-    }
-
     ~pair() {
         
     }

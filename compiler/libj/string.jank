@@ -37,6 +37,14 @@ struct string {
         for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] = jstr[i];
     }
 
+    string(u8* buf, u64 len) {
+        this.cap = len;
+        this.sz = len;
+        if(this.cap == $u64 0) this.cap = $u64 1;
+        this.arr = $u8* malloc(this.cap);
+        for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] = buf[i];
+    }
+
     string(u64 n, u8 default) {
         this.cap = n;
         this.sz = n;
