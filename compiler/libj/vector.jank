@@ -74,6 +74,16 @@ struct vector {
         }
     }
 
+    //some structs don't have '==' operator implemented
+    // //on success, returns the first index where this[ind] == val
+    // //on failure, returns this.sz
+    // u64 find(T val) {
+    //     for(u64 i = 0x0; i < this.sz; i++) {
+    //         if(this.arr[i] == val) return i;
+    //     }
+    //     return this.sz;
+    // }
+
     void clear() {
         for(u64 i = 0x0; i < this.sz; i++) this.arr[i].~();
         this.sz = 0x0;

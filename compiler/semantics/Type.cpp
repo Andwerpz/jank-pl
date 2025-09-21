@@ -458,7 +458,23 @@ TemplateMapping* ArrayType::generate_mapping(Type *_t, TemplateHeader *header) {
 }
 
 TemplateMapping* ReferenceType::generate_mapping(Type *_t, TemplateHeader *header) {
-    assert(false);
+    if(dynamic_cast<BaseType*>(_t)) {
+        BaseType *t = dynamic_cast<BaseType*>(_t);
+        // - is t a templated type?
+        for(int i = 0; i < header->types.size(); i++){
+            if(header->types[i]->equals(t)) {
+                TemplateMapping *mapping = new TemplateMapping();
+                mapping->add_mapping(header->types[i], this->make_copy());
+                return mapping;
+            }
+        }
+        return nullptr;
+    }
+    else {
+        if(dynamic_cast<ReferenceType*>(_t) == nullptr) return nullptr;
+        ReferenceType *t = dynamic_cast<ReferenceType*>(_t);
+        return this->type->generate_mapping(t->type, header);
+    }
 }
 
 TemplateMapping* TemplatedType::generate_mapping(Type *_t, TemplateHeader *header) {

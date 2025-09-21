@@ -68,3 +68,7 @@ pid_t sys_wait4(pid_t pid, i32* wstatus, i32 options, void* rusage) {
 u64 sys_sched_yield() {
     return syscall(24, u64);
 }
+
+i32 sys_execve(u8* path, u8** argv, u8** envp) {
+    return syscall(59, i32, path, argv, envp);
+}

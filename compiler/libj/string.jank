@@ -1,6 +1,10 @@
 #include <jstring>;
 #include <vector>;
 
+//internally, string should keep a null terminated jstr. 
+//string::jstr() should return a pointer to the internal buffer, you should probably not mess with it ...
+//probably should also implement const so that you're unable to mess with it ...
+
 #global_node STRING [MALLOC];
 
 [__GLOBAL_FIRST__] u64 U64_MAX = $u64 -1;
@@ -20,45 +24,49 @@ struct string {
         this.cap = $u64 1;
         this.sz = $u64 0;
         this.arr = $u8* malloc(this.cap);
+        this.arr[0] = '\0';
     }
 
     string(string& other) {
         this.cap = other.cap;
         this.sz = other.sz;
         this.arr = $u8* malloc(this.cap);
-        for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] = other.arr[i];
+        for(u64 i = $u64 0; i < this.cap; i++) this.arr[i] = other.arr[i];
     }
 
     string(u8* jstr) {
-        this.cap = strlen(jstr);
-        this.sz = this.cap;
+        this.cap = strlen(jstr) + 0x1;
+        this.sz = this.cap - 0x1;
         if(this.cap == $u64 0) this.cap = $u64 1;
         this.arr = $u8* malloc(this.cap);
-        for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] = jstr[i];
+        for(u64 i = $u64 0; i < this.cap; i++) this.arr[i] = jstr[i];
     }
 
     string(u8* buf, u64 len) {
-        this.cap = len;
+        this.cap = len + 0x1;
         this.sz = len;
         if(this.cap == $u64 0) this.cap = $u64 1;
         this.arr = $u8* malloc(this.cap);
         for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] = buf[i];
+        this.arr[this.sz] = '\0';
     }
 
     string(u64 n, u8 default) {
-        this.cap = n;
+        this.cap = n + 0x1;
         this.sz = n;
         if(this.cap == $u64 0) this.cap = $u64 1;
         this.arr = $u8* malloc(this.cap);
         for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] = default;
+        this.arr[this.sz] = '\0';
     }
 
     string(i32 n, u8 default) {
-        this.cap = $u64 n;
+        this.cap = $u64 n + 0x1;
         this.sz = $u64 n;
         if(this.cap == $u64 0) this.cap = $u64 1;
         this.arr = $u8* malloc(this.cap);
         for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] = default;
+        this.arr[this.sz] = '\0';
     }
 
     ~string() {
@@ -69,9 +77,8 @@ struct string {
         u64 old_cap = this.cap;
         this.cap = this.cap * $u64 2;
         u8* narr = $u8* malloc(this.cap);
-        for(u64 i = $u64 0; i < this.sz; i++) {
-            narr[i] = this.arr[i];
-        }
+        for(u64 i = $u64 0; i < this.sz; i++) narr[i] = this.arr[i];
+        for(u64 i = this.sz; i < this.cap; i++) narr[i] = '\0';
         free($void* this.arr, old_cap);
         this.arr = narr;
     }
@@ -79,10 +86,11 @@ struct string {
     void pop_back() {
         if(this.sz == $u64 0) return;
         this.sz = this.sz - $u64 1;
+        this.arr[this.sz] = '\0';
     }
 
     void push_back(u8 x) {
-        if(this.sz == this.cap) this.grow();
+        if(this.sz == this.cap - 0x1) this.grow();
         this.arr[this.sz] = x;
         this.sz = this.sz + $u64 1;
     }
@@ -92,12 +100,7 @@ struct string {
     }
 
     u8* jstr() {
-        u8* ret = $u8* malloc(this.sz + $u64 1);
-        for(u64 i = $u64 0; i < this.sz; i++){
-            ret[i] = this.arr[i];
-        }
-        ret[this.sz] = '\0';
-        return ret;
+        return this.arr;
     }
 
     void reverse() {
@@ -156,6 +159,18 @@ i32 operator==(string a, u8* b) {
 }
 i32 operator==(u8* a, string b) {
     return b == a;
+}
+
+i32 operator!=(string a, string b) {
+    return !(a == b);
+}
+
+i32 operator!=(string a, u8* b) {
+    return !(a == b);
+}
+
+i32 operator!=(u8* a, string b) {
+    return !(a == b);
 }
 
 string operator+(string a, string b) {
