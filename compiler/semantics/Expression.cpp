@@ -351,7 +351,7 @@ Type* ExprBinary::_resolve_type() {
         }
 
         //default behaviour
-        if(str_op == "=" || str_op == ":=") {
+        if(str_op == "=") {
             if(!left->is_lvalue()) {
                 if(debug) std::cout << "Cannot assign to r-value\n";
                 return nullptr;
@@ -612,7 +612,10 @@ bool ExprPrimary::_is_lvalue() {
         return false;
     }
     else if(std::holds_alternative<ConstructorCall*>(val)) {
-        return false;
+        //if we construct-in-place, this returns a l-value, otherwise r-value
+        ConstructorCall *c = std::get<ConstructorCall*>(val);
+        if(c->cip_expr.has_value()) return true;
+        else return false;
     }
     else if(std::holds_alternative<OperatorCall*>(val)) {
         OperatorCall *o = std::get<OperatorCall*>(val);
@@ -896,7 +899,7 @@ void ExprPrimary::emit_asm() {
     }
     else if(std::holds_alternative<ConstructorCall*>(val)) {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
-        c->emit_asm(true);
+        c->emit_asm(false);
     }
     else if(std::holds_alternative<OperatorCall*>(val)) {
         OperatorCall *o = std::get<OperatorCall*>(val);
@@ -996,7 +999,7 @@ void ExprBinary::emit_asm() {
 
             fout << label << ":\n";
         }
-        else if(str_op == "=" || str_op == ":=") {
+        else if(str_op == "=") {
             //this should be handled during elaboration
             assert(lt->equals(rt));
 
@@ -1031,17 +1034,15 @@ void ExprBinary::emit_asm() {
                 //generate left struct. %rax should now hold struct mem location
                 left->emit_asm();
                 
-                //if we're not constructing in place, destruct left struct without dealloccing
-                if(str_op != ":=") {
-                    emit_push("%rax", "ExprBinary::emit_asm() : save left addr before destruct");
-                    emit_destructor_call(lt, false);
-                    emit_pop("%rax", "ExprBinary::emit_asm() : save left addr before destruct");
-                }
+                //destruct left struct without dealloccing
+                emit_push("%rax", "ExprBinary::emit_asm() : save left addr before destruct");
+                emit_destructor_call(lt, false);
+                emit_pop("%rax", "ExprBinary::emit_asm() : save left addr before destruct");
 
                 //use copy constructor to overwrite left struct mem location
-                ConstructorCall *cc = new ConstructorCall(lt, {new Expression(new ExprPrimary(id))});
+                ConstructorCall *cc = new ConstructorCall(std::nullopt, lt, {new Expression(new ExprPrimary(id))});
                 assert(cc->resolve_called_constructor() != nullptr);
-                cc->emit_asm(false);    //%rax should now hold struct mem location
+                cc->emit_asm(true);    //%rax should now hold struct mem location
 
                 //if the right struct is not an lvalue, deallocate it
                 //This is not handled by pop_declaration_stack() as the temp variable is of reference type

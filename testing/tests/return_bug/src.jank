@@ -1,0 +1,28 @@
+#include <iostream>;
+#include <assert>;
+
+//making sure that return statements work properly in constructors and destructors. 
+
+struct A {
+    A() {
+        return;
+        cout << "you should not be here\n";
+        assert(0);
+    }
+
+    ~A() {
+        return;
+        cout << "you should not be here\n";
+        assert(0);
+    }
+}
+
+i32 main() {
+    
+    A* a = $A* malloc(sizeof(A));
+    new (a) A();
+    a->~();
+    cout << "test passed\n";
+
+    return 0;
+}

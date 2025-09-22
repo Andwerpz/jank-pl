@@ -1,0 +1,5 @@
+before
+constructor ran
+here
+destructor ran
+test passed

@@ -24,5 +24,7 @@ vsce package
 vsce login <publisher name>
 
  - publish
-vsce publish
+VSCE_PAT='<token>' vsce publish
+
+
 

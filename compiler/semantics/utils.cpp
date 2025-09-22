@@ -1577,9 +1577,9 @@ void emit_initialize_array(ArrayType *t) {
             emit_push("%rax", "emit_initialize_array() :: save %rax before constructor call");
 
             //%rax already holds member struct memory address
-            ConstructorCall *cc = new ConstructorCall(bt, {});
+            ConstructorCall *cc = new ConstructorCall(std::nullopt, bt, {});
             assert(cc->resolve_type()->equals(bt));
-            cc->emit_asm(false);
+            cc->emit_asm(true);
 
             emit_pop("%rax", "emit_initialize_array() :: save %rax before constructor call");
         }
@@ -1628,9 +1628,9 @@ void emit_initialize_struct(Type *t) {
             emit_push("%rax", "emit_initialize_struct() :: save %rax before constructor call");
 
             //%rax already holds member struct memory address
-            ConstructorCall *cc = new ConstructorCall(mv->type->make_copy(), {});
+            ConstructorCall *cc = new ConstructorCall(std::nullopt, mv->type->make_copy(), {});
             assert(cc->resolve_type()->equals(mv->type));
-            cc->emit_asm(false);
+            cc->emit_asm(true);
 
             emit_pop("%rax", "emit_initialize_struct() :: save %rax before constructor call");
         }
@@ -1742,9 +1742,9 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, std::optional<Expre
             }
             else {
                 //call default constructor 
-                ConstructorCall *cc = new ConstructorCall(vt, {});
+                ConstructorCall *cc = new ConstructorCall(std::nullopt, vt, {});
                 assert(cc->resolve_type()->equals(vt));
-                cc->emit_asm(true);
+                cc->emit_asm(false);
 
                 //save pointer to addr
                 fout << indent() << "movq %rax, " << addr_str << "\n";

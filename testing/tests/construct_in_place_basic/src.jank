@@ -12,7 +12,7 @@ u8* gen_trash(u64 sz) {
 i32 main() {
     
     string* s = $string* gen_trash(sizeof(string));
-    *s := new string("asdf");
+    new (s) string("asdf");
     s->~();
     free($void* s, sizeof(string));
 

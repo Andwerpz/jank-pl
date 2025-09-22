@@ -17,7 +17,7 @@ struct vector {
         this.cap = other.cap;
         this.sz = other.sz;
         this.arr = $T* malloc(sizeof(T) * this.cap);
-        for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] := other.arr[i];
+        for(u64 i = 0x0; i < this.sz; i++) new (@this.arr[i]) T(other.arr[i]);
     }
 
     vector(u64 n, T default) {
@@ -25,7 +25,7 @@ struct vector {
         this.sz = n;
         if(this.cap == $u64 0) this.cap = $u64 1;
         this.arr = $T* malloc(sizeof(T) * this.cap);
-        for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] := default;
+        for(u64 i = 0x0; i < this.sz; i++) new (@this.arr[i]) T(default);
     }
 
     vector(i32 n, T default) {
@@ -33,7 +33,7 @@ struct vector {
         this.sz = $u64 n;
         if(this.cap == $u64 0) this.cap = $u64 1;
         this.arr = $T* malloc(sizeof(T) * this.cap);
-        for(u64 i = $u64 0; i < this.sz; i++) this.arr[i] := default;
+        for(u64 i = 0x0; i < this.sz; i++) new (@this.arr[i]) T(default);
     }
 
     ~vector() {
@@ -46,7 +46,7 @@ struct vector {
         this.cap = this.cap * $u64 2;
         T* narr = $T* malloc(sizeof(T) * this.cap);
         for(u64 i = $u64 0; i < this.sz; i++) {
-            narr[i] := this.arr[i];
+            new (@narr[i]) T(this.arr[i]);
         }
         for(u64 i = 0x0; i < this.sz; i++) this.arr[i].~();
         free($void* this.arr, old_cap * sizeof(T));
@@ -61,7 +61,7 @@ struct vector {
 
     void push_back(T x) {
         if(this.sz == this.cap) this.grow();
-        this.arr[this.sz] := x;
+        new (@this.arr[this.sz]) T(x);
         this.sz = this.sz + $u64 1;
     }
 
@@ -69,7 +69,7 @@ struct vector {
         this.arr[ind].~();
         this.sz --;
         for(u64 i = ind; i < this.sz; i++) {
-            this.arr[i] := this.arr[i + 0x1];
+            new (@this.arr[i]) T(this.arr[i + 0x1]);
             this.arr[i + 0x1].~();
         }
     }

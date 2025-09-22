@@ -5,7 +5,7 @@ member_variable_declaration = type , rws , identifier , ";" ;
 
 constructor_definition = base_type , ows , "(" , ows , parameter_list , ows , ")" ;
 constructor = constructor_definition , ows , compound_statement ;
-constructor_call = "new" , rws , type , ows , "(" , ows , argument_list , ows , ")" ;
+constructor_call = "new" , rws , [ "(" , ows , expression , ows , ")" , ows ] , type , ows , "(" , ows , argument_list , ows , ")" ;
 
 destructor = "~" , base_type , ows , "()" , ows , compound_statement ;
 

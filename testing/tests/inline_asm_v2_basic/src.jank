@@ -57,7 +57,7 @@ void test_basic() {
     
     {
         A* foo = $A* malloc(sizeof(A));
-        *foo := new A();
+        new (foo) A();
         asm!("movw $139, {foo->foo}");
         asm!("movq $0x1203, {foo->bar}");
         assert(foo->foo == 139);

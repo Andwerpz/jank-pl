@@ -268,57 +268,59 @@ bool ReturnStatement::is_well_formed() {
             std::cout << "Constructor / Destructor return cannot be non-void\n";
             return false;
         }
-        return true;
     }
+    else {
+        //otherwise, need to see if we need to return 
+        // - does the expression resolve to a type?
+        Type *et = nullptr, *ft = nullptr;
+        if(enclosing_function != nullptr) ft = enclosing_function->type;
+        else if(enclosing_overload != nullptr) ft = enclosing_overload->type;
+        else assert(false);
 
-    // - does the expression resolve to a type?
-    Type *et = nullptr, *ft = nullptr;
-    if(enclosing_function != nullptr) ft = enclosing_function->type;
-    else if(enclosing_overload != nullptr) ft = enclosing_overload->type;
-    else assert(false);
-
-    if(opt_expr.has_value()) {
-        Expression *expr = opt_expr.value();
-        et = expr->resolve_type();
-    }
-    else et = primitives::_void->make_copy();
-    if(et == nullptr) {
-        std::cout << "Return expression does not resolve to type\n";
-        return false;
-    }
-    // - are we trying to return something when the function is returning void?
-    if(ft->equals(primitives::_void) && !et->equals(primitives::_void)) {
-        std::cout << "Non-void return expression in void function\n";
-        return false;
-    }
-    
-    //see if we need to return something
-    if(!ft->equals(primitives::_void)) {
-        // - are we actually returning something?
-        if(!opt_expr.has_value()) {
-            std::cout << "Return has to return something for non-void function : " << enclosing_function->resolve_function_signature()->to_string() << "\n";
+        if(opt_expr.has_value()) {
+            Expression *expr = opt_expr.value();
+            et = expr->resolve_type();
+        }
+        else et = primitives::_void->make_copy();
+        if(et == nullptr) {
+            std::cout << "Return expression does not resolve to type\n";
             return false;
         }
-
-        assert(opt_expr.has_value());
-        Expression *expr = opt_expr.value();
-        Identifier *vid = new Identifier(create_new_tmp_variable_name());
-        push_declaration_stack();
-
-        // - can the expression return type be assigned to the return type of enclosing function?
-        Variable *v = emit_initialize_stack_variable(ft, vid, expr);
-        if(v == nullptr) {
-            std::cout << "Return expression cannot be cast to function return type, " << et->to_string() << " -> " << ft->to_string() << "\n";
+        // - are we trying to return something when the function is returning void?
+        if(ft->equals(primitives::_void) && !et->equals(primitives::_void)) {
+            std::cout << "Non-void return expression in void function\n";
             return false;
         }
+        
+        //see if we need to return something
+        if(!ft->equals(primitives::_void)) {
+            // - are we actually returning something?
+            if(!opt_expr.has_value()) {
+                std::cout << "Return has to return something for non-void function : " << enclosing_function->resolve_function_signature()->to_string() << "\n";
+                return false;
+            }
 
-        //put value of declared variable into %rax
-        fout << indent() << "mov " << v->addr << ", %rax\n";
+            assert(opt_expr.has_value());
+            Expression *expr = opt_expr.value();
+            Identifier *vid = new Identifier(create_new_tmp_variable_name());
+            push_declaration_stack();
 
-        //clean up temp variable
-        pop_declaration_stack(false);
+            // - can the expression return type be assigned to the return type of enclosing function?
+            Variable *v = emit_initialize_stack_variable(ft, vid, expr);
+            if(v == nullptr) {
+                std::cout << "Return expression cannot be cast to function return type, " << et->to_string() << " -> " << ft->to_string() << "\n";
+                return false;
+            }
+
+            //put value of declared variable into %rax
+            fout << indent() << "mov " << v->addr << ", %rax\n";
+
+            //clean up temp variable
+            pop_declaration_stack(false);
+        }
     }
 
+    // - do cleanup and return from function. 
     //clean up local variables
     for(int i = (int) declaration_stack.size() - 1; i >= 1; i--) {  //free heap structs
         emit_cleanup_declaration_stack_layer(i);

@@ -1,0 +1,37 @@
+#include <iostream>;
+
+//making sure that construct in place behaves correctly. 
+//it should not run the copy constructor, and constructor / destructor should both run exactly once. 
+//construct in place should also return l-value, so newly constructed struct should not get dealloc'd.
+
+struct A {
+    A() {
+        cout << "constructor ran\n";
+        return;
+        cout << "you should not be here\n";
+        assert(0);
+    }
+
+    A(A& x) {
+        cout << "copy constructor ran\n";
+    }
+
+    ~A() {
+        cout << "destructor ran\n";
+        return;
+        cout << "you should not be here\n";
+        assert(0);
+    }
+}
+
+i32 main() {
+    
+    A* a = $A* malloc(sizeof(A));
+    cout << "before\n";
+    new (a) A();
+    cout << "here\n";
+    a->~();
+    cout << "test passed\n";
+
+    return 0;
+}

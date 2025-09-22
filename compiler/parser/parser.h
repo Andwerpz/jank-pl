@@ -1,4 +1,4 @@
-// Date Generated : 08-25-2025 12:05:49
+// Date Generated : 09-21-2025 23:36:38
 #pragma once
 #include <vector>
 #include <string>
@@ -1067,18 +1067,38 @@ namespace parser {
         void postprocess() override;
     };
 
-    // constructor_call = "new" , rws , type , ows , "(" , ows , argument_list , ows , ")" ;
+    // constructor_call = "new" , rws , [ "(" , ows , expression , ows , ")" , ows ] , type , ows , "(" , ows , argument_list , ows , ")" ;
     struct constructor_call : public token {
+        struct a0 : public token {
+            terminal *t0;
+            ows *t1;
+            expression *t2;
+            ows *t3;
+            terminal *t4;
+            ows *t5;
+            a0(terminal *_t0, ows *_t1, expression *_t2, ows *_t3, terminal *_t4, ows *_t5) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+                t4 = _t4;
+                t5 = _t5;
+            }
+            static a0* parse();
+            std::string to_string() override;
+            void postprocess() override;
+        };
         terminal *t0;
         rws *t1;
-        type *t2;
-        ows *t3;
-        terminal *t4;
-        ows *t5;
-        argument_list *t6;
-        ows *t7;
-        terminal *t8;
-        constructor_call(terminal *_t0, rws *_t1, type *_t2, ows *_t3, terminal *_t4, ows *_t5, argument_list *_t6, ows *_t7, terminal *_t8) {
+        std::optional<a0*> t2;
+        type *t3;
+        ows *t4;
+        terminal *t5;
+        ows *t6;
+        argument_list *t7;
+        ows *t8;
+        terminal *t9;
+        constructor_call(terminal *_t0, rws *_t1, std::optional<a0*> _t2, type *_t3, ows *_t4, terminal *_t5, ows *_t6, argument_list *_t7, ows *_t8, terminal *_t9) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
@@ -1088,6 +1108,7 @@ namespace parser {
             t6 = _t6;
             t7 = _t7;
             t8 = _t8;
+            t9 = _t9;
         }
         static constructor_call* parse();
         std::string to_string() override;
@@ -2219,7 +2240,7 @@ namespace parser {
         void postprocess() override;
     };
 
-    // expr_assignment = expr_logical_or , { ows , ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "^=" | "|=" | ":=" ) , ows , expr_logical_or } ;
+    // expr_assignment = expr_logical_or , { ows , ( "=" | "+=" | "-=" | "*=" | "/=" | "%=" | "<<=" | ">>=" | "&=" | "^=" | "|=" ) , ows , expr_logical_or } ;
     struct expr_assignment : public token {
         struct a0 : public token {
             struct b0 : public token {
@@ -2322,15 +2343,6 @@ namespace parser {
                     std::string to_string() override;
                     void postprocess() override;
                 };
-                struct c11 : public token {
-                    terminal *t0;
-                    c11(terminal *_t0) {
-                        t0 = _t0;
-                    }
-                    static c11* parse();
-                    std::string to_string() override;
-                    void postprocess() override;
-                };
                 bool is_c0 = false;
                 c0 *t0;
                 bool is_c1 = false;
@@ -2353,8 +2365,6 @@ namespace parser {
                 c9 *t9;
                 bool is_c10 = false;
                 c10 *t10;
-                bool is_c11 = false;
-                c11 *t11;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -2398,10 +2408,6 @@ namespace parser {
                 b0(c10 *_t10) {
                     is_c10 = true;
                     t10 = _t10;
-                }
-                b0(c11 *_t11) {
-                    is_c11 = true;
-                    t11 = _t11;
                 }
                 static b0* parse();
                 std::string to_string() override;

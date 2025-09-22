@@ -20,7 +20,7 @@ struct deque {
         this.start = other.start;
         this.sz = other.sz;
         for(u64 i = $u64 0; i < this.sz; i++) {
-            this.arr[(this.start + i) % this.cap] := other.arr[(this.start + i) % this.cap];
+            new (@this.arr[(this.start + i) % this.cap]) T(other.arr[(this.start + i) % this.cap]);
         }
     }
 
@@ -36,7 +36,7 @@ struct deque {
         this.cap *= 0x2;
         T* narr = $T* malloc(sizeof(T) * this.cap);
         for(u64 i = $u64 0; i < this.sz; i++){
-            narr[i] := this.arr[(this.start + i) % old_cap];
+            new (@narr[i]) T(this.arr[(this.start + i) % old_cap]);
         }
         this.start = 0x0;
         for(u64 i = 0x0; i < this.sz; i++) this.arr[(this.start + i) % old_cap].~();
@@ -49,12 +49,12 @@ struct deque {
         if(this.start == 0x0) this.start = this.cap;
         this.start --;
         this.sz ++;
-        this.arr[this.start] := x;
+        new (@this.arr[this.start]) T(x);
     }
 
     void push_back(T x) {
         if(this.sz == this.cap) this.grow();
-        this.arr[(this.start + this.sz) % this.cap] := x;
+        new (@this.arr[(this.start + this.sz) % this.cap]) T(x);
         this.sz ++;
     }
 

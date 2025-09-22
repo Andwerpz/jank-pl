@@ -8,10 +8,14 @@ struct Expression;
 struct Constructor;
 struct TemplateMapping;
 
+//normal constructor calls return r-value 
+//construct-in-place constructor calls return l-value
+
 struct ConstructorCall {
+    std::optional<Expression*> cip_expr;
     Type *type;
     std::vector<Expression*> argument_list;
-    ConstructorCall(Type *_type, std::vector<Expression*> _argument_list);
+    ConstructorCall(std::optional<Expression*> _cip_expr, Type *_type, std::vector<Expression*> _argument_list);
 
     static ConstructorCall* convert(parser::constructor_call *c);
     Constructor* resolve_called_constructor();

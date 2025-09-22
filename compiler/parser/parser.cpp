@@ -1,4 +1,4 @@
-// Date Generated : 08-25-2025 12:05:49
+// Date Generated : 09-21-2025 23:36:38
 #include "parser.h"
 
 namespace parser {
@@ -2423,35 +2423,29 @@ namespace parser {
         t2->postprocess();
     }
 
-    constructor_call* constructor_call::parse() {
+    constructor_call::a0* constructor_call::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        terminal *_t0 = terminal::parse("new");
+        terminal *_t0 = terminal::parse("(");
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        rws *_t1 = rws::parse();
+        ows *_t1 = ows::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        type *_t2 = type::parse();
+        expression *_t2 = expression::parse();
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
         ows *_t3 = ows::parse();
         if(_t3 == nullptr) {pop_stack(); return nullptr;}
-        terminal *_t4 = terminal::parse("(");
+        terminal *_t4 = terminal::parse(")");
         if(_t4 == nullptr) {pop_stack(); return nullptr;}
         ows *_t5 = ows::parse();
         if(_t5 == nullptr) {pop_stack(); return nullptr;}
-        argument_list *_t6 = argument_list::parse();
-        if(_t6 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t7 = ows::parse();
-        if(_t7 == nullptr) {pop_stack(); return nullptr;}
-        terminal *_t8 = terminal::parse(")");
-        if(_t8 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        constructor_call* retval = new constructor_call(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8);
+        constructor_call::a0* retval = new constructor_call::a0(_t0, _t1, _t2, _t3, _t4, _t5);
         retval->start_ctx = _start_ctx;
         retval->end_ctx = get_ctx();
         return retval;
     }
 
-    std::string constructor_call::to_string() {
+    std::string constructor_call::a0::to_string() {
         std::string ans = "";
         ans += t0->to_string();
         ans += t1->to_string();
@@ -2459,14 +2453,11 @@ namespace parser {
         ans += t3->to_string();
         ans += t4->to_string();
         ans += t5->to_string();
-        ans += t6->to_string();
-        ans += t7->to_string();
-        ans += t8->to_string();
         return ans;
     }
 
-    void constructor_call::postprocess() {
-        token_type = "constructor_call";
+    void constructor_call::a0::postprocess() {
+        token_type = "constructor_call::a0";
         token_children.push_back(t0);
         t0->postprocess();
         token_children.push_back(t1);
@@ -2479,12 +2470,77 @@ namespace parser {
         t4->postprocess();
         token_children.push_back(t5);
         t5->postprocess();
+    }
+
+    constructor_call* constructor_call::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("new");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rws *_t1 = rws::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        std::optional<constructor_call::a0*> _t2 = std::nullopt;
+        if(auto x = constructor_call::a0::parse()) _t2 = x;
+        type *_t3 = type::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t4 = ows::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        terminal *_t5 = terminal::parse("(");
+        if(_t5 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t6 = ows::parse();
+        if(_t6 == nullptr) {pop_stack(); return nullptr;}
+        argument_list *_t7 = argument_list::parse();
+        if(_t7 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t8 = ows::parse();
+        if(_t8 == nullptr) {pop_stack(); return nullptr;}
+        terminal *_t9 = terminal::parse(")");
+        if(_t9 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        constructor_call* retval = new constructor_call(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7, _t8, _t9);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string constructor_call::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        if(t2.has_value()) ans += t2.value()->to_string();
+        ans += t3->to_string();
+        ans += t4->to_string();
+        ans += t5->to_string();
+        ans += t6->to_string();
+        ans += t7->to_string();
+        ans += t8->to_string();
+        ans += t9->to_string();
+        return ans;
+    }
+
+    void constructor_call::postprocess() {
+        token_type = "constructor_call";
+        token_children.push_back(t0);
+        t0->postprocess();
+        token_children.push_back(t1);
+        t1->postprocess();
+        if(t2.has_value()) {
+            token_children.push_back(t2.value());
+            t2.value()->postprocess();
+        }
+        token_children.push_back(t3);
+        t3->postprocess();
+        token_children.push_back(t4);
+        t4->postprocess();
+        token_children.push_back(t5);
+        t5->postprocess();
         token_children.push_back(t6);
         t6->postprocess();
         token_children.push_back(t7);
         t7->postprocess();
         token_children.push_back(t8);
         t8->postprocess();
+        token_children.push_back(t9);
+        t9->postprocess();
     }
 
     destructor* destructor::parse() {
@@ -5492,30 +5548,6 @@ namespace parser {
         t0->postprocess();
     }
 
-    expr_assignment::a0::b0::c11* expr_assignment::a0::b0::c11::parse() {
-        parse_context _start_ctx = get_ctx();
-        push_stack();
-        terminal *_t0 = terminal::parse(":=");
-        if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        rm_stack();
-        expr_assignment::a0::b0::c11* retval = new expr_assignment::a0::b0::c11(_t0);
-        retval->start_ctx = _start_ctx;
-        retval->end_ctx = get_ctx();
-        return retval;
-    }
-
-    std::string expr_assignment::a0::b0::c11::to_string() {
-        std::string ans = "";
-        ans += t0->to_string();
-        return ans;
-    }
-
-    void expr_assignment::a0::b0::c11::postprocess() {
-        token_type = "expr_assignment::a0::b0::c11";
-        token_children.push_back(t0);
-        t0->postprocess();
-    }
-
     expr_assignment::a0::b0* expr_assignment::a0::b0::parse() {
         parse_context _start_ctx = get_ctx();
         if(auto x = expr_assignment::a0::b0::c0::parse()) {
@@ -5584,12 +5616,6 @@ namespace parser {
             retval->end_ctx = get_ctx();
             return retval;
         }
-        if(auto x = expr_assignment::a0::b0::c11::parse()) {
-            expr_assignment::a0::b0* retval = new expr_assignment::a0::b0(x);
-            retval->start_ctx = _start_ctx;
-            retval->end_ctx = get_ctx();
-            return retval;
-        }
         return nullptr;
     }
 
@@ -5605,7 +5631,6 @@ namespace parser {
         if(is_c8) return t8->to_string();
         if(is_c9) return t9->to_string();
         if(is_c10) return t10->to_string();
-        if(is_c11) return t11->to_string();
         assert(false);
     }
 
@@ -5654,10 +5679,6 @@ namespace parser {
         if(is_c10) {
             token_children.push_back(t10);
             t10->postprocess();
-        }
-        if(is_c11) {
-            token_children.push_back(t11);
-            t11->postprocess();
         }
     }
 
