@@ -72,3 +72,11 @@ u64 sys_sched_yield() {
 i32 sys_execve(u8* path, u8** argv, u8** envp) {
     return syscall(59, i32, path, argv, envp);
 }
+
+u64 sys_getcwd(u8* buf, u64 size) {
+    return syscall(79, u64, buf, size);
+}
+
+i32 sys_chdir(u8* path) {
+    return syscall(80, i32, path);
+}

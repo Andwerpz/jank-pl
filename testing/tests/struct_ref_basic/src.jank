@@ -21,14 +21,14 @@ i32 main() {
     i32 n = 10;
     A* arr = $A* malloc(sizeof(A) * $u64 n);
     for(i32 i = 0; i < n; i++){
-        arr[i] = new A(i);
+        new (@arr[i]) A(i);
     }
 
     A& ref = arr[1];
     ref.val = 123;
 
     A* ptr = $A* malloc(sizeof(A));
-    *ptr = new A(100);
+    new (ptr) A(100);
     arr[0] = *ptr;
     for(i32 i = 0; i < n; i++){
         puti_endl(arr[i].val);

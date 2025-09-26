@@ -89,12 +89,12 @@ struct istream {
         while(1) {
             u8 c = this.next_char();
             if(this.eof()) break;
-            if(c == '\r') {
+            if(c == '\n' || c == '\r') {
                 if(found_line) break;
             }
             else {
                 found_line = 1;
-                if(c == '\n') continue;
+                if(c == '\n' || c == '\r') continue;
                 line.push_back(c);
             }
         }
@@ -206,5 +206,22 @@ ostream& operator<<(ostream& stream, f32 x) {
 
 ostream& operator<<(ostream& stream, string s) {
     stream.write_to_fd(s);
+    return stream;
+}
+
+ostream& operator<<(ostream& stream, void* ptr) {
+    u64 val = $u64 ptr;
+    u64 mask = 0b1111;
+    for(i32 i = 15; i >= 0; i--){
+        u64 dig = (val & (mask << ($u64 i * $u64 4))) >> ($u64 i * $u64 4);
+        u8 c;
+        if(dig < $u64 10) {
+            c = '0' + $u8 dig;
+        }
+        else {
+            c = 'a' + $u8 dig - $u8 10;
+        }
+        stream.write_to_fd(c);
+    }
     return stream;
 }
