@@ -1027,9 +1027,8 @@ void ExprBinary::emit_asm() {
                 push_declaration_stack();
                 if(asm_debug) fout << indent() << "# expression struct assignment tmp variable\n";
                 Identifier *id = new Identifier(create_new_tmp_variable_name());
-                Variable *v = add_variable(new ReferenceType(rt), id);
-                emit_push("%rax", id->name);
-                v->addr = std::to_string(local_offset) + "(%rbp)";
+                emit_push("%rax", id->name);    //push pointer to right struct on stack
+                Variable *v = add_stack_variable(new ReferenceType(rt), id);
 
                 //generate left struct. %rax should now hold struct mem location
                 left->emit_asm();

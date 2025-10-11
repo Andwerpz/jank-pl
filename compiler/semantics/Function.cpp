@@ -96,159 +96,10 @@ bool Function::is_well_formed() {
         return false;
     }
 
-    bool is_main = this->is_main();
-
     //print function label
-    //if function signature is main(), substitute main for _start
-    if(asm_debug) {
-        fout << "# " << fs->to_string() << "\n";
-    }
-    if(is_main) {
-        fout << ".global _start\n";
-        fout << "_start:\n";
-    }
-    else {
-        std::string label = get_function_label(fs);
-        fout << label << ":\n";
-    }
-
-    //if this is main, initialize global variables
-    if(is_main) {
-        std::cout << "INITIALIZING GLOBAL VARIABLES" << std::endl;
-
-        if(asm_debug) fout << indent() << "# start initialize global variables\n";
-
-        std::vector<GlobalNode*> global_nodes = enclosing_program->global_nodes;
-        std::vector<GlobalDeclaration*> global_declarations = enclosing_program->global_declarations;
-        std::cout << "GLOBAL AMT : " << global_declarations.size() << "\n";
-
-        //resolve global declaration templates
-        for(int i = 0; i < global_declarations.size(); i++){
-            if(!global_declarations[i]->look_for_templates()) {
-                std::cout << "Unable to resolve templates in declaration of global variable " << global_declarations[i]->declaration->id->name << "\n";
-                return false;
-            }
-        }
-
-        //add __GLOBAL_FIRST__ node
-        std::string gfirst_name = "__GLOBAL_FIRST__";
-        global_nodes.push_back(new GlobalNode(new Identifier(gfirst_name), {}));
-
-        //check for duplicate global nodes
-        for(int i = 0; i < global_nodes.size(); i++){
-            for(int j = i + 1; j < global_nodes.size(); j++){
-                if(global_nodes[i]->id->equals(global_nodes[j]->id)) {
-                    std::cout << "Duplicate global node declaration : " << global_nodes[i]->id->name << "\n";
-                    return false;
-                }
-            }
-        }
-
-        //map node identifiers to indices
-        std::map<std::string, int> id_map;
-        for(int i = 0; i < global_nodes.size(); i++){
-            id_map[global_nodes[i]->id->name] = i;
-        }
-
-        //all dependencies must be defined
-        for(int i = 0; i < global_nodes.size(); i++){
-            for(int j = 0; j < global_nodes[i]->dependencies.size(); j++){
-                if(!id_map.count(global_nodes[i]->dependencies[j]->name)) {
-                    std::cout << "Undefined dependency \"" << global_nodes[i]->dependencies[j]->name << "\" in node \"" << global_nodes[i]->id->name << "\"\n";
-                    return false;
-                }
-            }
-        }
-
-        //do topological sort
-        std::vector<int> node_order;
-        {   
-            int n = global_nodes.size();
-            std::vector<std::vector<int>> c(n);
-            for(int i = 0; i < n; i++){
-                for(int j = 0; j < global_nodes[i]->dependencies.size(); j++){
-                    c[id_map[global_nodes[i]->dependencies[j]->name]].push_back(i);
-                }                
-            }
-
-            //enforce that __GLOBAL_FIRST__ is first
-            for(int i = 0; i < n; i++){
-                if(i == id_map[gfirst_name]) continue;
-                c[id_map[gfirst_name]].push_back(i);
-            }
-
-            std::vector<int> indeg(n, 0);
-            for(int i = 0; i < n; i++){
-                for(int x : c[i]) indeg[x] ++;
-            }
-
-            std::queue<int> q;
-            for(int i = 0; i < n; i++){
-                if(indeg[i] == 0) q.push(i);
-            }
-
-            node_order = {};
-            while(q.size() != 0){
-                int cur = q.front();
-                q.pop();
-                node_order.push_back(cur);
-                for(int x : c[cur]) {
-                    indeg[x] --;
-                    if(indeg[x] == 0) q.push(x);
-                }
-            }
-        }
-        if(node_order.size() != global_nodes.size()) {
-            std::cout << "Failed to find topological ordering of global nodes\n";
-            return false;
-        }
-        std::map<std::string, int> order_map;
-        std::cout << "Global node initialization order:\n";
-        for(int i = 0; i < global_nodes.size(); i++){
-            int ind = node_order[i];
-            order_map[global_nodes[ind]->id->name] = i;
-            std::cout << global_nodes[ind]->id->name << "\n";
-        }
-
-        //setup fake stack frame. We need to do this because pop_declaration_stack() will not actually
-        //move %rsp if it's the last element on the stack. 
-        push_declaration_stack();
-
-        //%rbp should start by pointing towards %rsp for proper local variable behaviour
-        fout << indent() << "mov %rsp, %rbp\n";
-
-        //sort by tier and initialize
-        std::sort(global_declarations.begin(), global_declarations.end(), [&order_map, &global_nodes](GlobalDeclaration *a, GlobalDeclaration *b) -> bool {
-            int aorder = a->node_id.has_value()? order_map[a->node_id.value()->name] : global_nodes.size();
-            int border = b->node_id.has_value()? order_map[b->node_id.value()->name] : global_nodes.size();
-            return aorder < border;
-        });
-        for(int i = 0; i < global_declarations.size(); i++){
-            bool is_extern = global_declarations[i]->is_extern;
-            Type *type = global_declarations[i]->declaration->type;
-            Identifier *id = global_declarations[i]->declaration->id;
-            
-            std::string addr_str = id->name + "(%rip)";
-            assert(addr_str.size() != 0);
-            std::cout << "GLOBAL : " << type->to_string() << " " << id->name << "\n";
-
-            if(asm_debug) fout << indent() << "# initialize global variable : " << type->to_string() << " " << id->name << "\n";
-            Variable *v = emit_initialize_variable(type, id, global_declarations[i]->declaration->expr, addr_str, true, is_extern);
-            if(asm_debug) fout << indent() << "# done initialize global variable : " << type->to_string() << " " << id->name << "\n";
-        
-            if(v == nullptr) {
-                std::cout << "Failed to initialize global variable : " << type->to_string() << " " << id->name << "\n";
-                return false;
-            }
-        }
-
-        if(asm_debug) fout << indent() << "# done initialize global variables\n";
-
-        // remove fake stack frame
-        pop_declaration_stack();
-
-        std::cout << "DONE INITIALIZE GLOBAL VARIABLES" << std::endl;
-    }
+    if(asm_debug) fout << "# " << fs->to_string() << "\n";
+    std::string label = get_function_label(fs);
+    fout << label << ":\n";
 
     //setup function stack frame
     fout << indent() << "push %rbp\n";  //should not be managed by local_offset
@@ -284,21 +135,19 @@ bool Function::is_well_formed() {
         //register self as variable (Type& this)
         Type *vt = new ReferenceType(enclosing_type.value());
         Identifier *vid = new Identifier("this");
-        Variable* v = add_variable(vt, vid);
+        Variable* v = add_stack_variable(vt, vid);
         if(v == nullptr) {
             std::cout << "Unable to add variable : " << vt << " " << vid << "\n";
             return false;
         }
-        v->addr = std::to_string(local_offset) + "(%rbp)";
         local_offset -= 8;
     }
     for(int i = 0; i < parameters.size(); i++){
-        Variable* v = add_variable(parameters[i]->type, parameters[i]->id);
+        Variable* v = add_stack_variable(parameters[i]->type, parameters[i]->id);
         if(v == nullptr) {
             std::cout << "Unable to add variable : " << parameters[i]->type->to_string() << " " << parameters[i]->id->name << "\n";
             return false;
         }
-        v->addr = std::to_string(local_offset) + "(%rbp)";
         local_offset -= 8;
     }
 
@@ -395,7 +244,10 @@ std::string Function::to_string() {
 bool Function::is_main() {
     FunctionSignature *fs = resolve_function_signature();
     assert(fs != nullptr);
-    return fs->equals(new FunctionSignature(new Identifier("main"), {}));
+    if(!type->equals(primitives::i32)) return false;
+    if(fs->equals(new FunctionSignature(new Identifier("main"), {}))) return true;
+    if(fs->equals(new FunctionSignature(new Identifier("main"), {primitives::u64->make_copy(), new PointerType(new PointerType(primitives::u8->make_copy()))}))) return true;
+    return false;
 }
 
 bool Function::is_valid_call(FunctionCall *fc) {

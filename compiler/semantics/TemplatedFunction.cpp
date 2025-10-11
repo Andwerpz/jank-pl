@@ -54,6 +54,11 @@ bool TemplatedFunction::is_well_formed() {
     return true;
 }
 
+bool TemplatedFunction::is_main() {
+    if(this->header->types.size() != 0) return false;
+    return this->function->is_main();
+}
+
 TemplateMapping* TemplatedFunction::calc_mapping(std::vector<Type*> arg_types) {
     // - does the number of arguments match?
     if(function->parameters.size() != arg_types.size()) return nullptr;

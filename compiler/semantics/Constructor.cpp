@@ -115,21 +115,19 @@ bool StructConstructor::is_well_formed() {
         //register self as variable (Type& this)
         Type *vt = new ReferenceType(this->type->make_copy());
         Identifier *vid = new Identifier("this");
-        Variable* v = add_variable(vt, vid);
+        Variable* v = add_stack_variable(vt, vid);
         if(v == nullptr) {
             std::cout << "Unable to add variable : " << vt << " " << vid << "\n";
             return false;
         }
-        v->addr = std::to_string(local_offset) + "(%rbp)";
         local_offset -= 8;
     }
     for(int i = 0; i < parameters.size(); i++){
-        Variable* v = add_variable(parameters[i]->type, parameters[i]->id);
+        Variable* v = add_stack_variable(parameters[i]->type, parameters[i]->id);
         if(v == nullptr) {
             std::cout << "Unable to add variable : " << parameters[i]->type->to_string() << " " << parameters[i]->id->name << "\n";
             return false;
         }
-        v->addr = std::to_string(local_offset) + "(%rbp)";
         local_offset -= 8;
     }
 
@@ -187,15 +185,13 @@ bool PrimitiveConstructor::is_well_formed() {
         local_offset = 8 + 8 * parameters.size() + 8;
         //register 'this' as variable
         Identifier *thisid = new Identifier("this");
-        Variable *vthis = add_variable(type, thisid);
+        Variable *vthis = add_stack_variable(type, thisid);
         assert(vthis != nullptr);
-        vthis->addr = std::to_string(local_offset) + "(%rbp)";
         local_offset -= 8;
 
         //register only input as variable
         Identifier *xid = parameters[0]->id;
-        Variable *vx = add_variable(parameters[0]->type, xid);
-        vx->addr = std::to_string(local_offset) + "(%rbp)";
+        Variable *vx = add_stack_variable(parameters[0]->type, xid);
         local_offset -= 8;
 
         //set local offset equal to %rsp

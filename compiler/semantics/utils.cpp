@@ -51,10 +51,11 @@ void print_duration_stats() {
     }
 }
 
-Variable::Variable(bool _is_extern, Type *_type, Identifier *_id) {
+Variable::Variable(bool _is_extern, Type *_type, Identifier *_id, std::string _addr) {
     is_extern = _is_extern;
     id = _id;
     type = _type;
+    addr = _addr;
 }
 
 LoopContext::LoopContext(std::string _start_label, std::string _assignment_label, std::string _end_label, int _declaration_layer) {
@@ -160,7 +161,6 @@ int tmp_variable_counter;
 
 void reset_controller() {
     enclosing_function = nullptr;
-    enclosing_program = nullptr;
     declared_types.clear();
     declared_basetypes.clear();
     declared_structs.clear();
@@ -1230,15 +1230,25 @@ bool add_destructor(Destructor *d) {
     return true;
 }
 
-Variable* add_variable(Type *t, Identifier *id, bool is_global, bool is_extern) {
+//takes whatever the current local offset is as the address
+Variable* add_stack_variable(Type *t, Identifier *id) {
+    return add_variable(t, id, std::to_string(local_offset) + "(%rbp)", false, false);
+}
+
+//takes the name as the address
+Variable* add_global_variable(Type *t, Identifier *id, bool is_extern) {
+    return add_variable(t, id, id->name + "(%rip)", true, is_extern);
+}
+
+Variable* add_variable(Type *t, Identifier *id, std::string addr_str, bool is_global, bool is_extern) {
     assert(t != nullptr && id != nullptr);
-    if(is_extern) assert(is_global);    //extern variables must be global
-    if(!is_global) assert(declaration_stack.size() != 0);
+    if(is_extern) assert(is_global);                        //extern variables must be global
+    if(!is_global) assert(declaration_stack.size() != 0);   //stack variables must be declared on an existing declaration stack
     if(is_variable_declared(id)) {
         std::cout << "Cannot redeclare " << t->to_string() << " " << id->name << "\n";
         return nullptr;
     }
-    Variable *v = new Variable(is_extern, t, id);
+    Variable *v = new Variable(is_extern, t, id, addr_str);
     declared_variables.push_back(v);
     if(!is_global) declaration_stack.rbegin()->push_back(v);
     return v;
@@ -1656,6 +1666,12 @@ Variable* emit_initialize_stack_variable(Type *vt, Identifier *id, std::optional
     return v;
 }
 
+//initializes a global variable. 
+Variable* emit_initialize_global_variable(Type *vt, Identifier *id, std::optional<Expression*> expr, bool is_extern) {
+    std::string addr_str = id->name + "(%rip)";
+    return emit_initialize_variable(vt, id, expr, addr_str, true, is_extern);
+}
+
 //should be logically similar to is_declarable(), except this one emits a variable declaration 
 //every variable declaration must use this except for registering parameters at the beginning of function calls
 //evaluates the expression and initializes the variable onto the top of the stack
@@ -1689,9 +1705,8 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, std::optional<Expre
         return nullptr;
     }
 
-    Variable *v = add_variable(vt, id, is_global, is_extern);
+    Variable *v = add_variable(vt, id, addr_str, is_global, is_extern);
     assert(v != nullptr);
-    v->addr = addr_str;
 
     if(dynamic_cast<ReferenceType*>(vt) != nullptr) {
         vt = dynamic_cast<ReferenceType*>(vt)->type;

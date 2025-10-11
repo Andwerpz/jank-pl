@@ -330,7 +330,7 @@ bool ReturnStatement::is_well_formed() {
     }
 
     //special case for exiting out of main
-    if(enclosing_function != nullptr && FunctionSignature(new Identifier("main"), {}) == *(enclosing_function->resolve_function_signature())) {
+    if(enclosing_function != nullptr && enclosing_function->is_main()) {
         //function is main, should exit the program
         if(!kernel_mode) {
             //get sys_exit(i32 status) label

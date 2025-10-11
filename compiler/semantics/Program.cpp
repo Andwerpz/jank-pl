@@ -111,8 +111,6 @@ bool Program::is_well_formed() {
     reset_controller();
     std::cout << "DONE INIT CONTROLLER" << std::endl;
 
-    enclosing_program = this;
-
     fout << ".section .text\n";
 
     //register all basetypes
@@ -308,25 +306,215 @@ bool Program::is_well_formed() {
         }
     }
 
-    // - there must be a global function with function signature 'i32 main()'
-    {
-        FunctionSignature *main_fs = new FunctionSignature(new Identifier("main"), {});
-        Function *f = get_function(main_fs);
-        if(f == nullptr) {
-            std::cout << "Missing main function\n";
-            return false;
+    // - entry point semantics
+    {   
+        // - there must be exactly one function that can be considered an entry point
+        bool found_main = false;
+        for(int i = 0; i < this->templated_functions.size(); i++) {
+            TemplatedFunction* tf = this->templated_functions[i];
+            if(!tf->is_main()) continue;
+
+            if(found_main) {
+                std::cout << "Found multiple valid mains\n";
+                return false;
+            }
+
+            found_main = true;
         }
-        if(!f->type->equals(primitives::i32)) {
-            std::cout << "main has wrong return type (must be i32)\n";
+        if(!found_main) {
+            std::cout << "Missing valid main function\n";
             return false;
         }
     }
 
-    //make sure i32 main() is the first function to be checked. 
-    //This is so that the global variables get initialized before anything else
-    std::sort(declared_functions.begin(), declared_functions.end(), [](Function *a, Function *b) -> bool {
-        return a->is_main() > b->is_main();
-    });
+    // - emit _start label
+    fout << ".global _start\n";
+    fout << "_start:\n";
+
+    // - parse argc, argv, envp, auxv
+    // result should be stack with
+    // u64 argc
+    // u8** argv <-- %rsp
+    if(!kernel_mode) {
+        // OS should initialize stack with this state:
+        // https://refspecs.linuxfoundation.org/ELF/zSeries/lzsabi0_zSeries/x895.html#AUXSTRUCT
+        //         [environment strings...]
+        //         [argument strings...]
+        //         AT_NULL                          <- AT_NULL = {0, 0}
+        //         auxv[0] ... auxv[n-1]            <- {u64 type, void* ptr}
+        //         NULL
+        //         envp[0] ... envp[n-1]
+        //         NULL                           
+        //         argv[0] ... argv[argc-1]         <- array of pointers (on the stack)
+        // %rsp -> argc
+        
+        fout << indent() << "movq 0(%rsp), %r8\n";          //argc in %r8
+        fout << indent() << "lea 8(%rsp), %r9\n";           //argv in %r9
+
+        //deal with envp
+        //put it inside global variable 'u8** environ'
+        Variable* environ_v = add_global_variable(new PointerType(new PointerType(primitives::u8->make_copy())), new Identifier("environ"), false);
+        fout << indent() << "lea 8(%r9, %r8, 8), %r10\n";     //envp in %r10
+        fout << indent() << "movq %r10, " << environ_v->addr << "\n";
+
+        //TODO deal with auxv
+
+        //push argc, argv onto stack
+        fout << indent() << "pushq %r8\n";
+        fout << indent() << "pushq %r9\n";
+    }
+
+    // - global variable initialization
+    {
+        std::cout << "INITIALIZING GLOBAL VARIABLES" << std::endl;
+
+        if(asm_debug) fout << indent() << "# start initialize global variables\n";
+
+        std::vector<GlobalNode*> global_nodes = this->global_nodes;
+        std::vector<GlobalDeclaration*> global_declarations = this->global_declarations;
+        std::cout << "GLOBAL AMT : " << global_declarations.size() << "\n";
+
+        //resolve global declaration templates
+        for(int i = 0; i < global_declarations.size(); i++){
+            if(!global_declarations[i]->look_for_templates()) {
+                std::cout << "Unable to resolve templates in declaration of global variable " << global_declarations[i]->declaration->id->name << "\n";
+                return false;
+            }
+        }
+
+        //add __GLOBAL_FIRST__ node
+        std::string gfirst_name = "__GLOBAL_FIRST__";
+        global_nodes.push_back(new GlobalNode(new Identifier(gfirst_name), {}));
+
+        //check for duplicate global nodes
+        for(int i = 0; i < global_nodes.size(); i++){
+            for(int j = i + 1; j < global_nodes.size(); j++){
+                if(global_nodes[i]->id->equals(global_nodes[j]->id)) {
+                    std::cout << "Duplicate global node declaration : " << global_nodes[i]->id->name << "\n";
+                    return false;
+                }
+            }
+        }
+
+        //map node identifiers to indices
+        std::map<std::string, int> id_map;
+        for(int i = 0; i < global_nodes.size(); i++){
+            id_map[global_nodes[i]->id->name] = i;
+        }
+
+        //all dependencies must be defined
+        for(int i = 0; i < global_nodes.size(); i++){
+            for(int j = 0; j < global_nodes[i]->dependencies.size(); j++){
+                if(!id_map.count(global_nodes[i]->dependencies[j]->name)) {
+                    std::cout << "Undefined dependency \"" << global_nodes[i]->dependencies[j]->name << "\" in node \"" << global_nodes[i]->id->name << "\"\n";
+                    return false;
+                }
+            }
+        }
+
+        //do topological sort
+        std::vector<int> node_order;
+        {   
+            int n = global_nodes.size();
+            std::vector<std::vector<int>> c(n);
+            for(int i = 0; i < n; i++){
+                for(int j = 0; j < global_nodes[i]->dependencies.size(); j++){
+                    c[id_map[global_nodes[i]->dependencies[j]->name]].push_back(i);
+                }                
+            }
+
+            //enforce that __GLOBAL_FIRST__ is first
+            for(int i = 0; i < n; i++){
+                if(i == id_map[gfirst_name]) continue;
+                c[id_map[gfirst_name]].push_back(i);
+            }
+
+            std::vector<int> indeg(n, 0);
+            for(int i = 0; i < n; i++){
+                for(int x : c[i]) indeg[x] ++;
+            }
+
+            std::queue<int> q;
+            for(int i = 0; i < n; i++){
+                if(indeg[i] == 0) q.push(i);
+            }
+
+            node_order = {};
+            while(q.size() != 0){
+                int cur = q.front();
+                q.pop();
+                node_order.push_back(cur);
+                for(int x : c[cur]) {
+                    indeg[x] --;
+                    if(indeg[x] == 0) q.push(x);
+                }
+            }
+        }
+        if(node_order.size() != global_nodes.size()) {
+            std::cout << "Failed to find topological ordering of global nodes\n";
+            return false;
+        }
+        std::map<std::string, int> order_map;
+        std::cout << "Global node initialization order:\n";
+        for(int i = 0; i < global_nodes.size(); i++){
+            int ind = node_order[i];
+            order_map[global_nodes[ind]->id->name] = i;
+            std::cout << global_nodes[ind]->id->name << "\n";
+        }
+
+        //setup fake stack frame. We need to do this because pop_declaration_stack() will not actually
+        //move %rsp if it's the last element on the stack. 
+        push_declaration_stack();
+
+        //%rbp should start by pointing towards %rsp for proper local variable behaviour
+        fout << indent() << "mov %rsp, %rbp\n";
+
+        //sort by tier and initialize
+        std::sort(global_declarations.begin(), global_declarations.end(), [&order_map, &global_nodes](GlobalDeclaration *a, GlobalDeclaration *b) -> bool {
+            int aorder = a->node_id.has_value()? order_map[a->node_id.value()->name] : global_nodes.size();
+            int border = b->node_id.has_value()? order_map[b->node_id.value()->name] : global_nodes.size();
+            return aorder < border;
+        });
+        for(int i = 0; i < global_declarations.size(); i++){
+            bool is_extern = global_declarations[i]->is_extern;
+            Type *type = global_declarations[i]->declaration->type;
+            Identifier *id = global_declarations[i]->declaration->id;
+            
+            std::string addr_str = id->name + "(%rip)";
+            assert(addr_str.size() != 0);
+            std::cout << "GLOBAL : " << type->to_string() << " " << id->name << "\n";
+
+            if(asm_debug) fout << indent() << "# initialize global variable : " << type->to_string() << " " << id->name << "\n";
+            Variable *v = emit_initialize_variable(type, id, global_declarations[i]->declaration->expr, addr_str, true, is_extern);
+            if(asm_debug) fout << indent() << "# done initialize global variable : " << type->to_string() << " " << id->name << "\n";
+        
+            if(v == nullptr) {
+                std::cout << "Failed to initialize global variable : " << type->to_string() << " " << id->name << "\n";
+                return false;
+            }
+        }
+
+        if(asm_debug) fout << indent() << "# done initialize global variables\n";
+
+        // remove fake stack frame
+        pop_declaration_stack();
+
+        std::cout << "DONE INITIALIZE GLOBAL VARIABLES" << std::endl;
+    }
+
+    // - emit call to main function
+    {
+        //make sure main function is first function
+        std::sort(declared_functions.begin(), declared_functions.end(), [](Function *a, Function *b) -> bool {
+            return a->is_main() > b->is_main();
+        });
+        Function *main = declared_functions[0];
+        assert(main->is_main());
+
+        //emit call
+        std::string label = get_function_label(main->resolve_function_signature());
+        fout << indent() << "call " << label << "\n";
+    }
 
     // - check all functions and constructors, make sure they're well formed
     int function_ptr = 0;
@@ -380,10 +568,7 @@ bool Program::is_well_formed() {
     // - emit .data section
     emit_data_section();
 
-    enclosing_program = nullptr;
-
     assert(declaration_stack.size() == 0);
-    assert(declared_variables.size() == global_declarations.size());
 
     return true;
 }

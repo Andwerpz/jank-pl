@@ -1,0 +1,38 @@
+// the family of exec functions all replace the current process with another process
+// the letters after exec specify what sort of arguments they accept
+// v - accepts a null terminated list of argument strings
+// e - accepts a null terminated list of environment strings
+// p - if path doesn't *contain* a '/', searches for an executable in PATH from environ
+
+i32 exec(u8* path) {
+    u8** argv = $u8** malloc(sizeof(u8*) * 0x2);
+    argv[0] = path;
+    argv[1] = $u8* nullptr;
+    i32 ret = execv(path, argv);
+    free($void* argv, sizeof(u8*) * 0x2);
+    return ret;
+}
+
+i32 execv(u8* path, u8** argv) {
+    u8** envp = $u8** malloc(sizeof(u8*) * 0x1);
+    envp[0] = $u8* nullptr;
+    i32 ret = execve(path, argv, envp);
+    free($void* envp, sizeof(u8*) * 0x1);
+    return ret;
+}
+
+i32 execve(u8* path, u8** argv, u8** envp) {
+    return sys_execve(path, argv, envp);
+}
+
+i32 execp(u8* path) {
+    return -1;
+}
+
+i32 execvp(u8* path, u8** argv) {
+    return -1;
+}
+
+i32 execvpe(u8* path, u8** argv, u8** envp) {
+    return -1;
+}

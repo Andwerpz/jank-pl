@@ -56,12 +56,11 @@ bool Destructor::is_well_formed() {
         //register self as variable (Type& this)
         Type *vt = new ReferenceType(this->type->make_copy());
         Identifier *vid = new Identifier("this");
-        Variable* v = add_variable(vt, vid);
+        Variable* v = add_stack_variable(vt, vid);
         if(v == nullptr) {
             std::cout << "Unable to add variable : " << vt << " " << vid << "\n";
             return false;
         }
-        v->addr = std::to_string(local_offset) + "(%rbp)";
         local_offset -= 8;
     }
 

@@ -1,42 +1,17 @@
 #include <iostream>;
 
-//primitives produced by cip should be l-values as well. 
-
-void inc100(i32& a) {
-    for(i32 i = 0; i < 100; i++) a ++;
-}
-
-i32 main() {
+i32 main(u64 argc, u8** argv) {
     
-    {
-        i32[10] a = new i32[10]();
-        for(i32 i = 0; i < 10; i++) new (@a[i]) i32(i);
-        for(i32 i = 0; i < 10; i++) cout << a[i] << " ";
-        cout << "\n";
-    }
-    
-    {
-        i32 n = 10;
-        vector<i32> a = new vector<i32>(n, 0);
-        for(i32 i = 0; i < n; i++) a[i] = i * i;
-        for(i32 i = 0; i < n; i++) cout << a[i] << " ";
-        cout << "\n";
+    cout << "ARGC : " << argc << "\n";
+    for(u64 i = 0x0; i < argc; i++) {
+        cout << "ARGV : " << argv[i] << "\n";
     }
 
-    {
-        i32 n = 100;
-        vector<i32> a = new vector<i32>();
-        for(i32 i = 0; i < n; i++) a.push_back(i);
-        for(i32 i = 0; i < n; i++) cout << a[i] << " ";
-        cout << "\n";
+    u64 ptr = 0x0;
+    while($void* environ[ptr] != nullptr) {
+        cout << "ENVIRON : " << environ[ptr] << "\n";
+        ptr ++;
     }
-
-    {
-        i32* a = $i32* malloc(sizeof(i32));
-        for(i32 i = 0; i < 100; i++) inc100(new (a) i32(0));
-        cout << *a << "\n";
-    }
-    
 
     return 0;
 }

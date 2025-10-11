@@ -222,12 +222,11 @@ bool OperatorOverload::is_well_formed() {
     //setup local variables
     local_offset = 8 + 8 * parameters.size();
     for(int i = 0; i < parameters.size(); i++){
-        Variable* v = add_variable(parameters[i]->type, parameters[i]->id);
+        Variable* v = add_stack_variable(parameters[i]->type, parameters[i]->id);
         if(v == nullptr) {
             std::cout << "Unable to add variable : " << parameters[i]->type->to_string() << " " << parameters[i]->id->name << "\n";
             return false;
         }
-        v->addr = std::to_string(local_offset) + "(%rbp)";
         local_offset -= 8;
     }
 

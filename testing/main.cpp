@@ -37,14 +37,16 @@ std::string read_cstr(char* s) {
 
 std::vector<std::string> str_split(std::string s, char sep) {
     std::vector<std::string> ret;
-    int l = 0;
-    for(int i = 0; i < s.size(); i++) {
+    for(int i = 0; i < s.size(); ) {
         if(s[i] == sep) {
-            ret.push_back(s.substr(l, i - l));
-            l = i + 1;
+            i ++;
+            continue;
         }
+        int r = i;
+        while(r != s.size() && s[r] != sep) r ++;
+        ret.push_back(s.substr(i, r - i));
+        i = r;
     }
-    ret.push_back(s.substr(l, s.size() - l));
     return ret;
 }
 
@@ -99,7 +101,7 @@ int compile_from_test(string testname) {
     return run_compiler("./tests/" + testname, "a.exe");
 }
 
-int run_aexe() {
+int run_aexe(vector<string> args) {
     pid_t pid = fork();
     if(pid == 0) {
         //redirect output to a.out
@@ -112,7 +114,15 @@ int run_aexe() {
         dup2(fd, STDOUT_FILENO);
         close(fd);
 
-        execl("a.exe", "a.exe", (char*) NULL);
+        //prepare arguments
+        char** argv = (char**) malloc(sizeof(char*) * args.size());
+        for(int i = 0; i < args.size(); i++) {
+            argv[i] = (char*) malloc(sizeof(char) * (args[i].size() + 1));
+            memcpy(argv[i], args[i].c_str(), args[i].size() + 1);
+        }
+
+        //exec
+        execv("a.exe", argv);
         perror("execl a.exe failed");
         exit(1);
     }
@@ -156,7 +166,7 @@ int main(int argc, char* argv[]) {
     if(argc == 1) {
         cout << "Usage : \n";
         cout << "main run-tests\n";
-        cout << "main gen-test <jankpath> <testname>\n";
+        cout << "main gen-test <jankpath> <testname> <-a <argc> <argv>>\n";
         cout << "main regen-tests\n";
         return 1;
     }
@@ -178,17 +188,23 @@ int main(int argc, char* argv[]) {
     
                 ifstream info_fin(testdir + "/info.txt");
                 int should_compile = -1;
-                string desc;
-                info_fin >> desc;
+                vector<string> args = {"a.exe"};
                 while(!info_fin.eof()) {
-                    int val;
-                    info_fin >> val;
-                    if(desc == "compiled") should_compile = val;
-                    else throw runtime_error("Unknown info desc : " + desc);
-                    info_fin >> desc;
+                    string line;
+                    getline(info_fin, line);
+                    vector<string> tok = str_split(line, ' ');
+                    if(tok.size() == 0) continue;
+                    if(tok[0] == "compiled") {
+                        should_compile = stoi(tok[1]);
+                    }
+                    else if(tok[0] == "args") {
+                        args.clear();
+                        for(int i = 1; i < tok.size(); i++) args.push_back(tok[i]);
+                    }
+                    else throw runtime_error("Unknown info : " + tok[0]);
                 }
 
-                if(should_compile == -1) {
+                if(should_compile != 0 && should_compile != 1) {
                     throw runtime_error("could not find 'compiled' in info");
                 }
     
@@ -200,7 +216,7 @@ int main(int argc, char* argv[]) {
 
                 if(compiled) {
                     //see if it runs
-                    int run_status = run_aexe();
+                    int run_status = run_aexe(args);
                     if(!run_status) {
                         //run success, see if outputs match
                         if(!are_files_equal("a.out", testdir + "/out.txt")) {
@@ -218,7 +234,7 @@ int main(int argc, char* argv[]) {
 
                 cout << "PASSED" << endl;
             }
-        } catch(exception e) {
+        } catch(runtime_error e) {
             cout << "FAILED : " << e.what() << endl;
             passing = false;
         }
@@ -228,13 +244,36 @@ int main(int argc, char* argv[]) {
     else if(mode == "regen-tests") {
         //just the src.jank from each test should be enough to completely regenerate it. 
         //should just extract the src.jank, delete the test, and call gen-test to regenerate
+        //upd : now that we've introduced arguments, should also look at info.txt to see if we have any arguments
         //TODO
+        assert(false);
     }
     else if(mode == "gen-test") {        
         bool failed = false;
         int compile_status, run_status;
         string jankpath = string(argv[2]);
         string testname = string(argv[3]);
+        vector<string> args = {"a.exe"};
+
+        //parse arguments
+        int argptr = 4;
+        while(argptr != argc) {
+            string next(argv[argptr ++]);
+            if(next == "-a") {
+                int amt = stoi(argv[argptr ++]);
+                if(argptr + amt > argc) {
+                    cout << "Invalid -a amt : " << amt << "\n";
+                    return 1;
+                }
+                for(int i = 0; i < amt; i++) {
+                    args.push_back(string(argv[argptr ++]));
+                }
+            }
+            else {
+                cout << "Unknown argument : " << next << "\n";
+                return 1;
+            }
+        }
 
         string n_testdir = "./tests/" + testname;
 
@@ -255,7 +294,7 @@ int main(int argc, char* argv[]) {
 
         //if compiles, try to run exe
         if(!compile_status) {
-            run_status = run_aexe();
+            run_status = run_aexe(args);
             if(!run_status) {
                 //copy output to test
                 fs::copy_file("a.out", n_testdir + "/out.txt");
@@ -270,6 +309,9 @@ int main(int argc, char* argv[]) {
         {
             ofstream fout(n_testdir + "/info.txt");
             fout << "compiled" << " " << (compile_status == 0) << "\n";
+            fout << "args" << " ";
+            for(string s : args) fout << s << " ";
+            fout << "\n";
         }
         
         goto gen_done;

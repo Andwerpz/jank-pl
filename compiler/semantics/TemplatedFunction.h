@@ -19,6 +19,7 @@ struct TemplatedFunction {
     static TemplatedFunction* convert(parser::templated_function *f);
 
     bool is_well_formed();
+    bool is_main();
     TemplateMapping* calc_mapping(std::vector<Type*> arg_types);
     TemplateMapping* calc_mapping(FunctionCall *fc);
     Function* gen_function(FunctionCall *fc);

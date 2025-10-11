@@ -1,0 +1,7 @@
+ARGC : 6
+ARGV : a.exe
+ARGV : test
+ARGV : arg
+ARGV : 123
+ARGV : bello
+ARGV : steven

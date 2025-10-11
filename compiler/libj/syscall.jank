@@ -4,6 +4,12 @@ void sys_exit(i32 status) {
     syscall(60, void, status);
 }
 
+// tries to read 'count' bytes from 'fd' to 'buf'. 
+// returns the actual amount of bytes read and increments the file pointer
+u64 sys_read(i32 fd, void* buf, u64 count) {
+    return syscall(0, u64, fd, buf, count);
+}
+
 // writes 'count' bytes from 'buf' to 'fd'
 // on success, returns the number of bytes written
 // on failure, returns -1
@@ -11,10 +17,17 @@ u64 sys_write(i32 fd, void* buf, u64 count) {
     return syscall(1, u64, fd, buf, count);
 }
 
-// tries to read 'count' bytes from 'fd' to 'buf'. 
-// returns the actual amount of bytes read and increments the file pointer
-u64 sys_read(i32 fd, void* buf, u64 count) {
-    return syscall(0, u64, fd, buf, count);
+// opens a file descriptor using the path and flags provided
+// on success, returns index of file descriptor
+// on failure, returns -1
+i32 sys_open(u8* path, i32 flags) { 
+    return syscall(2, i32, path, flags);
+}
+
+// closes the file descriptor at fd
+// on success, returns 0
+i32 sys_close(i32 fd) {
+    return syscall(3, i32, fd);
 }
 
 // sets the end of the data segment to the address specified

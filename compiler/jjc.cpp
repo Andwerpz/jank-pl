@@ -425,12 +425,20 @@ fix function call resolution
 - to ensure we don't accidentally duplicate functions, we can't just shove all generated functions in a pool, need to do stricter partial ordering stuff
 - or maybe we can prove that we can use the current method
 - OKOK FIXED YAYY (still need to fix overload resolution)
+- overload resolution is fixed, still need to fix constructor resolution
 
 ideas to optimize compilation times
  - an expression node should only resolve to one type. Perhaps just cache the result whenever we generate it. 
    - need to watch out when using expressions abnormally. Expressions can resolve to different types if we take the
      identifiers out of context. 
    - we then also need to ensure we make copies of everything. 
+
+major structure overhaul
+  - currently, I'm mixing typechecking and codegen in control flow. 
+  - I want to have two separate passes, one that does all the checks and then the second one that generates the assembly. 
+  - seems kind of annoying as I'll have to reset the controller only partially for the second pass, as I need to retain all the
+    generated functions from the first pass, but discard anything else. 
+  - perhaps should acknowledge the change, the first pass should return a modified AST, second pass is dedicated conversion to assembly/IR pass
 
 some miscellaneous features:
  - pointer arithmetic
@@ -572,7 +580,9 @@ type = templated_type , [ "&" ] ;
    - we'll need to do this step after we register all the structs so we can tell what's an existing type 
    - typedef types should be basetypes. 
  - function export modifier. Makes it so that generated label equals function id
-
+ - supporting commandline arguments passed to main
+   - 'i32 main()' and 'i32 main(u64 argc, u8** argv)' should both be valid main functions. 
+   - there should only ever be exactly one main function. 
 */
 
 
