@@ -1,8 +1,11 @@
+#include <dirent>;
+
 // the family of exec functions all replace the current process with another process
-// the letters after exec specify what sort of arguments they accept
+// the letters after exec specify what sort of arguments they accept/how they behave. 
 // v - accepts a null terminated list of argument strings
 // e - accepts a null terminated list of environment strings
-// p - if path doesn't *contain* a '/', searches for an executable in PATH from environ
+// p - if path doesn't *contain* a '/', searches for an executable in PATH from environ.
+//     otherwise, it behaves normally. Note that if it searches in PATH and finds nothing, it should fail. 
 
 i32 exec(u8* path) {
     u8** argv = $u8** malloc(sizeof(u8*) * 0x2);
@@ -14,11 +17,7 @@ i32 exec(u8* path) {
 }
 
 i32 execv(u8* path, u8** argv) {
-    u8** envp = $u8** malloc(sizeof(u8*) * 0x1);
-    envp[0] = $u8* nullptr;
-    i32 ret = execve(path, argv, envp);
-    free($void* envp, sizeof(u8*) * 0x1);
-    return ret;
+    return execve(path, argv, environ);
 }
 
 i32 execve(u8* path, u8** argv, u8** envp) {
@@ -26,13 +25,63 @@ i32 execve(u8* path, u8** argv, u8** envp) {
 }
 
 i32 execp(u8* path) {
-    return -1;
+    u8** argv = $u8** malloc(sizeof(u8*) * 0x2);
+    argv[0] = path;
+    argv[1] = $u8* nullptr;
+    i32 ret = execvp(path, argv);
+    free($void* argv, sizeof(u8*) * 0x2);
+    return ret;
 }
 
 i32 execvp(u8* path, u8** argv) {
-    return -1;
+    return execvpe(path, argv, environ);
 }
 
 i32 execvpe(u8* path, u8** argv, u8** envp) {
+    i32 has_slash = 0;
+    for(u64 i = 0x0; path[i] != '\0'; i++) {
+        if(path[i] == '/') has_slash = 1;
+    }
+    if(has_slash) {
+        return execve(path, argv, envp);
+    }
+
+    //find PATH in environ
+    string PATH;
+    u64 env_ptr = 0x0;
+    while($void* environ[env_ptr] != nullptr) {
+        u8* env_jstr = environ[env_ptr ++];
+        u64 len = strlen(env_jstr);
+        string env_str = new string(env_jstr);
+        u64 eq_ind = $u64 -1;
+        for(u64 i = 0x0; i < env_str.size(); i++) {
+            if(env_str[i] == '=') {
+                eq_ind = i;
+                break;
+            }
+        }
+
+        //should always find an '='
+        if(eq_ind == $u64 -1) {
+            continue;
+        }
+
+        if(env_str.substr(0x0, eq_ind) == "PATH") {
+            PATH = env_str.substr(eq_ind + 0x1);
+            break;
+        }
+    }
+    if(PATH.size() == 0x0) {
+        //failed to find PATH
+        return -1;
+    }
+
+    //attempt exec on each PATH directory
+    vector<string> parts = PATH.split(':');
+    for(u64 i = 0x0; i < parts.size(); i++) {
+        string res_path = parts[i] + "/" + new string(path);
+        i32 stat = execve(res_path.jstr(), argv, envp);
+    }
+    
     return -1;
 }

@@ -23,6 +23,7 @@ typedef pte_t* pagetable_t;
 [__GLOBAL_FIRST__] i32 O_WRONLY     = $i32 0x00000001;
 [__GLOBAL_FIRST__] i32 O_RDWR       = $i32 0x00000002;
 [__GLOBAL_FIRST__] i32 O_ACCMODE    = $i32 0x00000003;
+[__GLOBAL_FIRST__] i32 O_DIRECTORY  = $i32 0x00010000;
 
 // look here for rest of defs : 
 // https://codebrowser.dev/glibc/glibc/sysdeps/unix/sysv/linux/bits/time.h.html
@@ -32,4 +33,24 @@ typedef pte_t* pagetable_t;
 struct timespec {
     i64 tv_sec;
     i64 tv_nsec;
+}
+
+// https://codebrowser.dev/glibc/glibc/dirent/dirent.h.html
+[__GLOBAL_FIRST__] u64 DT_UNKNOWN = $u64 0;      // unknown
+[__GLOBAL_FIRST__] u64 DT_FIFO    = $u64 1;      // named pipe
+[__GLOBAL_FIRST__] u64 DT_CHR     = $u64 2;      // character device
+[__GLOBAL_FIRST__] u64 DT_DIR     = $u64 4;      // directory
+[__GLOBAL_FIRST__] u64 DT_BLK     = $u64 6;      // block device
+[__GLOBAL_FIRST__] u64 DT_REG     = $u64 8;      // regular file
+[__GLOBAL_FIRST__] u64 DT_LNK     = $u64 10;     // symbolic link
+[__GLOBAL_FIRST__] u64 DT_SOCK    = $u64 12;     // socket
+[__GLOBAL_FIRST__] u64 DT_WHT     = $u64 14;     // whiteout (bsd/union mount concept)
+
+//directory entry. don't free dirents that are results from calls, they're managed internally
+struct dirent {
+    u64 d_ino;          // inode number
+    i64 d_off;          // fd position for the next dirent
+    u16 d_reclen;       // total length of this dirent (including full null-terminated name)
+    u8  d_type;         // some DT type constant
+    u8  d_name;         // start of null-terminated name
 }

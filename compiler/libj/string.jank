@@ -111,6 +111,13 @@ struct string {
         }
     }
 
+    i32 contains(u8 c) {
+        for(u64 i = 0x0; i < this.sz; i++) {
+            if(this[i] == c) return 1;
+        }
+        return 0;
+    }
+
     string substr(u64 start, u64 len) {
         string res = new string(len, '\0');
         for(u64 i = 0x0; i < len; i++) res[i] = this[start + i];

@@ -1,17 +1,15 @@
 #include <iostream>;
+#include <assert>;
+#include <wait>;
+#include <exec>;
 
-i32 main(u64 argc, u8** argv) {
+i32 main() {
+
+    // i32 ret = execp("jjc");
+    // cout << "EXEC FAILED : " << ret << "\n";
+
+    dirstream* dir = opendir(".");
+    cout << "DIR : " << dir << "\n";
     
-    cout << "ARGC : " << argc << "\n";
-    for(u64 i = 0x0; i < argc; i++) {
-        cout << "ARGV : " << argv[i] << "\n";
-    }
-
-    u64 ptr = 0x0;
-    while($void* environ[ptr] != nullptr) {
-        cout << "ENVIRON : " << environ[ptr] << "\n";
-        ptr ++;
-    }
-
     return 0;
 }

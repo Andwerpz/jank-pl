@@ -17,7 +17,8 @@ struct istream {
     u8* buf;
     u64 buf_sz;
     u64 buf_ptr;
-    i32 is_eof;
+    i32 is_eof;     // reached end of file
+    i32 is_bad;     // some error occurred while reading
 
     istream() {
         this.fd = STDIN;
@@ -43,11 +44,17 @@ struct istream {
         this.buf_sz = $u64 0;
         this.buf_ptr = $u64 0;
         this.is_eof = 0;
+        this.is_bad = 0;
     }
 
     void refresh_buf() {
         this.buf_ptr = $u64 0;
-        this.buf_sz = sys_read(this.fd, $void* this.buf, $u64 4096);
+        i64 read_amt = sys_read(this.fd, $void* this.buf, $u64 4096);
+        if(read_amt < $i64 0) {
+            this.is_bad = 1;
+            return;
+        }
+        this.buf_sz = $u64 read_amt;
         if(this.buf_sz == $u64 0) this.is_eof = 1;
     }
 
@@ -56,8 +63,8 @@ struct istream {
     }
 
     u8 next_char() {
-        while(!this.eof() && this.buf_ptr == this.buf_sz) this.refresh_buf();
-        if(this.eof()) return '\0';
+        while(!this.eof() && !this.bad() && this.buf_ptr == this.buf_sz) this.refresh_buf();
+        if(this.eof() || this.bad()) return '\0';
         return this.buf[this.buf_ptr ++];
     }
 
@@ -68,7 +75,7 @@ struct istream {
         i32 found_tok = 0;
         while(1) {
             u8 c = this.next_char();
-            if(this.eof()) break;
+            if(this.eof() || this.bad()) break;
             if(this.is_whitespace(c)) {
                 if(found_tok) break;
             }
@@ -88,7 +95,7 @@ struct istream {
         i32 found_line = 0;
         while(1) {
             u8 c = this.next_char();
-            if(this.eof()) break;
+            if(this.eof() || this.bad()) break;
             if(c == '\n' || c == '\r') {
                 if(found_line) break;
             }
@@ -105,6 +112,10 @@ struct istream {
 
     i32 eof() {
         return this.is_eof;
+    }
+
+    i32 bad() {
+        return this.is_bad;
     }
 }
 
@@ -126,16 +137,16 @@ istream& operator>>(istream& stream, i32& x) {
 
 struct ostream {
     i32 fd;
-    u8* scratch_buf;
+    i32 is_bad;
 
     ostream() {
         this.fd = STDOUT;
-        this.scratch_buf = $u8* malloc($u64 128);
+        this.is_bad = 0;
     }
 
     ostream(i32 _fd) {
         this.fd = _fd;
-        this.scratch_buf = $u8* malloc($u64 128);
+        this.is_bad = 0;
     }
 
     ostream(ostream& other) {
@@ -143,19 +154,43 @@ struct ostream {
     }
 
     ~ostream() {
-        free($void* this.scratch_buf, $u64 128);
+
     }
 
-    void write_to_fd(u8 c) {
-        sys_write(this.fd, $void* @c, 0x1);
+    i32 write_to_fd(u8 c) {
+        u64 tot = 0x1;
+        u64 ptr = 0x0;
+        while(ptr != tot) {
+            i64 amt = sys_write(this.fd, $void* @c, 0x1);
+            if(amt < $i64 0) {
+                this.is_bad = 1;
+                return 1;
+            }
+            ptr += $u64 amt;
+        }
+        return 0;
     }
 
-    void write_to_fd(u8* str) {
-        sys_write(this.fd, $void* str, strlen(str));
+    i32 write_to_fd(u8* str) {
+        u64 tot = strlen(str);
+        u64 ptr = 0x0;
+        while(ptr != tot) {
+            i64 amt = sys_write(this.fd, $void* @(str[ptr]), tot - ptr);
+            if(amt < $i64 0) {
+                this.is_bad = 1;
+                return 1;
+            }
+            ptr += $u64 amt;
+        }
+        return 0;
     }
 
-    void write_to_fd(string str) {
-        sys_write(this.fd, $void* str.arr, str.size());
+    i32 write_to_fd(string str) {
+        return this.write_to_fd(str.jstr());
+    }
+
+    i32 bad() {
+        return this.is_bad;
     }
 }
 
@@ -209,7 +244,9 @@ ostream& operator<<(ostream& stream, string s) {
     return stream;
 }
 
-ostream& operator<<(ostream& stream, void* ptr) {
+template<T>
+ostream& operator<<(ostream& stream, T* ptr) {
+    stream.write_to_fd("0x");
     u64 val = $u64 ptr;
     u64 mask = 0b1111;
     for(i32 i = 15; i >= 0; i--){

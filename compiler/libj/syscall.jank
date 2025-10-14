@@ -1,20 +1,23 @@
 #include <time>;
 
+// makes the current process exit with status
+// this should always succeed
 void sys_exit(i32 status) {
     syscall(60, void, status);
 }
 
 // tries to read 'count' bytes from 'fd' to 'buf'. 
 // returns the actual amount of bytes read and increments the file pointer
-u64 sys_read(i32 fd, void* buf, u64 count) {
-    return syscall(0, u64, fd, buf, count);
+// on failure, returns -1
+i64 sys_read(i32 fd, void* buf, u64 count) {
+    return syscall(0, i64, fd, buf, count);
 }
 
 // writes 'count' bytes from 'buf' to 'fd'
 // on success, returns the number of bytes written
 // on failure, returns -1
-u64 sys_write(i32 fd, void* buf, u64 count) {
-    return syscall(1, u64, fd, buf, count);
+i64 sys_write(i32 fd, void* buf, u64 count) {
+    return syscall(1, i64, fd, buf, count);
 }
 
 // opens a file descriptor using the path and flags provided
@@ -40,8 +43,8 @@ u64 sys_brk(u64 addr) {
 // apparently on default settings, it's guaranteed that 256 bytes will get written. 
 // on success it returns the number of bytes written into the buffer
 // on error, it returns -1
-u64 sys_getrandom(void* buf, u64 buf_len, u64 flags) {
-    return syscall(318, u64, buf, buf_len, flags);
+i64 sys_getrandom(void* buf, u64 buf_len, u64 flags) {
+    return syscall(318, i64, buf, buf_len, flags);
 }
 
 // fills the provided timespec struct with the current time in clock 'clock_id'. 
@@ -78,10 +81,13 @@ pid_t sys_wait4(pid_t pid, i32* wstatus, i32 options, void* rusage) {
     return syscall(61, pid_t, pid, wstatus, options, rusage);
 }
 
+// yields the current process to the scheduler. 
+// this should always succeed
 u64 sys_sched_yield() {
     return syscall(24, u64);
 }
 
+// replaces the current process with a new process referred to by path
 i32 sys_execve(u8* path, u8** argv, u8** envp) {
     return syscall(59, i32, path, argv, envp);
 }
@@ -90,6 +96,15 @@ u64 sys_getcwd(u8* buf, u64 size) {
     return syscall(79, u64, buf, size);
 }
 
+// changes the CWD to the one given in path. 
 i32 sys_chdir(u8* path) {
     return syscall(80, i32, path);
+}
+
+// given that fd is an open file descriptor to a directory, reads in as many dirent structs that will fit
+// in the provided buffer.
+// returns the amount of bytes written on success
+// returns -1 on failure
+i64 sys_getdents64(i32 fd, void* buf, u64 count) {
+    return syscall(217, i64, fd, buf, count);
 }

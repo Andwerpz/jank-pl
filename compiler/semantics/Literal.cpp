@@ -315,13 +315,13 @@ void SyscallLiteral::emit_asm() {
     fout << indent() << "mov $" << syscall_id << ", %rax\n";
 
     //insert arguments into argument registers
+    //zero out any extras
+    std::vector<std::string> arg_regs = {"%rdi", "%rsi", "%rdx", "%r10", "%r8", "%r9"};
     assert(arguments.size() <= 6);
-    if(arguments.size() >= 1) fout << indent() << "movq " << argv[0]->addr << ", %rdi\n";
-    if(arguments.size() >= 2) fout << indent() << "movq " << argv[1]->addr << ", %rsi\n";
-    if(arguments.size() >= 3) fout << indent() << "movq " << argv[2]->addr << ", %rdx\n";
-    if(arguments.size() >= 4) fout << indent() << "movq " << argv[3]->addr << ", %r10\n";
-    if(arguments.size() >= 5) fout << indent() << "movq " << argv[4]->addr << ", %r8\n";
-    if(arguments.size() >= 6) fout << indent() << "movq " << argv[5]->addr << ", %r9\n";
+    for(int i = 0; i < 6; i++) {
+        if(arguments.size() > i) fout << indent() << "movq " << argv[i]->addr << ", " << arg_regs[i] << "\n";
+        else fout << indent() << "mov $0, " << arg_regs[i] << "\n";
+    }
 
     //do syscall
     fout << indent() << "syscall\n";

@@ -1,0 +1,88 @@
+
+//fd wrapper for directories
+struct dirstream {
+    i32 fd;
+    u8* buf;
+    u64 buf_sz;
+    u64 buf_ptr;
+    i32 is_eof;
+    i32 is_bad;
+
+    dirstream() {
+        assert(0, "dirstream() : should never invoke default constructor");
+    }
+
+    dirstream(i32 fd) {
+        this.fd = fd;
+        this.init_buf();
+    }
+
+    dirstream(dirstream& other) {
+        assert(0, "dirstream() : should never invoke copy constructor");
+    }
+
+    ~dirstream() {
+        free($void* this.buf, $u64 4096);
+    }
+
+    void init_buf() {
+        this.buf = $u8* malloc($u64 4096);
+        this.buf_sz = 0x0;
+        this.buf_ptr = 0x0;
+        this.is_eof = 0;
+        this.is_bad = 0;
+    }
+
+    void refresh_buf() {
+        i64 read_amt = sys_getdents64(this.fd, $void* this.buf, $u64 4096);
+        if(read_amt < $i64 0) {
+            this.is_bad = 1;
+            return;
+        }
+        this.buf_ptr = 0x0;
+        this.buf_sz = $u64 read_amt;
+        if(this.buf_sz ==  0x0) this.is_eof = 1;
+    }
+
+    dirent* next_dirent() {
+        while(!this.eof() && !this.bad() && this.buf_ptr == this.buf_sz) this.refresh_buf();
+        if(this.eof() || this.bad()) return $dirent* nullptr;
+        dirent* ret = $dirent* @(this.buf[this.buf_ptr]);
+        this.buf_ptr += $u64 ret->d_reclen;
+        return ret;
+    }
+
+    i32 eof() {
+        return this.is_eof;
+    }
+
+    i32 bad() {
+        return this.is_bad;
+    }
+}
+
+dirstream* opendir(string path) {
+    return opendir(path.jstr());
+}
+
+dirstream* opendir(u8* path) {
+    u64 flags = $u64 (O_RDONLY | O_DIRECTORY);
+    i32 fd = sys_open(path, O_RDONLY | O_DIRECTORY);
+    if(fd < 0) return $dirstream* nullptr;
+    dirstream* ret = $dirstream* malloc(sizeof(dirstream));
+    new (ret) dirstream(fd);
+    return ret;
+}
+
+i32 closedir(dirstream* dir) {
+    i32 ret = sys_close(dir->fd);
+    dir->~();
+    free($void* dir, sizeof(dirstream));
+    return ret;
+}
+
+//returns the next dirent from this DIR
+//don't free dirents that are returned from this, they are managed internally and will be freed eventually
+dirent* readdir(dirstream* dir) {
+    return dir->next_dirent();
+}

@@ -1,17 +1,18 @@
 
 // full list of error codes
 // https://pubs.opengroup.org/onlinepubs/9699919799/basedefs/errno.h.html
+// https://kernel.googlesource.com/pub/scm/linux/kernel/git/nico/archive/+/v0.97/include/linux/errno.h
 
 [__GLOBAL_FIRST__] i32 errno = 0;
 
-// bad file descriptor
-[__GLOBAL_FIRST__] i32 ERR_BADF = 1;
+// linux error codes
+[__GLOBAL_FIRST__] i32 ERR_BADF         = 9;        // bad file descriptor
+[__GLOBAL_FIRST__] i32 ERR_CHILD        = 10;       // no child processes
+[__GLOBAL_FIRST__] i32 ERR_ACCES        = 13;       // permission denied
+[__GLOBAL_FIRST__] i32 ERR_FAULT        = 14;       // access fault
+[__GLOBAL_FIRST__] i32 ERR_NOTDIR       = 20;       // not a directory
+[__GLOBAL_FIRST__] i32 ERR_INVAL        = 22;       // invalid argument
 
-// access fault
-[__GLOBAL_FIRST__] i32 ERR_FAULT = 2;
-
-// no child processes
-[__GLOBAL_FIRST__] i32 ERR_CHILD = 3;
-
-[__GLOBAL_FIRST__] i32 ERR_RANGE = 1000;
-[__GLOBAL_FIRST__] i32 ERR_MALFORMED = 1001;
+// jank error codes
+[__GLOBAL_FIRST__] i32 ERR_RANGE        = 1000;
+[__GLOBAL_FIRST__] i32 ERR_MALFORMED    = 1001;
