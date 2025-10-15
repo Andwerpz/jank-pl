@@ -8,11 +8,20 @@
 // linux error codes
 [__GLOBAL_FIRST__] i32 ERR_BADF         = 9;        // bad file descriptor
 [__GLOBAL_FIRST__] i32 ERR_CHILD        = 10;       // no child processes
+[__GLOBAL_FIRST__] i32 ERR_AGAIN        = 11;       // try again
 [__GLOBAL_FIRST__] i32 ERR_ACCES        = 13;       // permission denied
 [__GLOBAL_FIRST__] i32 ERR_FAULT        = 14;       // access fault
 [__GLOBAL_FIRST__] i32 ERR_NOTDIR       = 20;       // not a directory
 [__GLOBAL_FIRST__] i32 ERR_INVAL        = 22;       // invalid argument
+[__GLOBAL_FIRST__] i32 ERR_ENFILE       = 23;       // file table overflow
+[__GLOBAL_FIRST__] i32 ERR_PIPE         = 32;       // broken pipe (error related to pipe)
 
 // jank error codes
-[__GLOBAL_FIRST__] i32 ERR_RANGE        = 1000;
-[__GLOBAL_FIRST__] i32 ERR_MALFORMED    = 1001;
+[__GLOBAL_FIRST__] i32 ERR_UNKNOWN      = 1000;     // for when i'm too lazy to put a proper error code
+[__GLOBAL_FIRST__] i32 ERR_RANGE        = 1001;
+[__GLOBAL_FIRST__] i32 ERR_MALFORMED    = 1002;
+
+string err_to_string(i32 code) {
+    //TODO
+    return new string(":3");
+}

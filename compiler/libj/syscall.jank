@@ -69,6 +69,10 @@ i32 sys_munmap(void* addr, u64 len) {
     return syscall(11, i32, addr, len);
 }
 
+// duplicates the calling process, the original process is called the parent and the duplicated process
+// is called the child. 
+// returns the child PID in the parent and 0 in the child on success
+// returns -1 in the parent on failure
 pid_t sys_fork() {
     return syscall(57, pid_t);
 }
@@ -107,4 +111,21 @@ i32 sys_chdir(u8* path) {
 // returns -1 on failure
 i64 sys_getdents64(i32 fd, void* buf, u64 count) {
     return syscall(217, i64, fd, buf, count);
+}
+
+// creates a pipe, a unidirectional data stream that can be used for inter-process communication
+// fds is used to return two newly allocated file descriptors, fds[0] = read end, fds[1] = write end
+// returns 0 on success
+// returns -1 on failure
+i32 sys_pipe(i32[2]* fds) {
+    return syscall(22, i32, fds);
+}
+
+// allocates a new file descriptor with handle new_fd that refers to the same open file description 
+// as old_fd. If there is a pre-existing file descriptor at new_fd, it silently gets deallocated. 
+// old_fd and new_fd may be used interchangeably to refer to the same resource
+// returns the new file descriptor on success
+// returns -1 on failure
+i32 sys_dup2(i32 old_fd, i32 new_fd) {
+    return syscall(33, i32, old_fd, new_fd);
 }
