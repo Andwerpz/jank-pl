@@ -104,10 +104,10 @@ struct ControlStatement : public Statement {
 };
 
 struct IfStatement : public ControlStatement {
-    std::vector<Expression*> exprs;
-    std::vector<Statement*> statements;
+    Expression *expr;
+    Statement *statement;
     std::optional<Statement*> else_statement;
-    IfStatement(std::vector<Expression*> _exprs, std::vector<Statement*> _statements, Statement *_else_statement);
+    IfStatement(Expression *expr, Statement *statement, std::optional<Statement*> else_statement);
     bool is_well_formed() override;
     bool is_always_returning() override;
     Statement* make_copy() override;

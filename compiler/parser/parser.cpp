@@ -1,4 +1,4 @@
-// Date Generated : 09-21-2025 23:36:38
+// Date Generated : 10-18-2025 19:15:50
 #include "parser.h"
 
 namespace parser {
@@ -13,6 +13,10 @@ namespace parser {
 
     parse_context get_ctx() {
         return ctx;
+    }
+
+    void set_ctx(parse_context nctx) {
+        ctx = nctx;
     }
 
     //this is so we know where to backtrack to
@@ -33,15 +37,6 @@ namespace parser {
 
     void set_gen_errors(bool b) {
         gen_errors = b;
-    }
-
-    //initializes the parse controller
-    void set_s(std::string& ns) {
-        s = ns;
-        max_parse = 0;
-        ctx = {0, 0, 0};
-        while(ctx_stack.size() != 0) ctx_stack.pop();
-        errors.clear();
     }
 
     //does nice printout of lines surrounding the position where ind is
@@ -183,6 +178,14 @@ namespace parser {
         token_type = "terminal";
     }
     
+    //initializes the parse controller
+    void set_s(std::string& ns) {
+        s = ns;
+        max_parse = 0;
+        ctx = {0, 0, 0};
+        while(ctx_stack.size() != 0) ctx_stack.pop();
+        errors.clear();
+    }
 
     function_definition* function_definition::parse() {
         parse_context _start_ctx = get_ctx();

@@ -1,47 +1,63 @@
 #include <iostream>;
-#include <assert>;
-#include <wait>;
-#include <exec>;
+
+// 10/18/2025
+// making sure that the parser + 
 
 i32 main() {
 
-    i32[2] pipe;
-    if(sys_pipe(@pipe)) {
-        cout << "sys_pipe failed\n";
-        return 1;
-    }
+    if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else {}
 
-    pid_t pid = sys_fork();
-    if(pid == $pid_t 0) {  //child
-        //replace stdout with write end of pipe
-        sys_dup2(pipe[1], STDOUT);
-
-        //close read end, child doesn't read
-        sys_close(pipe[0]);
-
-        //write some stuff
-        cout << "bello, testing testing 123\n";
-
-        return 0;
-    }
-    else {  //parent
-        while(waitpid(pid, $i32* nullptr, WNOHANG) == $pid_t 0) {
-            //continue
-        }
-    }
-
-    //replace stdin with read end of pipe
-    sys_dup2(pipe[0], STDIN);
-
-    //close write end
-    sys_close(pipe[1]);
-
-    //read what the child wrote
-    u8 c = cin.next_char();
-    while(!cin.eof()) {
-        cout << c;
-        c = cin.next_char();
-    }
+    cout << "test passed\n";
     
     return 0;
 }

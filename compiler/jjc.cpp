@@ -110,13 +110,10 @@ std::string libj_to_absolute(std::string name) {
 }
 
 int gen_asm(std::string src_path, char tmp_filename[]) {
-    std::cout << "--- GATHERING FILES ---" << std::endl;
-    std::string program_str = "";
+    std::cout << "--- GATHERING FILES + PARSING + CONVERTING ---" << std::endl;
     Program *program = new Program();
-    ld parse_duration;
+    ld parse_duration = 0, convert_duration = 0;
     {
-        ld parse_start_time = current_time_seconds();
-
         std::queue<std::string> to_parse;
         std::set<std::string> parsed_paths;
 
@@ -149,8 +146,8 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
             std::cout << cpath << std::endl;
 
             std::string code = read_file(cpath);
-            program_str += code;
 
+            ld parse_start_time = current_time_seconds();
             parser::set_s(code);
             parser::set_gen_errors(false);
             parser::program *pp = parser::program::parse();
@@ -158,9 +155,12 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
                 std::cout << "SYNTAX ERROR\n";
                 return 1;
             }
+            parse_duration += current_time_seconds() - parse_start_time;
 
+            ld convert_start_time = current_time_seconds();
             Program *np = Program::convert(pp);
             program->add_all(np);
+            convert_duration += current_time_seconds() - convert_start_time;
 
             //grab all includes
             for(int i = 0; i < np->includes.size(); i++){
@@ -175,9 +175,7 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
                 parsed_paths.insert(npath);
                 to_parse.push(npath);
             }
-        }
-
-        parse_duration = current_time_seconds() - parse_start_time;
+        }        
     }   
 
     std::cout << "--- CHECK PROGRAM SEMANTICS ---" << std::endl;
@@ -204,6 +202,7 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
         
         std::cout << "--- TIMING OVERALL ---" << "\n";
         std::cout << std::fixed << std::setprecision(3) << "Parse Duration : " << parse_duration << "\n";
+        std::cout << std::fixed << std::setprecision(3) << "Convert Duration : " << convert_duration << "\n";
         std::cout << std::fixed << std::setprecision(3) << "Semantics Duration : " << semantics_duration << "\n";
     }
 

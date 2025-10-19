@@ -1,4 +1,4 @@
-// Date Generated : 09-21-2025 23:36:38
+// Date Generated : 10-18-2025 19:15:50
 #pragma once
 #include <vector>
 #include <string>
@@ -9,6 +9,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <optional>
+#include <map>
 
 namespace parser {
     struct parse_context;

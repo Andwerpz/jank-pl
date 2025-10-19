@@ -1,0 +1,135 @@
+#include <iostream>;
+
+// 10/18/2025
+// making sure that the parser can handle a relatively long if-else chain quickly.
+
+i32 main() {
+
+    if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else if(1) {}
+    else {}
+
+    cout << "test passed\n";
+    
+    return 0;
+}

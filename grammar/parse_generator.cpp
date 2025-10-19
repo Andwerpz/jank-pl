@@ -1226,9 +1226,13 @@ parse functions, then all the parse functions will be defined afterwards.
 //struct depth controller
 int struct_depth;
 
-void generate_struct_from_error(error *e, string struct_name);
-void generate_struct_from_concatenation(concatenation *c, string struct_name);
-void generate_struct_from_alternation(alternation *a, string struct_name);
+vector<string> full_struct_names;
+
+const bool DO_DP = false;
+
+void generate_struct_from_error(error *e, string struct_name, string full_name);
+void generate_struct_from_concatenation(concatenation *c, string struct_name, string full_name);
+void generate_struct_from_alternation(alternation *a, string struct_name, string full_name);
 void generate_struct_from_rule(rule *r);
 
 void generate_fndef_from_error(error *e, string struct_name);
@@ -1257,15 +1261,22 @@ string process_escapes(string s) {
     return res;
 }
 
-void generate_struct_from_error(error *e, string struct_name) {
+void generate_struct_from_error(error *e, string struct_name, string full_name) {
+    full_struct_names.push_back(full_name);
+
     cout << indent() << "struct " << struct_name << " : public error {\n";
     struct_depth ++;
     indent_level ++;
 
     //substructs
     string layer_char = string(1, 'a' + struct_depth - 1);
-    if(e->a0.has_value()) generate_struct_from_alternation(e->a0.value(), layer_char + "0");
-    if(e->a1.has_value()) generate_struct_from_alternation(e->a1.value(), layer_char + "1");
+    if(e->a0.has_value()) generate_struct_from_alternation(e->a0.value(), layer_char + "0", full_name + "::" + layer_char + "0");
+    if(e->a1.has_value()) generate_struct_from_alternation(e->a1.value(), layer_char + "1", full_name + "::" + layer_char + "1");
+
+    //dp table
+    if(DO_DP) {
+        cout << indent() << "inline static std::map<int, " << struct_name << "*> dp{};\n";
+    }
 
     //constructor
     cout << indent() << struct_name << "(std::string _val) {\n";
@@ -1288,7 +1299,9 @@ void generate_struct_from_error(error *e, string struct_name) {
     cout << indent() << "};\n";
 }
 
-void generate_struct_from_concatenation(concatenation *c, string struct_name){
+void generate_struct_from_concatenation(concatenation *c, string struct_name, string full_name){
+    full_struct_names.push_back(full_name);
+
     cout << indent() << "struct " << struct_name << " : public token {\n";
     struct_depth ++;
     indent_level ++;
@@ -1302,26 +1315,26 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
         term *t = c->ts[i];
         if(t->is_grouping) {
             ctype = layer_char + to_string(substr_ind ++);
-            generate_struct_from_alternation(t->a, ctype);
+            generate_struct_from_alternation(t->a, ctype, full_name + "::" + ctype);
         }
         else if(t->is_zo) {
             ctype = layer_char + to_string(substr_ind ++);
-            generate_struct_from_alternation(t->a, ctype);
+            generate_struct_from_alternation(t->a, ctype, full_name + "::" + ctype);
         }
         else if(t->is_zm) {
             ctype = layer_char + to_string(substr_ind ++);
-            generate_struct_from_alternation(t->a, ctype);
+            generate_struct_from_alternation(t->a, ctype, full_name + "::" + ctype);
         }
         else if(t->is_om) {
             ctype = layer_char + to_string(substr_ind ++);
-            generate_struct_from_alternation(t->a, ctype);
+            generate_struct_from_alternation(t->a, ctype, full_name + "::" + ctype);
         }
         else if(t->is_terminal) {
             ctype = "terminal";
         }
         else if(t->is_error) {
             ctype = layer_char + to_string(substr_ind ++);
-            generate_struct_from_error(t->e, ctype);
+            generate_struct_from_error(t->e, ctype, full_name + "::" + ctype);
         }
         else if(t->is_identifier) {
             ctype = print_identifier(t->i);
@@ -1356,6 +1369,11 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
             cout << indent() << type_sid[i] << " *" << var_sid[i] << ";\n";
         }
         else assert(false);
+    }
+
+    //dp table
+    if(DO_DP) {
+        cout << indent() << "inline static std::map<int, " << struct_name << "*> dp{};\n";
     }
 
     //constructor
@@ -1410,11 +1428,13 @@ void generate_struct_from_concatenation(concatenation *c, string struct_name){
     cout << indent() << "};\n";
 }
 
-void generate_struct_from_alternation(alternation *a, string struct_name){
+void generate_struct_from_alternation(alternation *a, string struct_name, string full_name){
     if(a->cs.size() == 1){  //there is only one option
-        generate_struct_from_concatenation(a->cs[0], struct_name);
+        generate_struct_from_concatenation(a->cs[0], struct_name, full_name);
     }
     else {  //there are multiple options; need to do some substructs. 
+        full_struct_names.push_back(full_name);
+
         cout << indent() << "struct " << struct_name << " : public token {\n";
         struct_depth ++;
         indent_level ++;
@@ -1428,13 +1448,18 @@ void generate_struct_from_alternation(alternation *a, string struct_name){
 
         //substructs
         for(int i = 0; i < a->cs.size(); i++){
-            generate_struct_from_concatenation(a->cs[i], type_sid[i]);
+            generate_struct_from_concatenation(a->cs[i], type_sid[i], full_name + "::" + type_sid[i]);
         }
 
         //struct fields
         for(int i = 0; i < a->cs.size(); i++){
             cout << indent() << "bool is_" << type_sid[i] << " = false;\n";
             cout << indent() << type_sid[i] << " *" << var_sid[i] << ";\n";
+        }
+
+        //dp table
+        if(DO_DP) {
+            cout << indent() << "inline static std::map<int, " << struct_name << "*> dp{};\n";
         }
 
         //constructors
@@ -1468,7 +1493,7 @@ void generate_struct_from_rule(rule *r){
     identifier *id = r->i;
     alternation *a = r->a;
     cout << indent() << "// " << print_rule(r) << "\n";
-    generate_struct_from_alternation(a, print_identifier(id));
+    generate_struct_from_alternation(a, print_identifier(id), print_identifier(id));
 }
 
 void generate_fndef_from_error(error *e, string struct_name) {
@@ -1486,6 +1511,14 @@ void generate_fndef_from_error(error *e, string struct_name) {
     indent_level ++;
     cout << indent() << "if(!gen_errors) return nullptr;\n";
     cout << indent() << "parse_context _start_ctx = get_ctx();\n";
+    if(DO_DP) {
+        cout << indent() << "if(" << struct_name << "::dp.count(_start_ctx.ptr)) {\n";
+        indent_level ++;
+        cout << indent() << "set_ctx(" << struct_name << "::dp[_start_ctx.ptr]->end_ctx);\n";
+        cout << indent() << "return " << struct_name << "::dp[_start_ctx.ptr];\n";
+        indent_level --;
+        cout << indent() << "}\n";
+    }
     cout << indent() << "push_stack();\n";
     cout << indent() << "std::string val = \"\";\n";
     cout << indent() << "while(!is_eof()) {\n";
@@ -1510,6 +1543,9 @@ void generate_fndef_from_error(error *e, string struct_name) {
     cout << indent() << struct_name << "* retval = new " << struct_name << "(val);\n";
     cout << indent() << "retval->start_ctx = _start_ctx;\n";
     cout << indent() << "retval->end_ctx = get_ctx();\n";
+    if(DO_DP) {
+        cout << indent() << struct_name << "::dp[_start_ctx.ptr] = retval;\n";
+    }
     cout << indent() << "return retval;\n";
     indent_level --;
     cout << indent() << "}\n";
@@ -1580,6 +1616,14 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
     cout << indent() << struct_name << "* " << struct_name << "::parse() {\n";
     indent_level ++;
     cout << indent() << "parse_context _start_ctx = get_ctx();\n";
+    if(DO_DP) {
+        cout << indent() << "if(" << struct_name << "::dp.count(_start_ctx.ptr)) {\n";
+        indent_level ++;
+        cout << indent() << "set_ctx(" << struct_name << "::dp[_start_ctx.ptr]->end_ctx);\n";
+        cout << indent() << "return " << struct_name << "::dp[_start_ctx.ptr];\n";
+        indent_level --;
+        cout << indent() << "}\n";
+    }
     cout << indent() << "push_stack();\n";
     for(int i = 0; i < c->ts.size(); i++) {
         term *t = c->ts[i];
@@ -1640,6 +1684,9 @@ void generate_fndef_from_concatenation(concatenation *c, string struct_name) {
     cout << ");\n";
     cout << indent() << "retval->start_ctx = _start_ctx;\n";
     cout << indent() << "retval->end_ctx = get_ctx();\n";
+    if(DO_DP) {
+        cout << indent() << struct_name << "::dp[_start_ctx.ptr] = retval;\n";
+    }
     cout << indent() << "return retval;\n";
     indent_level --;
     cout << indent() << "}\n";
@@ -1754,12 +1801,23 @@ void generate_fndef_from_alternation(alternation *a, string struct_name) {
         cout << indent() << struct_name << "* " << struct_name << "::parse() {\n";
         indent_level ++;
         cout << indent() << "parse_context _start_ctx = get_ctx();\n";
+        if(DO_DP) {
+            cout << indent() << "if(" << struct_name << "::dp.count(_start_ctx.ptr)) {\n";
+            indent_level ++;
+            cout << indent() << "set_ctx(" << struct_name << "::dp[_start_ctx.ptr]->end_ctx);\n";
+            cout << indent() << "return " << struct_name << "::dp[_start_ctx.ptr];\n";
+            indent_level --;
+            cout << indent() << "}\n";
+        }
         for(int i = 0; i < a->cs.size(); i++) {
             cout << indent() << "if(auto x = " << type_sid[i] << "::parse()) {\n";
             indent_level ++;
             cout << indent() << struct_name << "* retval = new " << struct_name << "(x);\n";
             cout << indent() << "retval->start_ctx = _start_ctx;\n";
             cout << indent() << "retval->end_ctx = get_ctx();\n";
+            if(DO_DP) {
+                cout << indent() << struct_name << "::dp[_start_ctx.ptr] = retval;\n";
+            }
             cout << indent() << "return retval;\n";
             indent_level --;
             cout << indent() << "}\n";
@@ -1831,6 +1889,7 @@ void generate_h(grammar *g) {
     cout << "#include <sstream>\n";
     cout << "#include <stdexcept>\n";
     cout << "#include <optional>\n";
+    cout << "#include <map>\n";
     cout << "\n";
     
     cout << "namespace parser {\n";
@@ -1894,6 +1953,8 @@ void generate_h(grammar *g) {
         }
         cout << "\n";
 
+        //generate struct defs
+        assert(full_struct_names.size() == 0);
         for(int i = 0; i < g->rs.size(); i++){
             generate_struct_from_rule(g->rs[i]);
             cout << "\n";
@@ -1928,6 +1989,10 @@ void generate_cpp(grammar *g) {
         return ctx;
     }
 
+    void set_ctx(parse_context nctx) {
+        ctx = nctx;
+    }
+
     //this is so we know where to backtrack to
     //the stack should be unaffected by any parse function. 
     std::stack<parse_context> ctx_stack;
@@ -1946,15 +2011,6 @@ void generate_cpp(grammar *g) {
 
     void set_gen_errors(bool b) {
         gen_errors = b;
-    }
-
-    //initializes the parse controller
-    void set_s(std::string& ns) {
-        s = ns;
-        max_parse = 0;
-        ctx = {0, 0, 0};
-        while(ctx_stack.size() != 0) ctx_stack.pop();
-        errors.clear();
     }
 
     //does nice printout of lines surrounding the position where ind is
@@ -2098,6 +2154,24 @@ void generate_cpp(grammar *g) {
     )";
         cout << tmp << "\n";
     }
+
+    // void set_s();
+    cout << indent() << "//initializes the parse controller\n";
+    cout << indent() << "void set_s(std::string& ns) {\n";
+    indent_level ++;
+    cout << indent() << "s = ns;\n";
+    cout << indent() << "max_parse = 0;\n";
+    cout << indent() << "ctx = {0, 0, 0};\n";
+    cout << indent() << "while(ctx_stack.size() != 0) ctx_stack.pop();\n";
+    cout << indent() << "errors.clear();\n";
+    if(DO_DP) {
+        assert(full_struct_names.size() != 0);
+        for(string name : full_struct_names) {
+            cout << indent() << name << "::dp.clear();\n";
+        }
+    }
+    indent_level --;
+    cout << indent() << "}\n";
     cout << "\n";
 
     // function defs

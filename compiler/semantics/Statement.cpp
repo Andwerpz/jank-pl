@@ -37,13 +37,13 @@ ContinueStatement::ContinueStatement() {
     //do nothing
 }
 
-IfStatement::IfStatement(std::vector<Expression*> _exprs, std::vector<Statement*> _statements, Statement *_else_statement) {
-    exprs = _exprs;
-    statements = _statements;
-    if(_else_statement == nullptr) else_statement = std::nullopt;
-    else else_statement = _else_statement;
-    assert(statements.size() >= 0);
-    assert(exprs.size() == statements.size());
+IfStatement::IfStatement(Expression *_expr, Statement *_statement, std::optional<Statement*> _else_statement) {
+    expr = _expr;
+    statement = _statement;
+    else_statement = _else_statement;
+    assert(expr != nullptr);
+    assert(statement != nullptr);
+    if(else_statement.has_value()) assert(else_statement.value() != nullptr);
 }
 
 WhileStatement::WhileStatement(Expression *_expr, Statement *_statement) {
@@ -121,28 +121,13 @@ SimpleStatement* SimpleStatement::convert(parser::simple_statement *s) {
 
 ControlStatement* ControlStatement::convert(parser::control_statement *s) {
     if(s->is_a0) {  //if statement
-        std::vector<Statement*> statements;
-        std::vector<Expression*> exprs;
-        Statement *else_statement = nullptr;
-        parser::control_statement *ptr = s;
-        while(true) {
-            assert(ptr->is_a0);
-            exprs.push_back(Expression::convert(ptr->t0->t4));
-            statements.push_back(Statement::convert(ptr->t0->t8));
-            if(!ptr->t0->t9.has_value()) break;   //else doesn't exist
-            Statement* tmp_stmt = Statement::convert(ptr->t0->t9.value()->t3);
-            if(!ptr->t0->t9.value()->t3->is_a1) {  //statement isn't control statement
-                else_statement = Statement::convert(ptr->t0->t9.value()->t3);
-                break;
-            }
-            parser::control_statement *nxt_ptr = ptr->t0->t9.value()->t3->t1->t0;
-            if(!nxt_ptr->is_a0) {   //statement isn't if statement
-                else_statement = Statement::convert(ptr->t0->t9.value()->t3);
-                break;
-            }
-            ptr = nxt_ptr;
+        Expression *expr = Expression::convert(s->t0->t4);
+        Statement *statement = Statement::convert(s->t0->t8);
+        std::optional<Statement*> else_statement = std::nullopt;
+        if(s->t0->t9.has_value()) {
+            else_statement = Statement::convert(s->t0->t9.value()->t3);
         }
-        return new IfStatement(exprs, statements, else_statement);
+        return new IfStatement(expr, statement, else_statement);
     }
     else if(s->is_a1){  //while statement
         Expression *expr = Expression::convert(s->t1->t4);
@@ -203,9 +188,7 @@ bool IfStatement::is_always_returning() {
 	if(!else_statement.has_value()) return false;
 	
     //every statement must return 
-    for(int i = 0; i < statements.size(); i++){
-        if(!statements[i]->is_always_returning()) return false;
-    }
+    if(!statement->is_always_returning()) return false;
     if(!else_statement.value()->is_always_returning()) return false;
 	
     return true;
@@ -440,44 +423,36 @@ bool ContinueStatement::is_well_formed() {
 }
 
 bool IfStatement::is_well_formed() {
-    // - do all expressions resolve to nonvoid?
-    for(int i = 0; i < exprs.size(); i++){
-        Type *t = exprs[i]->resolve_type();
-        if(t == nullptr || t->equals(primitives::_void)) {
-            std::cout << "If statement expression must resolve to type\n";
-            return false;
-        }
+    // - does the expression resolve to nonvoid?
+    Type *t = expr->resolve_type();
+    if(t == nullptr || t->equals(primitives::_void)) {
+        std::cout << "If statement expression must resolve to non-void type\n";
+        return false;
     }
 
+    //create labels
     if(asm_debug) fout << indent() << "# if statement start\n";
-    std::vector<std::string> labels;
-    for(int i = 0; i < statements.size(); i++){
-        labels.push_back(create_new_label());
-    }
+    std::string if_label = create_new_label();
     std::string else_label = "no-label";
     if(else_statement.has_value()) else_label = create_new_label();
     std::string end_if_label = create_new_label();
 
-    //check each expression one by one to see where we should jump to
-    for(int i = 0; i < exprs.size(); i++){
-        exprs[i]->emit_asm(true);
-        fout << indent() << "cmp $0, %rax\n";
-        fout << indent() << "jne " << labels[i] << "\n";
-    }
+    //check if we should jump into if statement
+    expr->emit_asm(true);
+    fout << indent() << "cmp $0, %rax\n";
+    fout << indent() << "jne " << if_label << "\n";
     if(else_statement.has_value()) fout << indent() << "jmp " << else_label << "\n";
     else fout << indent() << "jmp " << end_if_label << "\n";
 
-    // - are all of the statements well formed?
+    // - is if statement well formed?
     //each statement should implicitly introduce a scope
-    for(int i = 0; i < statements.size(); i++){
-        fout << labels[i] << ":\n";
-        push_declaration_stack();
-        if(!statements[i]->is_well_formed()) {
-            return false;
-        }
-        pop_declaration_stack();
-        fout << indent() << "jmp " << end_if_label << "\n";
+    fout << if_label << ":\n";
+    push_declaration_stack();
+    if(!statement->is_well_formed()) {
+        return false;
     }
+    pop_declaration_stack();
+    fout << indent() << "jmp " << end_if_label << "\n";
 
     // - is else statement well formed?
     if(else_statement.has_value()) {
@@ -658,17 +633,11 @@ Statement* ContinueStatement::make_copy() {
 }
 
 Statement* IfStatement::make_copy() {
-    std::vector<Expression*> _exprs;
-    std::vector<Statement*> _statements;
-    Statement* _else_statement = nullptr;
-    for(int i = 0; i < exprs.size(); i++){
-        _exprs.push_back(exprs[i]->make_copy());
-    }
-    for(int i = 0; i < statements.size(); i++){
-        _statements.push_back(statements[i]->make_copy());
-    }
+    Expression *_expr = expr->make_copy();
+    Statement *_statement = statement->make_copy();
+    std::optional<Statement*> _else_statement = std::nullopt;
     if(else_statement.has_value()) _else_statement = else_statement.value()->make_copy();
-    return new IfStatement(_exprs, _statements, _else_statement);
+    return new IfStatement(_expr, _statement, _else_statement);
 }
 
 Statement* WhileStatement::make_copy() {
@@ -727,13 +696,11 @@ bool ContinueStatement::replace_templated_types(TemplateMapping *mapping) {
 }
 
 bool IfStatement::replace_templated_types(TemplateMapping *mapping) {
-    for(int i = 0; i < exprs.size(); i++){
-        if(!exprs[i]->replace_templated_types(mapping)) return false;
+    if(!expr->replace_templated_types(mapping)) return false;
+    if(!statement->replace_templated_types(mapping)) return false;
+    if(else_statement.has_value()) {
+        if(!else_statement.value()->replace_templated_types(mapping)) return false;
     }
-    for(int i = 0; i < statements.size(); i++){
-        if(!statements[i]->replace_templated_types(mapping)) return false;
-    }
-    if(else_statement.has_value() && !else_statement.value()->replace_templated_types(mapping)) return false;
     return true;
 }
 
@@ -785,9 +752,11 @@ bool ContinueStatement::look_for_templates() {
 }
 
 bool IfStatement::look_for_templates() {
-    for(int i = 0; i < exprs.size(); i++) if(!exprs[i]->look_for_templates()) return false;
-    for(int i = 0; i < statements.size(); i++) if(!statements[i]->look_for_templates()) return false;
-    if(else_statement.has_value()) if(!else_statement.value()->look_for_templates()) return false;
+    if(!expr->look_for_templates()) return false;
+    if(!statement->look_for_templates()) return false;
+    if(else_statement.has_value()) {
+        if(!else_statement.value()->look_for_templates()) return false;
+    }
     return true;
 }
 
@@ -853,14 +822,10 @@ std::string ContinueStatement::to_string() {
 
 std::string IfStatement::to_string() {
     std::string ret = "";
-    for(int i = 0; i < exprs.size(); i++){
-        if(i == 0) ret += "if(";
-        else ret += "else if(";
-        ret += exprs[i]->to_string();
-        ret += ") ";
-        ret += statements[i]->to_string();
-        if(i + 1 != exprs.size()) ret += "\n";
-    }
+    ret += "if(";
+    ret += expr->to_string();
+    ret += ") ";
+    ret += statement->to_string();
     if(else_statement.has_value()) {
         ret += "\n";
         ret += "else ";
