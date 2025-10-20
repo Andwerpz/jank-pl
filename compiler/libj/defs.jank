@@ -1,9 +1,8 @@
 //these defs should mostly follow what linux has so that it's easy to test
 
-typedef i64 pid_t;
-typedef i32 fd_t;
-typedef u64 pte_t;
-typedef pte_t* pagetable_t;
+typedef i64 pid_t;              //process id
+typedef i32 fd_t;               //file descriptor
+typedef u32 mode_t;             //file options (permissions)
 
 [__GLOBAL_FIRST__] i32 STDIN = 0;
 [__GLOBAL_FIRST__] i32 STDOUT = 1;
@@ -23,11 +22,14 @@ typedef pte_t* pagetable_t;
 
 // file descriptor flags
 // https://codebrowser.dev/linux/linux/include/uapi/asm-generic/fcntl.h.html
-[__GLOBAL_FIRST__] i32 O_RDONLY     = $i32 0x00000000;
-[__GLOBAL_FIRST__] i32 O_WRONLY     = $i32 0x00000001;
-[__GLOBAL_FIRST__] i32 O_RDWR       = $i32 0x00000002;
-[__GLOBAL_FIRST__] i32 O_ACCMODE    = $i32 0x00000003;
-[__GLOBAL_FIRST__] i32 O_DIRECTORY  = $i32 0x00010000;
+[__GLOBAL_FIRST__] i32 O_RDONLY     = $i32 0o00000000;
+[__GLOBAL_FIRST__] i32 O_WRONLY     = $i32 0o00000001;
+[__GLOBAL_FIRST__] i32 O_RDWR       = $i32 0o00000002;
+[__GLOBAL_FIRST__] i32 O_ACCMODE    = $i32 0o00000003;
+[__GLOBAL_FIRST__] i32 O_CREAT      = $i32 0o00000100;
+[__GLOBAL_FIRST__] i32 O_TRUNC      = $i32 0o00001000;
+[__GLOBAL_FIRST__] i32 O_APPEND     = $i32 0o00002000;
+[__GLOBAL_FIRST__] i32 O_DIRECTORY  = $i32 0o00200000;
 
 // look here for rest of defs : 
 // https://codebrowser.dev/glibc/glibc/sysdeps/unix/sysv/linux/bits/time.h.html

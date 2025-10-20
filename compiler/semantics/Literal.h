@@ -138,6 +138,20 @@ struct BinaryLiteral : public Literal {
     bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
+struct OctalLiteral : public Literal {
+    std::string oct_str;    //doesn't contain 0o
+    OctalLiteral(std::string _oct_str);
+
+    static OctalLiteral* convert(parser::literal_octal *l);
+    Type* resolve_type() override;
+    void emit_asm() override;
+    size_t hash() override;
+    bool equals(Literal *other) override;
+    Literal* make_copy() override;
+    std::string to_string() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
+};
+
 struct FunctionPointerLiteral : public Literal {
     Identifier *id;
     std::vector<Type*> param_types;

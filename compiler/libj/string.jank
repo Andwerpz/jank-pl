@@ -149,6 +149,10 @@ u8& operator[](string& a, i32 ind) {
     return a.arr[ind];
 }
 
+u8& operator[](string& a, i64 ind) {
+    return a.arr[ind];
+}
+
 i32 operator==(string a, string b) {
     if(a.size() != b.size()) return 0;
     for(u64 i = $u64 0; i < a.size(); i++) {

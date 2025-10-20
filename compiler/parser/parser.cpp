@@ -1,4 +1,4 @@
-// Date Generated : 10-18-2025 19:15:50
+// Date Generated : 10-18-2025 20:32:31
 #include "parser.h"
 
 namespace parser {
@@ -1971,6 +1971,335 @@ namespace parser {
         t11->postprocess();
     }
 
+    literal_octal::a0::b0* literal_octal::a0::b0::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("0");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_octal::a0::b0* retval = new literal_octal::a0::b0(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_octal::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal_octal::a0::b0::postprocess() {
+        token_type = "literal_octal::a0::b0";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal_octal::a0::b1* literal_octal::a0::b1::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("1");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_octal::a0::b1* retval = new literal_octal::a0::b1(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_octal::a0::b1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal_octal::a0::b1::postprocess() {
+        token_type = "literal_octal::a0::b1";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal_octal::a0::b2* literal_octal::a0::b2::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("2");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_octal::a0::b2* retval = new literal_octal::a0::b2(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_octal::a0::b2::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal_octal::a0::b2::postprocess() {
+        token_type = "literal_octal::a0::b2";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal_octal::a0::b3* literal_octal::a0::b3::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("3");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_octal::a0::b3* retval = new literal_octal::a0::b3(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_octal::a0::b3::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal_octal::a0::b3::postprocess() {
+        token_type = "literal_octal::a0::b3";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal_octal::a0::b4* literal_octal::a0::b4::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("4");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_octal::a0::b4* retval = new literal_octal::a0::b4(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_octal::a0::b4::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal_octal::a0::b4::postprocess() {
+        token_type = "literal_octal::a0::b4";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal_octal::a0::b5* literal_octal::a0::b5::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("5");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_octal::a0::b5* retval = new literal_octal::a0::b5(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_octal::a0::b5::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal_octal::a0::b5::postprocess() {
+        token_type = "literal_octal::a0::b5";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal_octal::a0::b6* literal_octal::a0::b6::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("6");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_octal::a0::b6* retval = new literal_octal::a0::b6(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_octal::a0::b6::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal_octal::a0::b6::postprocess() {
+        token_type = "literal_octal::a0::b6";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal_octal::a0::b7* literal_octal::a0::b7::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("7");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_octal::a0::b7* retval = new literal_octal::a0::b7(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_octal::a0::b7::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal_octal::a0::b7::postprocess() {
+        token_type = "literal_octal::a0::b7";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal_octal::a0* literal_octal::a0::parse() {
+        parse_context _start_ctx = get_ctx();
+        if(auto x = literal_octal::a0::b0::parse()) {
+            literal_octal::a0* retval = new literal_octal::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = literal_octal::a0::b1::parse()) {
+            literal_octal::a0* retval = new literal_octal::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = literal_octal::a0::b2::parse()) {
+            literal_octal::a0* retval = new literal_octal::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = literal_octal::a0::b3::parse()) {
+            literal_octal::a0* retval = new literal_octal::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = literal_octal::a0::b4::parse()) {
+            literal_octal::a0* retval = new literal_octal::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = literal_octal::a0::b5::parse()) {
+            literal_octal::a0* retval = new literal_octal::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = literal_octal::a0::b6::parse()) {
+            literal_octal::a0* retval = new literal_octal::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = literal_octal::a0::b7::parse()) {
+            literal_octal::a0* retval = new literal_octal::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        return nullptr;
+    }
+
+    std::string literal_octal::a0::to_string() {
+        if(is_b0) return t0->to_string();
+        if(is_b1) return t1->to_string();
+        if(is_b2) return t2->to_string();
+        if(is_b3) return t3->to_string();
+        if(is_b4) return t4->to_string();
+        if(is_b5) return t5->to_string();
+        if(is_b6) return t6->to_string();
+        if(is_b7) return t7->to_string();
+        assert(false);
+    }
+
+    void literal_octal::a0::postprocess() {
+        token_type = "literal_octal::a0";
+        if(is_b0) {
+            token_children.push_back(t0);
+            t0->postprocess();
+        }
+        if(is_b1) {
+            token_children.push_back(t1);
+            t1->postprocess();
+        }
+        if(is_b2) {
+            token_children.push_back(t2);
+            t2->postprocess();
+        }
+        if(is_b3) {
+            token_children.push_back(t3);
+            t3->postprocess();
+        }
+        if(is_b4) {
+            token_children.push_back(t4);
+            t4->postprocess();
+        }
+        if(is_b5) {
+            token_children.push_back(t5);
+            t5->postprocess();
+        }
+        if(is_b6) {
+            token_children.push_back(t6);
+            t6->postprocess();
+        }
+        if(is_b7) {
+            token_children.push_back(t7);
+            t7->postprocess();
+        }
+    }
+
+    literal_octal* literal_octal::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("0o");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        std::vector<literal_octal::a0*> _t1;
+        while(true) {
+            literal_octal::a0 *tmp = literal_octal::a0::parse();
+            if(tmp == nullptr) break;
+            _t1.push_back(tmp);
+        }
+        if(_t1.size() == 0) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_octal* retval = new literal_octal(_t0, _t1);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_octal::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        for(int i = 0; i < t1.size(); i++) ans += t1[i]->to_string();
+        return ans;
+    }
+
+    void literal_octal::postprocess() {
+        token_type = "literal_octal";
+        token_children.push_back(t0);
+        t0->postprocess();
+        for(int i = 0; i < t1.size(); i++) {
+            token_children.push_back(t1[i]);
+            t1[i]->postprocess();
+        }
+    }
+
     literal::a0* literal::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -2022,7 +2351,7 @@ namespace parser {
     literal::a2* literal::a2::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        literal_float *_t0 = literal_float::parse();
+        literal_octal *_t0 = literal_octal::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         literal::a2* retval = new literal::a2(_t0);
@@ -2046,7 +2375,7 @@ namespace parser {
     literal::a3* literal::a3::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        literal_integer *_t0 = literal_integer::parse();
+        literal_float *_t0 = literal_float::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         literal::a3* retval = new literal::a3(_t0);
@@ -2070,7 +2399,7 @@ namespace parser {
     literal::a4* literal::a4::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        literal_sizeof *_t0 = literal_sizeof::parse();
+        literal_integer *_t0 = literal_integer::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         literal::a4* retval = new literal::a4(_t0);
@@ -2094,7 +2423,7 @@ namespace parser {
     literal::a5* literal::a5::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        literal_char *_t0 = literal_char::parse();
+        literal_sizeof *_t0 = literal_sizeof::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         literal::a5* retval = new literal::a5(_t0);
@@ -2118,7 +2447,7 @@ namespace parser {
     literal::a6* literal::a6::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        literal_string *_t0 = literal_string::parse();
+        literal_char *_t0 = literal_char::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         literal::a6* retval = new literal::a6(_t0);
@@ -2142,7 +2471,7 @@ namespace parser {
     literal::a7* literal::a7::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        literal_syscall *_t0 = literal_syscall::parse();
+        literal_string *_t0 = literal_string::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         literal::a7* retval = new literal::a7(_t0);
@@ -2166,7 +2495,7 @@ namespace parser {
     literal::a8* literal::a8::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        literal_function_pointer *_t0 = literal_function_pointer::parse();
+        literal_syscall *_t0 = literal_syscall::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         literal::a8* retval = new literal::a8(_t0);
@@ -2183,6 +2512,30 @@ namespace parser {
 
     void literal::a8::postprocess() {
         token_type = "literal::a8";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal::a9* literal::a9::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        literal_function_pointer *_t0 = literal_function_pointer::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal::a9* retval = new literal::a9(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal::a9::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal::a9::postprocess() {
+        token_type = "literal::a9";
         token_children.push_back(t0);
         t0->postprocess();
     }
@@ -2243,6 +2596,12 @@ namespace parser {
             retval->end_ctx = get_ctx();
             return retval;
         }
+        if(auto x = literal::a9::parse()) {
+            literal* retval = new literal(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
         return nullptr;
     }
 
@@ -2256,6 +2615,7 @@ namespace parser {
         if(is_a6) return t6->to_string();
         if(is_a7) return t7->to_string();
         if(is_a8) return t8->to_string();
+        if(is_a9) return t9->to_string();
         assert(false);
     }
 
@@ -2296,6 +2656,10 @@ namespace parser {
         if(is_a8) {
             token_children.push_back(t8);
             t8->postprocess();
+        }
+        if(is_a9) {
+            token_children.push_back(t9);
+            t9->postprocess();
         }
     }
 

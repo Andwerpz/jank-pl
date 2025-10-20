@@ -50,6 +50,10 @@ BinaryLiteral::BinaryLiteral(std::string _bin_str) {
     bin_str = _bin_str;
 }
 
+OctalLiteral::OctalLiteral(std::string _oct_str) {
+    oct_str = _oct_str;
+}
+
 FunctionPointerLiteral::FunctionPointerLiteral(Identifier *_id, std::vector<Type*> _param_types) {
     id = _id;
     param_types = _param_types;
@@ -59,7 +63,7 @@ FunctionPointerLiteral::FunctionPointerLiteral(Identifier *_id, std::vector<Type
 
 // -- CONVERT --
 Literal* Literal::convert(parser::literal *l) {
-    if(l->is_a0) { //hex literal
+    if(l->is_a0) {      //hex literal
         parser::literal_hex *lit = l->t0->t0;
         return HexLiteral::convert(lit);
     }
@@ -67,32 +71,36 @@ Literal* Literal::convert(parser::literal *l) {
         parser::literal_binary *lit = l->t1->t0;
         return BinaryLiteral::convert(lit);
     }
-    else if(l->is_a2) {  //float literal
-        parser::literal_float *lit = l->t2->t0;
+    else if(l->is_a2) { //octal literal
+        parser::literal_octal *lit = l->t2->t0;
+        return OctalLiteral::convert(lit);
+    }
+    else if(l->is_a3) { //float literal
+        parser::literal_float *lit = l->t3->t0;
         return FloatLiteral::convert(lit);
     }
-    else if(l->is_a3) {  //integer literal
-        parser::literal_integer *lit = l->t3->t0;
+    else if(l->is_a4) { //integer literal
+        parser::literal_integer *lit = l->t4->t0;
         return IntegerLiteral::convert(lit);
     }
-    else if(l->is_a4) { //sizeof literal
-        parser::literal_sizeof *lit = l->t4->t0;
+    else if(l->is_a5) { //sizeof literal
+        parser::literal_sizeof *lit = l->t5->t0;
         return SizeofLiteral::convert(lit);
     }
-    else if(l->is_a5) { //char literal
-        parser::literal_char *lit = l->t5->t0;
+    else if(l->is_a6) { //char literal
+        parser::literal_char *lit = l->t6->t0;
         return CharLiteral::convert(lit);
     }
-    else if(l->is_a6) { //string literal    
-        parser::literal_string *lit = l->t6->t0;
+    else if(l->is_a7) { //string literal    
+        parser::literal_string *lit = l->t7->t0;
         return StringLiteral::convert(lit);
     }   
-    else if(l->is_a7) { //sizeof literal
-        parser::literal_syscall *lit = l->t7->t0;
+    else if(l->is_a8) { //sizeof literal
+        parser::literal_syscall *lit = l->t8->t0;
         return SyscallLiteral::convert(lit);
     }
-    else if(l->is_a8) { //function pointer literal
-        parser::literal_function_pointer *lit = l->t8->t0;
+    else if(l->is_a9) { //function pointer literal
+        parser::literal_function_pointer *lit = l->t9->t0;
         return FunctionPointerLiteral::convert(lit);
     }
     else assert(false);    
@@ -154,6 +162,12 @@ BinaryLiteral* BinaryLiteral::convert(parser::literal_binary *lit) {
     std::string bin_str = lit->to_string();
     assert(bin_str.size() >= 3);
     return new BinaryLiteral(bin_str.substr(2));
+}
+
+OctalLiteral* OctalLiteral::convert(parser::literal_octal *lit) {
+    std::string oct_str = lit->to_string();
+    assert(oct_str.size() >= 3);
+    return new OctalLiteral(oct_str.substr(2));
 }
 
 FunctionPointerLiteral* FunctionPointerLiteral::convert(parser::literal_function_pointer *lit) {
@@ -232,6 +246,16 @@ Type* BinaryLiteral::resolve_type() {
     // - can binary string fit in u64?
     if(bin_str.size() > 64) {
         std::cout << "Binary value too large : 0b" << bin_str << "\n";
+        return nullptr;
+    }
+
+    return primitives::u64->make_copy();
+}
+
+Type* OctalLiteral::resolve_type() {
+    // - can octal string fit in u64?
+    if(oct_str.size() > 21) {
+        std::cout << "Octal value too large : 0o" << oct_str << "\n";
         return nullptr;
     }
 
@@ -346,6 +370,15 @@ void BinaryLiteral::emit_asm() {
     fout << indent() << "mov $" << val << ", %rax\n";
 }
 
+void OctalLiteral::emit_asm() {
+    assert(oct_str.size() >= 1 && oct_str.size() <= 21);
+    uint64_t val = 0;
+    for(int i = 0; i < oct_str.size(); i++) {
+        val = (val * 8) + (oct_str[i] - '0');
+    }
+    fout << indent() << "mov $" << val << ", %rax\n";
+}
+
 void FunctionPointerLiteral::emit_asm() {
     FunctionSignature *fs = new FunctionSignature(id, param_types);
     Function *f = get_function(fs);
@@ -393,6 +426,10 @@ size_t HexLiteral::hash() {
 
 size_t BinaryLiteral::hash() {
     return std::hash<std::string>()(bin_str);
+}
+
+size_t OctalLiteral::hash() {
+    return std::hash<std::string>()(oct_str);
 }
 
 size_t FunctionPointerLiteral::hash() {
@@ -464,6 +501,13 @@ bool BinaryLiteral::equals(Literal *_other) {
     return bin_str == other->bin_str;
 }
 
+bool OctalLiteral::equals(Literal *_other) {
+    if(dynamic_cast<OctalLiteral*>(_other) == nullptr) return false;
+    OctalLiteral *other = dynamic_cast<OctalLiteral*>(_other);
+
+    return oct_str == other->oct_str;
+}
+
 bool FunctionPointerLiteral::equals(Literal *_other) {
     if(dynamic_cast<FunctionPointerLiteral*>(_other) == nullptr) return false;
     FunctionPointerLiteral *other = dynamic_cast<FunctionPointerLiteral*>(_other);
@@ -509,6 +553,10 @@ Literal* HexLiteral::make_copy() {
 
 Literal* BinaryLiteral::make_copy() {
     return new BinaryLiteral(bin_str);
+}
+
+Literal* OctalLiteral::make_copy() {
+    return new OctalLiteral(oct_str);
 }
 
 Literal* FunctionPointerLiteral::make_copy() {
@@ -557,6 +605,10 @@ std::string BinaryLiteral::to_string() {
     return "0b" + bin_str;
 }
 
+std::string OctalLiteral::to_string() {
+    return "0o" + oct_str;
+}
+
 std::string FunctionPointerLiteral::to_string() {
     std::string ret = "#<" + id->name + "(";
     for(int i = 0; i < param_types.size(); i++) {
@@ -603,6 +655,10 @@ bool HexLiteral::replace_templated_types(TemplateMapping *mapping) {
 }
 
 bool BinaryLiteral::replace_templated_types(TemplateMapping *mapping) {
+    return true;
+}
+
+bool OctalLiteral::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 

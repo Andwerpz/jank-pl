@@ -23,8 +23,8 @@ i64 sys_write(i32 fd, void* buf, u64 count) {
 // opens a file descriptor using the path and flags provided
 // on success, returns index of file descriptor
 // on failure, returns -1
-i32 sys_open(u8* path, i32 flags) { 
-    return syscall(2, i32, path, flags);
+i32 sys_open(u8* path, i32 flags, mode_t mode) { 
+    return syscall(2, i32, path, flags, mode);
 }
 
 // closes the file descriptor at fd
@@ -81,6 +81,9 @@ pid_t sys_getpid() {
     return syscall(39, pid_t);
 }
 
+// waits on a child to change status
+// the exit status of a child is returned through wstatus
+// returns the pid of the child on success
 pid_t sys_wait4(pid_t pid, i32* wstatus, i32 options, void* rusage) {
     return syscall(61, pid_t, pid, wstatus, options, rusage);
 }
@@ -96,6 +99,8 @@ i32 sys_execve(u8* path, u8** argv, u8** envp) {
     return syscall(59, i32, path, argv, envp);
 }
 
+// gets the string representation of the CWD. 
+// returns the number of bytes written to the buffer
 u64 sys_getcwd(u8* buf, u64 size) {
     return syscall(79, u64, buf, size);
 }
@@ -128,4 +133,27 @@ i32 sys_pipe(i32[2]* fds) {
 // returns -1 on failure
 i32 sys_dup2(i32 old_fd, i32 new_fd) {
     return syscall(33, i32, old_fd, new_fd);
+}
+
+// creates a new directory at the specified path
+// the parent of the newly created directory must exist initially
+// returns 0 on success
+// returns -1 on failure
+i32 sys_mkdir(u8* path, mode_t mode) {
+    return syscall(83, i32, path, mode);
+}
+
+// deletes the directory at the specified path
+// the directory must be empty
+// returns 0 on success
+// returns -1 on failure
+i32 sys_rmdir(u8* path) {
+    return syscall(84, i32, path);
+}
+
+// deletes the non-directory entry at the specified path
+// returns 0 on success
+// returns -1 on failure
+i32 sys_unlink(u8* path) {
+    return syscall(87, i32, path);
 }

@@ -67,7 +67,7 @@ dirstream* opendir(string path) {
 
 dirstream* opendir(u8* path) {
     u64 flags = $u64 (O_RDONLY | O_DIRECTORY);
-    i32 fd = sys_open(path, O_RDONLY | O_DIRECTORY);
+    i32 fd = sys_open(path, O_RDONLY | O_DIRECTORY, $mode_t 0);
     if(fd < 0) return $dirstream* nullptr;
     dirstream* ret = $dirstream* malloc(sizeof(dirstream));
     new (ret) dirstream(fd);

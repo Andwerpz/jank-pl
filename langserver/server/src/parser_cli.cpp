@@ -106,7 +106,13 @@ void generate_tokens(parser::token *tok, bool in_struct) {
 	}
 
 	//numbers
-	if(tok->token_type == "literal_integer" || tok->token_type == "literal_float" || tok->token_type == "literal_hex" || tok->token_type == "literal_binary") {
+	if(
+		tok->token_type == "literal_integer" || 
+		tok->token_type == "literal_float" || 
+		tok->token_type == "literal_hex" || 
+		tok->token_type == "literal_binary" || 
+		tok->token_type == "literal_octal"
+	) {
 		highlight_tokens.push_back(semantic_token(tok, "number"));
 		return;	
 	}

@@ -1,4 +1,4 @@
-// Date Generated : 10-18-2025 19:15:50
+// Date Generated : 10-18-2025 20:32:31
 #pragma once
 #include <vector>
 #include <string>
@@ -70,6 +70,7 @@ namespace parser {
     struct literal_hex;
     struct literal_binary;
     struct literal_function_pointer;
+    struct literal_octal;
     struct literal;
     struct member_variable_declaration;
     struct constructor_definition;
@@ -871,7 +872,145 @@ namespace parser {
         void postprocess() override;
     };
 
-    // literal = literal_hex | literal_binary | literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall | literal_function_pointer ;
+    // literal_octal = "0o" , < "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" > ;
+    struct literal_octal : public token {
+        struct a0 : public token {
+            struct b0 : public token {
+                terminal *t0;
+                b0(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b0* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b1 : public token {
+                terminal *t0;
+                b1(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b1* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b2 : public token {
+                terminal *t0;
+                b2(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b2* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b3 : public token {
+                terminal *t0;
+                b3(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b3* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b4 : public token {
+                terminal *t0;
+                b4(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b4* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b5 : public token {
+                terminal *t0;
+                b5(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b5* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b6 : public token {
+                terminal *t0;
+                b6(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b6* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b7 : public token {
+                terminal *t0;
+                b7(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b7* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            bool is_b0 = false;
+            b0 *t0;
+            bool is_b1 = false;
+            b1 *t1;
+            bool is_b2 = false;
+            b2 *t2;
+            bool is_b3 = false;
+            b3 *t3;
+            bool is_b4 = false;
+            b4 *t4;
+            bool is_b5 = false;
+            b5 *t5;
+            bool is_b6 = false;
+            b6 *t6;
+            bool is_b7 = false;
+            b7 *t7;
+            a0(b0 *_t0) {
+                is_b0 = true;
+                t0 = _t0;
+            }
+            a0(b1 *_t1) {
+                is_b1 = true;
+                t1 = _t1;
+            }
+            a0(b2 *_t2) {
+                is_b2 = true;
+                t2 = _t2;
+            }
+            a0(b3 *_t3) {
+                is_b3 = true;
+                t3 = _t3;
+            }
+            a0(b4 *_t4) {
+                is_b4 = true;
+                t4 = _t4;
+            }
+            a0(b5 *_t5) {
+                is_b5 = true;
+                t5 = _t5;
+            }
+            a0(b6 *_t6) {
+                is_b6 = true;
+                t6 = _t6;
+            }
+            a0(b7 *_t7) {
+                is_b7 = true;
+                t7 = _t7;
+            }
+            static a0* parse();
+            std::string to_string() override;
+            void postprocess() override;
+        };
+        terminal *t0;
+        std::vector<a0*> t1;
+        literal_octal(terminal *_t0, std::vector<a0*> _t1) {
+            t0 = _t0;
+            t1 = _t1;
+        }
+        static literal_octal* parse();
+        std::string to_string() override;
+        void postprocess() override;
+    };
+
+    // literal = literal_hex | literal_binary | literal_octal | literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall | literal_function_pointer ;
     struct literal : public token {
         struct a0 : public token {
             literal_hex *t0;
@@ -892,8 +1031,8 @@ namespace parser {
             void postprocess() override;
         };
         struct a2 : public token {
-            literal_float *t0;
-            a2(literal_float *_t0) {
+            literal_octal *t0;
+            a2(literal_octal *_t0) {
                 t0 = _t0;
             }
             static a2* parse();
@@ -901,8 +1040,8 @@ namespace parser {
             void postprocess() override;
         };
         struct a3 : public token {
-            literal_integer *t0;
-            a3(literal_integer *_t0) {
+            literal_float *t0;
+            a3(literal_float *_t0) {
                 t0 = _t0;
             }
             static a3* parse();
@@ -910,8 +1049,8 @@ namespace parser {
             void postprocess() override;
         };
         struct a4 : public token {
-            literal_sizeof *t0;
-            a4(literal_sizeof *_t0) {
+            literal_integer *t0;
+            a4(literal_integer *_t0) {
                 t0 = _t0;
             }
             static a4* parse();
@@ -919,8 +1058,8 @@ namespace parser {
             void postprocess() override;
         };
         struct a5 : public token {
-            literal_char *t0;
-            a5(literal_char *_t0) {
+            literal_sizeof *t0;
+            a5(literal_sizeof *_t0) {
                 t0 = _t0;
             }
             static a5* parse();
@@ -928,8 +1067,8 @@ namespace parser {
             void postprocess() override;
         };
         struct a6 : public token {
-            literal_string *t0;
-            a6(literal_string *_t0) {
+            literal_char *t0;
+            a6(literal_char *_t0) {
                 t0 = _t0;
             }
             static a6* parse();
@@ -937,8 +1076,8 @@ namespace parser {
             void postprocess() override;
         };
         struct a7 : public token {
-            literal_syscall *t0;
-            a7(literal_syscall *_t0) {
+            literal_string *t0;
+            a7(literal_string *_t0) {
                 t0 = _t0;
             }
             static a7* parse();
@@ -946,11 +1085,20 @@ namespace parser {
             void postprocess() override;
         };
         struct a8 : public token {
-            literal_function_pointer *t0;
-            a8(literal_function_pointer *_t0) {
+            literal_syscall *t0;
+            a8(literal_syscall *_t0) {
                 t0 = _t0;
             }
             static a8* parse();
+            std::string to_string() override;
+            void postprocess() override;
+        };
+        struct a9 : public token {
+            literal_function_pointer *t0;
+            a9(literal_function_pointer *_t0) {
+                t0 = _t0;
+            }
+            static a9* parse();
             std::string to_string() override;
             void postprocess() override;
         };
@@ -972,6 +1120,8 @@ namespace parser {
         a7 *t7;
         bool is_a8 = false;
         a8 *t8;
+        bool is_a9 = false;
+        a9 *t9;
         literal(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
@@ -1007,6 +1157,10 @@ namespace parser {
         literal(a8 *_t8) {
             is_a8 = true;
             t8 = _t8;
+        }
+        literal(a9 *_t9) {
+            is_a9 = true;
+            t9 = _t9;
         }
         static literal* parse();
         std::string to_string() override;

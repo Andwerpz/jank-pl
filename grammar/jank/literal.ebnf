@@ -9,5 +9,6 @@ literal_syscall = "syscall" , ows , "(" , ows , literal_integer , ows , "," , ow
 literal_hex = "0x" , < digit | "a" | "b" | "c" | "d" | "e" | "f" | "A" | "B" | "C" | "D" | "E" | "F" > ;
 literal_binary = "0b" , < "0" | "1" > ;
 literal_function_pointer = "#" , "<" , ows , identifier , ows , "(" , ows , type_list , ows , ")" , ows , ">" ;
+literal_octal = "0o" , < "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" > ;
 
-literal = literal_hex | literal_binary | literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall | literal_function_pointer ;
+literal = literal_hex | literal_binary | literal_octal | literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall | literal_function_pointer ;
