@@ -66,6 +66,13 @@ struct istream {
         return c == ' ' || c == '\n' || c == '\t' || c == '\r';
     }
 
+    // i32 next_char(u8& c) {
+    //     while(!this.eof() && !this.bad() && this.buf_ptr == this.buf_sz) this.refresh_buf();
+    //     if(this.eof() || this.bad()) return 1;
+    //     c = this.buf[this.buf_ptr ++];
+    //     return 0;
+    // }
+
     u8 next_char() {
         while(!this.eof() && !this.bad() && this.buf_ptr == this.buf_sz) this.refresh_buf();
         if(this.eof() || this.bad()) return '\0';
@@ -138,59 +145,99 @@ istream& operator>>(istream& stream, i32& x) {
     return stream;
 }
 
-
+// TODO
+// - don't alloc strings when printing out numeric types
+//   perhaps should just write a c-style method that expects an allocated buffer and puts the 
+//   string representation of the number into the buffer. 
 struct ostream {
     i32 fd;
+    u8* buf;
+    u64 buf_ptr;
     i32 is_bad;
 
     ostream() {
         this.fd = STDOUT;
-        this.is_bad = 0;
+        this.init_buf();
     }
 
     ostream(i32 _fd) {
         this.fd = _fd;
-        this.is_bad = 0;
+        this.init_buf();
     }
 
     ostream(ostream& other) {
         this.fd = other.fd;
+        this.init_buf();
     }
 
     ~ostream() {
-
+        this.flush();
+        free($void* this.buf, $u64 4096);
     }
 
-    i32 write_to_fd(u8 c) {
-        u64 tot = 0x1;
+    void init_buf() {
+        this.buf = $u8* malloc($u64 4096);
+        this.buf_ptr = $u64 0;
+        this.is_bad = 0;
+    }
+
+    i32 flush() {
         u64 ptr = 0x0;
-        while(ptr != tot) {
-            i64 amt = sys_write(this.fd, $void* @c, 0x1);
+        u64 rem = this.buf_ptr;
+        this.buf_ptr = 0x0;
+        while(rem != 0x0) {
+            i64 amt = sys_write(this.fd, $void* ($u64 this.buf + ptr), rem);
+            if(amt == $i64 -ERR_AGAIN) {
+                //yield to scheduler and try again later
+                sys_sched_yield();
+                continue;
+            }
             if(amt < $i64 0) {
                 this.is_bad = 1;
                 return 1;
             }
+            rem -= $u64 amt;
             ptr += $u64 amt;
         }
+        return 0;
+    }
+
+    i32 write_to_fd(u8 c) {
+        if(this.buf_ptr == $u64 4096) {
+            i32 stat = this.flush();
+            if(stat) return stat;
+        }
+        assert(this.buf_ptr < $u64 4096);
+        this.buf[this.buf_ptr ++] = c;
+        return 0;
+    }
+
+    i32 write_to_fd(u8* str, u64 len) {
+        u64 ptr = 0x0;
+        while(ptr < len) {
+            if(this.buf_ptr == $u64 4096) {
+                i32 stat = this.flush();
+                if(stat) return stat;
+            } 
+
+            u64 space = $u64 4096 - this.buf_ptr;
+            u64 amt = len - ptr;
+            if(amt > space) amt = space;
+
+            memcpy($void* @(this.buf[this.buf_ptr]), $void* @(str[ptr]), amt);
+            this.buf_ptr += amt;
+            ptr += amt;
+        }   
         return 0;
     }
 
     i32 write_to_fd(u8* str) {
-        u64 tot = strlen(str);
-        u64 ptr = 0x0;
-        while(ptr != tot) {
-            i64 amt = sys_write(this.fd, $void* @(str[ptr]), tot - ptr);
-            if(amt < $i64 0) {
-                this.is_bad = 1;
-                return 1;
-            }
-            ptr += $u64 amt;
-        }
-        return 0;
+        u64 len = strlen(str);
+        return this.write_to_fd(str, len);
     }
 
     i32 write_to_fd(string str) {
-        return this.write_to_fd(str.jstr());
+        return this.write_to_fd(str.jstr(), str.size());
     }
 
     i32 bad() {

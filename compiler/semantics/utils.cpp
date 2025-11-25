@@ -51,7 +51,8 @@ void print_duration_stats() {
     }
 }
 
-Variable::Variable(bool _is_extern, Type *_type, Identifier *_id, std::string _addr) {
+Variable::Variable(bool _is_global, bool _is_extern, Type *_type, Identifier *_id, std::string _addr) {
+    is_global = _is_global;
     is_extern = _is_extern;
     id = _id;
     type = _type;
@@ -155,6 +156,7 @@ std::unordered_map<ConstructorSignature*, std::string, ConstructorSignatureHash,
 std::unordered_map<Type*, std::string, TypeHash, TypeEquals> destructor_label_map;
 std::unordered_map<OperatorSignature*, std::string, OperatorSignatureHash, OperatorSignatureEquals> operator_label_map;
 std::unordered_map<std::string, std::string> string_literal_label_map;
+std::vector<Variable*> declared_global_variables;
 
 int label_counter;
 int tmp_variable_counter;
@@ -183,6 +185,7 @@ void reset_controller() {
     destructor_label_map.clear();
     
     declared_variables.clear();
+    declared_global_variables.clear();
     while(declaration_stack.size()) declaration_stack.pop_back();
 
     local_offset = 0;
@@ -1248,9 +1251,10 @@ Variable* add_variable(Type *t, Identifier *id, std::string addr_str, bool is_gl
         std::cout << "Cannot redeclare " << t->to_string() << " " << id->name << "\n";
         return nullptr;
     }
-    Variable *v = new Variable(is_extern, t, id, addr_str);
+    Variable *v = new Variable(is_global, is_extern, t, id, addr_str);
     declared_variables.push_back(v);
     if(!is_global) declaration_stack.rbegin()->push_back(v);
+    else declared_global_variables.push_back(v);
     return v;
 }
 
@@ -1320,10 +1324,26 @@ void emit_destructor_call(Type *t, bool should_dealloc) {
     dc->emit_asm(should_dealloc);
 }
 
-//if do_free == true, also frees allocated structs on this layer
+//just emits frees, does not remove global variables from controller
+//destruct global variables in reverse order of declaration
+void emit_cleanup_global_variables() {
+    for(int i = declared_global_variables.size() - 1; i >= 0; i--) {
+        Variable *v = declared_global_variables[i];
+        assert(v->is_global);
+        Type *t = v->type;
+        if(!is_type_primitive(t) && !v->is_extern) {
+            //put addr to struct in %rax
+            fout << indent() << "movq " << v->addr << ", %rax\n";
+
+            //call destructor
+            emit_destructor_call(t, true);
+        }
+    }
+}
+
 //just emits frees, should not actually affect the controller
-//this should only be called outside of pop_declaration_stack() in return, break, and continue. 
-//specifically saves registers %rax, %rcx
+//this should only be called outside of pop_declaration_stack() in special cases (return, break, continue)
+//specifically saves registers %rax, %rcx so that this can be called inside expressions
 void emit_cleanup_declaration_stack_layer(int layer_ind) {
     assert(layer_ind > 0 && layer_ind < declaration_stack.size());
     std::vector<Variable*> layer = declaration_stack[layer_ind];
@@ -1333,7 +1353,8 @@ void emit_cleanup_declaration_stack_layer(int layer_ind) {
     emit_push("%rcx", "emit_cleanup_declaration_stack_layer() : save %rcx");
 
     //destruct any non-primitive variables
-    for(int i = 0; i < layer.size(); i++){
+    for(int i = layer.size() - 1; i >= 0; i--){
+        assert(!layer[i]->is_global);
         Type *t = layer[i]->type;
         if(!is_type_primitive(t)) {
             //put addr to struct in %rax
@@ -1366,6 +1387,7 @@ void pop_declaration_stack(bool do_free) {
         //adjust %rsp
         std::vector<std::string> desc_list;
         for(int i = 0; i < top.size(); i++){
+            assert(!top[i]->is_global);
             desc_list.push_back(top[i]->id->name);
         }
         emit_add_rsp(top.size() * 8, desc_list);
@@ -1373,6 +1395,7 @@ void pop_declaration_stack(bool do_free) {
 
     //unregister variables as declared
     for(int i = 0; i < top.size(); i++){
+        assert(!top[i]->is_global);
         remove_variable(top[i]->id);
     }
 
@@ -1822,9 +1845,9 @@ std::string get_string_literal_label(std::string str) {
 void emit_data_section() {
     fout << ".section .data\n";
     //alloc space for global variables
-    //all declared variables at this point should be globals
-    for(int i = 0; i < declared_variables.size(); i++){
-        Variable* v = declared_variables[i];
+    for(int i = 0; i < declared_global_variables.size(); i++){
+        Variable* v = declared_global_variables[i];
+        assert(v->is_global);
         std::string var_addr = v->addr;
         assert(var_addr.size() >= 6);
         std::string suf = var_addr.substr(var_addr.size() - 6);

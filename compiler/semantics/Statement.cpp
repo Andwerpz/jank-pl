@@ -312,25 +312,9 @@ bool ReturnStatement::is_well_formed() {
         fout << indent() << "add $" << -local_offset << ", %rsp\n"; //should not be managed by local_offset
     }
 
-    //special case for exiting out of main
-    if(enclosing_function != nullptr && enclosing_function->is_main()) {
-        //function is main, should exit the program
-        if(!kernel_mode) {
-            //get sys_exit(i32 status) label
-            std::string exit_label = get_function_label(new FunctionSignature(new Identifier("sys_exit"), {primitives::i32->make_copy()}));
-
-            fout << indent() << "push %rax\n";  //should not be managed by local_offset
-            fout << indent() << "call " << exit_label << "\n";
-        }
-        else {
-            //we can't really exit, TODO decide what to do here
-        }
-    }
-    else {
-        //return from function
-        fout << indent() << "pop %rbp\n";   //should not be managed by local_offset
-        fout << indent() << "ret\n";
-    }
+    //return from function
+    fout << indent() << "pop %rbp\n";   //should not be managed by local_offset
+    fout << indent() << "ret\n";
 
     return true;
 }

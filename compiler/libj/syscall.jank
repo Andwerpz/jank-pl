@@ -151,7 +151,12 @@ i32 sys_rmdir(u8* path) {
     return syscall(84, i32, path);
 }
 
-// deletes the non-directory entry at the specified path
+//identical to calling sys_open() with flags equal to O_CREAT | O_WRONLY | O_TRUNC
+i32 sys_creat(u8* path, mode_t mode) {
+    return syscall(85, i32, path, mode);
+}
+
+// removes a link to a non-directory entry at the given path
 // returns 0 on success
 // returns -1 on failure
 i32 sys_unlink(u8* path) {

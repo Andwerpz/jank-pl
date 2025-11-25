@@ -26,10 +26,11 @@ typedef u32 mode_t;             //file options (permissions)
 [__GLOBAL_FIRST__] i32 O_WRONLY     = $i32 0o00000001;
 [__GLOBAL_FIRST__] i32 O_RDWR       = $i32 0o00000002;
 [__GLOBAL_FIRST__] i32 O_ACCMODE    = $i32 0o00000003;
-[__GLOBAL_FIRST__] i32 O_CREAT      = $i32 0o00000100;
-[__GLOBAL_FIRST__] i32 O_TRUNC      = $i32 0o00001000;
-[__GLOBAL_FIRST__] i32 O_APPEND     = $i32 0o00002000;
-[__GLOBAL_FIRST__] i32 O_DIRECTORY  = $i32 0o00200000;
+[__GLOBAL_FIRST__] i32 O_CREAT      = $i32 0o00000100;          // if file doesn't exist and parent directory exists, create a new file there
+[__GLOBAL_FIRST__] i32 O_EXCL       = $i32 0o00000200;          // file must not exist initially
+[__GLOBAL_FIRST__] i32 O_TRUNC      = $i32 0o00001000;          // discard all contents of the file before writing
+[__GLOBAL_FIRST__] i32 O_APPEND     = $i32 0o00002000;          // before each write, kernel sets write head to current end of file
+[__GLOBAL_FIRST__] i32 O_DIRECTORY  = $i32 0o00200000;          // fail if the path does not refer to a directory
 
 // look here for rest of defs : 
 // https://codebrowser.dev/glibc/glibc/sysdeps/unix/sysv/linux/bits/time.h.html

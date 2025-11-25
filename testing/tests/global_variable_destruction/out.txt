@@ -1,0 +1,3 @@
+MAIN
+destructing B
+destructing A

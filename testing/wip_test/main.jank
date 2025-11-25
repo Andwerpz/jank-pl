@@ -1,11 +1,28 @@
 #include <iostream>;
 
+#global_node A [IOSTREAM, MALLOC];
+#global_node B [A];
+
+struct A {
+    ~A() {
+        if(main_ran) cout << "destructing A\n";
+    }
+}
+
+struct B {
+    ~B() {
+        if(main_ran) cout << "destructing B\n";
+    }
+}
+
+[__GLOBAL_FIRST__] i32 main_ran = 0;
+[A] A foo = new A();
+[B] B bar = new B();
+
 i32 main() {
 
-    u64 x = 0o0644;
-    cout << x << "\n";
-    cout << 0o0123456701 << "\n";
-    cout << 0o113271112252 << "\n";
+    cout << "MAIN\n";
+    main_ran = 1;
     
     return 0;
 }

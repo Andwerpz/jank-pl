@@ -22,11 +22,7 @@ struct vec2 {
     ~vec2() {}
 
     void print() {
-        puts("(");
-        puti(this.x);
-        puts(", ");
-        puti(this.y);
-        puts_endl(")");
+        cout << "(" << this.x << ", " << this.y << ")\n";
     }
 }
 
@@ -63,7 +59,7 @@ void vec2_test() {
         assert(c == new vec2(4, 6));
     }
 
-    puts_endl("vec2 test passed");
+    cout << "vec2 test passed" << "\n";
 }
 
 void ostream_test() {
@@ -78,14 +74,14 @@ void ostream_test() {
     cout << "NESTING TEST : " << "\n";
     cout << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "." << "\n";
 
-    puts_endl("ostream test passed");
+    cout << "ostream test passed" << "\n";
 }
 
 i32 main() {
 
     vec2_test();
     ostream_test();
-    puts_endl("all tests passed");
+    cout << "all tests passed" << "\n";
 
     return 0;
 }

@@ -65,11 +65,12 @@ namespace {
 
 // -- UTIL STRUCTS --
 struct Variable {
-    bool is_extern; //only global variables should be extern
+    bool is_global;
+    bool is_extern;     //only global variables should be extern
     Type *type;
     Identifier *id;
     std::string addr;   //should hold something like "-8(%rbp)" or "L99(%rip)"
-    Variable(bool _is_extern, Type *_type, Identifier *_id, std::string addr);
+    Variable(bool _is_global, bool _is_extern, Type *_type, Identifier *_id, std::string addr);
 };
 
 //used by break and continue to know where to jump to and how many things to cleanup
@@ -144,6 +145,7 @@ void remove_constructor(Constructor *c);
 void remove_destructor(Destructor *d);
 void push_declaration_stack();
 void emit_destructor_call(Type *t, bool should_dealloc = true);
+void emit_cleanup_global_variables();
 void emit_cleanup_declaration_stack_layer(int layer_ind);
 void pop_declaration_stack(bool do_free = true);
 void push_loop_stack(std::string start_label, std::string assignment_label, std::string end_label);   //call these when the loop variables are on the top of the declaration stack
