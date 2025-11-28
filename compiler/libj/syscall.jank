@@ -162,3 +162,32 @@ i32 sys_creat(u8* path, mode_t mode) {
 i32 sys_unlink(u8* path) {
     return syscall(87, i32, path);
 }
+
+// repositions file offset of fd to the argument off according to whence
+// SEEK_SET : position is set to off
+// SEEK_CUR : position is incremented by off
+// SEEK_END : position is set to EOF + off
+i64 sys_lseek(i32 fd, i64 off, i32 whence) {
+    return syscall(8, i64, fd, off, whence);
+}
+
+// retrieves information about the file pointed to by path
+// returns 0 on success
+// returns -1 on failure
+i32 sys_stat(u8* path, stat* statbuf) {
+    return syscall(4, i32, path, statbuf);
+}
+
+// retrieves information about the file at fd
+// returns 0 on success
+// returns -1 on failure
+i32 sys_fstat(i32 fd, stat* statbuf) {
+    return syscall(5, i32, fd, statbuf);
+}
+
+// catch-all syscall to send device-specific information that doesn't work well with other syscalls
+// returns 0 on success
+// returns -1 on failure
+i32 sys_ioctl(i32 fd, u32 op, void* arg) {
+    return syscall(16, i32, fd, op, arg);
+}
