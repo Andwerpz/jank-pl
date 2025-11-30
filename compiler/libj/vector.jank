@@ -74,6 +74,16 @@ struct vector {
         }
     }
 
+    void insert(u64 ind, T x) {
+        if(this.sz == this.cap) this.grow();
+        for(u64 i = this.sz; i > ind; i--) {
+            new (@this.arr[i]) T(this.arr[i - 0x1]);
+            this.arr[i - 0x1].~();
+        }
+        new (@this.arr[ind]) T(x);
+        this.sz ++;
+    }
+
     //some structs don't have '==' operator implemented
     // //on success, returns the first index where this[ind] == val
     // //on failure, returns this.sz

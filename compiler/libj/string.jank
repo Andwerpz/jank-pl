@@ -2,7 +2,8 @@
 #include <vector>;
 
 //internally, string should keep a null terminated jstr. 
-//string::jstr() should return a pointer to the internal buffer, you should probably not mess with it ...
+//it does this by maintaining that everything after and including index sz is '\0'
+//string::jstr() returns a pointer to the internal buffer, you should probably not mess with it ...
 //probably should also implement const so that you're unable to mess with it ...
 
 #global_node STRING [MALLOC];
@@ -93,6 +94,22 @@ struct string {
         if(this.sz == this.cap - 0x1) this.grow();
         this.arr[this.sz] = x;
         this.sz = this.sz + $u64 1;
+    }
+
+    void insert(u64 ind, u8 x) {
+        if(this.sz == this.cap - 0x1) this.grow();
+        for(u64 i = this.sz; i > ind; i--) {
+            this.arr[i] = this.arr[i - 0x1];
+        }
+        this.arr[ind] = x;
+        this.sz ++;
+    }
+
+    void erase(u64 ind) {
+        for(u64 i = ind; i < this.sz; i++) {
+            this.arr[i] = this.arr[i + 0x1];
+        }
+        this.sz --;
     }
 
     u64 size() {

@@ -92,30 +92,64 @@ struct stat {
 
 //bits that go into mode_t
 // https://codebrowser.dev/glibc/glibc/sysdeps/unix/sysv/linux/bits/stat.h.html
-mode_t S_IRWXU  = $mode_t 0o0000700;    // owner access bits
-mode_t S_IRUSR  = $mode_t 0o0000400;
-mode_t S_IWUSR  = $mode_t 0o0000200;
-mode_t S_IXUSR  = $mode_t 0o0000100;
+[__GLOBAL_FIRST__] mode_t S_IRWXU  = $mode_t 0o0000700;    // owner access bits
+[__GLOBAL_FIRST__] mode_t S_IRUSR  = $mode_t 0o0000400;
+[__GLOBAL_FIRST__] mode_t S_IWUSR  = $mode_t 0o0000200;
+[__GLOBAL_FIRST__] mode_t S_IXUSR  = $mode_t 0o0000100;
 
-mode_t S_IRWXG  = $mode_t 0o0000070;    // group access bits
-mode_t S_IRGRP  = $mode_t 0o0000040;
-mode_t S_IWGRP  = $mode_t 0o0000020;
-mode_t S_IXGRP  = $mode_t 0o0000010;
+[__GLOBAL_FIRST__] mode_t S_IRWXG  = $mode_t 0o0000070;    // group access bits
+[__GLOBAL_FIRST__] mode_t S_IRGRP  = $mode_t 0o0000040;
+[__GLOBAL_FIRST__] mode_t S_IWGRP  = $mode_t 0o0000020;
+[__GLOBAL_FIRST__] mode_t S_IXGRP  = $mode_t 0o0000010;
 
-mode_t S_IRWXO  = $mode_t 0o0000007;    // other access bits
-mode_t S_IROTH  = $mode_t 0o0000004;
-mode_t S_IWOTH  = $mode_t 0o0000002;
-mode_t S_IXOTH  = $mode_t 0o0000001;
+[__GLOBAL_FIRST__] mode_t S_IRWXO  = $mode_t 0o0000007;    // other access bits
+[__GLOBAL_FIRST__] mode_t S_IROTH  = $mode_t 0o0000004;
+[__GLOBAL_FIRST__] mode_t S_IWOTH  = $mode_t 0o0000002;
+[__GLOBAL_FIRST__] mode_t S_IXOTH  = $mode_t 0o0000001;
 
-mode_t S_ISUID  = $mode_t 0o0004000;    // set user id on execution 
-mode_t S_ISGID  = $mode_t 0o0002000;    // set group id on execution 
-mode_t S_ISVTX  = $mode_t 0o0001000;    // save swapped text even after use 
+[__GLOBAL_FIRST__] mode_t S_ISUID  = $mode_t 0o0004000;    // set user id on execution 
+[__GLOBAL_FIRST__] mode_t S_ISGID  = $mode_t 0o0002000;    // set group id on execution 
+[__GLOBAL_FIRST__] mode_t S_ISVTX  = $mode_t 0o0001000;    // save swapped text even after use 
 
-mode_t S_IFMT   = $mode_t 0o0170000;    // these bits tell you the file type
-mode_t S_IFDIR  = $mode_t 0o0040000;    // directory
-mode_t S_IFCHR  = $mode_t 0o0020000;    // character device
-mode_t S_IFBLK  = $mode_t 0o0060000;    // block device
-mode_t S_IFREG  = $mode_t 0o0100000;    // regular file
-mode_t S_IFIFO  = $mode_t 0o0010000;    // FIFO
-mode_t S_IFLNK  = $mode_t 0o0120000;    // symbolic link
-mode_t S_IFSOCK = $mode_t 0o0140000;    // socket
+[__GLOBAL_FIRST__] mode_t S_IFMT   = $mode_t 0o0170000;    // these bits tell you the file type
+[__GLOBAL_FIRST__] mode_t S_IFDIR  = $mode_t 0o0040000;    // directory
+[__GLOBAL_FIRST__] mode_t S_IFCHR  = $mode_t 0o0020000;    // character device
+[__GLOBAL_FIRST__] mode_t S_IFBLK  = $mode_t 0o0060000;    // block device
+[__GLOBAL_FIRST__] mode_t S_IFREG  = $mode_t 0o0100000;    // regular file
+[__GLOBAL_FIRST__] mode_t S_IFIFO  = $mode_t 0o0010000;    // FIFO
+[__GLOBAL_FIRST__] mode_t S_IFLNK  = $mode_t 0o0120000;    // symbolic link
+[__GLOBAL_FIRST__] mode_t S_IFSOCK = $mode_t 0o0140000;    // socket
+
+//general terminal interface used to control async communications ports
+struct termios {
+    u32     c_iflag;    // input flags
+    u32     c_oflag;    // output flags
+    u32     c_cflag;    // control flags
+    u32     c_lflag;    // local flags
+    u8[32]  c_cc;       // control chars (VMIN, VTIME, etc.)
+}
+
+// ioctl request codes for termios
+[__GLOBAL_FIRST__] u64 TCGETS  = 0x5401;
+[__GLOBAL_FIRST__] u64 TCSETS  = 0x5402;
+
+// termios flags
+// https://codebrowser.dev/glibc/glibc/bits/termios.h.html
+// - c_iflag
+[__GLOBAL_FIRST__] u64 ICRNL  = 0o0000400;      //translate carriage return to newline
+[__GLOBAL_FIRST__] u64 IXON   = 0o0002000;      //Enable XON/XOFF flow control on output. (?)
+
+// - c_oflag
+[__GLOBAL_FIRST__] u64 OPOST  = 0o0000001;      //enable implementation defined output processing
+
+// - c_cflag
+
+// - c_lflag
+[__GLOBAL_FIRST__] u64 ISIG   = 0o0000001;      //when characters INTR, QUIT, SUSP, DSUSP are recieved, generate the corresponding signal
+[__GLOBAL_FIRST__] u64 ICANON = 0o0000002;      //enable canonical mode
+[__GLOBAL_FIRST__] u64 ECHO   = 0o0000010;      //echo input characters
+
+// indices in c_cc[]
+[__GLOBAL_FIRST__] u64 VTIME  = $u64 5;         //timeout in deciseconds for non-canonical read
+[__GLOBAL_FIRST__] u64 VMIN   = $u64 6;         //minimum number of characters for non-canonical read
+

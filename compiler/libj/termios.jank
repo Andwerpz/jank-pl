@@ -1,0 +1,9 @@
+#include <defs>;
+
+i32 tcgetattr(i32 fd, termios* t) {
+    return sys_ioctl(fd, $u32 TCGETS, $void* t);
+}
+
+i32 tcsetattr(i32 fd, termios* t) {
+    return sys_ioctl(fd, $u32 TCSETS, $void* t);
+}
