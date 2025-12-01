@@ -128,28 +128,33 @@ struct termios {
     u32     c_lflag;    // local flags
     u8[32]  c_cc;       // control chars (VMIN, VTIME, etc.)
 }
+[__GLOBAL_FIRST__] u64 TTY_NCCS = $u64 32;
 
 // ioctl request codes for termios
 [__GLOBAL_FIRST__] u64 TCGETS  = 0x5401;
 [__GLOBAL_FIRST__] u64 TCSETS  = 0x5402;
 
 // termios flags
-// https://codebrowser.dev/glibc/glibc/bits/termios.h.html
+// grep -R " ECHO" /usr/include
 // - c_iflag
-[__GLOBAL_FIRST__] u64 ICRNL  = 0o0000400;      //translate carriage return to newline
-[__GLOBAL_FIRST__] u64 IXON   = 0o0002000;      //Enable XON/XOFF flow control on output. (?)
+[__GLOBAL_FIRST__] u64 TTY_ICRNL  = $u64 (1 << 8);      //map CR -> NL
+[__GLOBAL_FIRST__] u64 TTY_IXON   = $u64 (1 << 10);     //Enable XON/XOFF flow control on output. (?)
 
 // - c_oflag
-[__GLOBAL_FIRST__] u64 OPOST  = 0o0000001;      //enable implementation defined output processing
+[__GLOBAL_FIRST__] u64 TTY_OPOST  = $u64 (1 << 0);      //enable tty output processing
+[__GLOBAL_FIRST__] u64 TTY_ONLCR  = $u64 (1 << 2);      //map NL -> CR NL
 
 // - c_cflag
 
 // - c_lflag
-[__GLOBAL_FIRST__] u64 ISIG   = 0o0000001;      //when characters INTR, QUIT, SUSP, DSUSP are recieved, generate the corresponding signal
-[__GLOBAL_FIRST__] u64 ICANON = 0o0000002;      //enable canonical mode
-[__GLOBAL_FIRST__] u64 ECHO   = 0o0000010;      //echo input characters
+[__GLOBAL_FIRST__] u64 TTY_ISIG   = $u64 (1 << 0);      //when characters INTR, QUIT, SUSP, DSUSP are recieved, generate the corresponding signal
+[__GLOBAL_FIRST__] u64 TTY_ICANON = $u64 (1 << 1);      //enable canonical mode (line discipline)
+[__GLOBAL_FIRST__] u64 TTY_ECHO   = $u64 (1 << 3);      //echo input characters
+[__GLOBAL_FIRST__] u64 TTY_ECHOE  = $u64 (1 << 4);      //visually delete last typed character on backspace
+
 
 // indices in c_cc[]
-[__GLOBAL_FIRST__] u64 VTIME  = $u64 5;         //timeout in deciseconds for non-canonical read
-[__GLOBAL_FIRST__] u64 VMIN   = $u64 6;         //minimum number of characters for non-canonical read
+[__GLOBAL_FIRST__] u64 TTY_VERASE = $u64 2;         //what character is the backspace character?
+[__GLOBAL_FIRST__] u64 TTY_VTIME  = $u64 5;         //timeout in deciseconds for non-canonical read
+[__GLOBAL_FIRST__] u64 TTY_VMIN   = $u64 6;         //minimum number of characters for non-canonical read
 
