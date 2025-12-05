@@ -1,0 +1,35 @@
+#include <iostream>;
+#include <random>;
+#include <assert>;
+#include <string>;
+#include <vector>;
+#include <pair>;
+
+typedef i64 ll;
+typedef i32 int;
+
+template<T, U>
+i32 pair_cmp(pair<T, U>& a, pair<T, U>& b) {
+    if(a.first != b.first) return a.first < b.first;
+    return a.second < b.second;
+}
+
+template<T>
+i32 do_cmp(T& a, T& b, fn<i32(T&, T&)> cmp) {
+    return cmp#(a, b);
+}
+
+i32 main() {
+
+    fn<i32(pair<ll, int>&, pair<ll, int>&)> cmp = #<pair_cmp(pair<ll, int>&, pair<ll, int>&)>;
+    pair<ll, int> a = new pair<ll, int>($ll 1, 15);
+    pair<ll, int> b = new pair<ll, int>($ll 2, 5);
+    i32 res = do_cmp(a, b, cmp);
+    assert(res == 1, "a < b");
+    i32 res2 = do_cmp(b, a, cmp);
+    assert(res2 == 0, "b > a");
+
+    cout << "test passed\n";
+
+    return 0;
+}

@@ -69,16 +69,17 @@ struct dirent {
 
 //file information struct
 struct stat {
+    // the pair (st_dev, st_ino) should be able to uniquely identify a file
     u64 st_dev;         // Device ID of device containing file. 
-    u64 st_ino;         // File serial number. 
+    u64 st_ino;         // File serial number (inode number)
     u64 st_nlink;       // Number of hard links to the file. 
 
-    u32 st_mode;        // File type
+    u32 st_mode;        // File type + permissions
     u32 st_uid;         // owner UID
     u32 st_gid;         // owner GID
     u32 __pad0;         // padding
 
-    u64 st_rdev;        // Device ID (if special?)
+    u64 st_rdev;        // Device ID of device files (char and block devices)
     i64 st_size;        // file size in bytes
     i64 st_blksize;     // "optimal" block size (performance hint for user program)
     i64 st_blocks;      // 512-byte blocks allocated
@@ -112,11 +113,11 @@ struct stat {
 [__GLOBAL_FIRST__] mode_t S_ISVTX  = $mode_t 0o0001000;    // save swapped text even after use 
 
 [__GLOBAL_FIRST__] mode_t S_IFMT   = $mode_t 0o0170000;    // these bits tell you the file type
-[__GLOBAL_FIRST__] mode_t S_IFDIR  = $mode_t 0o0040000;    // directory
+[__GLOBAL_FIRST__] mode_t S_IFIFO  = $mode_t 0o0010000;    // FIFO
 [__GLOBAL_FIRST__] mode_t S_IFCHR  = $mode_t 0o0020000;    // character device
+[__GLOBAL_FIRST__] mode_t S_IFDIR  = $mode_t 0o0040000;    // directory
 [__GLOBAL_FIRST__] mode_t S_IFBLK  = $mode_t 0o0060000;    // block device
 [__GLOBAL_FIRST__] mode_t S_IFREG  = $mode_t 0o0100000;    // regular file
-[__GLOBAL_FIRST__] mode_t S_IFIFO  = $mode_t 0o0010000;    // FIFO
 [__GLOBAL_FIRST__] mode_t S_IFLNK  = $mode_t 0o0120000;    // symbolic link
 [__GLOBAL_FIRST__] mode_t S_IFSOCK = $mode_t 0o0140000;    // socket
 

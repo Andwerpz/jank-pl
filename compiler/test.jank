@@ -1,28 +1,62 @@
+#include <vector>;
+#include <deque>;
 #include <iostream>;
+#include <string>;
+#include <jstring>;
+#include <pair>;
+#include <sort>;
+typedef vector<i32> vi;
+typedef vector<vector<i32>> vvi;
+typedef i32 int;
+typedef i64 ll;
 
-#global_node A [IOSTREAM, MALLOC];
-#global_node B [A];
-
-struct A {
-    ~A() {
-        if(main_ran) cout << "destructing A\n";
-    }
+template<T, U>
+i32 pair_cmp(pair<T, U>& a, pair<T, U>& b) {
+    if(a.first != b.first) return a.first < b.first;
+    return a.second < b.second;
 }
 
-struct B {
-    ~B() {
-        if(main_ran) cout << "destructing B\n";
-    }
+i32 ll_cmp(ll a, ll b) {
+    return a < b;
 }
 
-[__GLOBAL_FIRST__] i32 main_ran = 0;
-[A] A foo = new A();
-[B] B bar = new B();
+void solve_p1() {
+    // vector<pair<ll, int>> ev;
+    vector<ll> a;
+    // {
+    //     string line = cin.next_line();
+    //     while(!cin.eof()) {
+    //         vector<string> tok = line.split('-');
+    //         if(tok.size() == 0x2) {
+    //             ll l = stoi64(tok[0]);
+    //             ll r = stoi64(tok[1]);
+    //             r ++;
+    //             ev.push_back(new pair<ll, int>(l, 1));
+    //             ev.push_back(new pair<ll, int>(r, -1));
+    //         }
+    //         else {
+    //             ll x = stoi64(tok[0]);
+    //             a.push_back(x);
+    //         }
+    //     }
+    // }
+    // sort(ev, #<pair_cmp(pair<ll, int>&, pair<ll, int>&)>);
+    sort(a, #<ll_cmp(ll, ll)>);
+    // fn<i32(ll, ll)> cmp = #<ll_cmp(ll, ll)>;
+    // sort(a, cmp);
+
+}
+
+void solve_p2() {
+
+}
 
 i32 main() {
 
-    cout << "MAIN\n";
-    main_ran = 1;
-    
+    i32 fd = sys_open("./cafeteria.in", O_RDONLY, $mode_t 0);
+    cin = new istream(fd);
+
+    solve_p1();
+
     return 0;
 }

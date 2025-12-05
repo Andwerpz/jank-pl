@@ -23,6 +23,7 @@ i32 do_cmp(T& a, T& b, fn<i32(T&, T&)> cmp) {
 i32 main() {
 
     fn<i32(ll, ll)> cmp = #<ll_cmp(ll, ll)>;
+    assert(cmp#($ll 1, $ll 2) == 1, "1 < 2");
 
     cout << "test passed\n";
 

@@ -115,11 +115,12 @@ int run_aexe(vector<string> args) {
         close(fd);
 
         //prepare arguments
-        char** argv = (char**) malloc(sizeof(char*) * args.size());
+        char** argv = (char**) malloc(sizeof(char*) * (args.size() + 1));
         for(int i = 0; i < args.size(); i++) {
             argv[i] = (char*) malloc(sizeof(char) * (args[i].size() + 1));
             memcpy(argv[i], args[i].c_str(), args[i].size() + 1);
         }
+        argv[args.size()] = nullptr;
 
         //exec
         execv("a.exe", argv);

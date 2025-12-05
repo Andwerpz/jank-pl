@@ -266,11 +266,10 @@ Type* FunctionPointerLiteral::resolve_type() {
     FunctionSignature *fs = new FunctionSignature(id, param_types);
 
     // - is there a corresponding function to this?
-    // TODO decide if this should also map to templated functions. 
-    // - if we decide to go down the route of every function being a templated function, 
-    //   then maybe only allow mappings to functions with no templates.
-    // TODO make the behaviour with templated functions consistent. 
-    Function *f = get_function(fs);
+    // TODO decide if this should also map to operators
+    // - how are we going to deal with builtin operators?
+    // - this feature would be very nice actually
+    Function *f = get_called_function(fs);
     if(f == nullptr) {
         std::cout << "Function pointer doesn't map to existing function : " << to_string() << "\n";
         return nullptr;
@@ -664,7 +663,8 @@ bool OctalLiteral::replace_templated_types(TemplateMapping *mapping) {
 
 bool FunctionPointerLiteral::replace_templated_types(TemplateMapping *mapping) {
     for(int i = 0; i < param_types.size(); i++){
-        if(!param_types[i]->replace_templated_types(mapping)) return false;
+        if(auto x = mapping->find_mapped_type(param_types[i])) param_types[i] = x;
+        else if(!param_types[i]->replace_templated_types(mapping)) return false;
     }
     return true;
 }

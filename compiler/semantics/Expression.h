@@ -65,6 +65,7 @@ struct ExprNode {
 
 //Type* is just a placeholder for a variable of that type. It's just used for type conversion purposes. 
 //if there is a Type* and it tries to emit_asm(), it will assert(false). 
+//a Type* is a l-value if it's a ReferenceType
 struct ExprPrimary : ExprNode {
     using val_t = std::variant<FunctionCall*, ConstructorCall*, OperatorCall*, Identifier*, Literal*, Expression*, Type*>;
     val_t val;

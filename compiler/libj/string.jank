@@ -13,6 +13,8 @@
 [__GLOBAL_FIRST__] u16 U16_MAX = $u16 -1;
 [__GLOBAL_FIRST__] u8 U8_MAX = $u8 -1;
 
+[__GLOBAL_FIRST__] i64 I64_MAX = $i64 0x7fffffffffffffff;
+[__GLOBAL_FIRST__] i64 I64_MIN = $i64 0xffffffffffffffff;
 [__GLOBAL_FIRST__] i32 I32_MAX = 2147483647;
 [__GLOBAL_FIRST__] i32 I32_MIN = -2147483647 - 1;
 
@@ -155,6 +157,17 @@ struct string {
             i = r;
         }
         return res;
+    }
+
+    //returns a new string that is this string with leading and trailing instances of delim removed
+    //if the string only consists of delim, returns an empty string
+    string strip(u8 delim) {
+        u64 l = 0x0;
+        while(l < this.size() && this[l] == delim) l ++;
+        if(l == this.size()) return new string();
+        u64 r = this.size();
+        while(r != 0x0 && this[r - 0x1] == delim) r --;
+        return this.substr(l, r - l);
     }
 }
 
@@ -404,6 +417,75 @@ u64 stou64(string s) {
             return $u64 -1;
         }
         ans = ans * $u64 10 + $u64 (c - '0');
+    }
+    return ans;
+}
+
+i64 stoi64(string s) {
+    //is string empty?
+    if(s.size() == $u64 0) {
+        errno = ERR_MALFORMED;
+        return $i64 -1;
+    }
+    u64 ptr = $u64 0;
+
+    //is negative?
+    i32 is_neg = 0;
+    if(s[ptr] == '-') {
+        is_neg = 1;
+        ptr ++;
+    }
+
+    //are there no digits?
+    if(s.size() == ptr) {
+        errno = ERR_MALFORMED;
+        return $i64 -1;
+    }
+
+    //skip leading '0's
+    while(ptr != s.size() && s[ptr] == '0') {
+        ptr ++;
+    }
+
+    i64 ans = $i64 0;
+    if(is_neg) {
+        ans = - $i64 (s[ptr] - '0');
+        for(i32 i = $i32 ptr + 1; i < $i32 s.size(); i++){
+            u8 c = s[i];
+
+            //is next char a digit?
+            if(c < '0' || c > '9') {
+                errno = ERR_MALFORMED;
+                return $i64 -1;
+            }
+            i64 dig = $i64 (c - '0');
+
+            //check for underflow
+            if(ans < (I64_MIN + dig) / $i64 10) {
+                errno = ERR_RANGE;
+                return $i64 -1;
+            }
+            ans = (ans * $i64 10) - dig;
+        }
+    }
+    else {
+        for(i32 i = $i32 ptr; i < $i32 s.size(); i++){
+            u8 c = s[i];
+
+            //is next char a digit?
+            if(c < '0' || c > '9') {
+                errno = ERR_MALFORMED;
+                return $i64 -1;
+            }
+            i64 dig = $i64 (c - '0');
+
+            //check for overflow
+            if(ans > (I64_MAX - dig) / $i64 10) {
+                errno = ERR_RANGE;
+                return $i64 -1;
+            }
+            ans = (ans * $i64 10) + dig;
+        }
     }
     return ans;
 }

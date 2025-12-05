@@ -657,6 +657,16 @@ Function* get_called_function(FunctionCall *fc) {
     return f;
 }
 
+//just turns the signature into a corresponding call 
+Function* get_called_function(FunctionSignature *fs) {
+    std::vector<Expression*> args;
+    for(int i = 0; i < fs->input_types.size(); i++) {
+        args.push_back(new Expression(new ExprPrimary(fs->input_types[i]->make_copy())));
+    }
+    FunctionCall *fc = new FunctionCall(std::nullopt, fs->id->make_copy(), args);
+    return get_called_function(fc);
+}
+
 //this doesn't handle the cast operator, there are some special rules with that one. 
 Operator* get_called_operator(OperatorCall *oc) {
     // std::cout << "GET CALLED OPERATOR : " << oc->to_string() << "\n";

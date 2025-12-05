@@ -110,6 +110,7 @@ bool is_constructor_declared(ConstructorSignature *cs);
 bool is_destructor_declared(Type *t);
 Function* get_function(FunctionSignature *fs);  
 Function* get_called_function(FunctionCall *fc);
+Function* get_called_function(FunctionSignature *fs);
 Operator* get_operator(OperatorSignature *os);
 Operator* get_called_operator(OperatorCall *oc);
 Operator* get_called_operator(std::optional<Expression*> left, std::string op, std::optional<Expression*> right);

@@ -1,0 +1,60 @@
+#include <random>;
+
+//sorts the vector a using quick sort
+//cmp(x, y) should return 1 if x < y and 0 otherwise
+template<T>
+void sort(vector<T>& a, fn<i32(T, T)> cmp) {
+    _sort(a, cmp, 0x0, a.size());
+}
+
+template<T> 
+void _sort(vector<T>& a, fn<i32(T, T)> cmp, u64 l, u64 r) {
+    assert(r >= l, "_sort() : range should always be valid");
+    if(r - l <= 0x1) {
+        //base case
+        return;
+    }
+
+    //pick random pivot element
+    T p = a[l + (rand_u64() % (r - l))];
+
+    //partition segment
+    //invariant : 
+    // - all elements in segment [l, ml) are < p
+    // - all elements in segment [mr, r) are > p
+    // - i \in [ml, mr)
+    //when finished, should be the case that all elements in [ml, mr) equal p
+    u64 ml = l;
+    u64 mr = r;
+    for(u64 i = l; i < mr;) {
+        if(cmp#(a[i], p)) {
+            //a[i] < p
+            if(ml != i) {
+                //swap a[i], a[ml]
+                T tmp = a[i];
+                a[i] = a[ml];
+                a[ml] = tmp;
+            }
+            ml ++;
+            i ++;
+        }
+        else if(cmp#(p, a[i])) {
+            //a[i] > p
+            mr --;
+            if(i != mr) {
+                //swap a[i], a[mr]
+                T tmp = a[i];
+                a[i] = a[mr];
+                a[mr] = tmp;
+            }
+        }
+        else {
+            //a[i] == p
+            i ++;
+        }
+    }
+
+    //recurse
+    _sort(a, cmp, l, ml);
+    _sort(a, cmp, mr, r);
+}
