@@ -1,30 +1,63 @@
-#include <iostream>;
-#include <random>;
 #include <assert>;
-#include <string>;
-#include <vector>;
-#include <pair>;
 
-//replace templated type inside function pointer literal bug
-//was failing to replace templated types contained on surface level of function pointer literal
-
-typedef i64 ll;
-typedef i32 int;
-
-i32 ll_cmp(ll a, ll b) {
-    return a < b;
-}
-
-template<T>
-i32 do_cmp(T& a, T& b, fn<i32(T&, T&)> cmp) {
-    return cmp#(a, b);
-}
+//we can interleave arrays and pointers so here are some array + pointer semantics:
+// T*[a] : array of T* of size a
+// T[a]* : pointer to T array of size a
+// T*[a][b] : two dimensional array of T* of size a * b
+// T[a]*[b] : array of pointers to arrays of type T[a]
+// T[a][b]*[c][d] : two dimensional array of pointers to arrays of type T[a][b]
+// T[a]*[b][c]*[d] : array of pointers to arrays of type T[a]*[b][c]
+//note that for T[a][b]*[c][d] foo, foo[0] would be of type T[a][b]*[d]
 
 i32 main() {
 
-    fn<i32(ll, ll)> cmp = #<ll_cmp(ll, ll)>;
+    {
+        i32*[3] arr_ptr_1d;
+        assert(sizeof(arr_ptr_1d) == 3 * sizeof(i32*), "T*[a] size should be a * sizeof(T*)");
+        assert(sizeof(arr_ptr_1d[0]) == sizeof(i32*),  "T*[a][0] should have type T*");
+    }
 
-    cout << "test passed\n";
+    {
+        i32[3]* ptr_to_arr_1d;
+        assert(sizeof(ptr_to_arr_1d) == sizeof(i32*),           "T[a]* should be pointer-sized");
+        assert(sizeof(ptr_to_arr_1d[0]) == 3 * sizeof(i32),     "T[a]*[0] should be T[a]");
+    }
+
+    {
+        i32*[3][4] arr_ptr_2d;
+        assert(sizeof(arr_ptr_2d) == 3 * 4 * sizeof(i32*),      "T*[a][b] size should be a*b*sizeof(T*)");
+        assert(sizeof(arr_ptr_2d[0]) == 4 * sizeof(i32*),       "T*[a][b][0] should be T*[b]");
+        assert(sizeof(arr_ptr_2d[0][0]) == sizeof(i32*),        "T*[a][b][0][0] should be T*");
+    }
+
+    {
+        i32[3]*[4] arr_of_ptr_to_arr;
+        assert(sizeof(arr_of_ptr_to_arr) == 4 * sizeof(i32*),       "T[a]*[b] should be b*sizeof(pointer)");
+        assert(sizeof(arr_of_ptr_to_arr[0]) == sizeof(i32*),        "T[a]*[b][0] should have type T[a]* (pointer)");
+        assert(sizeof(arr_of_ptr_to_arr[0][0]) == 3 * sizeof(i32),  "T[a]*[b][0][0] should be T[a]");
+    }
+
+    {
+        i32[3][4]*[2][5] foo;
+        assert(sizeof(foo) == 2 * 5 * sizeof(i32*),             "T[a][b]*[c][d] should be c*d*sizeof(pointer)");
+        assert(sizeof(foo[0]) == 5 * sizeof(i32*),              "foo[0] should be array [d] of pointers");
+        assert(sizeof(foo[0][0]) == sizeof(i32*),               "foo[0][0] should be pointer-sized");
+        assert(sizeof(foo[0][0][0]) == 3 * 4 * sizeof(i32),     "foo[0][0][0] should be T[a][b]");
+        assert(sizeof(foo[0][0][0][0]) == 4 * sizeof(i32),      "foo[0][0][0][0] should be T[b]");
+        assert(sizeof(foo[0][0][0][0][0]) == sizeof(i32),       "foo[0][0][0][0][0] should be T");
+    }
+
+    {
+        i32[3]*[4][2]*[5] bar;
+        assert(sizeof(bar) == 5 * sizeof(i32*),                 "T[a]*[b][c]*[d] outer array size should be d*sizeof(pointer)");
+        assert(sizeof(bar[0]) == sizeof(i32*),                  "bar[0] should be pointer-sized");
+        assert(sizeof(bar[0][0]) == 4 * 2 * sizeof(i32*),       "bar[0][0] should be T[a]*[b][c] (array of pointers)");
+        assert(sizeof(bar[0][0][0]) == 2 * sizeof(i32*),        "bar[0][0][0] should be T[a]*[c]");
+        assert(sizeof(bar[0][0][0][0]) == sizeof(i32*),         "bar[0][0][0][0] should be T[a]*");
+        assert(sizeof(bar[0][0][0][0][0]) == 3 * sizeof(i32),   "bar[0][0][0][0][0] should be T[a]");
+    }
+
+    cout << "tests passed\n";
 
     return 0;
 }

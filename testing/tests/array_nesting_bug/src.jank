@@ -1,0 +1,109 @@
+#include <assert>;
+
+// 12/18/2025
+
+//bug with how I was nesting arrays when converting them from the parser
+
+//an array T[A][B] semantically means we have A copies of T[B], but it was instead getting 
+//turned into B copies of T[A], as I was nesting these from left to right. 
+
+i32[6][3] build_pattern_2d() {
+    i32[6][3] pat;
+    for(i32 i = 0; i < 6; i++) {
+        for(i32 j = 0; j < 3; j++) {
+            pat[i][j] = (((i + 1) * 127) + ((j + 1) * 319)) % (1007);
+        }
+    }
+
+    for(u64 i = 0x0; i < 0x6; i++) {
+        for(u64 j = 0x0; j < 0x3; j++) {
+            cout << pat[i][j] << " ";
+        }
+        cout << "\n";
+    }
+    cout << "\n";
+
+    return pat;
+}
+
+i32[6] build_pattern_1d() {
+    i32[6] pat;
+    for(i32 i = 0; i < 6; i++) {
+        pat[i] = 1 << i;
+    }
+
+    for(i32 i = 0; i < 6; i++) {
+        cout << pat[i] << " ";
+    }
+    cout << "\n";
+
+    return pat;
+}
+
+struct A {
+    i32 i;
+    i32 j;
+
+    A() {
+        this.i = -1;
+        this.j = -1;
+    }
+
+    A(i32 i, i32 j) {
+        this.i = i;
+        this.j = j;
+    }
+
+    A(A& other) {
+        this.i = other.i;
+        this.j = other.j;
+    }
+
+    ~A() {
+        
+    }
+}
+
+A[6][2] build_pattern_A() {
+    A[6][2] pat;
+    for(i32 i = 0; i < 6; i++) {
+        for(i32 j = 0; j < 2; j++) {
+            pat[i][j] = new A(i, j);
+        }
+    }
+    return pat;
+}
+
+i32 main() {
+
+    {
+        A[6][2] pat = build_pattern_A();
+        for(i32 i = 0; i < 6; i++) {
+            for(i32 j = 0; j < 2; j++) {
+                if(pat[i][j].i != i || pat[i][j].j != j) {
+                    cout << "BAD A : " << i << " " << j << "\n";
+                }
+            }
+        }
+    }
+
+    {
+        i32[6][3] pat = build_pattern_2d();
+
+        for(u64 i = 0x0; i < 0x6; i++) {
+            for(u64 j = 0x0; j < 0x3; j++) {
+                cout << pat[i][j] << " ";
+            }
+            cout << "\n";
+        }
+        cout << "\n";
+    }
+
+    {
+        i32[6] pat = build_pattern_1d();
+        for(u64 i = 0x0; i < 0x6; i++) cout << pat[i] << " ";
+        cout << "\n";
+    }
+
+    return 0;
+}

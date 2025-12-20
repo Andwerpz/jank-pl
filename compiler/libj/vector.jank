@@ -36,6 +36,22 @@ struct vector {
         for(u64 i = 0x0; i < this.sz; i++) new (@this.arr[i]) T(default);
     }
 
+    vector(u64 n) {
+        this.cap = n;
+        this.sz = n;
+        if(this.cap == $u64 0) this.cap = $u64 1;
+        this.arr = $T* malloc(sizeof(T) * this.cap);
+        for(u64 i = 0x0; i < this.sz; i++) new (@this.arr[i]) T();
+    }
+
+    vector(i32 n) {
+        this.cap = $u64 n;
+        this.sz = $u64 n;
+        if(this.cap == $u64 0) this.cap = $u64 1;
+        this.arr = $T* malloc(sizeof(T) * this.cap);
+        for(u64 i = 0x0; i < this.sz; i++) new (@this.arr[i]) T();
+    }
+
     ~vector() {
         for(u64 i = 0x0; i < this.sz; i++) this.arr[i].~();
         free($void* this.arr, this.cap * sizeof(T));
@@ -110,6 +126,18 @@ T& operator[](vector<T>& a, u64 ind) {
 }
 
 template<T>
+T& operator[](vector<T>& a, u32 ind) {
+    return a.arr[ind];
+}
+
+template<T>
+T& operator[](vector<T>& a, i64 ind) {
+    return a.arr[ind];
+}
+
+template<T>
 T& operator[](vector<T>& a, i32 ind) {
     return a.arr[ind];
 }
+
+

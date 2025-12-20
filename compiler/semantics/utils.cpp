@@ -528,17 +528,24 @@ bool is_templated_type_well_formed(TemplatedType *t) {
     for(int i = 0; i < t->template_types.size(); i++){
         Type *nt = t->template_types[i];
         assert(nt != nullptr);
-        if(dynamic_cast<ReferenceType*>(nt)) return false;
-        while(dynamic_cast<PointerType*>(nt)) {
-            nt = dynamic_cast<PointerType*>(nt)->type;
+        while(true) {
+            if(dynamic_cast<ReferenceType*>(nt)) return false;
+            else if(auto x = dynamic_cast<PointerType*>(nt)) {
+                nt = x->type;
+            }
+            else if(auto x = dynamic_cast<BaseType*>(nt)) {
+                if(!is_basetype_declared(x)) return false;
+                break;
+            }
+            else if(auto x = dynamic_cast<TemplatedType*>(nt)) {
+                if(!is_templated_type_well_formed(x)) return false;
+                break;
+            }
+            else if(auto x = dynamic_cast<ArrayType*>(nt)) {
+                nt = x->type;
+            }
+            else assert(false);
         }
-        if(auto x = dynamic_cast<BaseType*>(nt)) {
-            if(!is_basetype_declared(x)) return false;
-        }
-        else if(auto x = dynamic_cast<TemplatedType*>(nt)) {
-            if(!is_templated_type_well_formed(x)) return false;
-        }
-        else assert(false);
     }
     return true;
 }
@@ -1468,7 +1475,10 @@ bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_
 
     //get struct definition
     StructDefinition *sd = get_struct_definition(t);
-    assert(sd != nullptr);
+    if(sd == nullptr) {
+        std::cout << "Could not find struct definition : " << t->to_string() << std::endl;
+        assert(false);
+    }
 
     type_stack.push_back(t);
 
@@ -1529,12 +1539,14 @@ StructLayout* get_struct_layout(Type *t) {
     if(auto atype = dynamic_cast<ArrayType*>(t)) {
         StructLayout *nsl = nullptr;
         if(is_type_primitive(atype->type)) {
+            //directly generate struct layout
             nsl = new StructLayout({}, {}, atype->type->calc_size() * atype->amt);
         }
         else {
-            if(get_struct_layout(atype->type)) {
-                nsl = new StructLayout({}, {}, atype->type->calc_size() * atype->amt);
-            }
+            //generate struct layout for underlying type 
+            construct_struct_layout(atype->type);
+            StructLayout *sl = get_struct_layout(atype->type);
+            if(sl != nullptr) nsl = new StructLayout({}, {}, atype->type->calc_size() * atype->amt);
         }
 
         if(nsl != nullptr) {

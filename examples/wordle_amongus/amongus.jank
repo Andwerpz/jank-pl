@@ -1,0 +1,266 @@
+#include <iostream>;
+#include <string>;
+#include <vector>;
+
+i32 VCORRECT    = 1;
+i32 VEXISTS     = 2;
+i32 VNOEXIST    = 3;
+
+i32[5] calc_verdict(string& sol, string& g) {
+    assert(sol.size() == 0x5 && g.size() == 0x5, "calc_verdict() : checking size"); 
+    for(i32 i = 0; i < 5; i++) {
+        assert('a' <= sol[i] && sol[i] <= 'z', "calc_verdict() : sol must be lowercase a-z");
+        assert('a' <= g[i]   && g[i]   <= 'z', "calc_verdict() : g must be lowercase a-z");
+    }
+    i32[26] sf;
+    for(i32 i = 0; i < 26; i++) {
+        sf[i] = 0;
+    }
+    i32[5] ret;
+    for(i32 i = 0; i < 5; i++) {
+        sf[sol[i] - 'a'] ++;
+        ret[i] = 0;
+    }
+    for(i32 i = 0; i < 5; i++) {
+        if(sol[i] == g[i]) {
+            ret[i] = VCORRECT;
+            sf[sol[i] - 'a'] --;
+        }
+    }
+    for(i32 i = 0; i < 5; i++) {
+        if(ret[i] == VCORRECT) continue;
+        if(sf[g[i] - 'a'] != 0) {
+            sf[g[i] - 'a'] --;
+            ret[i] = VEXISTS;
+        }
+        else ret[i] = VNOEXIST;
+    }
+    return ret;
+}
+
+i32 find_amongus(string& sol, vector<string>& g, i32[6][5]& pattern, string[6]& out_ans) {
+    //find words matching the pattern
+    for(u64 i = 0x0; i < 0x6; i++) {
+        cout.flush();
+        i32 found = 0;
+        for(u64 j = 0x0; j < g.size(); j++) {
+            i32 is_valid = 1;
+            i32[5] v = calc_verdict(sol, g[j]);
+            for(u64 k = 0x0; k < 0x5; k++) {
+                i32 cv = v[k];
+                if(cv != pattern[i][k]) is_valid = 0;
+            }
+            if(is_valid) {
+                found = 1;
+                out_ans[i] = g[j];
+                break;
+            }
+        }
+        if(!found) {
+            cout.flush();
+            return 1;
+        }
+    }
+    return 0;
+}
+
+i32 verdict_from_char(u8 ch) {
+    if(ch == 'G') return VCORRECT;
+    if(ch == 'Y') return VEXISTS;
+    if(ch == '.') return VNOEXIST;
+    assert(0, "verdict_from_char() : invalid pattern char");
+    return 0;
+}
+
+i32[6][5] build_pattern(string[6]& rows) {
+    i32[6][5] pat;
+    for(u64 i = 0x0; i < 0x6; i++) {
+        assert(rows[i].size() == 0x5, "build_pattern() : each row must be length 5");
+        for(u64 j = 0x0; j < 0x5; j++) {
+            pat[i][j] = verdict_from_char(rows[i][j]);
+        }
+    }
+    return pat;
+}
+
+void flip_pattern(i32[6][5] pat, vector<i32[6][5]>& pats) {
+    i32[6][5] ret;
+    for(u64 i = 0x0; i < 0x6; i++) {
+        for(u64 j = 0x0; j < 0x5; j++) {
+            ret[i][0x4 - j] = pat[i][j];
+        }
+    }
+    pats.push_back(ret);
+}
+
+// VCORRECT -> VEXISTS -> VNOEXIST
+void permute_pattern(i32[6][5] pat, vector<i32[6][5]>& pats) {
+    i32[6][5] ret = pat;
+    for(u64 __ = 0x0; __ < 0x2; __++) {
+        for(u64 _ = 0x0; _ < 0x3; _++) {
+            i32[6][5] nret;
+            for(u64 i = 0x0; i < 0x6; i++) {
+                for(u64 j = 0x0; j < 0x5; j++) {
+                    if(ret[i][j] == VCORRECT) nret[i][j] = VEXISTS;
+                    else if(ret[i][j] == VEXISTS) nret[i][j] = VNOEXIST;
+                    else if(ret[i][j] == VNOEXIST) nret[i][j] = VCORRECT;
+                    else assert(0, "permute_pattern() : unexpected verdict");
+                }
+            }
+            ret = nret;
+            pats.push_back(ret);
+        }
+        {
+            i32[6][5] nret;
+            for(u64 i = 0x0; i < 0x6; i++) {
+                for(u64 j = 0x0; j < 0x5; j++) {
+                    if(ret[i][j] == VCORRECT) nret[i][j] = VNOEXIST;
+                    else if(ret[i][j] == VEXISTS) nret[i][j] = VEXISTS;
+                    else if(ret[i][j] == VNOEXIST) nret[i][j] = VCORRECT;
+                    else assert(0, "permute_pattern() : unexpected verdict");
+                }
+            }
+            ret = nret;
+        }
+    }
+}
+
+u8 ANSI_ESC = $u8 0x1B;
+string ansi_reset() { 
+    string ret = " [0m";
+    ret[0] = ANSI_ESC;
+    return ret;
+}
+
+string ansi_green() { 
+    string ret = " [032m";
+    ret[0] = ANSI_ESC;
+    return ret;
+} 
+string ansi_yellow(){ 
+    string ret = " [033m";
+    ret[0] = ANSI_ESC;
+    return ret; 
+}
+string ansi_white()  { 
+    string ret = " [037m";
+    ret[0] = ANSI_ESC;
+    return ret;
+} 
+string ansi_for_verdict(i32 v) {
+    if(v == VCORRECT) return ansi_green();
+    if(v == VEXISTS)  return ansi_yellow();
+    return ansi_white();
+}
+
+void print_guesses(string& sol, string[6]& ans) {
+    for(u64 i = 0x0; i < 0x6; i++) {
+        i32[5] v = calc_verdict(sol, ans[i]);
+        for(u64 j = 0x0; j < 0x5; j++) {
+            u8 ch = ans[i][j];
+
+            // display as uppercase
+            u8 out = ch;
+            if('a' <= out && out <= 'z') out = out + ('A' - 'a');
+
+            cout << ansi_for_verdict(v[j]) << out << ansi_reset();
+        }
+        cout << "\n";
+    }
+}
+
+i32 main(u64 argc, u8** argv) {
+    if(argc < 0x2) {
+        cout << "Wordle amongus generator\n";
+        cout << "Input the answer to the wordle as a commandline argument\n";
+        return 1;
+    }
+
+    string sol = new string(argv[1]);
+    if(sol.size() != 0x5) {
+        cout << "Word must be 5 letters long\n";
+        return 1;
+    }
+
+    //make sure that word only has letters
+    for(u64 i = 0x0; i < sol.size(); i++) {
+        if('a' <= sol[i] && sol[i] <= 'z') continue;
+        if('A' <= sol[i] && sol[i] <= 'Z') continue;
+        cout << "Word must only consist of upper/lower case letters\n";
+        return 1;
+    }
+
+    //normalize to lower case
+    for(u64 i = 0x0; i < sol.size(); i++) {
+        if('A' <= sol[i] && sol[i] <= 'Z') sol[i] += 'a' - 'A';
+    }   
+
+    //read in all words from guess list
+    vector<string> g;
+    {   
+        i32 fd = sys_open("./guess_list.txt", O_RDONLY, $mode_t 0);
+        assert(fd >= 0, "opening guess list should succeed");
+        istream fin = new istream(fd);
+        string line = fin.next_line();
+        while(!fin.eof()) {
+            assert(line.size() == 0x5, "guesses should all be length 5");
+            g.push_back(line);
+            line = fin.next_line();
+        }
+    }
+
+    //make sure sol is in guess list
+    g.push_back(sol);
+
+    //build amongus patterns
+    vector<i32[6][5]> patterns;
+    {
+        string[6] rows;
+        rows[0] = ".YYYY";
+        rows[1] = "YYGGG";
+        rows[2] = "YYGGG";
+        rows[3] = "YYYYY";
+        rows[4] = ".YYYY";
+        rows[5] = ".Y..Y";
+        patterns.push_back(build_pattern(rows));
+    }
+
+    {
+        string[6] rows;
+        rows[0] = ".....";
+        rows[1] = ".YYY.";
+        rows[2] = "YYGG.";
+        rows[3] = "YYYY.";
+        rows[4] = ".Y.Y.";
+        rows[5] = "GGGGG";
+        patterns.push_back(build_pattern(rows));
+    }
+
+    for(u64 i = patterns.size(); i != 0x0; i--) {
+        flip_pattern(patterns[i - 0x1], patterns);
+    }
+    for(u64 i = patterns.size(); i != 0x0; i--) {
+        permute_pattern(patterns[i - 0x1], patterns);
+    }
+
+    string[6] ans;
+    i32 found = 0;
+    for(u64 i = 0x0; i < patterns.size(); i++) {
+        cout << "Trying pattern " << i << "\n";
+        cout.flush();
+
+        if(!find_amongus(sol, g, patterns[i], ans)) {
+            found = 1;
+
+            //print guesses 
+            print_guesses(sol, ans);
+            cout << "\n";
+        }
+    }
+    if(!found) {
+        cout << "Could not find amongus D:\n";
+        return 0;
+    }
+
+    return 0;
+}

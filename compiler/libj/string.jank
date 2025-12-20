@@ -237,6 +237,21 @@ string operator+(u8* a, string b) {
     return ret;
 }
 
+string& operator+=(string& a, string b) {
+    a = a + b;
+    return a;
+}
+
+string& operator+=(string& a, u8* b) {
+    a = a + b;
+    return a;
+}
+
+string& operator=(string& a, u8* b) {
+    a = new string(b);
+    return a;
+}
+
 string to_string(u64 x) {
     if(x == $u64 0) return new string("0");
     string ret = new string();

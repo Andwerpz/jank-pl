@@ -8,6 +8,63 @@ void* memcpy(void* dest, void* src, u64 count) {
     return dest;
 }
 
+//moves memory from dest to src
+//its fine if dest and src are overlapping
+void* memmove(void* dest, void* src, u64 bytes) {
+    if (dest == src || bytes == 0x0) return dest;
+
+    u8* d8 = $u8* dest;
+    u8* s8 = $u8* src;
+
+    // copy direction
+    if ($u64 d8 < $u64 s8) {    // forwards
+        // align to 8
+        while (($u64 d8 & 0x7) != 0x0 && bytes != 0x0) { 
+            d8[0] = s8[0];
+            d8 = $u8* ($u64 d8 + 0x1);
+            s8 = $u8* ($u64 s8 + 0x1);
+            bytes--; 
+        }
+
+        // copy 8 byte chunks
+        u64 n64 = bytes / 0x8;
+        u64* d = $u64* d8;
+        u64* s = $u64* s8;
+        for(u64 i = 0x0; i < n64; i++) d[i] = s[i];
+
+        // copy remainder of bytes
+        u64 rem = bytes % 0x8;
+        d8 = $u8* ($u64 d + n64 * sizeof(u64));
+        s8 = $u8* ($u64 s + n64 * sizeof(u64));
+        for(u64 i = 0x0; i < rem; i++) d8[i] = s8[i];
+    } 
+    else {                      // backwards
+        d8 = $u8* ($u64 d8 + bytes);
+        s8 = $u8* ($u64 s8 + bytes);
+
+        // align to 8
+        while(($u64 d8 & 0x7) != 0x0 && bytes != 0x0) { 
+            d8 = $u8* ($u64 d8 - 0x1);
+            s8 = $u8* ($u64 s8 - 0x1);
+            d8[0] = s8[0];
+            bytes--; 
+        }
+
+        // copy 8 byte chunks
+        u64 n64 = bytes / 0x8;
+        u64* d = $u64* d8;
+        u64* s = $u64* s8;
+        for(u64 i = 0x0; i < n64; i++) d[-(i + 0x1)] = s[-(i + 0x1)];
+
+        // copy remainder of bytes
+        u64 rem = bytes % 0x8;
+        d8 = $u8* (($u64 d - n64 * sizeof(u64)) - rem);
+        s8 = $u8* (($u64 s - n64 * sizeof(u64)) - rem);
+        for(u64 i = rem; i > 0x0; i--) d8[i - 0x1] = s8[i - 0x1];
+    }
+    return dest;
+}
+
 void* memset(void* ptr, i32 val, u64 n) {
     for(u64 i = $u64 0; i < n; i++) ($u8* ptr)[i] = $u8 val;
     return ptr;

@@ -20,8 +20,3 @@
 [__GLOBAL_FIRST__] i32 ERR_UNKNOWN      = 1000;     // for when i'm too lazy to put a proper error code
 [__GLOBAL_FIRST__] i32 ERR_RANGE        = 1001;
 [__GLOBAL_FIRST__] i32 ERR_MALFORMED    = 1002;
-
-string err_to_string(i32 code) {
-    //TODO
-    return new string(":3");
-}

@@ -1,0 +1,21 @@
+
+// small bug causing this to not compile
+// originally, when it tried to construct the struct layout for A, it needed to get the struct layout for B[4], 
+// which needs the struct layout for B, however the struct layout for B wasn't generated yet 
+
+// the fix is to make a call to construct_struct_layout() inside the special case catch inside get_struct_layout()
+// to ensure that the layout of the underlying type of an array is always generated in the case the underlying type is
+// not primitive. 
+
+struct A {
+    B[4] foo;
+}
+
+struct B {
+    i32 bar;
+}
+
+i32 main() {
+    cout << "this should compile\n";
+    return 0;
+}

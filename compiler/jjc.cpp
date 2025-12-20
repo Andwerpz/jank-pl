@@ -38,6 +38,7 @@
 #include <sys/stat.h>
 
 bool print_timing_info = false;
+bool no_default_includes = false;
 
 std::string compiler_dir;
 std::string cwd_dir;
@@ -130,6 +131,8 @@ int gen_asm(std::string src_path, char tmp_filename[]) {
             default_includes.push_back("syscall");
             default_includes.push_back("malloc");
         }
+        if(no_default_includes) default_includes.clear();
+
         for(std::string s : default_includes) {
             std::string npath = libj_to_absolute(s);
             to_parse.push(npath);
@@ -247,6 +250,7 @@ int main(int argc, char* argv[]) {
         std::cout << "-o <out_filepath>\n";
         std::cout << "-k : kernel mode\n";
         std::cout << "-ad : assembly debug mode (prints some helpful (?) comments in the generated assembly)\n";
+        std::cout << "-nodefincl : no default includes\n";
         return 1;
     }
     int argptr = 1;
@@ -305,6 +309,9 @@ int main(int argc, char* argv[]) {
         }
         else if(arg == "-time") {
             print_timing_info = true;
+        }
+        else if(arg == "-nodefincl") {
+            no_default_includes = true;
         }
         else {
             std::cout << "Unrecognized commandline argument : " << arg << "\n";

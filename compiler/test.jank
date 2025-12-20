@@ -1,62 +1,63 @@
-#include <vector>;
-#include <deque>;
-#include <iostream>;
-#include <string>;
-#include <jstring>;
-#include <pair>;
-#include <sort>;
-typedef vector<i32> vi;
-typedef vector<vector<i32>> vvi;
-typedef i32 int;
-typedef i64 ll;
+#include <assert>;
 
-template<T, U>
-i32 pair_cmp(pair<T, U>& a, pair<T, U>& b) {
-    if(a.first != b.first) return a.first < b.first;
-    return a.second < b.second;
-}
-
-i32 ll_cmp(ll a, ll b) {
-    return a < b;
-}
-
-void solve_p1() {
-    // vector<pair<ll, int>> ev;
-    vector<ll> a;
-    // {
-    //     string line = cin.next_line();
-    //     while(!cin.eof()) {
-    //         vector<string> tok = line.split('-');
-    //         if(tok.size() == 0x2) {
-    //             ll l = stoi64(tok[0]);
-    //             ll r = stoi64(tok[1]);
-    //             r ++;
-    //             ev.push_back(new pair<ll, int>(l, 1));
-    //             ev.push_back(new pair<ll, int>(r, -1));
-    //         }
-    //         else {
-    //             ll x = stoi64(tok[0]);
-    //             a.push_back(x);
-    //         }
-    //     }
-    // }
-    // sort(ev, #<pair_cmp(pair<ll, int>&, pair<ll, int>&)>);
-    sort(a, #<ll_cmp(ll, ll)>);
-    // fn<i32(ll, ll)> cmp = #<ll_cmp(ll, ll)>;
-    // sort(a, cmp);
-
-}
-
-void solve_p2() {
-
-}
+//we can interleave arrays and pointers so here are some array + pointer semantics:
+// T*[a] : array of T* of size a
+// T[a]* : pointer to T array of size a
+// T*[a][b] : two dimensional array of T* of size a * b
+// T[a]*[b] : array of pointers to arrays of type T[a]
+// T[a][b]*[c][d] : two dimensional array of pointers to arrays of type T[a][b]
+// T[a]*[b][c]*[d] : array of pointers to arrays of type T[a]*[b][c]
+//note that for T[a][b]*[c][d] foo, foo[0] would be of type T[a][b]*[d]
 
 i32 main() {
 
-    i32 fd = sys_open("./cafeteria.in", O_RDONLY, $mode_t 0);
-    cin = new istream(fd);
+    {
+        i32*[3] arr_ptr_1d;
+        assert(sizeof(arr_ptr_1d) == 0x3 * sizeof(i32*),            "T*[a] size should be a * sizeof(T*)");
+        assert(sizeof(arr_ptr_1d[0]) == sizeof(i32*),               "T*[a][0] should have type T*");
+    }
 
-    solve_p1();
+    {
+        i32[3]* ptr_to_arr_1d;
+        assert(sizeof(ptr_to_arr_1d) == sizeof(i32*),               "T[a]* should be pointer-sized");
+        assert(sizeof(ptr_to_arr_1d[0]) == 0x3 * sizeof(i32),       "T[a]*[0] should be T[a]");
+    }
+
+    {
+        i32*[3][4] arr_ptr_2d;
+        assert(sizeof(arr_ptr_2d) == 0x3 * 0x4 * sizeof(i32*),      "T*[a][b] size should be a*b*sizeof(T*)");
+        assert(sizeof(arr_ptr_2d[0]) == 0x4 * sizeof(i32*),         "T*[a][b][0] should be T*[b]");
+        assert(sizeof(arr_ptr_2d[0][0]) == sizeof(i32*),            "T*[a][b][0][0] should be T*");
+    }
+
+    {
+        i32[3]*[4] arr_of_ptr_to_arr;
+        assert(sizeof(arr_of_ptr_to_arr) == 0x4 * sizeof(i32*),     "T[a]*[b] should be b*sizeof(pointer)");
+        assert(sizeof(arr_of_ptr_to_arr[0]) == sizeof(i32*),        "T[a]*[b][0] should have type T[a]* (pointer)");
+        assert(sizeof(arr_of_ptr_to_arr[0][0]) == 0x3 * sizeof(i32),"T[a]*[b][0][0] should be T[a]");
+    }
+
+    {
+        i32[3][4]*[2][5] foo;
+        assert(sizeof(foo) == 0x2 * 0x5 * sizeof(i32*),             "T[a][b]*[c][d] should be c*d*sizeof(pointer)");
+        assert(sizeof(foo[0]) == 0x5 * sizeof(i32*),                "foo[0] should be array [d] of pointers");
+        assert(sizeof(foo[0][0]) == sizeof(i32*),                   "foo[0][0] should be pointer-sized");
+        assert(sizeof(foo[0][0][0]) == 0x3 * 0x4 * sizeof(i32),     "foo[0][0][0] should be T[a][b]");
+        assert(sizeof(foo[0][0][0][0]) == 0x4 * sizeof(i32),        "foo[0][0][0][0] should be T[b]");
+        assert(sizeof(foo[0][0][0][0][0]) == sizeof(i32),           "foo[0][0][0][0][0] should be T");
+    }
+
+    {
+        i32[3]*[4][2]*[5] bar;
+        assert(sizeof(bar) == 0x5 * sizeof(i32*),                   "T[a]*[b][c]*[d] outer array size should be d*sizeof(pointer)");
+        assert(sizeof(bar[0]) == sizeof(i32*),                      "bar[0] should be pointer-sized");
+        assert(sizeof(bar[0][0]) == 0x4 * 0x2 * sizeof(i32*),       "bar[0][0] should be T[a]*[b][c] (array of pointers)");
+        assert(sizeof(bar[0][0][0]) == 0x2 * sizeof(i32*),          "bar[0][0][0] should be T[a]*[c]");
+        assert(sizeof(bar[0][0][0][0]) == sizeof(i32*),             "bar[0][0][0][0] should be T[a]*");
+        assert(sizeof(bar[0][0][0][0][0]) == 0x3 * sizeof(i32),     "bar[0][0][0][0][0] should be T[a]");
+    }
+
+    cout << "tests passed\n";
 
     return 0;
 }

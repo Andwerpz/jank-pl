@@ -260,13 +260,19 @@ Type* Type::convert(parser::templated_type *t) {
     for(int i = 0; i < t->t2.size(); i++){
         if(t->t2[i]->is_b0) {   //pointer
             res = new PointerType(res);
+            continue;
         }
-        else if(t->t2[i]->is_b1) {  //array
-            IntegerLiteral *ilit = IntegerLiteral::convert(t->t2[i]->t1->t1);
+        //we want our arrays to be nested from right to left, the parser parses them from left to right
+        //find the maximal chunk of arrays, reverse and nest them.
+        assert(t->t2[i]->is_b1);    //array
+        int r = i;
+        while(r != t->t2.size() && t->t2[r]->is_b1) r ++;
+        for(int j = r - 1; j >= i; j--) {
+            IntegerLiteral *ilit = IntegerLiteral::convert(t->t2[j]->t1->t1);
             int amt = ilit->val;
             res = new ArrayType(res, amt);
-        }
-        else assert(false);
+        }   
+        i = r - 1;
     }
     return res;
 }

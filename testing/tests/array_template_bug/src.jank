@@ -1,0 +1,34 @@
+#include <assert>;
+
+// 12/18/2025
+
+//there was a bug where I couldn't place primitive arrays within templated types. 
+//it was due to not handling array types when checking if a templated type is well formed
+
+template<T>
+struct A {
+    T foo;
+}
+
+template<T> 
+void do_test(T foo) {
+    A<T> a;
+    T bar;
+    a.foo = bar;
+}
+
+i32 main() {
+    
+    A<i32[5]> a;
+    i32[5] bar;
+    for(i32 i = 0; i < 5; i++) bar[i] = i * i + i + 5;
+    a.foo = bar;
+    for(i32 i = 0; i < 5; i++) assert(a.foo[i] == bar[i]);
+
+    do_test(new i32[5][5]());
+    do_test(new A<i32[5][5]>());
+
+    cout << "test passed\n";
+
+    return 0;
+}
