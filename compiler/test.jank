@@ -1,5 +1,6 @@
 #include <assert>;
 
+//array + pointer semantics testing suite
 //we can interleave arrays and pointers so here are some array + pointer semantics:
 // T*[a] : array of T* of size a
 // T[a]* : pointer to T array of size a

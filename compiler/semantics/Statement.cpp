@@ -381,7 +381,7 @@ bool BreakStatement::is_well_formed() {
 bool ContinueStatement::is_well_formed() {
     // - are we inside a loop?
     if(loop_stack.size() == 0) {
-        std::cout << "Break statement must be inside a loop\n";
+        std::cout << "Continue statement must be inside a loop\n";
         return false;
     }
 

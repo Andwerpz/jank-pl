@@ -898,11 +898,15 @@ Variable* get_variable(Identifier *id) {
     return nullptr;
 }
 
+//declaring a new concrete (no template variables) version of a struct
+//if the struct doesn't have any templates, it may already be declared
 bool add_struct_type(StructDefinition *sd) {
     assert(sd != nullptr);
     Type *t = sd->type;
-    if(is_type_declared(t)) return false;
-    declared_types.push_back(t);
+    if(!is_type_declared(t)) {
+        assert(!(dynamic_cast<BaseType*>(t)));  //type should not be a BaseType
+        declared_types.push_back(t);
+    }
     declared_structs.push_back(sd);
 
     //add all functions and constructors
@@ -990,6 +994,7 @@ bool add_primitive_basetype(BaseType *t) {
 bool add_basetype(BaseType *t) {
     assert(t != nullptr);
     if(is_basetype_declared(t)) return false;
+    declared_types.push_back(t);
     declared_basetypes.push_back(t);
     return true;
 }
