@@ -17,7 +17,7 @@
 
 ## Setup 
 
-Tested on WSL. Make sure you have `gcc` and `make` installed. 
+Tested on WSL. Make sure you have `gcc`, `g++`, and `make` installed. 
 
 ```bash
 cd compiler && make all      # Creates jjc.exe
