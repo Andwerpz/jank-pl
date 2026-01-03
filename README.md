@@ -50,6 +50,6 @@ See the `testing/tests/` directory for examples covering (hopefully) all languag
 
 ## Projects
 
-- **Wolf3D** - A raycasting demo showcasing graphics programming in jank (`wolf3D/`)
+- **Wolf3D** - A raycasting demo showcasing graphics programming in jank (`examples/wolf3D/`)
 - **jank-os** - A learning operating system built with jank ([GitHub](https://github.com/Andwerpz/jank-os))
 
