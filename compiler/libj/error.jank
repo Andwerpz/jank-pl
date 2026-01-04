@@ -6,15 +6,17 @@
 [__GLOBAL_FIRST__] i32 errno = 0;
 
 // linux error codes
-[__GLOBAL_FIRST__] i32 ERR_BADF         = 9;        // bad file descriptor
-[__GLOBAL_FIRST__] i32 ERR_CHILD        = 10;       // no child processes
-[__GLOBAL_FIRST__] i32 ERR_AGAIN        = 11;       // try again
-[__GLOBAL_FIRST__] i32 ERR_ACCES        = 13;       // permission denied
-[__GLOBAL_FIRST__] i32 ERR_FAULT        = 14;       // access fault
-[__GLOBAL_FIRST__] i32 ERR_NOTDIR       = 20;       // not a directory
-[__GLOBAL_FIRST__] i32 ERR_INVAL        = 22;       // invalid argument
-[__GLOBAL_FIRST__] i32 ERR_ENFILE       = 23;       // file table overflow
-[__GLOBAL_FIRST__] i32 ERR_PIPE         = 32;       // broken pipe (error related to pipe)
+[__GLOBAL_FIRST__] i32 ERR_BADF                 = 9;        // bad file descriptor
+[__GLOBAL_FIRST__] i32 ERR_CHILD                = 10;       // no child processes
+[__GLOBAL_FIRST__] i32 ERR_AGAIN                = 11;       // try again
+[__GLOBAL_FIRST__] i32 ERR_ACCES                = 13;       // permission denied
+[__GLOBAL_FIRST__] i32 ERR_FAULT                = 14;       // access fault
+[__GLOBAL_FIRST__] i32 ERR_NOTDIR               = 20;       // not a directory
+[__GLOBAL_FIRST__] i32 ERR_INVAL                = 22;       // invalid argument
+[__GLOBAL_FIRST__] i32 ERR_ENFILE               = 23;       // file table overflow
+[__GLOBAL_FIRST__] i32 ERR_PIPE                 = 32;       // broken pipe (error related to pipe)
+[__GLOBAL_FIRST__] i32 ERR_ESOCKTNOSUPPORT      = 94;       // Socket type not supported
+[__GLOBAL_FIRST__] i32 ERR_EAFNOSUPPORT         = 97;       // Address family not supported by protocol
 
 // jank error codes
 [__GLOBAL_FIRST__] i32 ERR_UNKNOWN      = 1000;     // for when i'm too lazy to put a proper error code
