@@ -1,0 +1,9 @@
+#include <assert>;
+#include <iostream>;
+
+i32 main() {
+
+    cout << "tests passed\n";
+
+    return 0;
+}
