@@ -159,3 +159,29 @@ struct termios {
 [__GLOBAL_FIRST__] u64 TTY_VTIME  = $u64 5;         //timeout in deciseconds for non-canonical read
 [__GLOBAL_FIRST__] u64 TTY_VMIN   = $u64 6;         //minimum number of characters for non-canonical read
 
+// the sockaddr_in and the sockaddr are the same size so we can cast the more
+// general sockaddr struct to the more specific sockaddr_in struct
+// the address family will always(?) be the first 2 bytes for both.
+// we can support more address families this way.
+// all the fields here will be in cpu order (little endian)
+
+struct sockaddr {
+    u16 sa_family;      // address family
+    u8[14] sa_data;     // general data (to be casted to a more specific sockaddr struct type)
+}
+
+struct sockaddr_in {
+    u16 sin_family;     // address family
+    u16 sin_port;       // port
+    u32 sin_addr;       // ipv4 address
+    u8[8] sin_zero;     // padding
+}
+
+[__GLOBAL_FIRST__] u16 AF_INET = $u16 2;
+
+[__GLOBAL_FIRST__] i32 SOCK_STREAM  = 1;
+[__GLOBAL_FIRST__] i32 SOCK_DGRAM   = 2;
+
+[__GLOBAL_FIRST__] i32 IPPROTO_ICMP = 1;
+[__GLOBAL_FIRST__] i32 IPPROTO_TCP  = 6;
+[__GLOBAL_FIRST__] i32 IPPROTO_UDP  = 17;

@@ -16,6 +16,8 @@
 [__GLOBAL_FIRST__] i32 ERR_NFILE                = 23;       // file table overflow
 [__GLOBAL_FIRST__] i32 ERR_PIPE                 = 32;       // broken pipe (error related to pipe)
 [__GLOBAL_FIRST__] i32 ERR_NOTSOCK              = 88;       // Socket operation on non-socket
+[__GLOBAL_FIRST__] i32 ERR_DESTADDRREQ          = 89;       // Destination address required
+[__GLOBAL_FIRST__] i32 ERR_MSGSIZE              = 90;       // Message too long
 [__GLOBAL_FIRST__] i32 ERR_SOCKTNOSUPPORT       = 94;       // Socket type not supported
 [__GLOBAL_FIRST__] i32 ERR_AFNOSUPPORT          = 97;       // Address family not supported by protocol
 [__GLOBAL_FIRST__] i32 ERR_ADDRINUSE            = 98;       // Address already in use

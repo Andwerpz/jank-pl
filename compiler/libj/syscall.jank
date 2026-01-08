@@ -191,3 +191,28 @@ i32 sys_fstat(i32 fd, stat* statbuf) {
 i32 sys_ioctl(i32 fd, u32 op, void* arg) {
     return syscall(16, i32, fd, op, arg);
 }
+
+// sets a socket's address
+// returns 0 on success
+// returns -1 on failure
+i32 sys_bind(i32 fd, sockaddr* addr, u64 addr_len) {
+    return syscall(49, i32, fd, addr, addr_len);
+}
+
+// If src_addr is not NULL, and the underlying protocol provides the source address, this source address is filled in. 
+// When src_addr is NULL, nothing is filled in; in this case, addrlen is not used, and should also be NULL. 
+// The argument addrlen is a value-result argument, which the caller should initialize before the call to the size of the buffer associated with src_addr, 
+// and modified on return to indicate the actual size of the source address. The returned address is truncated if the buffer provided is too small; 
+// in this case, addrlen will return a value greater than was supplied to the call.
+// returns length read
+// returns -1 on failure
+i32 sys_recvfrom(i32 fd, u8* buf, u64 size, i32 flags, sockaddr* src_addr, u64* addr_len) {
+    return syscall(45, i32, fd, buf, size, flags, src_addr, addr_len);
+}
+
+// creates a socket fd
+// returns fd index on success
+// returns -1 on failure
+i32 sys_socket(i32 domain, i32 type, i32 protocol) {
+    return syscall(41, i32, domain, type, protocol);
+}
