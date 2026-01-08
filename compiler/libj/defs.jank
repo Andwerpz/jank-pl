@@ -177,10 +177,11 @@ struct sockaddr_in {
     u8[8] sin_zero;     // padding
 }
 
-[__GLOBAL_FIRST__] u16 AF_INET = $u16 2;
+[__GLOBAL_FIRST__] i32 AF_INET = 2;
 
 [__GLOBAL_FIRST__] i32 SOCK_STREAM  = 1;
 [__GLOBAL_FIRST__] i32 SOCK_DGRAM   = 2;
+[__GLOBAL_FIRST__] i32 SOCK_RAW     = 3;
 
 [__GLOBAL_FIRST__] i32 IPPROTO_ICMP = 1;
 [__GLOBAL_FIRST__] i32 IPPROTO_TCP  = 6;
