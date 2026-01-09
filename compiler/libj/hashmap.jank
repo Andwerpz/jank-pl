@@ -1,0 +1,266 @@
+
+template<T, U>
+struct hashmap {
+    u64 size;               // number of entries
+    u64 bucket_count;       // number of buckets
+    hashmap_node<T, U>** buckets;
+    f32 max_load_factor;    // upper limit on (size / bucket_count)
+    fn<u64(T&)> hash_function;
+
+    hashmap() {
+        this.size = 0x0;
+        this.bucket_count = 0x8;
+        this.buckets = $hashmap_node<T, U>** malloc(sizeof(hashmap_node<T, U>*) * this.bucket_count);
+        memset($void* this.buckets, 0, sizeof(hashmap_node<T, U>*) * this.bucket_count);
+        this.max_load_factor = 0.75;
+        this.hash_function = #<hash(T&)>;
+    }
+
+    hashmap(u64 _bucket_count) {
+        this.size = 0x0;
+        this.bucket_count = _bucket_count;
+        this.buckets = $hashmap_node<T, U>** malloc(sizeof(hashmap_node<T, U>*) * this.bucket_count);
+        memset($void* this.buckets, 0, sizeof(hashmap_node<T, U>*) * this.bucket_count);
+        this.max_load_factor = 0.75;
+        this.hash_function = #<hash(T&)>;
+    }
+
+    hashmap(hashmap& other) {
+        this.size = other.size;
+        this.bucket_count = other.bucket_count;
+        this.buckets = $hashmap_node<T, U>** malloc(sizeof(hashmap_node<T, U>*) * this.bucket_count);
+        for(u64 i = 0x0; i < this.bucket_count; i++) {
+            //check if there's anything in this bucket
+            if(other.buckets[i] == nullptr) {
+                this.buckets[i] = $hashmap_node<T, U>* nullptr;
+                continue;
+            }
+
+            //copy over everything
+            hashmap_node<T, U>* optr = other.buckets[i];
+            hashmap_node<T, U>* ptr = $hashmap_node<T, U>* malloc(sizeof(hashmap_node<T, U>));
+            new (ptr) hashmap_node<T, U>(optr->key, optr->val);
+            this.buckets[i] = ptr;
+            while(optr->next != nullptr) {
+                optr = optr->next;
+                hashmap_node<T, U>* next = $hashmap_node<T, U>* malloc(sizeof(hashmap_node<T, U>));
+                new (next) hashmap_node<T, U>(optr->key, optr->val);
+                ptr->next = next;
+                ptr = next;
+            }
+        }
+        this.max_load_factor = other.max_load_factor;
+        this.hash_function = other.hash_function;
+    }
+
+    ~hashmap() {
+        //free buckets
+        for(u64 i = 0x0; i < this.bucket_count; i++) {
+            hashmap_node<T, U>* ptr = this.buckets[i];
+            while(ptr != nullptr) {
+                hashmap_node<T, U>* next = ptr->next;
+                ptr->~();
+                free($void* ptr, sizeof(hashmap_node<T, U>));
+                ptr = next;
+            }
+        }
+        free($void* this.buckets, sizeof(hashmap_node<T, U>*) * this.bucket_count);
+    }   
+
+    u64 get_bucket_ind(T& key) {
+        u64 hash = this.hash_function#(key);
+        return hash % this.bucket_count;
+    }
+
+    //ensures we can insert n elements without exceeding the max load factor
+    void reserve(u64 n) {
+        // this.rehash($u64 ($f32 n / this.max_load_factor)); // TODO add casting between u64 and f32
+        this.rehash(n * 0x2);   
+    }
+
+    //sets the number of buckets
+    //if the number is smaller than the current amount of buckets, does nothing. 
+    //otherwise, reserves some new buckets and rehashes all the elements
+    void rehash(u64 n) {
+        if(n <= this.bucket_count) return;  
+        
+        //create new buckets
+        hashmap_node<T, U>** old_buckets = this.buckets;
+        u64 old_bucket_count = this.bucket_count;
+        this.buckets = $hashmap_node<T, U>** malloc(sizeof(hashmap_node<T, U>*) * n);
+        this.bucket_count = n;
+        memset($void* this.buckets, 0, sizeof(hashmap_node<T, U>*) * n);
+
+        //move old values to new buckets
+        for(u64 i = 0x0; i < old_bucket_count; i++) {
+            hashmap_node<T, U>* ptr = old_buckets[i];
+            while(ptr != nullptr) {
+                hashmap_node<T, U>* next = ptr->next;
+                u64 bucket_ind = this.get_bucket_ind(ptr->key);
+                ptr->next = this.buckets[bucket_ind];
+                this.buckets[bucket_ind] = ptr;
+                ptr = next;
+            }
+        }
+
+        //delete old buckets
+        free($void* old_buckets, sizeof(hashmap_node<T, U>*) * old_bucket_count);
+    }
+
+    //inserts the key and its corresponding value into the map
+    //if the key already exists, does nothing
+    //returns a reference to the inserted value in the map
+    U& insert(T key, U val) {
+        u64 bucket_ind = this.get_bucket_ind(key);
+        hashmap_node<T, U>* ptr = this.buckets[bucket_ind];
+        if(ptr == nullptr) {
+            //nothing in this bucket, just insert it here
+            this.buckets[bucket_ind] = $hashmap_node<T, U>* malloc(sizeof(hashmap_node<T, U>));
+            new (this.buckets[bucket_ind]) hashmap_node<T, U>(key, val);
+            this.size ++;
+            ptr = this.buckets[bucket_ind];
+        }
+        else {
+            //scan to end of bucket to see if there's a duplicate
+            i32 found_dup = 0;
+            while(1) {
+                if(key == ptr->key) {
+                    //found a duplicate key
+                    found_dup = 1;
+                    break;
+                }
+                if(ptr->next == nullptr) break;
+                ptr = ptr->next;
+            }
+
+            //insert at end
+            if(!found_dup) {
+                ptr->next = $hashmap_node<T, U>* malloc(sizeof(hashmap_node<T, U>));
+                new (ptr->next) hashmap_node<T, U>(key, val);
+                this.size ++;
+                ptr = ptr->next;
+            }
+        }
+
+        //see if we need to expand
+        // TODO add casting between u64 and f32
+        // if($f32 this.size / $f32 this.bucket_count > this.max_load_factor) {
+        //     this.rehash(this.size * 0x2);
+        // }
+        if(this.size > this.bucket_count) {
+            this.rehash(this.size * 0x2);
+        }
+
+        return ptr->val;
+    }   
+
+    //removes the key and its corresponding value from the map
+    //if the key does not exist, does nothing and returns 0
+    //otherwise erases the entry and returns 1
+    i32 erase(T key) {
+        u64 bucket_ind = this.get_bucket_ind(key);
+        hashmap_node<T, U>* ptr = this.buckets[bucket_ind];
+        if(ptr == nullptr) {
+            //there's nothing here
+            return 0;
+        }
+        if(ptr->key == key) {
+            //first element matches
+            this.buckets[bucket_ind] = ptr->next;
+            ptr->~();
+            free($void* ptr, sizeof(hashmap_node<T, U>));
+            this.size --;
+            return 1;
+        }
+
+        //look for matching element
+        while(ptr->next != nullptr) {
+            if(ptr->next->key == key) {
+                //found it
+                hashmap_node<T, U>* next = ptr->next;
+                ptr->next = next->next;
+                next->~();
+                free($void* next, sizeof(hashmap_node<T, U>));
+                this.size --;
+                return 1;
+            }
+            ptr = ptr->next;
+        }
+        return 0;
+    }   
+
+    //returns 1 if the key exists, returns 0 otherwise
+    i32 contains(T key) {
+        u64 bucket_ind = this.get_bucket_ind(key);
+        hashmap_node<T, U>* ptr = this.buckets[bucket_ind];
+        while(ptr != nullptr) {
+            if(key == ptr->key) return 1;
+            ptr = ptr->next;
+        }
+        return 0;
+    }
+
+    //retrieves a reference to the value associated with the key
+    //if the key does not exist, creates a new default value
+    U& get(T key) {
+        u64 bucket_ind = this.get_bucket_ind(key);
+        hashmap_node<T, U>* ptr = this.buckets[bucket_ind];
+        while(ptr != nullptr) {
+            if(key == ptr->key) return ptr->val;
+            if(ptr->next == nullptr) break;
+            ptr = ptr->next;
+        }
+
+        //couldn't find it, create a default value
+        return this.insert(key, new U());
+    }
+}
+
+template<T, U>
+struct hashmap_node {
+    T key;
+    U val;
+    hashmap_node* next;
+
+    hashmap_node(T& key, U& val) {
+        this.key = key;
+        this.val = val;
+        this.next = $hashmap_node* nullptr;
+    }
+}
+
+template<T, U>
+U& operator[](hashmap<T, U>& map, T key) {
+    return map.get(key);
+}
+
+u64 splitmix64(u64 x) {
+    x += 0x9e3779b97f4a7c15;
+    x = (x ^ (x >> $u64 30)) * 0xbf58476d1ce4e5b9;
+    x = (x ^ (x >> $u64 27)) * 0x94d049bb133111eb;
+    x ^= (x >> $u64 31);
+    return x;
+}
+
+u64 hash(u64& x) {
+    return splitmix64(x);
+}
+
+template<T>
+u64 hash(T*& x) {
+    return splitmix64($u64 x);
+}
+
+u64 hash_combine(u64 a, u64 b) {
+    u64 x = a ^ (b + 0x9e3779b97f4a7c15 + (a << $u64 6) + (a >> $u64 2));
+    return splitmix64(x);
+}
+
+u64 hash(i32& x) {
+    return splitmix64($u64 x);
+}
+
+template<T, U>
+u64 hash(pair<T, U>& a) {
+    return hash_combine(hash(a.first), hash(a.second));
+}

@@ -1,0 +1,6 @@
+test small passed
+test large passed
+test copy passed
+test contains passed
+test erase passed
+all tests passed

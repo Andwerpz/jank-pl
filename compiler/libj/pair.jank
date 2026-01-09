@@ -23,3 +23,18 @@ struct pair {
         
     }
 }
+
+template<T, U>
+i32 operator==(pair<T, U>& a, pair<T, U>& b) {
+    return (a.first == b.first) && (a.second == b.second);
+}
+
+template<T, U>
+i32 operator!=(pair<T, U>& a, pair<T, U>& b) {
+    return (a.first != b.first) || (a.second != b.second);
+}
+
+template<T, U>
+ostream& operator<<(ostream& s, pair<T, U> p) {
+    return s << "{" << p.first << ", " << p.second << "}";
+}

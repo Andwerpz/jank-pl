@@ -1,28 +1,114 @@
-#include <iostream>;
 #include <assert>;
-#include <vector>;
+#include <iostream>;
+#include <hashmap>;
+#include <random>;
+#include <pair>;
 
-//12/25/2025
-//originally when registering a basetype, I was just adding it to a list of recognized basetypes, but not
-//actually declaring it as a type. Declaring it as a type was deferred to when I added all the structs and their
-//constructors, destructors, and functions. 
-
-//the issue with this is that between these two things, I performed template resolution, which requires actual
-//type definitions for all basetypes. So it would not be able to recognize the type 'B**' as defined, as the basetype
-//'B' isn't actually defined yet. 
-
-//the fix is to also register basetypes as types when registering all the basetypes initially. 
-
-struct A {
-    vector<B*> foo;
+void test_small() {
+    u64 n = $u64 100;
+    vector<u64> a = new vector<u64>(n, 0x0);
+    hashmap<u64, u64> m = new hashmap<u64, u64>();
+    for(u64 i = 0x0; i < n * $u64 10; i++) {
+        u64 ind = rand_u64() % n;
+        if(a[ind] != m[ind]) {
+            cout << "PROBLEM! : " << ind << " " << a[ind] << " " << m[ind] << "\n";
+            cout.flush();
+        }
+        assert(a[ind] == m[ind]);
+        u64 val = rand_u64() % n;
+        a[ind] = val;
+        m[ind] = val;
+    }
+    cout << "test small passed\n";
 }
 
-struct B {
-    i32 bar;
+void test_large() {
+    u64 n = $u64 10000;
+    vector<u64> a = new vector<u64>(n, 0x0);
+    hashmap<u64, u64> m = new hashmap<u64, u64>(n);
+    for(u64 i = 0x0; i < n * $u64 10; i++) {
+        u64 ind = rand_u64() % n;
+        assert(a[ind] == m[ind]);
+        u64 val = rand_u64() % n;
+        a[ind] = val;
+        m[ind] = val;
+    }
+    cout << "test large passed\n";
+}
+
+void test_copy() {
+    u64 n = $u64 1000;
+    vector<u64> a = new vector<u64>(n, 0x0);
+    hashmap<u64, u64> m = new hashmap<u64, u64>();
+    for(u64 i = 0x0; i < n * $u64 10; i++) {
+        u64 ind = rand_u64() % n;
+        assert(a[ind] == m[ind]);
+        u64 val = rand_u64() % n;
+        a[ind] = val;
+        m[ind] = val;
+    }
+    hashmap<u64, u64> other = m;
+    for(u64 i = 0x0; i < n; i++) {
+        assert(other[i] == a[i]);
+    }
+    cout << "test copy passed\n";
+}
+
+void test_contains() {
+    u64 n = $u64 500;
+    vector<pair<i32, i32>> a;
+    hashmap<pair<i32, i32>, i32> m;
+    for(u64 i = 0x0; i < n; i++) {
+        pair<i32, i32> p = new pair<i32, i32>(rand_i32() % 10, rand_i32() % 10);
+        i32 a_contains = 0;
+        for(u64 j = 0x0; j < a.size(); j++) {
+            if(a[j] == p) {
+                a_contains = 1;
+                break;
+            }
+        }
+        i32 m_contains = m.contains(p);
+        m.insert(p, 0);
+        a.push_back(p);
+    }
+    cout << "test contains passed\n";
+}
+
+void test_erase() {
+    u64 n = $u64 2000;
+    vector<i32> present = new vector<i32>(n, 0);
+    hashmap<u64, i32> m = new hashmap<u64, i32>();
+
+    for(u64 it = 0x0; it < n * $u64 20; it++) {
+        u64 key = rand_u64() % n;
+        if((rand_u64() & 0x1) == $u64 0) {
+            // insert
+            present[key] = 1;
+            m[key] = 1;
+            assert(m.contains(key));
+        } 
+        else {
+            // erase
+            i32 expected = present[key];     // 1 if it existed, else 0
+            i32 got = m.erase(key);          // should return 1 if existed, else 0
+            assert(got == expected);
+            present[key] = 0;
+        }
+        assert(present[key] == m.contains(key));
+    }
+
+    cout << "test erase passed\n";
 }
 
 i32 main() {
-    cout << "this should compile\n";
+
+    test_small();
+    cout.flush();
+    test_large();
+    test_copy();
+    test_contains();
+    test_erase();
+    cout << "all tests passed\n";
+
     return 0;
 }
-
