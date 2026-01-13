@@ -21,6 +21,7 @@
 [__GLOBAL_FIRST__] i32 ERR_SOCKTNOSUPPORT       = 94;       // Socket type not supported
 [__GLOBAL_FIRST__] i32 ERR_AFNOSUPPORT          = 97;       // Address family not supported by protocol
 [__GLOBAL_FIRST__] i32 ERR_ADDRINUSE            = 98;       // Address already in use
+[__GLOBAL_FIRST__] i32 ERR_NOTCONN              = 107;      // Transport endpoint is not connected
 
 // jank error codes
 [__GLOBAL_FIRST__] i32 ERR_UNKNOWN      = 1000;     // for when i'm too lazy to put a proper error code

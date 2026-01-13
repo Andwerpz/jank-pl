@@ -216,3 +216,14 @@ i32 sys_recvfrom(i32 fd, u8* buf, u64 size, i32 flags, sockaddr* src_addr, u64* 
 i32 sys_socket(i32 domain, i32 type, i32 protocol) {
     return syscall(41, i32, domain, type, protocol);
 }
+
+// connects a socket to the addr specified by sockaddr
+// returns 0 on success
+// returns -1 on failure
+i32 sys_connect(i32 fd, sockaddr* addr, u64 len) {
+    return syscall(42, i32, fd, addr, len);
+}
+
+i32 sys_sendto(i32 fd, u8* buf, u64 size, i32 flags, sockaddr* dest_addr, u64 addr_len) {
+    return syscall(44, i32, fd, buf, size, flags, dest_addr, addr_len);
+}
