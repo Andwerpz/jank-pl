@@ -90,7 +90,8 @@ void generate_tokens(parser::token *tok, bool in_struct) {
 
 	//strings
 	if(tok->token_type == "literal_string" || tok->token_type == "literal_char" ||
-		tok->token_type == "library_path" || tok->token_type == "inline_asm_string") {
+		tok->token_type == "include_path_relative" || tok->token_type == "include_path_lib" ||
+		tok->token_type == "inline_asm_string") {
 		highlight_tokens.push_back(semantic_token(tok, "string"));
 		return;
 	}

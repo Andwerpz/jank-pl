@@ -1,114 +1,80 @@
 #include <assert>;
 #include <iostream>;
-#include <hashmap>;
-#include <random>;
-#include <pair>;
+#include <crypto/sha2>;
+#include <string>;
 
-void test_small() {
-    u64 n = $u64 100;
-    vector<u64> a = new vector<u64>(n, 0x0);
-    hashmap<u64, u64> m = new hashmap<u64, u64>();
-    for(u64 i = 0x0; i < n * $u64 10; i++) {
-        u64 ind = rand_u64() % n;
-        if(a[ind] != m[ind]) {
-            cout << "PROBLEM! : " << ind << " " << a[ind] << " " << m[ind] << "\n";
-            cout.flush();
-        }
-        assert(a[ind] == m[ind]);
-        u64 val = rand_u64() % n;
-        a[ind] = val;
-        m[ind] = val;
+string hashstring(void* hash) {
+    string res = new string(128, ' ');
+    for(u64 i = 0x0; i < $u64 64; i++) {
+        u64 lo = $u64 ($u8* hash)[i] & 0x0F;
+        u64 hi = $u64 ($u8* hash)[i] & 0xF0;
+        hi >>= $u64 4;
+        if(hi < $u64 10) res[i * 0x2 + 0x0] = ('0' + $u8 hi);
+        else res[i * 0x2 + 0x0] = ('a' + $u8 hi - $u8 10);
+        if(lo < $u64 10) res[i * 0x2 + 0x1] = ('0' + $u8 lo);
+        else res[i * 0x2 + 0x1] = ('a' + $u8 lo - $u8 10);
     }
-    cout << "test small passed\n";
+    return res;
 }
 
-void test_large() {
-    u64 n = $u64 10000;
-    vector<u64> a = new vector<u64>(n, 0x0);
-    hashmap<u64, u64> m = new hashmap<u64, u64>(n);
-    for(u64 i = 0x0; i < n * $u64 10; i++) {
-        u64 ind = rand_u64() % n;
-        assert(a[ind] == m[ind]);
-        u64 val = rand_u64() % n;
-        a[ind] = val;
-        m[ind] = val;
+void test_basic() {
+    {
+        u8* text = "bello bello testing 123";
+        void* hash = malloc($u64 64);
+        sha512($void* text, strlen(text), hash);
+        string exp = "28c34b4d5f15e1148892cf323b51dcce0e82e3fd84b294c935d912f8e398c3a503922f4ac0373ac7bb21fe40c2ccfd10c099b4621d04ae8ba70e707d69cc200d";
+        assert(hashstring(hash) == exp, "test_basic() : hash 1 does not match");
+        free(hash, $u64 64);
     }
-    cout << "test large passed\n";
+
+    {
+        u8* text = "Bro thought he could become the next rizz king by doing the uncanny ankha zone dance like a sussy baka in ohiodont bro know quandale dingle already did the forgis on the jeep thug shaker banban style with ballerbro aint ever making it out of oklahoma the ocky way that shit just plain uncanny like skibidi toilet bro bro got negative infinity morbin chill bill pizza tower barbenheimer rizz brobro got that nathaniel b ahh griddy brobro really thought he had that rise of gru grimace shake 1 2 buckle my shoe spiderverse whopper rizz brobro got that canon event baby gronk waffle house monday left me broken ahh drip in ohio bro we aint ever makin it out of ohio with bros goofy ahh dj khaled mr chedda sisyphus toxic gossip train pikmin 4 ahh rizz bro that aint even elephant mario titanic submarine god tier rizz brothats just uncanny like shadow wizard money gang ambatukam twitter x brofr bro like bro lets go golfing in ohio kumalala savesta sbidi toiledt";
+        void* hash = malloc($u64 64);
+        sha512($void* text, strlen(text), hash);
+        string exp = "97161da514d7850476aec65f43b4e105dcfcd4db5b2e3d7a89210ae8815f686bc9046fda2339f21a44e5126f5113c525d8cdfb695b472c93a74ad9bb0a5d4788";
+        assert(hashstring(hash) == exp, "test_basic() : hash 2 does not match");
+        free(hash, $u64 64);
+    }
+
+    {
+        u8* text = "Welcome Im sure you all have heard of Andrew Li If you have heard of him you are intimately familiar with his identity of coding Jesus Well here in yummy-yummy-andrewli-dylan-jank I would like to introduce a new side of Andrew Li to you all The connoisseur this project started as a one-off economic venture However as often happens what began as a whim turned into a habit every weekend for the past 2 semesters Mr Li and I would take our talents to the various food establishments around the college station sphere some savory and some rancid this past week on another whim I inquired Mr Li if he would kindly pin his thoughts about our previous restraints to paper to my surprise he obliged my request At first when I witnessed their transfer of his thoughts to paper I thought nothing of it I was only familiar with his /G coding mode it was only after carefully reading his list that I realized I was sitting on literary gold All must hear his truth so that I will deliver Rating Our rating system is unconventional It is a 0-5 star system a five is the worst possible rating and a zero is the best This out-of-the-box rating method was inspired by the first eatery that started our journey Shun Da Mom The idea is that a five is as close to shun da mom as you can get(crass) and a zero is the farthest away you can get(class) Now that you have the story and the rating I will tell you the truth without further ado";
+        void* hash = malloc($u64 64);
+        sha512($void* text, strlen(text), hash);
+        string exp = "13e8cdf9db7da62031e6d5862d046a628080025aa2f1e576d0a69e51fb1a423ff47af365065929df9022ab4e41359fb419ee3af27cde2e6f4bde23ebc01df83f";
+        assert(hashstring(hash) == exp, "test_basic() : hash 3 does not match");
+        free(hash, $u64 64);
+    }
+
+    cout << "test basic passed\n";
 }
 
-void test_copy() {
-    u64 n = $u64 1000;
-    vector<u64> a = new vector<u64>(n, 0x0);
-    hashmap<u64, u64> m = new hashmap<u64, u64>();
-    for(u64 i = 0x0; i < n * $u64 10; i++) {
-        u64 ind = rand_u64() % n;
-        assert(a[ind] == m[ind]);
-        u64 val = rand_u64() % n;
-        a[ind] = val;
-        m[ind] = val;
+void test_streaming() {
+    u8* text = "Welcome Im sure you all have heard of Andrew Li If you have heard of him you are intimately familiar with his identity of coding Jesus Well here in yummy-yummy-andrewli-dylan-jank I would like to introduce a new side of Andrew Li to you all The connoisseur this project started as a one-off economic venture However as often happens what began as a whim turned into a habit every weekend for the past 2 semesters Mr Li and I would take our talents to the various food establishments around the college station sphere some savory and some rancid this past week on another whim I inquired Mr Li if he would kindly pin his thoughts about our previous restraints to paper to my surprise he obliged my request At first when I witnessed their transfer of his thoughts to paper I thought nothing of it I was only familiar with his /G coding mode it was only after carefully reading his list that I realized I was sitting on literary gold All must hear his truth so that I will deliver Rating Our rating system is unconventional It is a 0-5 star system a five is the worst possible rating and a zero is the best This out-of-the-box rating method was inspired by the first eatery that started our journey Shun Da Mom The idea is that a five is as close to shun da mom as you can get(crass) and a zero is the farthest away you can get(class) Now that you have the story and the rating I will tell you the truth without further ado";
+    string exp = "13e8cdf9db7da62031e6d5862d046a628080025aa2f1e576d0a69e51fb1a423ff47af365065929df9022ab4e41359fb419ee3af27cde2e6f4bde23ebc01df83f";
+    sha512_ctx ctx;
+    sha512_init(@ctx);
+    u64 len = strlen(text);
+    u64 ptr = 0x0;
+    u64 inc = $u64 531;
+    while(ptr < len) {
+        u64 amt = len - ptr;
+        if(amt > inc) amt = inc;
+        sha512_update(@ctx, $void* ($u64 text + ptr), amt);
+        ptr += amt;
     }
-    hashmap<u64, u64> other = m;
-    for(u64 i = 0x0; i < n; i++) {
-        assert(other[i] == a[i]);
-    }
-    cout << "test copy passed\n";
-}
+    void* hash = malloc($u64 64);
+    sha512_final(@ctx, hash);
+    assert(hashstring(hash) == exp, "test_streaming() : hash does not match");
+    free(hash, $u64 64);
 
-void test_contains() {
-    u64 n = $u64 500;
-    vector<pair<i32, i32>> a;
-    hashmap<pair<i32, i32>, i32> m;
-    for(u64 i = 0x0; i < n; i++) {
-        pair<i32, i32> p = new pair<i32, i32>(rand_i32() % 10, rand_i32() % 10);
-        i32 a_contains = 0;
-        for(u64 j = 0x0; j < a.size(); j++) {
-            if(a[j] == p) {
-                a_contains = 1;
-                break;
-            }
-        }
-        i32 m_contains = m.contains(p);
-        m.insert(p, 0);
-        a.push_back(p);
-    }
-    cout << "test contains passed\n";
-}
-
-void test_erase() {
-    u64 n = $u64 2000;
-    vector<i32> present = new vector<i32>(n, 0);
-    hashmap<u64, i32> m = new hashmap<u64, i32>();
-
-    for(u64 it = 0x0; it < n * $u64 20; it++) {
-        u64 key = rand_u64() % n;
-        if((rand_u64() & 0x1) == $u64 0) {
-            // insert
-            present[key] = 1;
-            m[key] = 1;
-            assert(m.contains(key));
-        } 
-        else {
-            // erase
-            i32 expected = present[key];     // 1 if it existed, else 0
-            i32 got = m.erase(key);          // should return 1 if existed, else 0
-            assert(got == expected);
-            present[key] = 0;
-        }
-        assert(present[key] == m.contains(key));
-    }
-
-    cout << "test erase passed\n";
+    cout << "test streaming passed\n";
 }
 
 i32 main() {
 
-    test_small();
-    cout.flush();
-    test_large();
-    test_copy();
-    test_contains();
-    test_erase();
-    cout << "all tests passed\n";
+    test_basic();
+    test_streaming();
 
+    cout << "all tests passed\n";
     return 0;
 }

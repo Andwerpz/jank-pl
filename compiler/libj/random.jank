@@ -18,10 +18,27 @@ u64 rand_u64() {
     return val;
 }
 
+u32 rand_u32() {
+    u8* buf = $u8* malloc(sizeof(u32));
+    sys_getrandom($void* buf, sizeof(u32), 0x0);
+    u32 val = *($u32* buf);
+    free($void* buf, sizeof(u32));
+    return val;
+}
+
 u8 rand_u8() {
     u8* buf = $u8* malloc(sizeof(u8));
     sys_getrandom($void* buf, 0x1, 0x0);
     u8 val = *buf;
     free($void* buf, sizeof(u8));
     return val;
+}
+
+//writes amt random bytes into the buffer
+void rand_bytes(void* buf, u64 amt) {
+    u64 ptr = 0x0;
+    while(ptr < amt) {
+        i64 ret = sys_getrandom($void* buf, amt - ptr, 0x0);
+        ptr += $u64 ret;
+    }
 }

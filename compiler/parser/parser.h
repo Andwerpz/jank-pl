@@ -1,4 +1,4 @@
-// Date Generated : 10-18-2025 20:32:31
+// Date Generated : 01-13-2026 12:52:19
 #pragma once
 #include <vector>
 #include <string>
@@ -130,7 +130,9 @@ namespace parser {
     struct simple_statement;
     struct control_statement;
     struct compound_statement;
-    struct library_path;
+    struct include_path;
+    struct include_path_relative;
+    struct include_path_lib;
     struct include;
     struct _typedef;
     struct global_node;
@@ -2604,7 +2606,7 @@ namespace parser {
         void postprocess() override;
     };
 
-    // overloadable_operator = "++x" | "--x" | "x++" | "x--" | "*x" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" | "==" | "!=" | "<" | "<=" | ">" | ">=" | "[]" | "=" ;
+    // overloadable_operator = "++x" | "--x" | "x++" | "x--" | "*x" | "+=" | "-=" | "*=" | "/=" | "%=" | "&=" | "|=" | "^=" | "<<=" | ">>=" | "+" | "-" | "*" | "/" | "%" | "&" | "|" | "^" | "<<" | ">>" | "==" | "!=" | ">=" | "<=" | "<" | ">" | "[]" | "=" ;
     struct overloadable_operator : public token {
         struct a0 : public token {
             terminal *t0;
@@ -6785,27 +6787,12 @@ namespace parser {
         void postprocess() override;
     };
 
-    // library_path = "<" , identifier , ">" ;
-    struct library_path : public token {
-        terminal *t0;
-        identifier *t1;
-        terminal *t2;
-        library_path(terminal *_t0, identifier *_t1, terminal *_t2) {
-            t0 = _t0;
-            t1 = _t1;
-            t2 = _t2;
-        }
-        static library_path* parse();
-        std::string to_string() override;
-        void postprocess() override;
-    };
-
-    // include = "#include" , rws , ( literal_string | library_path ) , ows , ";" ;
-    struct include : public token {
+    // include_path = < alpha | digit | "/" | "+" | "-" | "." | "," | "!" | "@" | "#" | "$" | "%" | "^" | "&" | "*" | "(" | ")" | "_" | "=" | ":" | ";" | "?" | "|" | "{" | "}" | "[" | "]" | "~" | "`" > ;
+    struct include_path : public token {
         struct a0 : public token {
             struct b0 : public token {
-                literal_string *t0;
-                b0(literal_string *_t0) {
+                alpha *t0;
+                b0(alpha *_t0) {
                     t0 = _t0;
                 }
                 static b0* parse();
@@ -6813,8 +6800,489 @@ namespace parser {
                 void postprocess() override;
             };
             struct b1 : public token {
-                library_path *t0;
-                b1(library_path *_t0) {
+                digit *t0;
+                b1(digit *_t0) {
+                    t0 = _t0;
+                }
+                static b1* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b2 : public token {
+                terminal *t0;
+                b2(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b2* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b3 : public token {
+                terminal *t0;
+                b3(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b3* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b4 : public token {
+                terminal *t0;
+                b4(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b4* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b5 : public token {
+                terminal *t0;
+                b5(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b5* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b6 : public token {
+                terminal *t0;
+                b6(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b6* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b7 : public token {
+                terminal *t0;
+                b7(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b7* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b8 : public token {
+                terminal *t0;
+                b8(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b8* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b9 : public token {
+                terminal *t0;
+                b9(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b9* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b10 : public token {
+                terminal *t0;
+                b10(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b10* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b11 : public token {
+                terminal *t0;
+                b11(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b11* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b12 : public token {
+                terminal *t0;
+                b12(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b12* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b13 : public token {
+                terminal *t0;
+                b13(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b13* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b14 : public token {
+                terminal *t0;
+                b14(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b14* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b15 : public token {
+                terminal *t0;
+                b15(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b15* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b16 : public token {
+                terminal *t0;
+                b16(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b16* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b17 : public token {
+                terminal *t0;
+                b17(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b17* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b18 : public token {
+                terminal *t0;
+                b18(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b18* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b19 : public token {
+                terminal *t0;
+                b19(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b19* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b20 : public token {
+                terminal *t0;
+                b20(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b20* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b21 : public token {
+                terminal *t0;
+                b21(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b21* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b22 : public token {
+                terminal *t0;
+                b22(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b22* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b23 : public token {
+                terminal *t0;
+                b23(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b23* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b24 : public token {
+                terminal *t0;
+                b24(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b24* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b25 : public token {
+                terminal *t0;
+                b25(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b25* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b26 : public token {
+                terminal *t0;
+                b26(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b26* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b27 : public token {
+                terminal *t0;
+                b27(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b27* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b28 : public token {
+                terminal *t0;
+                b28(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b28* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            bool is_b0 = false;
+            b0 *t0;
+            bool is_b1 = false;
+            b1 *t1;
+            bool is_b2 = false;
+            b2 *t2;
+            bool is_b3 = false;
+            b3 *t3;
+            bool is_b4 = false;
+            b4 *t4;
+            bool is_b5 = false;
+            b5 *t5;
+            bool is_b6 = false;
+            b6 *t6;
+            bool is_b7 = false;
+            b7 *t7;
+            bool is_b8 = false;
+            b8 *t8;
+            bool is_b9 = false;
+            b9 *t9;
+            bool is_b10 = false;
+            b10 *t10;
+            bool is_b11 = false;
+            b11 *t11;
+            bool is_b12 = false;
+            b12 *t12;
+            bool is_b13 = false;
+            b13 *t13;
+            bool is_b14 = false;
+            b14 *t14;
+            bool is_b15 = false;
+            b15 *t15;
+            bool is_b16 = false;
+            b16 *t16;
+            bool is_b17 = false;
+            b17 *t17;
+            bool is_b18 = false;
+            b18 *t18;
+            bool is_b19 = false;
+            b19 *t19;
+            bool is_b20 = false;
+            b20 *t20;
+            bool is_b21 = false;
+            b21 *t21;
+            bool is_b22 = false;
+            b22 *t22;
+            bool is_b23 = false;
+            b23 *t23;
+            bool is_b24 = false;
+            b24 *t24;
+            bool is_b25 = false;
+            b25 *t25;
+            bool is_b26 = false;
+            b26 *t26;
+            bool is_b27 = false;
+            b27 *t27;
+            bool is_b28 = false;
+            b28 *t28;
+            a0(b0 *_t0) {
+                is_b0 = true;
+                t0 = _t0;
+            }
+            a0(b1 *_t1) {
+                is_b1 = true;
+                t1 = _t1;
+            }
+            a0(b2 *_t2) {
+                is_b2 = true;
+                t2 = _t2;
+            }
+            a0(b3 *_t3) {
+                is_b3 = true;
+                t3 = _t3;
+            }
+            a0(b4 *_t4) {
+                is_b4 = true;
+                t4 = _t4;
+            }
+            a0(b5 *_t5) {
+                is_b5 = true;
+                t5 = _t5;
+            }
+            a0(b6 *_t6) {
+                is_b6 = true;
+                t6 = _t6;
+            }
+            a0(b7 *_t7) {
+                is_b7 = true;
+                t7 = _t7;
+            }
+            a0(b8 *_t8) {
+                is_b8 = true;
+                t8 = _t8;
+            }
+            a0(b9 *_t9) {
+                is_b9 = true;
+                t9 = _t9;
+            }
+            a0(b10 *_t10) {
+                is_b10 = true;
+                t10 = _t10;
+            }
+            a0(b11 *_t11) {
+                is_b11 = true;
+                t11 = _t11;
+            }
+            a0(b12 *_t12) {
+                is_b12 = true;
+                t12 = _t12;
+            }
+            a0(b13 *_t13) {
+                is_b13 = true;
+                t13 = _t13;
+            }
+            a0(b14 *_t14) {
+                is_b14 = true;
+                t14 = _t14;
+            }
+            a0(b15 *_t15) {
+                is_b15 = true;
+                t15 = _t15;
+            }
+            a0(b16 *_t16) {
+                is_b16 = true;
+                t16 = _t16;
+            }
+            a0(b17 *_t17) {
+                is_b17 = true;
+                t17 = _t17;
+            }
+            a0(b18 *_t18) {
+                is_b18 = true;
+                t18 = _t18;
+            }
+            a0(b19 *_t19) {
+                is_b19 = true;
+                t19 = _t19;
+            }
+            a0(b20 *_t20) {
+                is_b20 = true;
+                t20 = _t20;
+            }
+            a0(b21 *_t21) {
+                is_b21 = true;
+                t21 = _t21;
+            }
+            a0(b22 *_t22) {
+                is_b22 = true;
+                t22 = _t22;
+            }
+            a0(b23 *_t23) {
+                is_b23 = true;
+                t23 = _t23;
+            }
+            a0(b24 *_t24) {
+                is_b24 = true;
+                t24 = _t24;
+            }
+            a0(b25 *_t25) {
+                is_b25 = true;
+                t25 = _t25;
+            }
+            a0(b26 *_t26) {
+                is_b26 = true;
+                t26 = _t26;
+            }
+            a0(b27 *_t27) {
+                is_b27 = true;
+                t27 = _t27;
+            }
+            a0(b28 *_t28) {
+                is_b28 = true;
+                t28 = _t28;
+            }
+            static a0* parse();
+            std::string to_string() override;
+            void postprocess() override;
+        };
+        std::vector<a0*> t0;
+        include_path(std::vector<a0*> _t0) {
+            t0 = _t0;
+        }
+        static include_path* parse();
+        std::string to_string() override;
+        void postprocess() override;
+    };
+
+    // include_path_relative = "\"" , include_path , "\"" ;
+    struct include_path_relative : public token {
+        terminal *t0;
+        include_path *t1;
+        terminal *t2;
+        include_path_relative(terminal *_t0, include_path *_t1, terminal *_t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static include_path_relative* parse();
+        std::string to_string() override;
+        void postprocess() override;
+    };
+
+    // include_path_lib = "<" , include_path , ">" ;
+    struct include_path_lib : public token {
+        terminal *t0;
+        include_path *t1;
+        terminal *t2;
+        include_path_lib(terminal *_t0, include_path *_t1, terminal *_t2) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+        }
+        static include_path_lib* parse();
+        std::string to_string() override;
+        void postprocess() override;
+    };
+
+    // include = "#include" , rws , ( include_path_relative | include_path_lib ) , ows , ";" ;
+    struct include : public token {
+        struct a0 : public token {
+            struct b0 : public token {
+                include_path_relative *t0;
+                b0(include_path_relative *_t0) {
+                    t0 = _t0;
+                }
+                static b0* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b1 : public token {
+                include_path_lib *t0;
+                b1(include_path_lib *_t0) {
                     t0 = _t0;
                 }
                 static b1* parse();

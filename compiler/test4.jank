@@ -1,0 +1,51 @@
+#include <iostream>;
+#include <assert>;
+#include <crypto/ed25519>;
+#include <intx>;
+
+string keystring(void* key) {
+    return to_hexstring(key, $u64 32);
+}
+
+string to_hexstring(void* buf, u64 len) {
+    string res = new string(len * 0x2, ' ');
+    for(u64 i = 0x0; i < $u64 len; i++) {
+        u64 lo = $u64 ($u8* buf)[i] & 0x0F;
+        u64 hi = $u64 ($u8* buf)[i] & 0xF0;
+        hi >>= $u64 4;
+        if(hi < $u64 10) res[i * 0x2 + 0x0] = ('0' + $u8 hi);
+        else res[i * 0x2 + 0x0] = ('a' + $u8 hi - $u8 10);
+        if(lo < $u64 10) res[i * 0x2 + 0x1] = ('0' + $u8 lo);
+        else res[i * 0x2 + 0x1] = ('a' + $u8 lo - $u8 10);
+    }
+    return res;
+}
+
+i32 main() {
+    cout << "ED25519_D : " << ED25519_D << "\n";
+    cout << "ED25519_L : " << ED25519_L << "\n";
+
+    cout << "ED25519_B : " << ED25519_B << "\n";
+    cout << "ED25519_L * ED25519_B : " << (ED25519_L * ED25519_B) << "\n";
+    cout.flush();
+
+    void* private = malloc($u64 32);
+    void* public = malloc($u64 32);
+    ed25519_generate_keypair(private, public);
+    cout << "PRIVATE : " << keystring(private) << "\n";
+    cout << "PUBLIC : " << keystring(public) << "\n";
+    cout.flush();
+
+    u8* msg = "testing testing 123";
+    void* signature = malloc($u64 64);
+    ed25519_generate_signature(private, public, $void* msg, strlen(msg), signature);
+
+    cout << "SIGNATURE : " << to_hexstring(signature, $u64 64) << "\n";
+    cout.flush();
+
+    i32 status = ed25519_verify_signature(public, $void* msg, strlen(msg), signature);
+    cout << "VERIFY STATUS : " << status << "\n";
+
+    cout << "all tests passed\n";
+    return 0;
+}

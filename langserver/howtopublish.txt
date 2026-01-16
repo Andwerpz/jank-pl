@@ -25,6 +25,3 @@ vsce login <publisher name>
 
  - publish
 VSCE_PAT='<token>' vsce publish
-
-
-

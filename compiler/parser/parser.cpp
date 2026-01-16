@@ -1,4 +1,4 @@
-// Date Generated : 10-18-2025 20:32:31
+// Date Generated : 01-13-2026 12:52:19
 #include "parser.h"
 
 namespace parser {
@@ -6798,7 +6798,7 @@ namespace parser {
     overloadable_operator::a27* overloadable_operator::a27::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        terminal *_t0 = terminal::parse("<");
+        terminal *_t0 = terminal::parse(">=");
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         overloadable_operator::a27* retval = new overloadable_operator::a27(_t0);
@@ -6846,7 +6846,7 @@ namespace parser {
     overloadable_operator::a29* overloadable_operator::a29::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        terminal *_t0 = terminal::parse(">");
+        terminal *_t0 = terminal::parse("<");
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         overloadable_operator::a29* retval = new overloadable_operator::a29(_t0);
@@ -6870,7 +6870,7 @@ namespace parser {
     overloadable_operator::a30* overloadable_operator::a30::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        terminal *_t0 = terminal::parse(">=");
+        terminal *_t0 = terminal::parse(">");
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         overloadable_operator::a30* retval = new overloadable_operator::a30(_t0);
@@ -16097,23 +16097,1082 @@ namespace parser {
         t3->postprocess();
     }
 
-    library_path* library_path::parse() {
+    include_path::a0::b0* include_path::a0::b0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        terminal *_t0 = terminal::parse("<");
+        alpha *_t0 = alpha::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        identifier *_t1 = identifier::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        terminal *_t2 = terminal::parse(">");
-        if(_t2 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        library_path* retval = new library_path(_t0, _t1, _t2);
+        include_path::a0::b0* retval = new include_path::a0::b0(_t0);
         retval->start_ctx = _start_ctx;
         retval->end_ctx = get_ctx();
         return retval;
     }
 
-    std::string library_path::to_string() {
+    std::string include_path::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b0::postprocess() {
+        token_type = "include_path::a0::b0";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b1* include_path::a0::b1::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        digit *_t0 = digit::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b1* retval = new include_path::a0::b1(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b1::postprocess() {
+        token_type = "include_path::a0::b1";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b2* include_path::a0::b2::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("/");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b2* retval = new include_path::a0::b2(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b2::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b2::postprocess() {
+        token_type = "include_path::a0::b2";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b3* include_path::a0::b3::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("+");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b3* retval = new include_path::a0::b3(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b3::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b3::postprocess() {
+        token_type = "include_path::a0::b3";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b4* include_path::a0::b4::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("-");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b4* retval = new include_path::a0::b4(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b4::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b4::postprocess() {
+        token_type = "include_path::a0::b4";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b5* include_path::a0::b5::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse(".");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b5* retval = new include_path::a0::b5(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b5::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b5::postprocess() {
+        token_type = "include_path::a0::b5";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b6* include_path::a0::b6::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse(",");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b6* retval = new include_path::a0::b6(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b6::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b6::postprocess() {
+        token_type = "include_path::a0::b6";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b7* include_path::a0::b7::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("!");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b7* retval = new include_path::a0::b7(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b7::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b7::postprocess() {
+        token_type = "include_path::a0::b7";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b8* include_path::a0::b8::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("@");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b8* retval = new include_path::a0::b8(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b8::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b8::postprocess() {
+        token_type = "include_path::a0::b8";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b9* include_path::a0::b9::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("#");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b9* retval = new include_path::a0::b9(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b9::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b9::postprocess() {
+        token_type = "include_path::a0::b9";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b10* include_path::a0::b10::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("$");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b10* retval = new include_path::a0::b10(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b10::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b10::postprocess() {
+        token_type = "include_path::a0::b10";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b11* include_path::a0::b11::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("%");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b11* retval = new include_path::a0::b11(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b11::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b11::postprocess() {
+        token_type = "include_path::a0::b11";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b12* include_path::a0::b12::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("^");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b12* retval = new include_path::a0::b12(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b12::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b12::postprocess() {
+        token_type = "include_path::a0::b12";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b13* include_path::a0::b13::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("&");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b13* retval = new include_path::a0::b13(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b13::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b13::postprocess() {
+        token_type = "include_path::a0::b13";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b14* include_path::a0::b14::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("*");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b14* retval = new include_path::a0::b14(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b14::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b14::postprocess() {
+        token_type = "include_path::a0::b14";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b15* include_path::a0::b15::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("(");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b15* retval = new include_path::a0::b15(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b15::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b15::postprocess() {
+        token_type = "include_path::a0::b15";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b16* include_path::a0::b16::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse(")");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b16* retval = new include_path::a0::b16(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b16::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b16::postprocess() {
+        token_type = "include_path::a0::b16";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b17* include_path::a0::b17::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("_");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b17* retval = new include_path::a0::b17(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b17::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b17::postprocess() {
+        token_type = "include_path::a0::b17";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b18* include_path::a0::b18::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("=");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b18* retval = new include_path::a0::b18(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b18::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b18::postprocess() {
+        token_type = "include_path::a0::b18";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b19* include_path::a0::b19::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse(":");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b19* retval = new include_path::a0::b19(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b19::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b19::postprocess() {
+        token_type = "include_path::a0::b19";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b20* include_path::a0::b20::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse(";");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b20* retval = new include_path::a0::b20(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b20::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b20::postprocess() {
+        token_type = "include_path::a0::b20";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b21* include_path::a0::b21::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("?");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b21* retval = new include_path::a0::b21(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b21::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b21::postprocess() {
+        token_type = "include_path::a0::b21";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b22* include_path::a0::b22::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("|");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b22* retval = new include_path::a0::b22(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b22::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b22::postprocess() {
+        token_type = "include_path::a0::b22";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b23* include_path::a0::b23::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("{");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b23* retval = new include_path::a0::b23(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b23::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b23::postprocess() {
+        token_type = "include_path::a0::b23";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b24* include_path::a0::b24::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("}");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b24* retval = new include_path::a0::b24(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b24::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b24::postprocess() {
+        token_type = "include_path::a0::b24";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b25* include_path::a0::b25::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("[");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b25* retval = new include_path::a0::b25(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b25::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b25::postprocess() {
+        token_type = "include_path::a0::b25";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b26* include_path::a0::b26::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("]");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b26* retval = new include_path::a0::b26(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b26::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b26::postprocess() {
+        token_type = "include_path::a0::b26";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b27* include_path::a0::b27::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("~");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b27* retval = new include_path::a0::b27(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b27::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b27::postprocess() {
+        token_type = "include_path::a0::b27";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0::b28* include_path::a0::b28::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("`");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path::a0::b28* retval = new include_path::a0::b28(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::a0::b28::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_path::a0::b28::postprocess() {
+        token_type = "include_path::a0::b28";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_path::a0* include_path::a0::parse() {
+        parse_context _start_ctx = get_ctx();
+        if(auto x = include_path::a0::b0::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b1::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b2::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b3::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b4::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b5::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b6::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b7::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b8::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b9::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b10::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b11::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b12::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b13::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b14::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b15::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b16::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b17::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b18::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b19::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b20::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b21::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b22::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b23::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b24::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b25::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b26::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b27::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_path::a0::b28::parse()) {
+            include_path::a0* retval = new include_path::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        return nullptr;
+    }
+
+    std::string include_path::a0::to_string() {
+        if(is_b0) return t0->to_string();
+        if(is_b1) return t1->to_string();
+        if(is_b2) return t2->to_string();
+        if(is_b3) return t3->to_string();
+        if(is_b4) return t4->to_string();
+        if(is_b5) return t5->to_string();
+        if(is_b6) return t6->to_string();
+        if(is_b7) return t7->to_string();
+        if(is_b8) return t8->to_string();
+        if(is_b9) return t9->to_string();
+        if(is_b10) return t10->to_string();
+        if(is_b11) return t11->to_string();
+        if(is_b12) return t12->to_string();
+        if(is_b13) return t13->to_string();
+        if(is_b14) return t14->to_string();
+        if(is_b15) return t15->to_string();
+        if(is_b16) return t16->to_string();
+        if(is_b17) return t17->to_string();
+        if(is_b18) return t18->to_string();
+        if(is_b19) return t19->to_string();
+        if(is_b20) return t20->to_string();
+        if(is_b21) return t21->to_string();
+        if(is_b22) return t22->to_string();
+        if(is_b23) return t23->to_string();
+        if(is_b24) return t24->to_string();
+        if(is_b25) return t25->to_string();
+        if(is_b26) return t26->to_string();
+        if(is_b27) return t27->to_string();
+        if(is_b28) return t28->to_string();
+        assert(false);
+    }
+
+    void include_path::a0::postprocess() {
+        token_type = "include_path::a0";
+        if(is_b0) {
+            token_children.push_back(t0);
+            t0->postprocess();
+        }
+        if(is_b1) {
+            token_children.push_back(t1);
+            t1->postprocess();
+        }
+        if(is_b2) {
+            token_children.push_back(t2);
+            t2->postprocess();
+        }
+        if(is_b3) {
+            token_children.push_back(t3);
+            t3->postprocess();
+        }
+        if(is_b4) {
+            token_children.push_back(t4);
+            t4->postprocess();
+        }
+        if(is_b5) {
+            token_children.push_back(t5);
+            t5->postprocess();
+        }
+        if(is_b6) {
+            token_children.push_back(t6);
+            t6->postprocess();
+        }
+        if(is_b7) {
+            token_children.push_back(t7);
+            t7->postprocess();
+        }
+        if(is_b8) {
+            token_children.push_back(t8);
+            t8->postprocess();
+        }
+        if(is_b9) {
+            token_children.push_back(t9);
+            t9->postprocess();
+        }
+        if(is_b10) {
+            token_children.push_back(t10);
+            t10->postprocess();
+        }
+        if(is_b11) {
+            token_children.push_back(t11);
+            t11->postprocess();
+        }
+        if(is_b12) {
+            token_children.push_back(t12);
+            t12->postprocess();
+        }
+        if(is_b13) {
+            token_children.push_back(t13);
+            t13->postprocess();
+        }
+        if(is_b14) {
+            token_children.push_back(t14);
+            t14->postprocess();
+        }
+        if(is_b15) {
+            token_children.push_back(t15);
+            t15->postprocess();
+        }
+        if(is_b16) {
+            token_children.push_back(t16);
+            t16->postprocess();
+        }
+        if(is_b17) {
+            token_children.push_back(t17);
+            t17->postprocess();
+        }
+        if(is_b18) {
+            token_children.push_back(t18);
+            t18->postprocess();
+        }
+        if(is_b19) {
+            token_children.push_back(t19);
+            t19->postprocess();
+        }
+        if(is_b20) {
+            token_children.push_back(t20);
+            t20->postprocess();
+        }
+        if(is_b21) {
+            token_children.push_back(t21);
+            t21->postprocess();
+        }
+        if(is_b22) {
+            token_children.push_back(t22);
+            t22->postprocess();
+        }
+        if(is_b23) {
+            token_children.push_back(t23);
+            t23->postprocess();
+        }
+        if(is_b24) {
+            token_children.push_back(t24);
+            t24->postprocess();
+        }
+        if(is_b25) {
+            token_children.push_back(t25);
+            t25->postprocess();
+        }
+        if(is_b26) {
+            token_children.push_back(t26);
+            t26->postprocess();
+        }
+        if(is_b27) {
+            token_children.push_back(t27);
+            t27->postprocess();
+        }
+        if(is_b28) {
+            token_children.push_back(t28);
+            t28->postprocess();
+        }
+    }
+
+    include_path* include_path::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        std::vector<include_path::a0*> _t0;
+        while(true) {
+            include_path::a0 *tmp = include_path::a0::parse();
+            if(tmp == nullptr) break;
+            _t0.push_back(tmp);
+        }
+        if(_t0.size() == 0) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path* retval = new include_path(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path::to_string() {
+        std::string ans = "";
+        for(int i = 0; i < t0.size(); i++) ans += t0[i]->to_string();
+        return ans;
+    }
+
+    void include_path::postprocess() {
+        token_type = "include_path";
+        for(int i = 0; i < t0.size(); i++) {
+            token_children.push_back(t0[i]);
+            t0[i]->postprocess();
+        }
+    }
+
+    include_path_relative* include_path_relative::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("\"");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        include_path *_t1 = include_path::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        terminal *_t2 = terminal::parse("\"");
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path_relative* retval = new include_path_relative(_t0, _t1, _t2);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path_relative::to_string() {
         std::string ans = "";
         ans += t0->to_string();
         ans += t1->to_string();
@@ -16121,8 +17180,42 @@ namespace parser {
         return ans;
     }
 
-    void library_path::postprocess() {
-        token_type = "library_path";
+    void include_path_relative::postprocess() {
+        token_type = "include_path_relative";
+        token_children.push_back(t0);
+        t0->postprocess();
+        token_children.push_back(t1);
+        t1->postprocess();
+        token_children.push_back(t2);
+        t2->postprocess();
+    }
+
+    include_path_lib* include_path_lib::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("<");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        include_path *_t1 = include_path::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        terminal *_t2 = terminal::parse(">");
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path_lib* retval = new include_path_lib(_t0, _t1, _t2);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path_lib::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2->to_string();
+        return ans;
+    }
+
+    void include_path_lib::postprocess() {
+        token_type = "include_path_lib";
         token_children.push_back(t0);
         t0->postprocess();
         token_children.push_back(t1);
@@ -16134,7 +17227,7 @@ namespace parser {
     include::a0::b0* include::a0::b0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        literal_string *_t0 = literal_string::parse();
+        include_path_relative *_t0 = include_path_relative::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         include::a0::b0* retval = new include::a0::b0(_t0);
@@ -16158,7 +17251,7 @@ namespace parser {
     include::a0::b1* include::a0::b1::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        library_path *_t0 = library_path::parse();
+        include_path_lib *_t0 = include_path_lib::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         include::a0::b1* retval = new include::a0::b1(_t0);

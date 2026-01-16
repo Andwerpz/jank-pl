@@ -1,0 +1,123 @@
+#include <iostream>;
+#include <assert>;
+#include <intx>;
+
+void test_u128_basic() {
+    // identities
+    u128 z = 0x0;
+    u128 o = 0x1;
+
+    u128 a = new u128(0x0123456789abcdef, 0xfedcba9876543210);
+    u128 b = new u128(0x1111111111111111, 0x2222222222222222);
+
+    assert(a + z == a);
+    assert(a - z == a);
+    assert((a ^ a) == z);
+    assert((a & a) == a);
+    assert((a | z) == a);
+
+    assert(a * z == z);
+    assert(a * o == a);
+
+    assert(a / o == a);
+    assert(a % o == z);
+
+    // carry into hi
+    u128 c = new u128(0x0, 0xffffffffffffffff);
+    u128 d = 0x1;
+    assert(c + d == new u128(0x1, 0x0));
+
+    // borrow from hi
+    u128 e = new u128(0x1, 0x0);
+    u128 f = 0x1;
+    assert(e - f == new u128(0x0, 0xffffffffffffffff));
+
+    // more borrowing
+    u128 g = new u128(0x1234, 0x0);
+    u128 h = new u128(0x0, 0xffffffffffffffff);
+    assert(g - h == new u128(0x1233, 0x1));
+
+    cout << "test_u128_basic passed\n";
+}
+
+void test_u128_shifts() {
+    u128 x = new u128(0x0123456789abcdef, 0xfedcba9876543210);
+
+    // >> 64
+    u128 r1 = x >> ($u64 64);
+    assert(r1.lo == x.hi);
+    assert(r1.hi == 0x0);
+
+    // << 64
+    u128 r2 = x << ($u64 64);
+    assert(r2.hi == x.lo);
+    assert(r2.lo == 0x0);
+
+    // boundary bits
+    u128 one = 0x1;
+    u128 top = one << ($u64 127);
+    assert(top.hi == 0x8000000000000000);
+    assert(top.lo == 0x0);
+    assert((top >> ($u64 127)) == one);
+
+    assert((one << ($u64 128)) == 0x0);
+    assert((one >> ($u64 128)) == 0x0);
+
+    cout << "test_u128_shifts passed\n";
+}
+
+void test_u128_mul_div_mod() {
+    // simple multiply
+    {
+        u128 a = new u128(0x0, 0xFEDCBA9876543210);
+        u128 b = a * a;
+        assert(b == new u128(0xFDBAC097C8DC5ACC, 0xDEEC6CD7A44A4100));
+    }
+
+    // division identity: q*b + r == a and r < b
+    {
+        u128 a = new u128(0xdeadbeefdeadbeef, 0x0123456789abcdef);
+        u128 b = new u128(0x0000000000000001, 0x00000000ffffffff);
+
+        u128 q = a / b;
+        u128 r = a % b;
+
+        assert(q * b + r == a);
+        assert(r < b);
+    }
+
+    // divisor bigger than dividend
+    {
+        u128 small = 12345;
+        u128 big = 0x1;
+        big <<= ($u64 100);
+        assert(small < big);
+        assert((small / big) == 0x0);
+        assert((small % big) == small);
+    }
+
+    // power-of-two divisor: q = a >> k, r = a & (2^k - 1)
+    {
+        u128 a = new u128(0xdeadbeefdeadbeef, 0x0123456789abcdef);
+        u64 k = $u64 73;
+        u128 d = 0x1;
+        d <<= k;
+
+        u128 qq = a / d;
+        u128 rr = a % d;
+        assert(qq == (a >> k));
+        assert(rr == (a & (d - new u128(0x0, 0x1))));
+    }
+
+    cout << "test_u128_mul_div_mod passed\n";
+}
+
+i32 main() {
+
+    test_u128_basic();
+    test_u128_shifts();
+    test_u128_mul_div_mod();
+
+    cout << "all tests passed\n";
+    return 0;
+}

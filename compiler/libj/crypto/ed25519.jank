@@ -1,0 +1,390 @@
+#include <crypto/sha2>;
+#include <random>;
+#include <intx>;
+#include <assert>;
+
+//https://datatracker.ietf.org/doc/html/rfc8032#section-5.1.2
+//ed25519 uses an elliptic curve (twisted edwards curve) defined over the finite field F_{2^255 - 19} (hence the name)
+//the ed25519 curve is defined by the equation 
+// a * x^2 + y^2 = 1 + d * x^2 * y^2 (mod p)
+//for ed25519 specifically, we have 
+// p = 2^255 - 19
+// a = -1 (mod p)
+// d = - \frac{121665}{121666} (mod p)
+//points on the curve form a group with the group operator being defined as 
+// (x_0, y_0) + (x_1, y_1) = (x_2, y_2)
+// x_2 = \frac{x_0 * y_1 + x_1 * y_0}{1 + d * x_0 * x_1 * y_0 * y_1}
+// y_2 = \frac{y_0 * y_1 - a * x_0 * x_1}{1 - d * x_0 * x_1 * y_0 * y_1}
+//the neutral point is (x = 0, y = 1)
+
+#global_node ED25519 [MALLOC, IOSTREAM];
+#global_node ED25519_INIT [ED25519];
+
+[ED25519_INIT] i32 ed25519_init_status = init_ed25519(); 
+[ED25519] u512 ED25519_P;
+[ED25519] u512 ED25519_P_LOW_MASK;
+[ED25519] u512 ED25519_INV8;
+[ED25519] u512 ED25519_INV4;
+[ED25519] u512 ED25519_A;
+[ED25519] u512 ED25519_D;
+[ED25519] u512 ED25519_2D;
+[ED25519] u512 ED25519_DECODE_EXP;
+[ED25519] u512 ED25519_DECODE_MULT;
+[ED25519] ed25519_pt ED25519_B;
+[ED25519] u512 ED25519_L;
+
+i32 init_ed25519() {
+    ED25519_P = (new u512(0x1) << ($u64 255)) - (new u512($u64 19));
+    ED25519_P_LOW_MASK = ((new u512(0x1)) << $u64 255) - (new u512(0x1));
+
+    ED25519_INV8 = ed25519_inv(new u512(0x8));
+    ED25519_INV4 = ed25519_inv(new u512(0x4));
+
+    ED25519_A = ED25519_P - (new u512(0x1));
+    ED25519_D = ED25519_P - ((new u512($u64 121665) * ed25519_inv(new u512($u64 121666))) % ED25519_P);
+    ED25519_2D = ed25519_modp(ED25519_D * (new u512(0x2)));
+
+    ED25519_DECODE_EXP = ed25519_modp((ED25519_P - (new u512(0x5))) * ED25519_INV8);
+    ED25519_DECODE_MULT = ed25519_pow(new u512(0x2), ed25519_modp((ED25519_P - (new u512(0x1))) * ED25519_INV4));
+
+    ED25519_B = ed25519_decode($void* "Xfffffffffffffffffffffffffffffff");
+
+    ($u64* @ED25519_L)[0] = 0x5812631a5cf5d3ed;
+    ($u64* @ED25519_L)[1] = 0x14def9dea2f79cd6;
+    ($u64* @ED25519_L)[2] = 0x0000000000000000;
+    ($u64* @ED25519_L)[3] = 0x1000000000000000;
+    return 0;
+}
+
+//stay away from division
+//use the fact that 2^255 = 19 (mod p)
+//instead of multiplying by 19, we can simply recognize that 19 = 16 + 2 + 1, and take sum of bitshifts
+u512 ed25519_modp(u512 x) {
+    for(u64 i = 0x0; i < 0x2; i++) {
+        u512 t = x >> $u64 255;
+        x = (x & ED25519_P_LOW_MASK) + (t << 0x4) + (t << 0x1) + t;
+    }    
+    while(x >= ED25519_P) x -= ED25519_P;
+    return x;
+}
+
+u512 ed25519_inv(u512 x) {
+    u512 pow = ED25519_P - (new u512(0x2));
+    u512 res = 0x1;
+    for(u64 i = 0x0; i < $u64 256; i++) {
+        if(pow.get_bit(0x0)) res = ed25519_modp(res * x);
+        pow >>= 0x1;
+        x = ed25519_modp(x * x);
+    }
+    return res;
+}
+
+u512 ed25519_pow(u512 a, u512 b) {
+    u512 res = 0x1;
+    while(b != 0x0) {
+        if(b.get_bit(0x0)) res = ed25519_modp(res * a);
+        b >>= 0x1;
+        a = ed25519_modp(a * a);
+    }
+    return res;
+}
+
+u512 ed25519_pow(u512 a, u64 b) {
+    u512 res = 0x1;
+    while(b != 0x0) {
+        if(b & 0x1) res = ed25519_modp(res * a);
+        b >>= 0x1;
+        a = ed25519_modp(a * a);
+    }
+    return res;
+}
+
+//point on the elliptic curve
+//the point (x, y) is stored as (X, Y, Z, T) where
+// x = X / Z
+// y = Y / Z
+// x * y = T / Z
+struct ed25519_pt {
+    u512 X;
+    u512 Y;
+    u512 Z;
+    u512 T;
+
+    ed25519_pt(u512 x, u512 y) {
+        this.X = x;
+        this.Y = y;
+        this.Z = 0x1;
+        this.T = ed25519_modp(x * y);
+    }
+
+    //neutral point
+    ed25519_pt() {
+        this.X = 0x0;
+        this.Y = 0x1;
+        this.Z = 0x1;
+        this.T = 0x0;
+    }
+
+    u512 x() {
+        return ed25519_modp(this.X * ed25519_inv(this.Z));
+    }
+
+    u512 y() {
+        return ed25519_modp(this.Y * ed25519_inv(this.Z));
+    }
+}
+
+ed25519_pt operator+(ed25519_pt a, ed25519_pt b) {
+    // A = (Y1-X1)*(Y2-X2)
+    // B = (Y1+X1)*(Y2+X2)
+    // C = T1*2*d*T2
+    // D = Z1*2*Z2
+    // E = B-A
+    // F = D-C
+    // G = D+C
+    // H = B+A
+    // X3 = E*F
+    // Y3 = G*H
+    // T3 = E*H
+    // Z3 = F*G
+
+    u512 A = ed25519_modp((a.Y - a.X + ED25519_P) * (b.Y - b.X + ED25519_P));
+    u512 B = ed25519_modp((a.Y + a.X) * (b.Y + b.X));
+    u512 C = ed25519_modp(ed25519_modp(ED25519_2D * a.T) * b.T);
+    u512 D = ed25519_modp((new u512(0x2)) * a.Z * b.Z);
+    u512 E = B - A + ED25519_P;
+    u512 F = D - C + ED25519_P;
+    u512 G = D + C;
+    u512 H = B + A;
+
+    ed25519_pt res;
+    res.X = ed25519_modp(E * F);
+    res.Y = ed25519_modp(G * H);
+    res.T = ed25519_modp(E * H);
+    res.Z = ed25519_modp(F * G);
+    return res;
+}
+
+ed25519_pt operator*(u64 s, ed25519_pt a) {
+    ed25519_pt res = new ed25519_pt();
+    while(s != 0x0) {
+        if(s & 0x1) res = res + a;
+        a = a + a;
+        s >>= 0x1;
+    }
+    return res;
+}
+
+ed25519_pt operator*(u512 s, ed25519_pt a) {
+    ed25519_pt res = new ed25519_pt();
+    while(s != 0x0) {
+        if(s.get_bit(0x0)) res = res + a;
+        a = a + a; 
+        s >>= 0x1;
+    }
+    return res;
+}
+
+i32 operator==(ed25519_pt a, ed25519_pt b) {
+    return a.x() == b.x() && a.y() == b.y();
+}
+
+i32 operator!=(ed25519_pt a, ed25519_pt b) {
+    return a.x() != b.x() || a.y() != b.y();
+}
+
+ostream& operator<<(ostream& stream, ed25519_pt pt) {
+    return stream << "(" << pt.x() << ", " << pt.y() << ")";
+}
+
+//encodes the elliptic point into the buffer
+//buf should be 32 bytes
+void ed25519_encode(void* buf, ed25519_pt pt) {
+    memset(buf, 0, $u64 32);
+    u512 x = pt.x();
+    u512 y = pt.y();
+
+    //encode y coordinate as little-endian 32-byte integer
+    memcpy(buf, $void* @y, $u64 32);
+
+    //most significant bit of y should always be unset (pt.y < ED25519_P)
+    assert(y < ED25519_P, "ed25519_encode() : invalid y");
+
+    //copy least significant bit of x to most significant bit
+    ($u8* buf)[31] |= $u8 (x.get_bit(0x0) << $u64 7);
+}
+
+//returns 0 on success, 1 on failure
+//buf should be 32 bytes
+i32 ed25519_decode(void* buf, ed25519_pt& out_pt) {
+    //retrieve least significant bit of x
+    u64 x_0 = ($u64 (($u8* buf)[31] & ($u8 0b10000000))) >> 0x7;
+
+    //get y, if this is >= p, decoding fails
+    u512 y;
+    memcpy($void* @(y), buf, $u64 32);
+    ($u8* @y)[31] &= $u8 0b01111111;    //clear most significant bit
+    if(y >= ED25519_P) return 1;        
+
+    //compute x
+    u512 u = ed25519_modp(ed25519_modp(y * y) - (new u512(0x1)) + ED25519_P);
+    u512 v = ed25519_modp(ed25519_modp(ed25519_modp(ED25519_D * y) * y) + (new u512(0x1)));
+    u512 v3 = ed25519_pow(v, 0x3);
+    u512 v7 = ed25519_modp(ed25519_modp(v3 * v3) * v);
+    u512 x = ed25519_modp(ed25519_modp(u * v3) * ed25519_pow(ed25519_modp(u * v7), ED25519_DECODE_EXP));
+    u512 vx2 = ed25519_modp(ed25519_modp(x * x) * v);
+    if(vx2 == u) {
+        //do nothing
+    }
+    else if(vx2 == (ED25519_P - u)) {
+        x = ed25519_modp(x * ED25519_DECODE_MULT);
+    }
+    else {
+        //decoding fails
+        return 1;
+    }
+
+    if(x == 0x0 && x_0 == 0x1) {
+        return 1;
+    }
+
+    if(x_0 != x.get_bit(0x0)) {
+        x = ED25519_P - x;
+    }
+
+    out_pt = new ed25519_pt(x, y);
+    return 0;
+}
+
+//for when we know it should succeed
+ed25519_pt ed25519_decode(void* buf) {
+    ed25519_pt res;
+    if(ed25519_decode(buf, res)) assert(0, "ed25519_decode() : failed");
+    return res;
+}
+
+//out_private and out_public should both be 32 bytes
+void ed25519_generate_keypair(void* out_private, void* out_public) {
+    //generate 32-byte seed, this is the private key
+    void* seed = malloc($u64 32);
+    rand_bytes(seed, $u64 32);
+
+    //get sha512 hash of seed, separate low and high 32 bytes
+    void* hash = malloc($u64 64);
+    sha512(seed, $u64 32, hash);
+    void* h1 = hash;
+    void* h2 = $void* ($u64 hash + $u64 32);
+
+    //clamp some bits of h1
+    ($u8* h1)[0]  &= $u8 0b11111000;
+    ($u8* h1)[31] &= $u8 0b01111111;
+    ($u8* h1)[31] |= $u8 0b01000000;
+
+    //h1 * B is public key, where B is a fixed base point
+    u512 h1v;
+    for(i32 i = 0; i < 8; i++) {
+        h1v.limbs[i] = ($u32* h1)[i];
+    }
+    ed25519_pt public = h1v * ED25519_B;
+
+    //output keys
+    memcpy(out_private, seed, $u64 32);
+    ed25519_encode(out_public, public);
+    
+    free(seed, $u64 32);
+    free(hash, $u64 64);
+}
+
+//out_sig should be 64 bytes
+void ed25519_generate_signature(void* private, void* public, void* msg, u64 msg_len, void* out_sig) {
+    void* buf = malloc($u64 64 + msg_len);
+
+    //hash private key
+    void* hash1 = malloc($u64 64);
+    sha512(private, $u64 32, hash1);
+    void* h1 = hash1;
+    void* h2 = $void* ($u64 hash1 + $u64 32);   
+
+    //clamp some bits of h1 to get s
+    ($u8* h1)[0]  &= $u8 0b11111000;
+    ($u8* h1)[31] &= $u8 0b01111111;
+    ($u8* h1)[31] |= $u8 0b01000000;
+    u512 s;
+    memcpy($void* @s, h1, $u64 32);
+
+    //generate r
+    memcpy(buf, h2, $u64 32);
+    memcpy($void* ($u64 buf + $u64 32), msg, msg_len);
+    void* hash2 = malloc($u64 64);
+    sha512(buf, $u64 32 + msg_len, hash2);
+    u512 r;
+    memcpy($void* @r, hash2, $u64 64);
+    r %= ED25519_L;
+
+    //compute R = r * B 
+    ed25519_pt R = r * ED25519_B;
+
+    //generate k
+    ed25519_encode($void* ($u64 buf + $u64 0), R);
+    memcpy($void* ($u64 buf + $u64 32), public, $u64 32);
+    memcpy($void* ($u64 buf + $u64 64), msg, msg_len);
+    void* hash3 = malloc($u64 64);
+    sha512(buf, $u64 64 + msg_len, hash3);
+    u512 k;
+    memcpy($void* @k, hash3, $u64 64);
+    k %= ED25519_L;
+
+    //compute S = (r + k * s) (mod L)
+    u512 S = (r + k * s) % ED25519_L;
+
+    //signature is concatenating first R then S (32 bytes each -> 64 bytes total)
+    ed25519_encode(out_sig, R);
+    memcpy($void* ($u64 out_sig + $u64 32), $void* @S, $u64 32);
+
+    free(hash1, $u64 64);
+    free(hash2, $u64 64);
+    free(hash3, $u64 64);
+    free(buf, $u64 64 + msg_len);
+}
+
+//returns 0 on success (valid signature), 1 on failure (invalid signature)
+i32 ed25519_verify_signature(void* public, void* msg, u64 msg_len, void* sig) {
+    //decode signature and public key
+    ed25519_pt R;
+    ed25519_pt A;
+    u512 S;
+    if(ed25519_decode(sig, R)) {
+        // R failed to decode
+        return 1;
+    }
+    if(ed25519_decode(public, A)) {
+        // A failed to decode
+        return 1;
+    }
+    memcpy($void* @S, $void* ($u64 sig + $u64 32), $u64 32);
+    if(S >= ED25519_L) {
+        // S must be modulo L
+        return 1;
+    }
+
+    //generate k
+    void* buf = malloc($u64 64 + msg_len);
+    memcpy($void* ($u64 buf + $u64 0), sig, $u64 32);
+    memcpy($void* ($u64 buf + $u64 32), public, $u64 32);
+    memcpy($void* ($u64 buf + $u64 64), msg, msg_len);
+    void* hash = malloc($u64 64);
+    sha512(buf, $u64 64 + msg_len, hash);
+    u512 k;
+    memcpy($void* @k, hash, $u64 64);
+    k %= ED25519_L;
+
+    //ensure [8][S]B = [8]R + [8][k]A
+    ed25519_pt _B = 0x8 * (S * ED25519_B);
+    ed25519_pt _R = 0x8 * R;
+    ed25519_pt _A = 0x8 * (k * A);
+    i32 res = _B != _R + _A;
+
+    free(hash, $u64 64);
+    free(buf, $u64 64 + msg_len);
+    return res;
+}
