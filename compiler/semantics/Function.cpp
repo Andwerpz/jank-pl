@@ -142,6 +142,8 @@ bool Function::is_well_formed() {
         }
         local_offset -= 8;
     }
+
+    //push parameters onto stack
     for(int i = 0; i < parameters.size(); i++){
         Variable* v = add_stack_variable(parameters[i]->type, parameters[i]->id);
         if(v == nullptr) {
@@ -175,8 +177,11 @@ bool Function::is_well_formed() {
     }
     else {
         //add trailing return for void functions
-        fout << indent() << "pop %rbp\n";   //should not be managed by local_offset
-        fout << indent() << "ret\n";
+        ReturnStatement *rs = new ReturnStatement(std::nullopt);
+        if(!rs->is_well_formed()) {
+            std::cout << "Trailing return failed??";
+            assert(0);  
+        }
     }
 
     fout << "\n";

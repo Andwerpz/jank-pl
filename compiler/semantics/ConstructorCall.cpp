@@ -125,8 +125,8 @@ void ConstructorCall::emit_asm(bool addr_provided) {
         std::string label = get_constructor_label(c->resolve_constructor_signature());
         fout << indent() << "call " << label << "\n";
 
-        //clean up argument temp variables
-        pop_declaration_stack();
+        //clean up argument temp variables, freeing them is handled by the constructor
+        pop_declaration_stack(false);
 
         //clean up target struct argument
         emit_add_rsp(8, "ConstructorCall::emit_asm() : target struct");
@@ -160,8 +160,8 @@ void ConstructorCall::emit_asm(bool addr_provided) {
         std::string label = get_constructor_label(c->resolve_constructor_signature());
         fout << indent() << "call " << label << "\n";
 
-        //clean up argument temp variables
-        pop_declaration_stack();
+        //clean up argument temp variables, freeing them is handled by the constructor
+        pop_declaration_stack(false);
 
         //return primitive
         emit_pop("%rax", "ConstructorCall::emit_asm() : primitive this");

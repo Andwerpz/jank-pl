@@ -1,79 +1,145 @@
-#include <assert>;
 #include <iostream>;
-#include <crypto/sha2>;
-#include <string>;
-
-string hashstring(void* hash) {
-    string res = new string(128, ' ');
-    for(u64 i = 0x0; i < $u64 64; i++) {
-        u64 lo = $u64 ($u8* hash)[i] & 0x0F;
-        u64 hi = $u64 ($u8* hash)[i] & 0xF0;
-        hi >>= $u64 4;
-        if(hi < $u64 10) res[i * 0x2 + 0x0] = ('0' + $u8 hi);
-        else res[i * 0x2 + 0x0] = ('a' + $u8 hi - $u8 10);
-        if(lo < $u64 10) res[i * 0x2 + 0x1] = ('0' + $u8 lo);
-        else res[i * 0x2 + 0x1] = ('a' + $u8 lo - $u8 10);
-    }
-    return res;
-}
+#include <assert>;
+#include <intx>;
 
 void test_basic() {
-    {
-        u8* text = "bello bello testing 123";
-        void* hash = malloc($u64 64);
-        sha512($void* text, strlen(text), hash);
-        string exp = "28c34b4d5f15e1148892cf323b51dcce0e82e3fd84b294c935d912f8e398c3a503922f4ac0373ac7bb21fe40c2ccfd10c099b4621d04ae8ba70e707d69cc200d";
-        assert(hashstring(hash) == exp, "test_basic() : hash 1 does not match");
-        free(hash, $u64 64);
-    }
+    // identities
+    u128 z = 0x0;
+    u128 o = 0x1;
 
-    {
-        u8* text = "Bro thought he could become the next rizz king by doing the uncanny ankha zone dance like a sussy baka in ohiodont bro know quandale dingle already did the forgis on the jeep thug shaker banban style with ballerbro aint ever making it out of oklahoma the ocky way that shit just plain uncanny like skibidi toilet bro bro got negative infinity morbin chill bill pizza tower barbenheimer rizz brobro got that nathaniel b ahh griddy brobro really thought he had that rise of gru grimace shake 1 2 buckle my shoe spiderverse whopper rizz brobro got that canon event baby gronk waffle house monday left me broken ahh drip in ohio bro we aint ever makin it out of ohio with bros goofy ahh dj khaled mr chedda sisyphus toxic gossip train pikmin 4 ahh rizz bro that aint even elephant mario titanic submarine god tier rizz brothats just uncanny like shadow wizard money gang ambatukam twitter x brofr bro like bro lets go golfing in ohio kumalala savesta sbidi toiledt";
-        void* hash = malloc($u64 64);
-        sha512($void* text, strlen(text), hash);
-        string exp = "97161da514d7850476aec65f43b4e105dcfcd4db5b2e3d7a89210ae8815f686bc9046fda2339f21a44e5126f5113c525d8cdfb695b472c93a74ad9bb0a5d4788";
-        assert(hashstring(hash) == exp, "test_basic() : hash 2 does not match");
-        free(hash, $u64 64);
-    }
+    u128 a = new u128(0x0123456789abcdef, 0xfedcba9876543210);
+    u128 b = new u128(0x1111111111111111, 0x2222222222222222);
 
-    {
-        u8* text = "Welcome Im sure you all have heard of Andrew Li If you have heard of him you are intimately familiar with his identity of coding Jesus Well here in yummy-yummy-andrewli-dylan-jank I would like to introduce a new side of Andrew Li to you all The connoisseur this project started as a one-off economic venture However as often happens what began as a whim turned into a habit every weekend for the past 2 semesters Mr Li and I would take our talents to the various food establishments around the college station sphere some savory and some rancid this past week on another whim I inquired Mr Li if he would kindly pin his thoughts about our previous restraints to paper to my surprise he obliged my request At first when I witnessed their transfer of his thoughts to paper I thought nothing of it I was only familiar with his /G coding mode it was only after carefully reading his list that I realized I was sitting on literary gold All must hear his truth so that I will deliver Rating Our rating system is unconventional It is a 0-5 star system a five is the worst possible rating and a zero is the best This out-of-the-box rating method was inspired by the first eatery that started our journey Shun Da Mom The idea is that a five is as close to shun da mom as you can get(crass) and a zero is the farthest away you can get(class) Now that you have the story and the rating I will tell you the truth without further ado";
-        void* hash = malloc($u64 64);
-        sha512($void* text, strlen(text), hash);
-        string exp = "13e8cdf9db7da62031e6d5862d046a628080025aa2f1e576d0a69e51fb1a423ff47af365065929df9022ab4e41359fb419ee3af27cde2e6f4bde23ebc01df83f";
-        assert(hashstring(hash) == exp, "test_basic() : hash 3 does not match");
-        free(hash, $u64 64);
-    }
+    assert(a + z == a);
+    assert(a - z == a);
+    assert((a ^ a) == z);
+    assert((a & a) == a);
+    assert((a | z) == a);
+
+    assert(a * z == z);
+    assert(a * o == a);
+
+    assert(a / o == a);
+    assert(a % o == z);
+
+    // carry into hi
+    u128 c = new u128(0x0, 0xffffffffffffffff);
+    u128 d = 0x1;
+    assert(c + d == new u128(0x1, 0x0));
+
+    // borrow from hi
+    u128 e = new u128(0x1, 0x0);
+    u128 f = 0x1;
+    assert(e - f == new u128(0x0, 0xffffffffffffffff));
+
+    // more borrowing
+    u128 g = new u128(0x1234, 0x0);
+    u128 h = new u128(0x0, 0xffffffffffffffff);
+    assert(g - h == new u128(0x1233, 0x1));
 
     cout << "test basic passed\n";
 }
 
-void test_streaming() {
-    u8* text = "Welcome Im sure you all have heard of Andrew Li If you have heard of him you are intimately familiar with his identity of coding Jesus Well here in yummy-yummy-andrewli-dylan-jank I would like to introduce a new side of Andrew Li to you all The connoisseur this project started as a one-off economic venture However as often happens what began as a whim turned into a habit every weekend for the past 2 semesters Mr Li and I would take our talents to the various food establishments around the college station sphere some savory and some rancid this past week on another whim I inquired Mr Li if he would kindly pin his thoughts about our previous restraints to paper to my surprise he obliged my request At first when I witnessed their transfer of his thoughts to paper I thought nothing of it I was only familiar with his /G coding mode it was only after carefully reading his list that I realized I was sitting on literary gold All must hear his truth so that I will deliver Rating Our rating system is unconventional It is a 0-5 star system a five is the worst possible rating and a zero is the best This out-of-the-box rating method was inspired by the first eatery that started our journey Shun Da Mom The idea is that a five is as close to shun da mom as you can get(crass) and a zero is the farthest away you can get(class) Now that you have the story and the rating I will tell you the truth without further ado";
-    string exp = "13e8cdf9db7da62031e6d5862d046a628080025aa2f1e576d0a69e51fb1a423ff47af365065929df9022ab4e41359fb419ee3af27cde2e6f4bde23ebc01df83f";
-    sha512_ctx ctx;
-    sha512_init(@ctx);
-    u64 len = strlen(text);
-    u64 ptr = 0x0;
-    u64 inc = $u64 531;
-    while(ptr < len) {
-        u64 amt = len - ptr;
-        if(amt > inc) amt = inc;
-        sha512_update(@ctx, $void* ($u64 text + ptr), amt);
-        ptr += amt;
-    }
-    void* hash = malloc($u64 64);
-    sha512_final(@ctx, hash);
-    assert(hashstring(hash) == exp, "test_streaming() : hash does not match");
-    free(hash, $u64 64);
+void test_shifts() {
+    u128 x = new u128(0x0123456789abcdef, 0xfedcba9876543210);
 
-    cout << "test streaming passed\n";
+    // >> 64
+    u128 r1 = x >> ($u64 64);
+    assert(r1.lo == x.hi);
+    assert(r1.hi == 0x0);
+
+    // << 64
+    u128 r2 = x << ($u64 64);
+    assert(r2.hi == x.lo);
+    assert(r2.lo == 0x0);
+
+    // boundary bits
+    u128 one = 0x1;
+    u128 top = one << ($u64 127);
+    assert(top.hi == 0x8000000000000000);
+    assert(top.lo == 0x0);
+    assert((top >> ($u64 127)) == one);
+
+    assert((one << ($u64 128)) == 0x0);
+    assert((one >> ($u64 128)) == 0x0);
+
+    cout << "test shifts passed\n";
+}
+
+void test_mul_div_mod() {
+    // simple multiply
+    {
+        u128 a = new u128(0x0, 0xFEDCBA9876543210);
+        u128 b = a * a;
+        assert(b == new u128(0xFDBAC097C8DC5ACC, 0xDEEC6CD7A44A4100));
+    }
+
+    // division identity: q*b + r == a and r < b
+    {
+        u128 a = new u128(0xdeadbeefdeadbeef, 0x0123456789abcdef);
+        u128 b = new u128(0x0000000000000001, 0x00000000ffffffff);
+
+        u128 q = a / b;
+        u128 r = a % b;
+
+        assert(q * b + r == a);
+        assert(r < b);
+    }
+
+    // divisor bigger than dividend
+    {
+        u128 small = 12345;
+        u128 big = 0x1;
+        big <<= ($u64 100);
+        assert(small < big);
+        assert((small / big) == 0x0);
+        assert((small % big) == small);
+    }
+
+    // power-of-two divisor: q = a >> k, r = a & (2^k - 1)
+    {
+        u128 a = new u128(0xdeadbeefdeadbeef, 0x0123456789abcdef);
+        u64 k = $u64 73;
+        u128 d = 0x1;
+        d <<= k;
+
+        u128 qq = a / d;
+        u128 rr = a % d;
+        assert(qq == (a >> k));
+        assert(rr == (a & (d - new u128(0x0, 0x1))));
+    }
+
+    cout << "test mul div mod passed\n";
+}
+
+void test_pow() {
+    //3^200 % 2^128
+    {
+        u128 a = 0x1;
+        for(i32 i = 0; i < 200; i++) {
+            a *= new u128(0x3);
+        }
+        assert(a == new u128(0x83ECF6F6E4A7AE22, 0x5BFAFF1EAAF8B0A1), "pow 1 wrong");
+    }
+
+    //7^123 % 2^128
+    {
+        u128 a = 0x1;
+        for(i32 i = 0; i < 123; i++) {
+            a *= new u128(0x7);
+        }
+        assert(a == new u128(0xC05E026E146AF38B, 0x2C85DCBA48278A17), "pow 2 wrong");
+    }
+
+    cout << "test pow passed\n";
 }
 
 i32 main() {
 
     test_basic();
-    test_streaming();
+    test_shifts();
+    test_mul_div_mod();
+    test_pow();
 
     cout << "all tests passed\n";
     return 0;

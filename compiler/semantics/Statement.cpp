@@ -25,6 +25,11 @@ ReturnStatement::ReturnStatement(Expression* expr) {
     else opt_expr = expr;
 }
 
+ReturnStatement::ReturnStatement(std::optional<Expression*> expr) {
+    if(expr.has_value()) assert(expr.value() != nullptr);
+    opt_expr = expr;
+}
+
 InlineASMStatement::InlineASMStatement(std::vector<std::variant<std::string, InlineASMAccess*>> _tokens) {
     tokens = _tokens;
 }
@@ -245,50 +250,81 @@ bool ExpressionStatement::is_well_formed() {
 }
 
 bool ReturnStatement::is_well_formed() {
-    // - if we are not in a function or overload right now (constructor / destructor), make sure this is a void return
-    if(enclosing_function == nullptr && enclosing_overload == nullptr) {
+    //list of variables we shouldn't clean after returning 
+    // (either we returned them, or the variable is 'this' and we have an enclosing type)
+    std::vector<Identifier*> escape;
+
+    //need to escape 'this' in struct member functions
+    if(enclosing_type.has_value()) {
+        escape.push_back(new Identifier("this"));
+    }
+
+    // - see if we need to return
+    assert(enclosing_return_type != nullptr);
+    if(enclosing_return_type->equals(primitives::_void)) {
         if(opt_expr.has_value()) {
-            std::cout << "Constructor / Destructor return cannot be non-void\n";
+            std::cout << "Non-void return on a void return type function\n";
             return false;
         }
     }
     else {
         //otherwise, need to see if we need to return 
-        // - does the expression resolve to a type?
-        Type *et = nullptr, *ft = nullptr;
-        if(enclosing_function != nullptr) ft = enclosing_function->type;
-        else if(enclosing_overload != nullptr) ft = enclosing_overload->type;
-        else assert(false);
-
-        if(opt_expr.has_value()) {
-            Expression *expr = opt_expr.value();
-            et = expr->resolve_type();
+        // - does a return expression exist?
+        if(!opt_expr.has_value()) {
+            std::cout << "Void return on a non-void return type function\n";
+            return false;
         }
-        else et = primitives::_void->make_copy();
+
+        // - does the expression resolve to a type?
+        Expression *expr = opt_expr.value();
+        assert(expr != nullptr);
+        Type *et = opt_expr.value()->resolve_type();
+        Type *ft = enclosing_return_type->make_copy();
         if(et == nullptr) {
             std::cout << "Return expression does not resolve to type\n";
             return false;
         }
-        // - are we trying to return something when the function is returning void?
-        if(ft->equals(primitives::_void) && !et->equals(primitives::_void)) {
-            std::cout << "Non-void return expression in void function\n";
-            return false;
-        }
-        
-        //see if we need to return something
-        if(!ft->equals(primitives::_void)) {
-            // - are we actually returning something?
-            if(!opt_expr.has_value()) {
-                std::cout << "Return has to return something for non-void function : " << enclosing_function->resolve_function_signature()->to_string() << "\n";
-                return false;
+
+        //if we're directly returning a variable from this function's execution context
+        //we can just return it directly without copying, just make sure to not destruct it
+        {
+            if(!et->equals(ft)) {
+                //return type doesn't match function type, probably need some overload
+                goto default_return;
             }
 
-            assert(opt_expr.has_value());
-            Expression *expr = opt_expr.value();
-            Identifier *vid = new Identifier(create_new_tmp_variable_name());
+            ExprPrimary* ep = dynamic_cast<ExprPrimary*>(expr->expr_node);
+            if(ep == nullptr) {
+                //expression is a complex statement
+                goto default_return;
+            }
+            
+            if(!std::holds_alternative<Identifier*>(ep->val)) {
+                //primary expression isn't just a variable
+                goto default_return;
+            }
+
+            Identifier *vid = std::get<Identifier*>(ep->val);
+            Variable *v = get_variable(vid);
+            assert(v != nullptr);
+            if(v->is_global) {
+                //have to make copy of global variable when returning
+                goto default_return;
+            }
+
+            //found a local variable return
+            fout << indent() << "mov " << v->addr << ", %rax\n";
+            escape.push_back(vid);
+
+            goto return_done;
+        }
+        
+        default_return: {
+            //create temp stack frame for temp variable
             push_declaration_stack();
 
             // - can the expression return type be assigned to the return type of enclosing function?
+            Identifier *vid = new Identifier(create_new_tmp_variable_name());
             Variable *v = emit_initialize_stack_variable(ft, vid, expr);
             if(v == nullptr) {
                 std::cout << "Return expression cannot be cast to function return type, " << et->to_string() << " -> " << ft->to_string() << "\n";
@@ -298,17 +334,20 @@ bool ReturnStatement::is_well_formed() {
             //put value of declared variable into %rax
             fout << indent() << "mov " << v->addr << ", %rax\n";
 
-            //clean up temp variable
+            //clean up temp variable (but don't dealloc)
             pop_declaration_stack(false);
         }
+        return_done: {}
     }
 
     // - do cleanup and return from function. 
-    //clean up local variables
-    for(int i = (int) declaration_stack.size() - 1; i >= 1; i--) {  //free heap structs
-        emit_cleanup_declaration_stack_layer(i);
+    //clean up local variables + function arguments
+    for(int i = (int) declaration_stack.size() - 1; i >= 0; i--) {
+        emit_cleanup_declaration_stack_layer(i, escape);
     }
-    if(local_offset != 0) { //reset %rsp
+
+    //reset %rsp
+    if(local_offset != 0) {
         fout << indent() << "add $" << -local_offset << ", %rsp\n"; //should not be managed by local_offset
     }
 

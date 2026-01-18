@@ -46,6 +46,18 @@ i32 main() {
     i32 status = ed25519_verify_signature(public, $void* msg, strlen(msg), signature);
     cout << "VERIFY STATUS : " << status << "\n";
 
+    cout << "DEFAULT CONSTRUCT COUNT : " << U512_DEFAULT_CONSTRUCT_COUNT << "\n";
+    cout << "COPY COUNT : " << U512_COPY_COUNT << "\n";
+    cout << "DESTRUCT COUNT : " << U512_DESTRUCT_COUNT << "\n";
+    cout << "MUL COUNT : " << U512_MUL_COUNT << "\n";
+    cout << "ADDSUB COUNT : " << U512_ADDSUB_COUNT << "\n";
+    cout << "BITOP COUNT : " << U512_BITOP_COUNT << "\n";
+    cout << "DIVMOD COUNT : " << U512_DIVMOD_COUNT << "\n";
+    cout << "INCDEC COUNT : " << U512_INCDEC_COUNT << "\n";
+    cout << "SHIFT COUNT : " << U512_SHIFT_COUNT << "\n";
+    cout << "COMPARE COUNT : " << U512_COMPARE_COUNT << "\n";
+    cout.flush();
+
     cout << "all tests passed\n";
     return 0;
 }

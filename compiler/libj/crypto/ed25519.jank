@@ -60,8 +60,9 @@ i32 init_ed25519() {
 //use the fact that 2^255 = 19 (mod p)
 //instead of multiplying by 19, we can simply recognize that 19 = 16 + 2 + 1, and take sum of bitshifts
 u512 ed25519_modp(u512 x) {
+    u512 t;
     for(u64 i = 0x0; i < 0x2; i++) {
-        u512 t = x >> $u64 255;
+        t = x >> $u64 255;
         x = (x & ED25519_P_LOW_MASK) + (t << 0x4) + (t << 0x1) + t;
     }    
     while(x >= ED25519_P) x -= ED25519_P;
@@ -72,8 +73,7 @@ u512 ed25519_inv(u512 x) {
     u512 pow = ED25519_P - (new u512(0x2));
     u512 res = 0x1;
     for(u64 i = 0x0; i < $u64 256; i++) {
-        if(pow.get_bit(0x0)) res = ed25519_modp(res * x);
-        pow >>= 0x1;
+        if(pow.get_bit(i)) res = ed25519_modp(res * x);
         x = ed25519_modp(x * x);
     }
     return res;
@@ -81,9 +81,8 @@ u512 ed25519_inv(u512 x) {
 
 u512 ed25519_pow(u512 a, u512 b) {
     u512 res = 0x1;
-    while(b != 0x0) {
-        if(b.get_bit(0x0)) res = ed25519_modp(res * a);
-        b >>= 0x1;
+    for(u64 i = 0x0; i < $u64 256; i++) {
+        if(b.get_bit(i)) res = ed25519_modp(res * a);
         a = ed25519_modp(a * a);
     }
     return res;
@@ -91,7 +90,7 @@ u512 ed25519_pow(u512 a, u512 b) {
 
 u512 ed25519_pow(u512 a, u64 b) {
     u512 res = 0x1;
-    while(b != 0x0) {
+    for(i32 i = 0; i < 64; i++) {
         if(b & 0x1) res = ed25519_modp(res * a);
         b >>= 0x1;
         a = ed25519_modp(a * a);
@@ -165,11 +164,38 @@ ed25519_pt operator+(ed25519_pt a, ed25519_pt b) {
     return res;
 }
 
+void ed25519_pt_double(ed25519_pt& a) {
+    // A = X1^2
+    // B = Y1^2
+    // C = 2*Z1^2
+    // H = A+B
+    // E = H-(X1+Y1)^2
+    // G = A-B
+    // F = C+G
+    // X3 = E*F
+    // Y3 = G*H
+    // T3 = E*H
+    // Z3 = F*G
+
+    u512 A = ed25519_modp(a.X * a.X);
+    u512 B = ed25519_modp(a.Y * a.Y);
+    u512 C = ed25519_modp((new u512(0x2)) * a.Z * a.Z);
+    u512 H = A + B;
+    u512 E = ed25519_modp(H - ed25519_modp((a.X + a.Y) * (a.X + a.Y)) + ED25519_P);
+    u512 G = ed25519_modp(A - B + ED25519_P);
+    u512 F = C + G;
+
+    a.X = ed25519_modp(E * F);
+    a.Y = ed25519_modp(G * H);
+    a.T = ed25519_modp(E * H);
+    a.Z = ed25519_modp(F * G);
+}
+
 ed25519_pt operator*(u64 s, ed25519_pt a) {
     ed25519_pt res = new ed25519_pt();
-    while(s != 0x0) {
+    for(i32 i = 0; i < 64; i++) {
         if(s & 0x1) res = res + a;
-        a = a + a;
+        ed25519_pt_double(a);
         s >>= 0x1;
     }
     return res;
@@ -177,10 +203,9 @@ ed25519_pt operator*(u64 s, ed25519_pt a) {
 
 ed25519_pt operator*(u512 s, ed25519_pt a) {
     ed25519_pt res = new ed25519_pt();
-    while(s != 0x0) {
-        if(s.get_bit(0x0)) res = res + a;
-        a = a + a; 
-        s >>= 0x1;
+    for(i32 i = 0; i < 256; i++) {
+        if(s.get_bit($u64 i)) res = res + a;
+        ed25519_pt_double(a);
     }
     return res;
 }
@@ -229,7 +254,7 @@ i32 ed25519_decode(void* buf, ed25519_pt& out_pt) {
     //compute x
     u512 u = ed25519_modp(ed25519_modp(y * y) - (new u512(0x1)) + ED25519_P);
     u512 v = ed25519_modp(ed25519_modp(ed25519_modp(ED25519_D * y) * y) + (new u512(0x1)));
-    u512 v3 = ed25519_pow(v, 0x3);
+    u512 v3 = ed25519_modp(ed25519_modp(v * v) * v);
     u512 v7 = ed25519_modp(ed25519_modp(v3 * v3) * v);
     u512 x = ed25519_modp(ed25519_modp(u * v3) * ed25519_pow(ed25519_modp(u * v7), ED25519_DECODE_EXP));
     u512 vx2 = ed25519_modp(ed25519_modp(x * x) * v);
@@ -282,9 +307,7 @@ void ed25519_generate_keypair(void* out_private, void* out_public) {
 
     //h1 * B is public key, where B is a fixed base point
     u512 h1v;
-    for(i32 i = 0; i < 8; i++) {
-        h1v.limbs[i] = ($u32* h1)[i];
-    }
+    memcpy($void* @h1v, h1, $u64 32);
     ed25519_pt public = h1v * ED25519_B;
 
     //output keys
@@ -295,6 +318,7 @@ void ed25519_generate_keypair(void* out_private, void* out_public) {
     free(hash, $u64 64);
 }
 
+//private / public should be a valid keypair
 //out_sig should be 64 bytes
 void ed25519_generate_signature(void* private, void* public, void* msg, u64 msg_len, void* out_sig) {
     void* buf = malloc($u64 64 + msg_len);

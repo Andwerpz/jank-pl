@@ -1318,8 +1318,8 @@ void ExprPostfix::emit_asm() {
         //call function pointer
         fout << indent() << "call *%rax\n"; //*%rax denotes an indirect call, otherwise %rax would be interpreted as a label
 
-        //cleanup argument temp variables
-        pop_declaration_stack();
+        //cleanup argument temp variables, function will deallocate them
+        pop_declaration_stack(false);
 
         if(asm_debug) fout << indent() << "# done calling function pointer : " << lt->to_string() << "\n";
     }

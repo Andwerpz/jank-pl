@@ -553,17 +553,18 @@ bool Program::is_well_formed() {
         while(function_ptr < declared_functions.size()) {
             ld process_start_time = current_time_seconds();
             Function *f = declared_functions[function_ptr ++];
-            enclosing_function = f;
+            enclosing_return_type = f->type->make_copy();
+            enclosing_type = f->enclosing_type;
             if(!f->is_well_formed()) {
-                enclosing_function = nullptr;
                 return false;
             }
-            enclosing_function = nullptr;
             add_duration_stat("FUNCTION " + f->resolve_function_signature()->to_string(), current_time_seconds() - process_start_time);
         }
         while(constructor_ptr < declared_constructors.size()) {
             ld process_start_time = current_time_seconds();
             Constructor *c = declared_constructors[constructor_ptr ++];
+            enclosing_return_type = primitives::_void->make_copy();
+            enclosing_type = c->type;
             if(!c->is_well_formed()) {
                 return false;
             }
@@ -575,17 +576,18 @@ bool Program::is_well_formed() {
             if(dynamic_cast<OperatorOverload*>(o) == nullptr) continue; //only process overloads
             OperatorOverload *oo = dynamic_cast<OperatorOverload*>(o);
             assert(oo != nullptr);
-            enclosing_overload = oo;
+            enclosing_return_type = oo->type;
+            enclosing_type = std::nullopt;
             if(!oo->is_well_formed()) {
                 return false;
             }
-            enclosing_overload = nullptr;
             add_duration_stat("OVERLOAD " + o->resolve_operator_signature()->to_string(), current_time_seconds() - process_start_time);
-    
         }
         while(destructor_ptr < declared_destructors.size()) {
             ld process_start_time = current_time_seconds();
             Destructor *d = declared_destructors[destructor_ptr ++];
+            enclosing_return_type = primitives::_void->make_copy();
+            enclosing_type = d->type;
             if(!d->is_well_formed()) {
                 return false;
             }
