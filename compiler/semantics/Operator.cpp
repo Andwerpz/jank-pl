@@ -254,8 +254,11 @@ bool OperatorOverload::is_well_formed() {
     }
     else {
         //add trailing return for void functions
-        fout << indent() << "pop %rbp\n";   //should not be managed by local_offset
-        fout << indent() << "ret\n";
+        ReturnStatement *rs = new ReturnStatement(std::nullopt);
+        if(!rs->is_well_formed()) {
+            std::cout << "Trailing return failed??";
+            assert(0);  
+        }
     }
 
     fout << "\n";

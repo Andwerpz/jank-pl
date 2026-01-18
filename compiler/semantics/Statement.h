@@ -54,6 +54,7 @@ struct ExpressionStatement : public SimpleStatement {
 struct ReturnStatement : public SimpleStatement {
     std::optional<Expression*> opt_expr;
     ReturnStatement(Expression* expr);
+    ReturnStatement(std::optional<Expression*> expr);
     bool is_well_formed() override;
     bool is_always_returning() override;
     Statement* make_copy() override;

@@ -1,0 +1,5 @@
+test basic passed
+test shifts passed
+test mul div mod passed
+test pow passed
+all tests passed

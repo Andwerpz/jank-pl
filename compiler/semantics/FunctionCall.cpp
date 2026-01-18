@@ -72,9 +72,9 @@ void FunctionCall::emit_asm() {
     std::string label = get_function_label(f->resolve_function_signature());
     fout << indent() << "call " << label << "\n";
 
-    //clean up argument temp variables
-    pop_declaration_stack();
-
+    //clean up argument temp variables, freeing them is handled by the function itself
+    pop_declaration_stack(false);
+    
     //clean up target struct argument
     if(target_type.has_value()) {
         emit_add_rsp(8, "FunctionCall::emit_asm() : target struct");

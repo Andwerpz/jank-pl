@@ -162,7 +162,9 @@ int label_counter;
 int tmp_variable_counter;
 
 void reset_controller() {
-    enclosing_function = nullptr;
+    enclosing_type = std::nullopt;
+    enclosing_return_type = nullptr;
+
     declared_types.clear();
     declared_basetypes.clear();
     declared_structs.clear();
@@ -1366,21 +1368,46 @@ void emit_cleanup_global_variables() {
 //just emits frees, should not actually affect the controller
 //this should only be called outside of pop_declaration_stack() in special cases (return, break, continue)
 //specifically saves registers %rax, %rcx so that this can be called inside expressions
-void emit_cleanup_declaration_stack_layer(int layer_ind) {
-    assert(layer_ind > 0 && layer_ind < declaration_stack.size());
+//specifically ignores variables named in 'ignore' (used in return to let variables escape destruction if we return them)
+void emit_cleanup_declaration_stack_layer(int layer_ind, std::vector<Identifier*> ignore) {
+    assert(layer_ind >= 0 && layer_ind < declaration_stack.size());
     std::vector<Variable*> layer = declaration_stack[layer_ind];
+
+    //see if there is anything to do
+    std::vector<Variable*> to_clean;
+    for(int i = 0; i < layer.size(); i++) {
+        assert(!layer[i]->is_global);
+        Type *t = layer[i]->type;
+        Identifier* id = layer[i]->id;
+        if(is_type_primitive(t)) continue;
+        bool ignored = false;
+        for(int j = 0; j < ignore.size(); j++) {
+            if(ignore[j]->equals(id)) {
+                ignored = true;
+                break;
+            }
+        }
+        if(ignored) {
+            continue;
+        }
+        to_clean.push_back(layer[i]);
+    }
+    if(to_clean.size() == 0) {
+        return;
+    }
     
     //save %rax, %rcx
     emit_push("%rax", "emit_cleanup_declaration_stack_layer() : save %rax");
     emit_push("%rcx", "emit_cleanup_declaration_stack_layer() : save %rcx");
 
     //destruct any non-primitive variables
-    for(int i = layer.size() - 1; i >= 0; i--){
-        assert(!layer[i]->is_global);
-        Type *t = layer[i]->type;
+    assert(to_clean.size() != 0);
+    for(int i = to_clean.size() - 1; i >= 0; i--){
+        assert(!to_clean[i]->is_global);
+        Type *t = to_clean[i]->type;
         if(!is_type_primitive(t)) {
             //put addr to struct in %rax
-            fout << indent() << "movq " << layer[i]->addr << ", %rax\n";
+            fout << indent() << "movq " << to_clean[i]->addr << ", %rax\n";
 
             //call destructor
             emit_destructor_call(t, true);
@@ -1392,9 +1419,16 @@ void emit_cleanup_declaration_stack_layer(int layer_ind) {
     emit_pop("%rax", "emit_cleanup_declaration_stack_layer() : save %rax");
 }
 
+void emit_cleanup_declaration_stack_layer(int layer_ind) {
+    emit_cleanup_declaration_stack_layer(layer_ind, {});
+}
+
 //cleans up one layer of the declaration stack
 //destructs any non-primitive variables
-//do_free = false should only be the case from return. (we can't free the return value)
+//adjusts the stack pointer
+//do_free = false should only be the case from 
+// - return, we can't free the return value
+// - after function return, function itself is freeing function arguments
 void pop_declaration_stack(bool do_free) {
     assert(declaration_stack.size() != 0);
 
@@ -1730,7 +1764,7 @@ Variable* emit_initialize_global_variable(Type *vt, Identifier *id, std::optiona
 Variable* emit_initialize_variable(Type *vt, Identifier *id, std::optional<Expression*> expr, std::string addr_str, bool is_global, bool is_extern) { 
     assert(vt != nullptr);
     assert(id != nullptr);
-    assert(expr != nullptr);    //might want to later have a version that default declares types
+    if(expr.has_value()) assert(expr.value() != nullptr);
 
     if(debug) std::cout << "Initialize variable : " << vt->to_string() << " " << id->name << std::endl;
 
@@ -1791,41 +1825,74 @@ Variable* emit_initialize_variable(Type *vt, Identifier *id, std::optional<Expre
         //save addr into given addr
         fout << indent() << "movq %rcx, " << addr_str << "\n";
     }
-    else {
+    else if(is_type_primitive(vt)) {
         if(!is_extern) {
-            //split declaration into the 'declaration' and 'assignment'
-            //int a = b;
-            //will turn into
-            //int a;
-            //a = b;
-            //this is so that I don't have to rewrite all that assignment logic
-
-            //'declaration'
-            if(is_type_primitive(vt)) {
-                //just 0 initialize the primitive
-                fout << indent() << "movq $0, " << addr_str << "\n";
-            }
-            else {
-                //call default constructor 
-                ConstructorCall *cc = new ConstructorCall(std::nullopt, vt, {});
-                assert(cc->resolve_type()->equals(vt));
-                cc->emit_asm(false);
-
-                //save pointer to addr
-                fout << indent() << "movq %rax, " << addr_str << "\n";
-            }
+            //zero initialize variable
+            fout << indent() << "movq $0, " << addr_str << "\n";
         }
-        
-
-        //'assignment'
         if(expr.has_value()) {
-            //right now, expr = b. We want expr = (a = b)
+            //assign the variable to the value
             Expression *a_expr = new Expression(new ExprBinary(new ExprPrimary(id), "=", expr.value()->expr_node));
             if(a_expr->resolve_type() == nullptr) {
                 std::cout << "Cannot assign expression into variable type : " << vt->to_string() << ", " << expr.value()->to_string() << "\n";
                 return nullptr;
             }
             a_expr->emit_asm();
+        }
+    }
+    else {
+        // - don't call default constructor, then immediately call copy constructor. Should only call one constructor
+        // - don't call copy constructor when initializing a variable using a r-value
+        //   the variable should instead just become the r-value
+        //   make sure to not auto-dealloc the r-value after emitting the expression
+        // - if const gets implemented, don't have to copy l-values into const variables, can just pass a reference
+
+        if(expr.has_value()) {
+            //if the expression type is the same as the variable type, we can directly assign
+            //otherwise we have to create a subexpression to do overload resolution
+            Type* et = expr.value()->resolve_type();
+            assert(et != nullptr);
+
+            if(!et->equals(vt)) {
+                //default construct variable
+                ConstructorCall *cc = new ConstructorCall(std::nullopt, vt, {});
+                assert(cc->resolve_type()->equals(vt));
+                cc->emit_asm(false);
+                fout << indent() << "movq %rax, " << addr_str << "\n";
+
+                //evaluate assignment expression
+                Expression *a_expr = new Expression(new ExprBinary(new ExprPrimary(id), "=", expr.value()->expr_node));
+                if(a_expr->resolve_type() == nullptr) {
+                    std::cout << "Cannot assign expression into variable type : " << vt->to_string() << ", " << expr.value()->to_string() << "\n";
+                    return nullptr;
+                }
+                a_expr->emit_asm();
+            }
+            else if(expr.value()->is_lvalue()) {
+                //evaluate expression, make copy
+                ConstructorCall *cc = new ConstructorCall(std::nullopt, vt->make_copy(), {expr.value()->make_copy()});
+                assert(cc->resolve_type()->equals(vt));
+                cc->emit_asm(false);
+
+                //move copy into variable
+                fout << indent() << "movq %rax, " << addr_str << "\n";
+            }
+            else {
+                //evaluate expression
+                expr.value()->emit_asm(false);  //don't dealloc r-value struct
+                
+                //move directly into variable
+                fout << indent() << "movq %rax, " << addr_str << "\n";
+            }
+        }
+        else if(!is_extern) {
+            //default construct variable
+            ConstructorCall *cc = new ConstructorCall(std::nullopt, vt, {});
+            assert(cc->resolve_type()->equals(vt));
+            cc->emit_asm(false);
+
+            //save pointer to addr
+            fout << indent() << "movq %rax, " << addr_str << "\n";
         }
     }
 

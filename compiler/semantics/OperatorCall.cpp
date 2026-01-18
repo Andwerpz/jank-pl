@@ -56,8 +56,8 @@ void OperatorCall::emit_asm() {
     std::string label = get_operator_label(o->resolve_operator_signature());
     fout << indent() << "call " << label << "\n";
 
-    //clean up temp variables
-    pop_declaration_stack();
+    //clean up temp variables, freeing them is handled by the operator
+    pop_declaration_stack(false);
 }
 
 std::string OperatorCall::to_string() {

@@ -1,0 +1,23 @@
+#include <iostream>;
+#include <assert>;
+#include <crypto/ed25519>;
+#include <intx>;
+#include <jstring>;
+
+i32 main() {
+    void* private = malloc($u64 32);
+    void* public = malloc($u64 32);
+    ed25519_generate_keypair(private, public);
+
+    u8* msg = "testing testing 123";
+    void* signature = malloc($u64 64);
+    ed25519_generate_signature(private, public, $void* msg, strlen(msg), signature);
+
+    i32 status = ed25519_verify_signature(public, $void* msg, strlen(msg), signature);
+    cout << "VERIFY STATUS : " << status << "\n";
+    cout.flush();
+    assert(status == 0, "signature failed to verify");
+    cout << "signature verified\n";
+    
+    return 0;
+}

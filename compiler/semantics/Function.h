@@ -13,9 +13,9 @@ struct TemplateMapping;
 struct FunctionCall;
 
 struct Function {    
-    std::optional<Type*> enclosing_type;
+    std::optional<Type*> enclosing_type;    //type of containing struct
     bool is_export;         //if true, will generate label equal to function id
-    Type *type;
+    Type *type;             //return type
     Identifier *id;
     std::vector<Parameter*> parameters;
     CompoundStatement *body;

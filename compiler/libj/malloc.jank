@@ -2,23 +2,41 @@
 
 #global_node MALLOC;
 
-// simple bump allocator
-// just increases the heap size every time we want to allocate more memory.
+// // simple bump allocator
+// // just increases the heap size every time we want to allocate more memory.
+// [__GLOBAL_FIRST__] u64 MALLOC_BUMP_MEM_LEFT = 0x0;
+// [__GLOBAL_FIRST__] u64 MALLOC_MB = 0x100000;
+// [__GLOBAL_FIRST__] u64 MALLOC_SBRK_INC = 0x1000000;
+// [__GLOBAL_FIRST__] u64 MALLOC_BRK_ADDR;
 
-void* sbrk(u64 inc) {
-    //find current break
-    u64 cur_brk = sys_brk($u64 0);
+// void* sbrk(u64 inc) {
+//     //find current break
+//     u64 cur_brk = sys_brk($u64 0);
 
-    //set new breakpoint inc bytes ahead
-    sys_brk(cur_brk + inc);
+//     //set new breakpoint inc bytes ahead
+//     u64 ret = sys_brk(cur_brk + inc);
+//     assert(ret - cur_brk == inc, "sbrk failed");
 
-    //return old breakpoint address
-    return $void* cur_brk;
-}
+//     //return old breakpoint address
+//     return $void* cur_brk;
+// }
 
-//void* _malloc(u64 sz) {
-//    return sbrk(sz);
-//}
+// void* malloc(u64 sz) {
+//     assert(sz <= MALLOC_SBRK_INC, "malloc() : sz too big");
+//     if(MALLOC_BUMP_MEM_LEFT < sz) {
+//         MALLOC_BRK_ADDR = $u64 sbrk(MALLOC_SBRK_INC);
+//         MALLOC_BUMP_MEM_LEFT = MALLOC_SBRK_INC;
+//     }
+//     MALLOC_BUMP_MEM_LEFT -= sz;
+//     void* ret = $void* MALLOC_BRK_ADDR;
+//     MALLOC_BRK_ADDR += sz;
+//     return ret;
+// }
+
+// i32 free(void* addr, u64 sz) {
+//     //do nothing
+//     return 0;
+// }
 
 //mmap allocator. Essentially pushing the task of memory management to the OS. We can now free using munmap.
 //the downside is that the resolution of our allocs becomes 4KB.  

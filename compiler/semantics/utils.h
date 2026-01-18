@@ -147,6 +147,7 @@ void remove_destructor(Destructor *d);
 void push_declaration_stack();
 void emit_destructor_call(Type *t, bool should_dealloc = true);
 void emit_cleanup_global_variables();
+void emit_cleanup_declaration_stack_layer(int layer_ind, std::vector<Identifier*> ignore);
 void emit_cleanup_declaration_stack_layer(int layer_ind);
 void pop_declaration_stack(bool do_free = true);
 void push_loop_stack(std::string start_label, std::string assignment_label, std::string end_label);   //call these when the loop variables are on the top of the declaration stack
@@ -184,8 +185,8 @@ std::vector<Identifier*> convert_identifier_list(parser::identifier_list *t);
 inline std::ofstream fout;
 
 //have these here to be visible. 
-inline Function* enclosing_function;
-inline OperatorOverload* enclosing_overload;
+inline std::optional<Type*> enclosing_type;
+inline Type* enclosing_return_type;
 inline std::vector<Function*> declared_functions;
 inline std::vector<StructDefinition*> declared_structs;
 inline std::vector<Operator*> declared_operators;
