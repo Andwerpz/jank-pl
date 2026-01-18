@@ -227,3 +227,11 @@ i32 sys_connect(i32 fd, sockaddr* addr, u64 len) {
 i32 sys_sendto(i32 fd, u8* buf, u64 size, i32 flags, sockaddr* dest_addr, u64 addr_len) {
     return syscall(44, i32, fd, buf, size, flags, dest_addr, addr_len);
 }
+
+i32 sys_listen(i32 fd, i32 backlog) {
+    return syscall(50, i32, fd, backlog);
+}
+
+i32 sys_accept(i32 fd, sockaddr* client_addr, u64* addr_len) {
+    return syscall(43, i32, fd, client_addr, addr_len);
+}
