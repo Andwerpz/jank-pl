@@ -5,6 +5,9 @@
 #include <iostream>;
 
 // https://datatracker.ietf.org/doc/html/rfc7748
+//X25519 is a key exchange algorithm used to establish shared secret keys on public channels
+//as the name suggests, it works by doing math in a elliptic curve defined on the field F_p
+//where p = 2^255 - 19
 
 #global_node X25519 [MALLOC, IOSTREAM];
 #global_node X25519_init [X25519];

@@ -982,9 +982,8 @@ u512 operator^(u512 a, u512& b) { a ^= b; return a; }
 u128 pow(u128 a, u128 b) {
     u128 res = 0x1;
     for(u64 i = 0x0; i < $u64 128; i++) {
-        if(b.get_bit(0x0)) res *= a;
+        if(b.get_bit(i)) res *= a;
         a *= a;
-        b >>= 0x1;
     }
     return res;
 }
@@ -993,9 +992,8 @@ u128 pow(u128 a, u128 b) {
 u256 pow(u256 a, u256 b) {
     u256 res = 0x1;
     for(u64 i = 0x0; i < $u64 256; i++) {
-        if(b.get_bit(0x0)) res *= a;
+        if(b.get_bit(i)) res *= a;
         a *= a;
-        b >>= 0x1;
     }
     return res;
 }
@@ -1004,7 +1002,36 @@ u256 pow(u256 a, u256 b) {
 u512 pow(u512 a, u512 b) {
     u512 res = 0x1;
     for(u64 i = 0x0; i < $u64 512; i++) {
-        if(b.get_bit(0x0)) res *= a;
+        if(b.get_bit(i)) res *= a;
+        a *= a;
+    }
+    return res;
+}
+
+u128 pow(u128 a, u64 b) {
+    u128 res = 0x1;
+    for(u64 i = 0x0; i < $u64 64; i++) {
+        if(b & 0x1) res *= a;
+        a *= a;
+        b >>= 0x1;
+    }
+    return res;
+}
+
+u256 pow(u256 a, u64 b) {
+    u256 res = 0x1;
+    for(u64 i = 0x0; i < $u64 64; i++) {
+        if(b & 0x1) res *= a;
+        a *= a;
+        b >>= 0x1;
+    }
+    return res;
+}
+
+u512 pow(u512 a, u64 b) {
+    u512 res = 0x1;
+    for(u64 i = 0x0; i < $u64 64; i++) {
+        if(b & 0x1) res *= a;
         a *= a;
         b >>= 0x1;
     }

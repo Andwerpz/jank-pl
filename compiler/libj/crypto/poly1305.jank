@@ -1,0 +1,61 @@
+#include <intx>;
+
+// https://cr.yp.to/mac/poly1305-20050329.pdf
+//given a message producer and consumer and shared hidden key, poly1305 allows the producer to attach a
+// tag to the message that authenticates the message producer. 
+//it does this by pretty much producing a hash (tag) of the message contents combined with the hidden key
+//and appending this hash to the end of the message. 
+
+u512 POLY1305_P = (new u512(0x1) << $u64 130) - (new u512(0x5));
+u512 POLY1305_P_LOW_MASK = (new u512(0x1) << $u64 130) - (new u512(0x1));
+
+//observe that 2^130 = 5 (mod p)
+//do a few reductions and subtractions
+u512 poly1305_modp(u512 x) {
+    u512 t;
+    for(i32 i = 0; i < 5; i++) {
+        t = x >> $u64 130;
+        x = (x & POLY1305_P_LOW_MASK) + (t << 0x2) + t;
+    }
+    while(x >= POLY1305_P) x -= POLY1305_P;
+    return x;
+}
+
+//expects key to be 32 bytes
+//out_tag will be 16 bytes
+void poly1305_tag(void* key, void* msg, u64 msg_len, void* out_tag) {
+    //first 16 bytes of key is multiplication factor
+    u512 r;
+    memcpy($void* @r, key, $u64 16);
+
+    //clamp r
+    ($u8* @r)[3]  &= $u8 15;
+    ($u8* @r)[7]  &= $u8 15;
+    ($u8* @r)[11] &= $u8 15;
+    ($u8* @r)[15] &= $u8 15;
+    ($u8* @r)[4]  &= $u8 252;
+    ($u8* @r)[8]  &= $u8 252;
+    ($u8* @r)[12] &= $u8 252;
+
+    //last 16 bytes of key provides secret offset
+    u512 s;
+    memcpy($void* @s, $void* ($u64 key + $u64 16), $u64 16);
+
+    //accumulator starts at 0
+    u512 a = 0x0;
+
+    u512 n;
+    for(u64 i = 0x0; i < msg_len; i += $u64 16) {
+        u64 amt = $u64 16;
+        if(msg_len - i < amt) amt = msg_len - i;
+        n = 0x1;
+        n <<= amt * 0x8;
+        memcpy($void* @n, $void* ($u64 msg + i), amt);
+        a = poly1305_modp(r * (a + n));
+    }
+    a += s;
+
+    //128 least significant bits of the accumulator is the tag
+    memcpy(out_tag, $void* @a, $u64 16);
+}
+

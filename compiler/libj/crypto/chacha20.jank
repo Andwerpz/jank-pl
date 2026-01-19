@@ -1,0 +1,112 @@
+
+// https://cr.yp.to/chacha/chacha-20080128.pdf
+//given a message producer and consumer and a shared hidden key between them, chacha20 allows the producer to
+// apply a cipher to messages that then can be easily removed by the consumer.
+//chacha20 works by generating a pseudorandom sequence of bits based off of the key, this is called the 'keystream'
+//the keystream is then xor'd with the message to produce the ciphertext
+//decoding is as simple as generating the same keystream using the shared key, and xoring it with the ciphertext
+
+struct chacha20_ctx {
+    u32[16] state;      // current state
+    u64 keybuf_ptr;     // pointer into keybuf : [0, 64]
+    u8[64] keybuf;      // buffer holding remaining keystream bytes
+}
+
+//initializes the given state
+//key is 32-bytes
+//counter is usually initialized at 0 or 1, depending on the protocol
+//nonce is 12-bytes
+void chacha20_init(chacha20_ctx* ctx, void* key, u32 counter, void* nonce) {
+    //first 4 words are constant
+    memcpy($void* @(ctx->state[0]), $void* "expand 32-byte k", $u64 16);
+
+    //next 8 words are the key
+    memcpy($void* @(ctx->state[4]), key, $u64 32);
+
+    //next word is counter
+    ctx->state[12] = counter;
+
+    //final 3 words is the nonce
+    memcpy($void* @(ctx->state[13]), nonce, $u64 12);
+
+    //put pointer at end to denote keybuf is empty
+    ctx->keybuf_ptr = $u64 64;
+}
+
+//generates len bytes of the keystream and places it into the out buffer
+void chacha20_keystream(chacha20_ctx* ctx, u64 len, void* out) {
+    u64 ptr = 0x0;
+    while(ptr < len) {
+        //refill if it's empty
+        if(ctx->keybuf_ptr == $u64 64) {
+            chacha20_refill(ctx);
+        }
+
+        //copy over keystream
+        u64 amt = ptr - len;
+        if(amt > $u64 64 - ctx->keybuf_ptr) amt = $u64 64 - ctx->keybuf_ptr;
+        for(u64 i = 0x0; i < amt; i++) {
+            ($u8* out)[ptr ++] = ctx->keybuf[ctx->keybuf_ptr ++];
+        }
+    }
+}
+
+//applies the keystream to the given message
+//modifies the given message in place
+void chacha20_apply(chacha20_ctx* ctx, void* msg, u64 msg_len) {
+    u64 ptr = 0x0;
+    while(ptr < msg_len) {
+        //refill if it's empty
+        if(ctx->keybuf_ptr == $u64 64) {
+            chacha20_refill(ctx);
+        }
+
+        //apply keystream
+        u64 amt = msg_len - ptr;
+        if(amt > $u64 64 - ctx->keybuf_ptr) amt = $u64 64 - ctx->keybuf_ptr;
+        for(u64 i = 0x0; i < amt; i++) {
+            ($u8* msg)[ptr ++] ^= ctx->keybuf[ctx->keybuf_ptr ++];
+        }
+    }
+}
+
+//generates the next 64 bytes of the keystream
+void chacha20_refill(chacha20_ctx* ctx) {
+    assert(ctx->keybuf_ptr == $u64 64, "chacha20_refill() : keystream not empty");
+
+    //compute new keybuf
+    u32[16] x = ctx->state;
+    for(i32 i = 0; i < 10; i++) {
+        //column round
+        chacha20_quarter_round(x[0], x[4], x[8],  x[12]);
+        chacha20_quarter_round(x[1], x[5], x[9],  x[13]);
+        chacha20_quarter_round(x[2], x[6], x[10], x[14]);
+        chacha20_quarter_round(x[3], x[7], x[11], x[15]);
+
+        //diagonal round
+        chacha20_quarter_round(x[0], x[5], x[10], x[15]);
+        chacha20_quarter_round(x[1], x[6], x[11], x[12]);
+        chacha20_quarter_round(x[2], x[7], x[8],  x[13]);
+        chacha20_quarter_round(x[3], x[4], x[9],  x[14]);
+    }
+    for(i32 i = 0; i < 16; i++) {
+        x[i] += ctx->state[i];
+    }
+
+    //copy into keybuf, reset pointer
+    memcpy($void* @(ctx->keybuf), $void* @x, $u64 64);
+    ctx->keybuf_ptr = 0x0;
+
+    //increment counter
+    ctx->state[12] ++;
+    assert(ctx->state[12] != $u32 0, "chacha20_refill() : counter overflow");
+}
+
+void chacha20_quarter_round(u32& a, u32& b, u32& c, u32& d) {
+    a += b; d ^= a; d = (d << $u32 16) | (d >> ($u32 16));
+    c += d; b ^= c; b = (b << $u32 12) | (b >> ($u32 20));
+    a += b; d ^= a; d = (d << $u32 8)  | (d >> ($u32 24));
+    c += d; b ^= c; b = (b << $u32 7)  | (b >> ($u32 25));
+}
+
+
