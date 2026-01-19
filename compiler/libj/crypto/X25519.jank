@@ -1,0 +1,138 @@
+#include <crypto/sha2>;
+#include <random>;
+#include <assert>;
+#include <intx>;
+#include <iostream>;
+
+// https://datatracker.ietf.org/doc/html/rfc7748
+
+#global_node X25519 [MALLOC, IOSTREAM];
+#global_node X25519_init [X25519];
+
+[X25519_init] i32 X25519_init_status = init_X25519();
+[X25519] u512 X25519_P;
+[X25519] u512 X25519_P_LOW_MASK;
+[X25519] u512 X25519_A; 
+[X25519] u512 X25519_A24;   //(A - 2) / 4
+
+i32 init_X25519() {
+    X25519_P = (new u512(0x1) << ($u64 255)) - (new u512($u64 19));
+    X25519_P_LOW_MASK = ((new u512(0x1)) << $u64 255) - (new u512(0x1));
+
+    X25519_A = 486662;
+    X25519_A24 = 121665;
+    return 0;
+}
+
+//stay away from division
+//use the fact that 2^255 = 19 (mod p)
+//instead of multiplying by 19, we can simply recognize that 19 = 16 + 2 + 1, and take sum of bitshifts
+u512 X25519_modp(u512 x) {
+    u512 t;
+    for(u64 i = 0x0; i < 0x2; i++) {
+        t = x >> $u64 255;
+        x = (x & X25519_P_LOW_MASK) + (t << 0x4) + (t << 0x1) + t;
+    }    
+    while(x >= X25519_P) x -= X25519_P;
+    return x;
+}
+
+u512 X25519_inv(u512 x) {
+    u512 pow = X25519_P - (new u512(0x2));
+    u512 res = 0x1;
+    for(u64 i = 0x0; i < $u64 256; i++) {
+        if(pow.get_bit(i)) res = X25519_modp(res * x);
+        x = X25519_modp(x * x);
+    }
+    return res;
+}
+
+void X25519_cswap(u64 swap, u512& a, u512& b) {
+    u512 dummy = -($i32 swap);
+    dummy &= a ^ b;
+    a ^= dummy;
+    b ^= dummy;
+}
+
+//only store the x coordinate, x = X / Z
+//however, I only support pow operations, and I normalize Z = 1 after every operation, so we only need to store X
+struct X25519_pt {
+    u512 X;
+
+    X25519_pt(u512 x) {
+        this.X = x;
+    }
+}
+
+X25519_pt operator*(u512 s, X25519_pt a) {
+    u512 x_1 = a.X;
+    u512 x_2 = 0x1;
+    u512 z_2 = 0x0;
+    u512 x_3 = a.X;
+    u512 z_3 = 0x1;
+    u64 swap = 0x0;
+
+    u512 A;
+    u512 AA;
+    u512 B;
+    u512 BB;
+    u512 E;
+    u512 C;
+    u512 D;
+    u512 DA;
+    u512 CB;
+
+    for(u64 i = 0x0; i < $u64 256; i++) {
+        u64 cswap = s.get_bit($u64 255 - i);
+        swap ^= cswap;
+        X25519_cswap(swap, x_2, x_3);
+        X25519_cswap(swap, z_2, z_3);
+        swap = cswap;
+
+        A = (x_2 + z_2);
+        AA = X25519_modp(A * A);
+        B = (x_2 - z_2 + X25519_P);
+        BB = X25519_modp(B * B);
+        E = (AA - BB + X25519_P);
+        C = (x_3 + z_3);
+        D = (x_3 - z_3 + X25519_P);
+        DA = X25519_modp(D * A);
+        CB = X25519_modp(C * B);
+        x_3 = X25519_modp((DA + CB) * (DA + CB));
+        z_3 = X25519_modp(X25519_modp((DA - CB + X25519_P) * (DA - CB + X25519_P)) * x_1);
+        x_2 = X25519_modp(AA * BB);
+        z_2 = X25519_modp(E * X25519_modp(AA + X25519_A24 * E));
+    }
+
+    X25519_cswap(swap, x_2, x_3);
+    X25519_cswap(swap, z_2, z_3);
+    return new X25519_pt(X25519_modp(x_2 * X25519_inv(z_2)));
+}
+
+//s is scalar, x is coordinate
+u512 X25519(u512 s, u512 x) {
+    //clamp s
+    ($u8* @s)[0]  &= $u8 0b11111000;
+    ($u8* @s)[31] &= $u8 0b01111111;
+    ($u8* @s)[31] |= $u8 0b01000000;
+
+    //clamp x
+    ($u8* @x)[31] &= $u8 0b01111111;
+    x %= X25519_P;
+
+    //do multiply
+    X25519_pt pt = new X25519_pt(x);
+    pt = s * pt;
+
+    return pt.X;
+}
+
+//uses the base point of X25519 as xbuf
+u512 X25519(u512 s) {
+    // "0900000000000000000000000000000000000000000000000000000000000000"
+    u512 x;
+    ($u8* @x)[0] = $u8 9;
+    return X25519(s, x);
+}
+
+

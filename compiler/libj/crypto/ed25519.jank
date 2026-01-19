@@ -2,6 +2,7 @@
 #include <random>;
 #include <intx>;
 #include <assert>;
+#include <iostream>;
 
 //https://datatracker.ietf.org/doc/html/rfc8032#section-5.1.2
 //ed25519 uses an elliptic curve (twisted edwards curve) defined over the finite field F_{2^255 - 19} (hence the name)
