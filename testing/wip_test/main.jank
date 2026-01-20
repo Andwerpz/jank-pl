@@ -1,64 +1,33 @@
 #include <iostream>;
 #include <assert>;
-#include <crypto/poly1305>;
-#include <random>;
 
-string keystring(void* key) {
-    return to_hexstring(key, $u64 32);
-}
+// 1/19/2026
 
-string to_hexstring(void* buf, u64 len) {
-    string res = new string(len * 0x2, ' ');
-    for(u64 i = 0x0; i < $u64 len; i++) {
-        u64 lo = $u64 ($u8* buf)[i] & 0x0F;
-        u64 hi = $u64 ($u8* buf)[i] & 0xF0;
-        hi >>= $u64 4;
-        if(hi < $u64 10) res[i * 0x2 + 0x0] = ('0' + $u8 hi);
-        else res[i * 0x2 + 0x0] = ('a' + $u8 hi - $u8 10);
-        if(lo < $u64 10) res[i * 0x2 + 0x1] = ('0' + $u8 lo);
-        else res[i * 0x2 + 0x1] = ('a' + $u8 lo - $u8 10);
-    }
-    return res;
-}
-
-void from_hexstring(u8* str, void* buf) {
-    u64 len = strlen(str);
-    assert((len % 0x2) == 0x0, "hexstring invalid");
-    for(u64 i = 0x0; i < len; i++) {
-        u8 dig = str[i];
-        if('0' <= dig && dig <= '9') dig -= '0';
-        else if('a' <= dig && dig <= 'f') dig -= 'a' - $u8 10;
-        else if('A' <= dig && dig <= 'F') dig -= 'A' - $u8 10;
-        else assert(0, "parse hexstring failed");
-        u8 cshift = $u8 0x0;
-        if((i % 0x2) == 0x0) cshift = $u8 0x4;
-        ($u8* buf)[i / 0x2] |= dig << cshift;
-    }
-} 
-
-void tag_test(void* key, void* msg, u64 msg_len, string exp_tag) {
-    void* tag = malloc($u64 16);
-    poly1305_tag(key, msg, msg_len, tag);
-    string tag_str = to_hexstring(tag, $u64 16);
-    cout << "TAG : " << tag_str << "\n";
-}
-
-void tag_test(void* key, u8* msg, string exp_tag) {
-    tag_test(key, $void* msg, strlen(msg), exp_tag);
-}
+//was getting floating point errors when trying to divide unsigned types with their highest bit set. 
+//turns out I was using 'cqo' to sign extend the unsigned values when dividing :/
+//also need to make sure to clear %rdx before dividing as that's the upper part of the numerator
 
 i32 main() {
-    // https://datatracker.ietf.org/doc/html/rfc8439
     {
-        void* key = malloc($u64 32);
-        from_hexstring("85d6be7857556d337f4452fe42d506a80103808afb0db2fd4abff6af4149f51b", key);
-        tag_test(
-            key, 
-            "Cryptographic Forum Research Group",
-            new string("a8061dc1305136c6c22b8baf0c0127a9")
-        );
+        u32 a = $u32 0x80000000;
+        u32 b = $u32 1;
+        u32 c = a / b;
+        cout << "ABC : " << a << " " << b << " " << c << "\n";
     }
 
-    cout << "all tests passed\n";
+    {
+        u16 a = $u16 0x8000;
+        u16 b = $u16 1;
+        u16 c = a / b;
+        cout << "ABC : " << a << " " << b << " " << c << "\n";
+    }
+
+    {
+        u8 a = $u8 0x80;
+        u8 b = $u8 1;
+        u8 c = a / b;
+        cout << "ABC : " << $u16 a << " " << $u16 b << " " << $u16 c << "\n";
+    }
+
     return 0;
 }

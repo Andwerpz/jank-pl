@@ -136,6 +136,7 @@ namespace primitives {
 
         //binary / %
         if(is_signed) {
+            //cqo does sign extension on %rax to %rdx
             if(sz_bytes < 4) {
                 add_builtin_operator(new BuiltinOperator(p_int, p_int, "/", p_int, {
                     movs + " " + rax + ", %rax",
@@ -204,7 +205,6 @@ namespace primitives {
                 }));
             }
             else if(sz_bytes == 8) {
-                //cqo does sign extension on %rax to %rdx
                 add_builtin_operator(new BuiltinOperator(p_int, p_int, "/", p_int, {
                     "cqo",
                     "idiv %rbx",
@@ -231,32 +231,32 @@ namespace primitives {
         else {
             if(sz_bytes < 4) {
                 add_builtin_operator(new BuiltinOperator(p_int, p_int, "/", p_int, {
-                    movs + " " + rax + ", %rax",
-                    movs + " " + rbx + ", %rbx",
-                    "cqo",
+                    movz + " " + rax + ", %rax",
+                    movz + " " + rbx + ", %rbx",
+                    "xor %rdx, %rdx",
                     "div %rbx",
                     movz + " " + rax + ", %rax",
                 }));
                 add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "/=", p_int, {
-                    movs + " " + rax + ", %rax",
-                    movs + " " + rbx + ", %rbx",
-                    "cqo",
+                    movz + " " + rax + ", %rax",
+                    movz + " " + rbx + ", %rbx",
+                    "xor %rdx, %rdx",
                     "div %rbx",
                     movz + " " + rax + ", %rax",
                     mov + " " + rax + ", (%rcx)",
                 }));
                 add_builtin_operator(new BuiltinOperator(p_int, p_int, "%", p_int, {
-                    movs + " " + rax + ", %rax",
-                    movs + " " + rbx + ", %rbx",
-                    "cqo",
+                    movz + " " + rax + ", %rax",
+                    movz + " " + rbx + ", %rbx",
+                    "xor %rdx, %rdx",
                     "div %rbx",
                     "mov %rdx, %rax",
                     movz + " " + rax + ", %rax",
                 }));
                 add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "%=", p_int, {
-                    movs + " " + rax + ", %rax",
-                    movs + " " + rbx + ", %rbx",
-                    "cqo",
+                    movz + " " + rax + ", %rax",
+                    movz + " " + rbx + ", %rbx",
+                    "xor %rdx, %rdx",
                     "div %rbx",
                     "mov %rdx, %rax",
                     movz + " " + rax + ", %rax",
@@ -265,32 +265,32 @@ namespace primitives {
             }
             else if(sz_bytes == 4) {
                 add_builtin_operator(new BuiltinOperator(p_int, p_int, "/", p_int, {
-                    movs + " " + rax + ", %rax",
-                    movs + " " + rbx + ", %rbx",
-                    "cqo",
-                    "div %rbx",
+                    movz + " " + rax + ", %eax",
+                    movz + " " + rbx + ", %ebx",
+                    "xor %edx, %edx",
+                    "div %ebx",
                     "mov %eax, %eax",
                 }));
                 add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "/=", p_int, {
-                    movs + " " + rax + ", %rax",
-                    movs + " " + rbx + ", %rbx",
-                    "cqo",
-                    "div %rbx",
+                    movz + " " + rax + ", %eax",
+                    movz + " " + rbx + ", %ebx",
+                    "xor %rdx, %rdx",
+                    "div %ebx",
                     "mov %eax, %eax",
                     mov + " " + rax + ", (%rcx)",
                 }));
                 add_builtin_operator(new BuiltinOperator(p_int, p_int, "%", p_int, {
-                    movs + " " + rax + ", %rax",
-                    movs + " " + rbx + ", %rbx",
-                    "cqo",
-                    "div %rbx",
+                    movz + " " + rax + ", %eax",
+                    movz + " " + rbx + ", %ebx",
+                    "xor %rdx, %rdx",
+                    "div %ebx",
                     "mov %edx, %eax",
                 }));
                 add_builtin_operator(new BuiltinOperator(p_int, new ReferenceType(p_int), "%=", p_int, {
-                    movs + " " + rax + ", %rax",
-                    movs + " " + rbx + ", %rbx",
-                    "cqo",
-                    "div %rbx",
+                    movz + " " + rax + ", %eax",
+                    movz + " " + rbx + ", %ebx",
+                    "xor %rdx, %rdx",
+                    "div %ebx",
                     "mov %edx, %eax",
                     mov + " " + rax + ", (%rcx)",
                 }));
