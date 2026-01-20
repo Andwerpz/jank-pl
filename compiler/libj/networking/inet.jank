@@ -1,0 +1,29 @@
+
+// network byte order is big endian, cpu is little endian
+u16 inet_hton(u16 x) {
+    asm!("mov {x}, %rax");
+    asm!("xchg %al, %ah");
+    asm!("mov %rax, {x}");
+    return x;
+}
+
+u32 inet_hton(u32 x) {
+    asm!("mov {x}, %rax");
+    asm!("bswap %eax");
+    asm!("mov %rax, {x}");
+    return x;
+}
+
+u16 inet_ntoh(u16 x) {
+    asm!("mov {x}, %rax");
+    asm!("xchg %al, %ah");
+    asm!("mov %rax, {x}");
+    return x;
+}
+
+u32 inet_ntoh(u32 x) {
+    asm!("mov {x}, %rax");
+    asm!("bswap %eax");
+    asm!("mov %rax, {x}");
+    return x;
+}

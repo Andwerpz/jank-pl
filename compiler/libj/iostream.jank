@@ -99,25 +99,23 @@ struct istream {
         if(!found_tok) return new string();
         return tok;
     }
-
+    
     string next_line() {
         string line = new string();
 
         i32 found_line = 0;
         while(1) {
             u8 c = this.next_char();
-            if(this.eof() || this.bad()) break;
-            if(c == '\n' || c == '\r') {
-                if(found_line) break;
+            if(this.eof() || this.bad()) break; 
+            if(c == '\n') {
+                //strip preceding \r
+                if(line.size() != 0x0 && line[line.size() - 0x1] == '\r') {
+                    line.pop_back();
+                }
+                break;
             }
-            else {
-                found_line = 1;
-                if(c == '\n' || c == '\r') continue;
-                line.push_back(c);
-            }
+            line.push_back(c);
         }
-
-        if(!found_line) return new string();
         return line;
     }
 
