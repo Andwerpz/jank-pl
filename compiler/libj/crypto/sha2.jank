@@ -1,40 +1,21 @@
 // Secure Hash Algorithm 2
 // https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.180-4.pdf
 
-u64 sha_ROTR(u64 x, i32 amt) {
-    return (x >> $u64 amt) | (x << ($u64 64 - $u64 amt));
-}
-
-u64 sha_Sigma0(u64 x) {
-    return sha_ROTR(x, 28) ^ sha_ROTR(x, 34) ^ sha_ROTR(x, 39);
-}
-
-u64 sha_Sigma1(u64 x) {
-    return sha_ROTR(x, 14) ^ sha_ROTR(x, 18) ^ sha_ROTR(x, 41);
-}
-
-u64 sha_sigma0(u64 x) {
-    return sha_ROTR(x, 1) ^ sha_ROTR(x, 8) ^ (x >> $u64 7);
-}
-
-u64 sha_sigma1(u64 x) {
-    return sha_ROTR(x, 19) ^ sha_ROTR(x, 61) ^ (x >> $u64 6);
-}
-
-u64 sha_Ch(u64 x, u64 y, u64 z) {
-    return (x & y) ^ ((~x) & z);
-}
-
-u64 sha_Maj(u64 x, u64 y, u64 z) {
-    return (x & y) ^ (x & z) ^ (y & z);
-}
-
+// -- SHA512 --
 struct sha512_ctx {
     u64 len;            // bytes hashed so far
     u64[8] state;       // internal hash state
     u8[128] block;      // partial block buffer (message block is 1024 bits)
     u64 bptr;           // bytes in the partial block
 }
+
+u64 sha512_ROTR(u64 x, i32 amt) { return (x >> $u64 amt) | (x << $u64 (64 - amt)); }
+u64 sha512_Sigma0(u64 x) { return sha512_ROTR(x, 28) ^ sha512_ROTR(x, 34) ^ sha512_ROTR(x, 39); }
+u64 sha512_Sigma1(u64 x) { return sha512_ROTR(x, 14) ^ sha512_ROTR(x, 18) ^ sha512_ROTR(x, 41); }
+u64 sha512_sigma0(u64 x) { return sha512_ROTR(x, 1) ^ sha512_ROTR(x, 8) ^ (x >> $u64 7); }
+u64 sha512_sigma1(u64 x) { return sha512_ROTR(x, 19) ^ sha512_ROTR(x, 61) ^ (x >> $u64 6); }
+u64 sha512_Ch(u64 x, u64 y, u64 z) { return (x & y) ^ ((~x) & z); }
+u64 sha512_Maj(u64 x, u64 y, u64 z) { return (x & y) ^ (x & z) ^ (y & z); }
 
 //out hash should be preallocated 64 bytes (512 bits)
 void sha512(void* msg, u64 len, void* out_hash) {
@@ -90,7 +71,7 @@ void sha512_compress(sha512_ctx* ctx) {
         ;
     }
     for(i32 i = 16; i < 80; i++) {
-        W[i] = sha_sigma1(W[i - 2]) + W[i - 7] + sha_sigma0(W[i - 15]) + W[i - 16];
+        W[i] = sha512_sigma1(W[i - 2]) + W[i - 7] + sha512_sigma0(W[i - 15]) + W[i - 16];
     }
 
     u64 a = ctx->state[0];
@@ -188,8 +169,8 @@ void sha512_compress(sha512_ctx* ctx) {
     K[79] = 0x6c44198c4a475817;
 
     for(i32 i = 0; i < 80; i++) {
-        temp1 = h + sha_Sigma1(e) + sha_Ch(e, f, g) + K[i] + W[i];
-        temp2 = sha_Sigma0(a) + sha_Maj(a, b, c);
+        temp1 = h + sha512_Sigma1(e) + sha512_Ch(e, f, g) + K[i] + W[i];
+        temp2 = sha512_Sigma0(a) + sha512_Maj(a, b, c);
         h = g;
         g = f;
         f = e;
@@ -237,11 +218,175 @@ void sha512_final(sha512_ctx* ctx, void* out_hash) {
     }
     sha512_compress(ctx);
 
-    //final state is hash
+    //final state in big endian all concatenated is hash
     for(u64 i = 0x0; i < 0x8; i++) {
         for(u64 j = 0x0; j < 0x8; j++) {
             u64 shift = (0x7 - j) * 0x8;
             ($u8* out_hash)[i * 0x8 + j] = $u8 ((ctx->state[i] & (0xFF << shift)) >> shift);
+        }
+    }
+}
+
+
+// -- SHA256 --
+struct sha256_ctx {
+    u64 len;           // bytes hashed so far
+    u32[8] state;      // internal hash state
+    u8[64] block;      // partial block buffer (message block is 512 bits)
+    u64 bptr;          // bytes in the partial block
+}
+
+u32 sha256_ROTR(u32 x, i32 r) { return (x >> $u32 r) | (x << $u32 (32 - r)); } 
+u32 sha256_Sigma0(u32 x) { return sha256_ROTR(x, 2) ^ sha256_ROTR(x, 13) ^ sha256_ROTR(x, 22); }
+u32 sha256_Sigma1(u32 x) { return sha256_ROTR(x, 6) ^ sha256_ROTR(x, 11) ^ sha256_ROTR(x, 25); }
+u32 sha256_sigma0(u32 x) { return sha256_ROTR(x, 7) ^ sha256_ROTR(x, 18) ^ (x >> $u32 3); }
+u32 sha256_sigma1(u32 x) { return sha256_ROTR(x, 17) ^ sha256_ROTR(x, 19) ^ (x >> $u32 10); }
+u32 sha256_Ch(u32 x, u32 y, u32 z) { return (x & y) ^ ((~x) & z); }
+u32 sha256_Maj(u32 x, u32 y, u32 z) { return (x & y) ^ (x & z) ^ (y & z); }
+
+// out hash should be preallocated 32 bytes (256 bits)
+void sha256(void* msg, u64 len, void* out_hash) {
+    sha256_ctx ctx = new sha256_ctx();
+    sha256_init(@ctx);
+    sha256_update(@ctx, msg, len);
+    sha256_final(@ctx, out_hash);
+}
+
+void sha256_init(sha256_ctx* ctx) {
+    ctx->len = 0x0;
+    ctx->state[0] = $u32 0x6a09e667;
+    ctx->state[1] = $u32 0xbb67ae85;
+    ctx->state[2] = $u32 0x3c6ef372;
+    ctx->state[3] = $u32 0xa54ff53a;
+    ctx->state[4] = $u32 0x510e527f;
+    ctx->state[5] = $u32 0x9b05688c;
+    ctx->state[6] = $u32 0x1f83d9ab;
+    ctx->state[7] = $u32 0x5be0cd19;
+    ctx->bptr = 0x0;
+}
+
+void sha256_update(sha256_ctx* ctx, void* msg, u64 len) {
+    u64 ptr = 0x0;
+    while(ptr < len) {
+        u64 amt = len - ptr;
+        if(amt > $u64 64 - ctx->bptr) amt = $u64 64 - ctx->bptr;
+        memcpy($void* ($u64 @(ctx->block) + ctx->bptr), $void* ($u64 msg + ptr), amt);
+        ctx->bptr += amt;
+        ctx->len += amt;
+        ptr += amt;
+        if(ctx->bptr == $u64 64) {
+            sha256_compress(ctx);
+        }
+    }
+}
+
+void sha256_compress(sha256_ctx* ctx) {
+    assert(ctx->bptr == $u64 64, "sha256_compress() : ctx msg block not full");
+    ctx->bptr = 0x0;
+
+    u32[64] W = new u32[64]();
+
+    // first 16 words from the message block (big-endian)
+    for(i32 i = 0; i < 16; i++) {
+        W[i] =
+            ($u32 ctx->block[i * 4 + 0] << $u32 24) |
+            ($u32 ctx->block[i * 4 + 1] << $u32 16) |
+            ($u32 ctx->block[i * 4 + 2] << $u32  8) |
+            ($u32 ctx->block[i * 4 + 3] << $u32  0)
+        ;
+    }
+
+    // message schedule
+    for(i32 i = 16; i < 64; i++) {
+        W[i] = sha256_sigma1(W[i - 2]) + W[i - 7] + sha256_sigma0(W[i - 15]) + W[i - 16];
+    }
+
+    // working vars
+    u32 a = ctx->state[0];
+    u32 b = ctx->state[1];
+    u32 c = ctx->state[2];
+    u32 d = ctx->state[3];
+    u32 e = ctx->state[4];
+    u32 f = ctx->state[5];
+    u32 g = ctx->state[6];
+    u32 h = ctx->state[7];
+    u32 temp1;
+    u32 temp2;
+
+    // round constants
+    u32[64] K = new u32[64]();
+    K[0]  = $u32 0x428a2f98; K[1]  = $u32 0x71374491; K[2]  = $u32 0xb5c0fbcf; K[3]  = $u32 0xe9b5dba5;
+    K[4]  = $u32 0x3956c25b; K[5]  = $u32 0x59f111f1; K[6]  = $u32 0x923f82a4; K[7]  = $u32 0xab1c5ed5;
+    K[8]  = $u32 0xd807aa98; K[9]  = $u32 0x12835b01; K[10] = $u32 0x243185be; K[11] = $u32 0x550c7dc3;
+    K[12] = $u32 0x72be5d74; K[13] = $u32 0x80deb1fe; K[14] = $u32 0x9bdc06a7; K[15] = $u32 0xc19bf174;
+    K[16] = $u32 0xe49b69c1; K[17] = $u32 0xefbe4786; K[18] = $u32 0x0fc19dc6; K[19] = $u32 0x240ca1cc;
+    K[20] = $u32 0x2de92c6f; K[21] = $u32 0x4a7484aa; K[22] = $u32 0x5cb0a9dc; K[23] = $u32 0x76f988da;
+    K[24] = $u32 0x983e5152; K[25] = $u32 0xa831c66d; K[26] = $u32 0xb00327c8; K[27] = $u32 0xbf597fc7;
+    K[28] = $u32 0xc6e00bf3; K[29] = $u32 0xd5a79147; K[30] = $u32 0x06ca6351; K[31] = $u32 0x14292967;
+    K[32] = $u32 0x27b70a85; K[33] = $u32 0x2e1b2138; K[34] = $u32 0x4d2c6dfc; K[35] = $u32 0x53380d13;
+    K[36] = $u32 0x650a7354; K[37] = $u32 0x766a0abb; K[38] = $u32 0x81c2c92e; K[39] = $u32 0x92722c85;
+    K[40] = $u32 0xa2bfe8a1; K[41] = $u32 0xa81a664b; K[42] = $u32 0xc24b8b70; K[43] = $u32 0xc76c51a3;
+    K[44] = $u32 0xd192e819; K[45] = $u32 0xd6990624; K[46] = $u32 0xf40e3585; K[47] = $u32 0x106aa070;
+    K[48] = $u32 0x19a4c116; K[49] = $u32 0x1e376c08; K[50] = $u32 0x2748774c; K[51] = $u32 0x34b0bcb5;
+    K[52] = $u32 0x391c0cb3; K[53] = $u32 0x4ed8aa4a; K[54] = $u32 0x5b9cca4f; K[55] = $u32 0x682e6ff3;
+    K[56] = $u32 0x748f82ee; K[57] = $u32 0x78a5636f; K[58] = $u32 0x84c87814; K[59] = $u32 0x8cc70208;
+    K[60] = $u32 0x90befffa; K[61] = $u32 0xa4506ceb; K[62] = $u32 0xbef9a3f7; K[63] = $u32 0xc67178f2;
+
+    // main loop
+    for(i32 i = 0; i < 64; i++) {
+        temp1 = h + sha256_Sigma1(e) + sha256_Ch(e, f, g) + K[i] + W[i];
+        temp2 = sha256_Sigma0(a) + sha256_Maj(a, b, c);
+        h = g;
+        g = f;
+        f = e;
+        e = d + temp1;
+        d = c;
+        c = b;
+        b = a;
+        a = temp1 + temp2;
+    }
+
+    // add to state
+    ctx->state[0] += a;
+    ctx->state[1] += b;
+    ctx->state[2] += c;
+    ctx->state[3] += d;
+    ctx->state[4] += e;
+    ctx->state[5] += f;
+    ctx->state[6] += g;
+    ctx->state[7] += h;
+}
+
+// out hash should be preallocated 32 bytes (256 bits)
+void sha256_final(sha256_ctx* ctx, void* out_hash) {
+    // add 0x80 byte
+    if(ctx->bptr == $u64 64) {
+        sha256_compress(ctx);
+    }
+    ctx->block[ctx->bptr ++] = $u8 0x80;
+
+    // pad with 0x00 until bptr == 56 (i.e., leave 8 bytes for length)
+    while(ctx->bptr != $u64 56) {
+        if(ctx->bptr == $u64 64) {
+            sha256_compress(ctx);
+        }
+        ctx->block[ctx->bptr ++] = $u8 0x0;
+    }
+
+    // write message length in bits as 64-bit big-endian integer
+    u64 bitlen = ctx->len * 0x8;
+    for(u64 i = 0x0; i < 0x8; i++) {
+        u64 shift = (0x7 - i) * 0x8;
+        ctx->block[ctx->bptr ++] = $u8 ((bitlen & (0xFF << shift)) >> shift);
+    }
+
+    sha256_compress(ctx);
+
+    // write digest (big-endian)
+    for(u64 i = 0x0; i < 0x8; i++) {
+        for(u64 j = 0x0; j < 0x4; j++) {
+            u64 shift = (0x3 - j) * 0x8;
+            ($u8* out_hash)[i * 0x4 + j] = $u8 ((ctx->state[i] & $u32 (0xFF << shift)) >> $u32 shift);
         }
     }
 }

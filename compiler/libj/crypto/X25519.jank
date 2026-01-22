@@ -138,4 +138,24 @@ u512 X25519(u512 s) {
     return X25519(s, x);
 }
 
+//s, x, and out should be 32 bytes
+//computes [s]x
+void X25519(void* sbuf, void* xbuf, void* outbuf) {
+    u512 s;
+    u512 x;
+    memcpy($void* @s, sbuf, $u64 32);
+    memcpy($void* @x, xbuf, $u64 32);
+    u512 out = X25519(s, x);
+    memcpy(outbuf, $void* @out, $u64 32);
+}
+
+//s and out should be 32 bytes
+//computes [s]9, where 9 is the base x coordinate
+void X25519(void* sbuf, void* outbuf) {
+    u512 s;
+    memcpy($void* @s, sbuf, $u64 32);
+    u512 out = X25519(s);
+    memcpy(outbuf, $void* @out, $u64 32);
+}
+
 

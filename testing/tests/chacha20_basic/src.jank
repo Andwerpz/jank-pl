@@ -41,7 +41,7 @@ void keystream_test(void* key, void* nonce, u64 len) {
     chacha20_init(@ctx, key, $u32 1, nonce);
     
     void* stream = malloc(len);
-    chacha20_keystream(@ctx, len, stream);
+    chacha20_keystream(@ctx, stream, len);
     cout << "KEY : " << to_hexstring(stream, len) << "\n";
     free(stream, len);
 }

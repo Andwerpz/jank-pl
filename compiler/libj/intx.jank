@@ -925,7 +925,7 @@ u512& operator>>=(u512& a, u64 b) {
     if(bits) {
         for(i32 i = 0; i < 8; i++) {
             a.limbs[i] >>= bits;
-            if(i != 8) a.limbs[i] |= a.limbs[i + 1] << ($u64 64 - bits);
+            if(i != 7) a.limbs[i] |= a.limbs[i + 1] << ($u64 64 - bits);
         }
     }
     return a;

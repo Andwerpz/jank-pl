@@ -34,7 +34,7 @@ void chacha20_init(chacha20_ctx* ctx, void* key, u32 counter, void* nonce) {
 }
 
 //generates len bytes of the keystream and places it into the out buffer
-void chacha20_keystream(chacha20_ctx* ctx, u64 len, void* out) {
+void chacha20_keystream(chacha20_ctx* ctx, void* out, u64 len) {
     u64 ptr = 0x0;
     while(ptr < len) {
         //refill if it's empty
@@ -43,7 +43,7 @@ void chacha20_keystream(chacha20_ctx* ctx, u64 len, void* out) {
         }
 
         //copy over keystream
-        u64 amt = ptr - len;
+        u64 amt = len - ptr;
         if(amt > $u64 64 - ctx->keybuf_ptr) amt = $u64 64 - ctx->keybuf_ptr;
         for(u64 i = 0x0; i < amt; i++) {
             ($u8* out)[ptr ++] = ctx->keybuf[ctx->keybuf_ptr ++];

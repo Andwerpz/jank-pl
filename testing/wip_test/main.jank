@@ -1,33 +1,80 @@
-#include <iostream>;
 #include <assert>;
+#include <iostream>;
+#include <crypto/sha2>;
+#include <string>;
 
-// 1/19/2026
+string hashstring(void* hash) {
+    string res = new string(64, ' ');
+    for(u64 i = 0x0; i < $u64 32; i++) {
+        u64 lo = $u64 ($u8* hash)[i] & 0x0F;
+        u64 hi = $u64 ($u8* hash)[i] & 0xF0;
+        hi >>= $u64 4;
+        if(hi < $u64 10) res[i * 0x2 + 0x0] = ('0' + $u8 hi);
+        else res[i * 0x2 + 0x0] = ('a' + $u8 hi - $u8 10);
+        if(lo < $u64 10) res[i * 0x2 + 0x1] = ('0' + $u8 lo);
+        else res[i * 0x2 + 0x1] = ('a' + $u8 lo - $u8 10);
+    }
+    return res;
+}
 
-//was getting floating point errors when trying to divide unsigned types with their highest bit set. 
-//turns out I was using 'cqo' to sign extend the unsigned values when dividing :/
-//also need to make sure to clear %rdx before dividing as that's the upper part of the numerator
+void test_basic() {
+    {
+        u8* text = "bello bello testing 123";
+        void* hash = malloc($u64 32);
+        sha256($void* text, strlen(text), hash);
+        string exp = "a1c0f0318f9bc073711e39d1e9c91254e8e7efe773a77535a3d6f6ecd71881fe";
+        assert(hashstring(hash) == exp, "test_basic() : hash 1 does not match");
+        free(hash, $u64 32);
+    }
+
+    {
+        u8* text = "Bro thought he could become the next rizz king by doing the uncanny ankha zone dance like a sussy baka in ohiodont bro know quandale dingle already did the forgis on the jeep thug shaker banban style with ballerbro aint ever making it out of oklahoma the ocky way that shit just plain uncanny like skibidi toilet bro bro got negative infinity morbin chill bill pizza tower barbenheimer rizz brobro got that nathaniel b ahh griddy brobro really thought he had that rise of gru grimace shake 1 2 buckle my shoe spiderverse whopper rizz brobro got that canon event baby gronk waffle house monday left me broken ahh drip in ohio bro we aint ever makin it out of ohio with bros goofy ahh dj khaled mr chedda sisyphus toxic gossip train pikmin 4 ahh rizz bro that aint even elephant mario titanic submarine god tier rizz brothats just uncanny like shadow wizard money gang ambatukam twitter x brofr bro like bro lets go golfing in ohio kumalala savesta sbidi toiledt";
+        void* hash = malloc($u64 32);
+        sha256($void* text, strlen(text), hash);
+        string exp = "185b410d11fdbae2e00676228d320e9f26ebf4ba9f0efdf28e18058abde66a92";
+        assert(hashstring(hash) == exp, "test_basic() : hash 2 does not match");
+        free(hash, $u64 32);
+    }
+
+    {
+        u8* text = "Welcome Im sure you all have heard of Andrew Li If you have heard of him you are intimately familiar with his identity of coding Jesus Well here in yummy-yummy-andrewli-dylan-jank I would like to introduce a new side of Andrew Li to you all The connoisseur this project started as a one-off economic venture However as often happens what began as a whim turned into a habit every weekend for the past 2 semesters Mr Li and I would take our talents to the various food establishments around the college station sphere some savory and some rancid this past week on another whim I inquired Mr Li if he would kindly pin his thoughts about our previous restraints to paper to my surprise he obliged my request At first when I witnessed their transfer of his thoughts to paper I thought nothing of it I was only familiar with his /G coding mode it was only after carefully reading his list that I realized I was sitting on literary gold All must hear his truth so that I will deliver Rating Our rating system is unconventional It is a 0-5 star system a five is the worst possible rating and a zero is the best This out-of-the-box rating method was inspired by the first eatery that started our journey Shun Da Mom The idea is that a five is as close to shun da mom as you can get(crass) and a zero is the farthest away you can get(class) Now that you have the story and the rating I will tell you the truth without further ado";
+        void* hash = malloc($u64 32);
+        sha256($void* text, strlen(text), hash);
+        string exp = "074d9655e942ed975c4232804387d4984658f6e55a73be1845718428e24357bc";
+        assert(hashstring(hash) == exp, "test_basic() : hash 3 does not match");
+        free(hash, $u64 32);
+    }
+
+    cout << "test basic passed\n";
+}
+
+void test_streaming() {
+    u8* text = "Welcome Im sure you all have heard of Andrew Li If you have heard of him you are intimately familiar with his identity of coding Jesus Well here in yummy-yummy-andrewli-dylan-jank I would like to introduce a new side of Andrew Li to you all The connoisseur this project started as a one-off economic venture However as often happens what began as a whim turned into a habit every weekend for the past 2 semesters Mr Li and I would take our talents to the various food establishments around the college station sphere some savory and some rancid this past week on another whim I inquired Mr Li if he would kindly pin his thoughts about our previous restraints to paper to my surprise he obliged my request At first when I witnessed their transfer of his thoughts to paper I thought nothing of it I was only familiar with his /G coding mode it was only after carefully reading his list that I realized I was sitting on literary gold All must hear his truth so that I will deliver Rating Our rating system is unconventional It is a 0-5 star system a five is the worst possible rating and a zero is the best This out-of-the-box rating method was inspired by the first eatery that started our journey Shun Da Mom The idea is that a five is as close to shun da mom as you can get(crass) and a zero is the farthest away you can get(class) Now that you have the story and the rating I will tell you the truth without further ado";
+    string exp = "074d9655e942ed975c4232804387d4984658f6e55a73be1845718428e24357bc";
+    sha256_ctx ctx;
+    sha256_init(@ctx);
+    u64 len = strlen(text);
+    u64 ptr = 0x0;
+    u64 inc = $u64 531;
+    while(ptr < len) {
+        u64 amt = len - ptr;
+        if(amt > inc) amt = inc;
+        sha256_update(@ctx, $void* ($u64 text + ptr), amt);
+        ptr += amt;
+    }
+    void* hash = malloc($u64 32);
+    sha256_final(@ctx, hash);
+    assert(hashstring(hash) == exp, "test_streaming() : hash does not match");
+    free(hash, $u64 32);
+
+    cout << "test streaming passed\n";
+}
 
 i32 main() {
-    {
-        u32 a = $u32 0x80000000;
-        u32 b = $u32 1;
-        u32 c = a / b;
-        cout << "ABC : " << a << " " << b << " " << c << "\n";
-    }
 
-    {
-        u16 a = $u16 0x8000;
-        u16 b = $u16 1;
-        u16 c = a / b;
-        cout << "ABC : " << a << " " << b << " " << c << "\n";
-    }
+    test_basic();
+    test_streaming();
 
-    {
-        u8 a = $u8 0x80;
-        u8 b = $u8 1;
-        u8 c = a / b;
-        cout << "ABC : " << $u16 a << " " << $u16 b << " " << $u16 c << "\n";
-    }
-
+    cout << "all tests passed\n";
     return 0;
 }
