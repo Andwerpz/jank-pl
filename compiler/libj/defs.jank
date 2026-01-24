@@ -214,8 +214,8 @@ struct pollfd {
 //pollfd event constants
 //https://codebrowser.dev/linux/linux/include/uapi/asm-generic/poll.h.html
 [__GLOBAL_FIRST__] u16 POLLIN       = $u16 0x0001;  // there is data to read (a sys_read on this fd will be non-blocking)
-[__GLOBAL_FIRST__] u16 POLLPRI      = $u16 0x0002;
-[__GLOBAL_FIRST__] u16 POLLOUT      = $u16 0x0004;
-[__GLOBAL_FIRST__] u16 POLLERR      = $u16 0x0008;
-[__GLOBAL_FIRST__] u16 POLLHUP      = $u16 0x0010;
-[__GLOBAL_FIRST__] u16 POLLNVAL     = $u16 0x0020;
+[__GLOBAL_FIRST__] u16 POLLPRI      = $u16 0x0002;  // some exception condition on the file descriptor
+[__GLOBAL_FIRST__] u16 POLLOUT      = $u16 0x0004;  // writing is possible, though a large write may still block
+[__GLOBAL_FIRST__] u16 POLLERR      = $u16 0x0008;  // error condition
+[__GLOBAL_FIRST__] u16 POLLHUP      = $u16 0x0010;  // hang up. for streamlike files, indicates that the peer closed their end of the channel
+[__GLOBAL_FIRST__] u16 POLLNVAL     = $u16 0x0020;  // invalid request, fd not open
