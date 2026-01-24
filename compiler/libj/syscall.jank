@@ -236,11 +236,12 @@ i32 sys_accept(i32 fd, sockaddr* client_addr, u64* addr_len) {
     return syscall(43, i32, fd, client_addr, addr_len);
 }
 
-//fds points to an array of pollfd structs of length nfds
-//for each pollfd struct, the revents field gets filled out according to the events currently happening with
+// fds points to an array of pollfd structs of length nfds
+// for each pollfd struct, the revents field gets filled out according to the events currently happening with
 // that fd, and the events masked passed in by the user. 
-//timeout specifies the number of milliseconds to block for to wait for some event to become true
+// timeout specifies the number of milliseconds to block for to wait for some event to become true
 // timeout < 0 indicates to wait indefinitely
+// will return when any of the user defined events masked by the user is flagged.
 // returns the number of pollfds whose revents fields have been set to a non-negative value
 // return value of 0 indicates timeout before any fd became ready
 // returns -1 on failure

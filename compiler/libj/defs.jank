@@ -213,4 +213,9 @@ struct pollfd {
 
 //pollfd event constants
 //https://codebrowser.dev/linux/linux/include/uapi/asm-generic/poll.h.html
-[__GLOBAL_FIRST__] u16 POLLIN = $u16 0x0001;        // there is data to read (a sys_read on this fd will be non-blocking)
+[__GLOBAL_FIRST__] u16 POLLIN       = $u16 0x0001;  // there is data to read (a sys_read on this fd will be non-blocking)
+[__GLOBAL_FIRST__] u16 POLLPRI      = $u16 0x0002;
+[__GLOBAL_FIRST__] u16 POLLOUT      = $u16 0x0004;
+[__GLOBAL_FIRST__] u16 POLLERR      = $u16 0x0008;
+[__GLOBAL_FIRST__] u16 POLLHUP      = $u16 0x0010;
+[__GLOBAL_FIRST__] u16 POLLNVAL     = $u16 0x0020;
