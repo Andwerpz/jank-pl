@@ -15,6 +15,7 @@
 [__GLOBAL_FIRST__] i32 ERR_INVAL                = 22;       // invalid argument
 [__GLOBAL_FIRST__] i32 ERR_NFILE                = 23;       // file table overflow
 [__GLOBAL_FIRST__] i32 ERR_PIPE                 = 32;       // broken pipe (error related to pipe)
+[__GLOBAL_FIRST__] i32 ERR_WOULDBLOCK           = 41;       // Operation would block
 [__GLOBAL_FIRST__] i32 ERR_NOTSOCK              = 88;       // Socket operation on non-socket
 [__GLOBAL_FIRST__] i32 ERR_DESTADDRREQ          = 89;       // Destination address required
 [__GLOBAL_FIRST__] i32 ERR_MSGSIZE              = 90;       // Message too long

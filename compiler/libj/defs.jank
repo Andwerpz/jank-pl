@@ -177,6 +177,7 @@ struct sockaddr_in {
     u8[8] sin_zero;     // padding
 }
 
+// socket parameters
 [__GLOBAL_FIRST__] i32 AF_INET = 2;
 
 [__GLOBAL_FIRST__] i32 SOCK_STREAM  = 1;
@@ -186,3 +187,6 @@ struct sockaddr_in {
 [__GLOBAL_FIRST__] i32 IPPROTO_ICMP = 1;
 [__GLOBAL_FIRST__] i32 IPPROTO_TCP  = 6;
 [__GLOBAL_FIRST__] i32 IPPROTO_UDP  = 17;
+
+// recvfrom flags https://docs.huihoo.com/doxygen/linux/kernel/3.7/include_2linux_2socket_8h.html
+[__GLOBAL_FIRST__] i32 MSG_DONTWAIT = $i32 0x40;
