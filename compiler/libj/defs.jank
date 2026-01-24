@@ -127,13 +127,26 @@ struct termios {
     u32     c_oflag;    // output flags
     u32     c_cflag;    // control flags
     u32     c_lflag;    // local flags
+    u8      c_line;     // line discipline selector (ignore)
     u8[32]  c_cc;       // control chars (VMIN, VTIME, etc.)
+    u32     c_ispeed;   // input speed baud rate (ignore)
+    u32     c_ospeed;   // output speed baud rate (ignore)
 }
 [__GLOBAL_FIRST__] u64 TTY_NCCS = $u64 32;
 
 // ioctl request codes for termios
+// https://github.com/torvalds/linux/blob/master/include/uapi/asm-generic/ioctls.h
 [__GLOBAL_FIRST__] u64 TCGETS  = 0x5401;
 [__GLOBAL_FIRST__] u64 TCSETS  = 0x5402;
+[__GLOBAL_FIRST__] u32 TIOCGWINSZ = $u32 0x5413;
+
+//used in ioctl to extract terminal size
+struct winsize {
+    u16 ws_row;
+    u16 ws_col;
+    u16 ws_xpixel;  // often unused
+    u16 ws_ypixel;  // often unused
+}
 
 // termios flags
 // grep -R " ECHO" /usr/include

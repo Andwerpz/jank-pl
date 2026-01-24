@@ -7,3 +7,8 @@ i32 tcgetattr(i32 fd, termios* t) {
 i32 tcsetattr(i32 fd, termios* t) {
     return sys_ioctl(fd, $u32 TCSETS, $void* t);
 }
+
+i32 tcgetwinsize(i32 fd, winsize* wsz) {
+    return sys_ioctl(fd, TIOCGWINSZ, $void* wsz);
+}
+
