@@ -190,3 +190,14 @@ struct sockaddr_in {
 
 // recvfrom flags https://docs.huihoo.com/doxygen/linux/kernel/3.7/include_2linux_2socket_8h.html
 [__GLOBAL_FIRST__] i32 MSG_DONTWAIT = $i32 0x40;
+
+//used in sys_poll
+struct pollfd {
+    i32 fd;
+    u16 events;
+    u16 revents;
+}
+
+//pollfd event constants
+//https://codebrowser.dev/linux/linux/include/uapi/asm-generic/poll.h.html
+[__GLOBAL_FIRST__] u16 POLLIN = $u16 0x0001;        // there is data to read (a sys_read on this fd will be non-blocking)

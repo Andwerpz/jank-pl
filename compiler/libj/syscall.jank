@@ -206,8 +206,8 @@ i32 sys_bind(i32 fd, sockaddr* addr, u64 addr_len) {
 // in this case, addrlen will return a value greater than was supplied to the call.
 // returns length read
 // returns -1 on failure
-i32 sys_recvfrom(i32 fd, u8* buf, u64 size, i32 flags, sockaddr* src_addr, u64* addr_len) {
-    return syscall(45, i32, fd, buf, size, flags, src_addr, addr_len);
+i64 sys_recvfrom(i32 fd, void* buf, u64 size, i32 flags, sockaddr* src_addr, u64* addr_len) {
+    return syscall(45, i64, fd, buf, size, flags, src_addr, addr_len);
 }
 
 // creates a socket fd
@@ -224,7 +224,7 @@ i32 sys_connect(i32 fd, sockaddr* addr, u64 len) {
     return syscall(42, i32, fd, addr, len);
 }
 
-i32 sys_sendto(i32 fd, u8* buf, u64 size, i32 flags, sockaddr* dest_addr, u64 addr_len) {
+i32 sys_sendto(i32 fd, void* buf, u64 size, i32 flags, sockaddr* dest_addr, u64 addr_len) {
     return syscall(44, i32, fd, buf, size, flags, dest_addr, addr_len);
 }
 
@@ -234,4 +234,16 @@ i32 sys_listen(i32 fd, i32 backlog) {
 
 i32 sys_accept(i32 fd, sockaddr* client_addr, u64* addr_len) {
     return syscall(43, i32, fd, client_addr, addr_len);
+}
+
+//fds points to an array of pollfd structs of length nfds
+//for each pollfd struct, the revents field gets filled out according to the events currently happening with
+// that fd, and the events masked passed in by the user. 
+//timeout specifies the number of milliseconds to block for to wait for some event to become true
+// timeout < 0 indicates to wait indefinitely
+// returns the number of pollfds whose revents fields have been set to a non-negative value
+// return value of 0 indicates timeout before any fd became ready
+// returns -1 on failure
+i32 sys_poll(pollfd* fds, u32 nfds, i32 timeout) {
+    return syscall(7, i32, fds, nfds, timeout);
 }
