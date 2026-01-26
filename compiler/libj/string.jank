@@ -8,16 +8,6 @@
 
 #global_node STRING [MALLOC];
 
-[__GLOBAL_FIRST__] u64 U64_MAX = $u64 -1;
-[__GLOBAL_FIRST__] u32 U32_MAX = $u32 -1;
-[__GLOBAL_FIRST__] u16 U16_MAX = $u16 -1;
-[__GLOBAL_FIRST__] u8 U8_MAX = $u8 -1;
-
-[__GLOBAL_FIRST__] i64 I64_MAX = $i64 0x7fffffffffffffff;
-[__GLOBAL_FIRST__] i64 I64_MIN = $i64 0xffffffffffffffff;
-[__GLOBAL_FIRST__] i32 I32_MAX = 2147483647;
-[__GLOBAL_FIRST__] i32 I32_MIN = -2147483647 - 1;
-
 struct string {
     u64 cap;
     u64 sz;

@@ -16,3 +16,114 @@ i32 strcmp(u8* s1, u8* s2) {
     }
     return 0;
 }
+
+// -- TO STRING --
+//all these expect that buf comes pre-allocated with enough space to build the string
+//strings produced are null terminated
+
+void to_string(i64 x, u8* buf) {
+    if(x == $i64 0) {
+        buf[0] = '0';
+        buf[1] = '\0';
+        return;
+    }
+    u64 ptr = 0x0;
+    i32 is_neg = 0;
+    if(x < $i64 0) {
+        is_neg = 1;
+        x *= $i64 -1;
+    }
+    while(x) {
+        buf[ptr ++] = '0' + $u8 (x % $i64 10);
+        x /= $i64 10;
+    }
+    if(is_neg) buf[ptr ++] = '-';
+    buf[ptr] = '\0';
+    u8 tmp;
+    for(u64 i = 0x0; i < ptr / 0x2; i++) {
+        tmp = buf[i];
+        buf[i] = buf[ptr - 0x1 - i];
+        buf[ptr - 0x1 - i] = tmp;        
+    }
+}   
+
+void to_string(i32 x, u8* buf) {
+    if(x == 0) {
+        buf[0] = '0';
+        buf[1] = '\0';
+        return;
+    }
+    u64 ptr = 0x0;
+    i32 is_neg = 0;
+    if(x < 0) {
+        is_neg = 1;
+        x *= -1;
+    }
+    while(x) {
+        buf[ptr ++] = '0' + $u8 (x % 10);
+        x /= 10;
+    }
+    if(is_neg) buf[ptr ++] = '-';
+    buf[ptr] = '\0';
+    u8 tmp;
+    for(u64 i = 0x0; i < ptr / 0x2; i++) {
+        tmp = buf[i];
+        buf[i] = buf[ptr - 0x1 - i];
+        buf[ptr - 0x1 - i] = tmp;        
+    }
+}
+
+void to_string(i16 x, u8* buf) {
+    if(x == $i16 0) {
+        buf[0] = '0';
+        buf[1] = '\0';
+        return;
+    }
+    u64 ptr = 0x0;
+    i32 is_neg = 0;
+    if(x < $i16 0) {
+        is_neg = 1;
+        x *= $i16 -1;
+    }
+    while(x) {
+        buf[ptr ++] = '0' + $u8 (x % $i16 10);
+        x /= $i16 10;
+    }
+    if(is_neg) buf[ptr ++] = '-';
+    buf[ptr] = '\0';
+    u8 tmp;
+    for(u64 i = 0x0; i < ptr / 0x2; i++) {
+        tmp = buf[i];
+        buf[i] = buf[ptr - 0x1 - i];
+        buf[ptr - 0x1 - i] = tmp;        
+    }
+}
+
+void to_string(u64 x, u8* buf) {
+    if(x == $u64 0) {
+        buf[0] = '0';
+        buf[1] = '\0';
+        return;
+    }
+    u64 ptr = 0x0;
+    while(x) {
+        buf[ptr ++] = '0' + $u8 (x % 0xA);
+        x /= 0xA;
+    }
+    buf[ptr] = '\0';
+    u8 tmp;
+    for(u64 i = 0x0; i < ptr / 0x2; i++) {
+        tmp = buf[i];
+        buf[i] = buf[ptr - 0x1 - i];
+        buf[ptr - 0x1 - i] = tmp;        
+    }
+}
+
+void to_string(u32 x, u8* buf) {
+    to_string($u64 x, buf);
+}
+
+void to_string(u16 x, u8* buf) {
+    to_string($u64 x, buf);
+}
+

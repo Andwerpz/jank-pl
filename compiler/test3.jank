@@ -1,32 +1,81 @@
+#include <put>;
+#include <jstring>;
+#include <vector>;
 #include <iostream>;
 #include <assert>;
 
-// 1/19/2026
-
-//was getting floating point errors when trying to divide unsigned types with their highest bit set. 
-//turns out I was using 'cqo' to sign extend the unsigned values when dividing :/
-//also need to make sure to clear %rdx before dividing as that's the upper part of the numerator
-
 i32 main() {
-    {
-        u32 a = $u32 0x80000000;
-        u32 b = $u32 1;
-        u32 c = a / b;
-        cout << "ABC : " << a << " " << b << " " << c << "\n";
-    }
 
     {
-        u16 a = $u16 0x8000;
-        u16 b = $u16 1;
-        u16 c = a / b;
-        cout << "ABC : " << a << " " << b << " " << c << "\n";
+        cout << "u64\n";
+        u64 a = $u64 10;
+        u64 b = $u64 100;
+        cout << (b / a) << "\n";
+        b /= $u64 3;
+        cout << b << "\n";
+        cout << (a * b) << "\n";
+        u64 c = $u64 17;
+        cout << (b % c) << "\n";
     }
 
-    {
-        u8 a = $u8 0x80;
-        u8 b = $u8 1;
-        u8 c = a / b;
-        cout << "ABC : " << $u16 a << " " << $u16 b << " " << $u16 c << "\n";
+    {   
+        cout << "u32\n";
+        u32 a = $u32 10;
+        u32 b = $u32 100;
+        cout << (b / a) << "\n";
+        b /= $u32 3;
+        cout << b << "\n";
+        cout << (a * b) << "\n";
+        u32 c = $u32 17;
+        cout << (b % c) << "\n";
+    }
+    
+    {   
+        cout << "u16\n";
+        u16 a = $u16 10;
+        u16 b = $u16 100;
+        cout << (b / a) << "\n";
+        b /= $u16 3;
+        cout << b << "\n";
+        cout << (a * b) << "\n";
+        u16 c = $u16 17;
+        cout << (b % c) << "\n";
+    }
+
+    {   
+        cout << "i64\n";
+        i64 a = $i64 10;
+        i64 b = $i64 100;
+        cout << (b / a) << "\n";
+        b /= $i64 3;
+        cout << b << "\n";
+        cout << (a * b) << "\n";
+        i64 c = $i64 17;
+        cout << (b % c) << "\n";
+    }
+
+    {   
+        cout << "i32\n";
+        i32 a = $i32 10;
+        i32 b = $i32 100;
+        cout << (b / a) << "\n";
+        b /= $i32 3;
+        cout << b << "\n";
+        cout << (a * b) << "\n";
+        i32 c = $i32 17;
+        cout << (b % c) << "\n";
+    }
+
+    {   
+        cout << "i16\n";
+        i16 a = $i16 10;
+        i16 b = $i16 100;
+        cout << (b / a) << "\n";
+        b /= $i16 3;
+        cout << b << "\n";
+        cout << (a * b) << "\n";
+        i16 c = $i16 17;
+        cout << (b % c) << "\n";
     }
 
     return 0;

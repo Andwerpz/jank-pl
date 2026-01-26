@@ -152,6 +152,7 @@ struct ostream {
     u8* buf;
     u64 buf_ptr;
     i32 is_bad;
+    u8[128] scratch;
 
     ostream() {
         this.fd = STDOUT;
@@ -249,32 +250,38 @@ ostream& operator<<(ostream& stream, u8* s) {
 }
 
 ostream& operator<<(ostream& stream, i64 x) {
-    stream.write_to_fd(to_string(x));
+    to_string(x, $u8* @(stream.scratch));
+    stream.write_to_fd($u8* @(stream.scratch));
     return stream;
 }
 
 ostream& operator<<(ostream& stream, i32 x) {
-    stream.write_to_fd(to_string(x));
+    to_string(x, $u8* @(stream.scratch));
+    stream.write_to_fd($u8* @(stream.scratch));
     return stream;
 }
 
 ostream& operator<<(ostream& stream, i16 x) {
-    stream.write_to_fd(to_string(x));
+    to_string(x, $u8* @(stream.scratch));
+    stream.write_to_fd($u8* @(stream.scratch));
     return stream;
 }
 
 ostream& operator<<(ostream& stream, u64 x) {
-    stream.write_to_fd(to_string(x));
+    to_string(x, $u8* @(stream.scratch));
+    stream.write_to_fd($u8* @(stream.scratch));
     return stream;
 }
 
 ostream& operator<<(ostream& stream, u32 x) {
-    stream.write_to_fd(to_string(x));
+    to_string(x, $u8* @(stream.scratch));
+    stream.write_to_fd($u8* @(stream.scratch));
     return stream;
 }
 
 ostream& operator<<(ostream& stream, u16 x) {
-    stream.write_to_fd(to_string(x));
+    to_string(x, $u8* @(stream.scratch));
+    stream.write_to_fd($u8* @(stream.scratch));
     return stream;
 }
 
