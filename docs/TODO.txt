@@ -1,0 +1,127 @@
+
+(main quest)
+Each file should be compiled seperately instead of compiling them all together. 
+- this will improve build times of multi-file projects by just compiling what changed.
+  - detecting the things that changed may be relatively problematic though, perhaps it's good practice
+    to simply re-compile everything in the case that you modify struct memory layouts. 
+  - actually, I think you only need to re-compile files that import the changed file?
+    - no, it could be the case that a struct usage is 'hidden'. For example, consider  
+``` 
+// A.jank
+struct A {
+    i32 foo;
+}
+
+// B.jank
+#include "A.jank";
+struct B {
+    A foo;
+}
+
+// C.jank
+#include "B.jank";
+struct C {
+    B foo;
+}
+```
+      Changing the memory layout of A will change the memory layout of C, but it isn't visible to C
+      as the implementation details of A are hidden from C by B. 
+      For now, I'll just recompile all files that directly or indirectly import a modified file. 
+
+- this will improve import semantics. 
+  - Right now if you import a file, you also import all the files that
+    the imported file imports. Doing this will force me to make it so that a file only imports the files it 
+    specifically imports (+ automatic imports). 
+
+- The idea to implement this without changing the compiler too much is to modify the compiler so that 
+  it can pull in code from local imports, but only actually compiles the code from the file 
+  that was originally specified. 
+  - have to implement something to tell the compiler what functions to compile, 
+    and what functions are there from other files. 
+  - maybe every AST node should inherit from a base 'ASTNode' class, and that will contain metadata information
+    such as what file it comes from, and maybe the line and column number of the start and end of the node. 
+  - then we'll only check for well formedness for ASTNodes that originate from the file I'm currently compiling.
+    we'll still register all ASTNodes to the compiler, regardless of file of origin. 
+
+- how do we link generated binaries together?
+  - I emit x86-64 ELF AT&T assembly targeted for the GNU assembler
+  - I think I just have to declare any symbols I want to make public as 'global' and just call them normally from other files. 
+  - then we can just call `gcc main.jank A.jank B.jank -o main.exe` to link them all together.
+
+- how do we handle templates? 
+  - right now templated functions and structs are 'abstract' until they get made 'concrete'.
+    it's only when they're made concrete that any code is actually emitted from them. 
+  - the main issue now is that two different files when compiled can double-emit the same concrete
+    instantiation of a single templated function. 
+    Then if I create a function pointer pointing to the concrete templated function from both of the files, 
+    they may not point to the same address. 
+  - solution here is to let the linker handle de-duplication of concrete templated functions. 
+    there's a way to let the linker know that some symbol should only be included once in the final binary. 
+
+- how do we handle globals? 
+  - right now I can order them because I compile all files at once. 
+    without that, how would I synchronize global variable initialization?
+  - one solution is just to make main dependent on every other file in the project. 
+    however that kinda defeats the purpose, because then every time we rebuild, main will be forced to recompile
+    which will cause it to parse through all files in the project. 
+  - what if instead each global simply exposed a function to call that would just populate the global. 
+    and instead of having to parse through every file to discover these functions, we could emit them into some metadata file.
+    ofc, we'd have to also emit global node definitions and dependencies into metadata as well
+    - how are these initializer functions going to allocate memory for the global?
+      right now all globals are allocated sequentially on the stack before main runs. 
+      they're addressed during runtime by taking an offset to some dedicated register. 
+      the issue is that if we do distributed global initialization, then how is each global going to know its own offset?
+    - we can solve this by making the global initializer functions also take in a pointer to the proper memory location on the stack
+      then when compiling main the memory locations can be synchronized
+    - if we do it this way, then we would still have to recompile main every time we changed any file, 
+      it would just be much faster to gather the full list of global functions by looking at the emitted metadata files. 
+
+- how do we ensure that all generated symbols are unique?
+  - with our now non-global importing system, it's possible to have two functions with identical signatures coexist in the same binary. 
+  - can do what C does and just prefix each symbol with the filepath from project root
+  - with imported templates, the filepath should be the source file in which the template was defined, 
+    not the file that instantiated the template. 
+
+- how do we handle stdlib binaries?
+  - treat them with same versioning as regular project binaries, the only difference is that stdlib doesn't import from the
+    project so you never have to recompile them. 
+  - the build tool does have to know the path of the regular project binaries, but that can probably be exposed via some environment variable. 
+
+- I probably need to make a build tool that can figure out what files to recompile given the set of changed files. 
+  - actually, we can get Make to handle this for us. Given the set of modified files, we want to recompile
+    any file that directly or indirectly imports from a modified file. 
+    We can emit the dependency graph to Make, and it will figure out the rest. 
+    - To determine if a file needs recompiling, Make looks at the timestamp of the target vs its dependencies
+      if the target doesn't exist -> compile
+      if the target is older than any of its dependencies -> compile 
+    - Make wants to know for each artifact, what files should it check to see if it needs to rebuild the artifact.
+      then, we can simply give Make the entire set of files that this file directly or indirectly imports from. 
+      - will have to figure out a way to actually keep track of these dependencies. 
+        perhaps after compilation, can spit out a file listing all immediate imports, 
+        then force Make to run a script to update the dependency lists 
+      - this way during the next compilation, the dependency lists will be updated. 
+  - perhaps it'll be much easier to just make my own build tool, given that I have some odd requirements, 
+    especially with global variables. 
+    - important! what would be a good name for it
+
+
+
+(main quest)
+Add IR (D:)
+- this will make codegen easier, the instructions will map more directly to assembly. 
+- this will make performance improvements to generated code easier
+
+
+
+(side quest)
+Make parsing faster
+- alot of the parsing will happen when we're trying to just gather function definitions. 
+  we can probably target this to make faster by writing a grammar that only sees function definitions and skips everything else. 
+- look into a tokenizer
+
+
+(side quest)
+Rewrite jjc in jank
+- mainly for the operating system, and for the flex
+- probably want to wait until IR is done before doing this, so the compiler can actually be relatively fast (relatively).
+

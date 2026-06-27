@@ -27,6 +27,10 @@ build/%.o: %.cpp
 	@mkdir -p $(dir $@)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
+# Run all tests
+test:
+	./main.exe run-tests
+
 # Clean up build artifacts
 clean:
 	rm -rf build $(TARGET)
