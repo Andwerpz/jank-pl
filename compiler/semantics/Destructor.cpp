@@ -5,7 +5,16 @@
 #include "utils.h"
 #include "Identifier.h"
 
-Destructor::Destructor(Type *_type, CompoundStatement *_body) {
+Destructor::Destructor(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+Destructor::Destructor(const Destructor& other) : ASTNode(other) {
+    type = other.type->make_copy();
+    body = dynamic_cast<CompoundStatement*>(other.body->make_copy());
+}
+
+Destructor::Destructor(Type *_type, CompoundStatement *_body) : ASTNode() {
     type = _type;
     body = _body;
     assert(type != nullptr);
@@ -13,9 +22,10 @@ Destructor::Destructor(Type *_type, CompoundStatement *_body) {
 }
 
 Destructor* Destructor::convert(parser::destructor *d) {
-    Type *type = BaseType::convert(d->t1);
-    CompoundStatement *body = CompoundStatement::convert(d->t5);
-    return new Destructor(type, body);
+    Destructor* result = new Destructor(d);
+    result->type = BaseType::convert(d->t1);
+    result->body = CompoundStatement::convert(d->t5);
+    return result;
 }
 
 bool Destructor::equals(Destructor *other) const {
@@ -95,7 +105,7 @@ bool Destructor::is_well_formed() {
 }
 
 Destructor* Destructor::make_copy() {
-    return new Destructor(type->make_copy(), dynamic_cast<CompoundStatement*>(body->make_copy()));
+    return new Destructor(*this);
 }
 
 bool Destructor::replace_templated_types(TemplateMapping *mapping) {

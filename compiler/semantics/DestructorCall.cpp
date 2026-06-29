@@ -9,7 +9,11 @@
 #include "StructDefinition.h"
 #include "Identifier.h"
 
-DestructorCall::DestructorCall(Type *_type) {
+DestructorCall::DestructorCall(const DestructorCall& other) : ASTNode(other) {
+    type = other.type->make_copy();
+}
+
+DestructorCall::DestructorCall(Type *_type) : ASTNode() {
     type = _type;
 }
 
@@ -116,7 +120,7 @@ bool DestructorCall::equals(DestructorCall *other){
 }
 
 DestructorCall* DestructorCall::make_copy(){
-    return new DestructorCall(type->make_copy());
+    return new DestructorCall(*this);
 }
 
 bool DestructorCall::replace_templated_types(TemplateMapping *mapping){

@@ -1,5 +1,6 @@
 #pragma once
 #include "../parser/parser.h"
+#include "ASTNode.h"
 #include <vector>
 
 struct StructDefinition;
@@ -17,7 +18,7 @@ struct GlobalNode;
 
 struct Typedef;
 
-struct Program {
+struct Program : public ASTNode {
     std::vector<StructDefinition*> structs;
 
     std::vector<TemplatedStructDefinition*> templated_structs;
@@ -31,10 +32,13 @@ struct Program {
 
     std::vector<Typedef*> typedefs;
 
-    Program(); 
+    Program(parser::token *tok);
+    Program(const Program& other);
     Program(std::vector<StructDefinition*> _structs, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<TemplatedOperator*> templated_overloads, std::vector<Include*> includes, std::vector<GlobalDeclaration*> global_declarations, std::vector<GlobalNode*> global_nodes, std::vector<Typedef*> typedefs);
+    Program();
 
-    void add_all(Program *other);
     static Program* convert(parser::program *p);
+    Program* make_copy() override;
+    void add_all(Program *other);
     bool is_well_formed();
 };

@@ -10,35 +10,57 @@
 #include "OperatorCall.h"
 #include "Expression.h"
 
-// -- CONSTRUCTORS --
-BuiltinOperator::BuiltinOperator(Type *_type, std::optional<Type*> _left, std::string _op, std::optional<Type*> _right, std::vector<std::string> _instructions) {
-    assert(_type != nullptr);
+// -- CONVERT CONSTRUCTOR --
+OperatorOverload::OperatorOverload(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
 
+// -- COPY CONSTRUCTOR --
+BuiltinOperator::BuiltinOperator(const BuiltinOperator& other) {
+    type = other.type->make_copy();
+    left = std::nullopt;
+    if(other.left.has_value()) left = other.left.value()->make_copy();
+    op = other.op;
+    right = std::nullopt;
+    if(other.right.has_value()) right = other.right.value()->make_copy();
+    instructions = other.instructions;
+}
+
+OperatorOverload::OperatorOverload(const OperatorOverload& other) : ASTNode(other) {
+    type = other.type->make_copy();
+    op = other.op;
+    for(int i = 0; i < other.parameters.size(); i++) parameters.push_back(other.parameters[i]->make_copy());
+    body = dynamic_cast<CompoundStatement*>(other.body->make_copy());
+}
+
+// -- SYNTHESIS CONSTRUCTOR --
+BuiltinOperator::BuiltinOperator(Type *_type, std::optional<Type*> _left, std::string _op, std::optional<Type*> _right, std::vector<std::string> _instructions) {
     type = _type;
     left = _left;
     op = _op;
     right = _right;
     instructions = _instructions;
+    assert(type != nullptr);
 }
 
-OperatorOverload::OperatorOverload(Type *_type, std::string _op, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
-    assert(_type != nullptr);
-
+OperatorOverload::OperatorOverload(Type *_type, std::string _op, std::vector<Parameter*> _parameters, CompoundStatement *_body) : ASTNode() {
     type = _type;
     op = _op;
     parameters = _parameters;
     body = _body;
+    assert(type != nullptr);
 }
 
 // -- CONVERT --
 OperatorOverload* OperatorOverload::convert(parser::overload *o) {
+    OperatorOverload* result = new OperatorOverload(o);
     parser::overload_definition *def = o->t0;
     parser::parameter_list *pl = def->t7;
-    Type *type = Type::convert(def->t0);
-    std::string op = def->t3->to_string();
-    std::vector<Parameter*> parameters = convert_parameter_list(pl);
-    CompoundStatement *body = CompoundStatement::convert(o->t2);
-    return new OperatorOverload(type, op, parameters, body);
+    result->type = Type::convert(def->t0);
+    result->op = def->t3->to_string();
+    result->parameters = convert_parameter_list(pl);
+    result->body = CompoundStatement::convert(o->t2);
+    return result;
 }
 
 // -- RESOLVE OPERATOR SIGNATURE --
@@ -86,28 +108,12 @@ OperatorSignature* OperatorOverload::resolve_operator_signature() const {
 }
 
 // -- MAKE COPY --
-Operator* BuiltinOperator::make_copy() {
-    Type *_type = type->make_copy();
-    std::string _op = op;
-    std::optional<Type*> _left = std::nullopt, _right = std::nullopt;
-    if(left.has_value()) _left = left.value()->make_copy();
-    if(right.has_value()) _right = right.value()->make_copy();
-    std::vector<std::string> _instructions;
-    for(int i = 0; i < instructions.size(); i++){
-        _instructions.push_back(instructions[i]);
-    }
-    return new BuiltinOperator(_type, _left, _op, _right, _instructions);
+BuiltinOperator* BuiltinOperator::make_copy() {
+    return new BuiltinOperator(*this);
 }
 
-Operator* OperatorOverload::make_copy() {
-    Type *_type = type->make_copy();
-    std::string _op = op;
-    std::vector<Parameter*> _parameters;
-    for(int i = 0; i < parameters.size(); i++){
-        _parameters.push_back(parameters[i]->make_copy());
-    }
-    CompoundStatement *_body = dynamic_cast<CompoundStatement*>(body->make_copy());
-    return new OperatorOverload(_type, _op, _parameters, _body);
+OperatorOverload* OperatorOverload::make_copy() {
+    return new OperatorOverload(*this);
 }
 
 // -- REPLACE TEMPLATED TYPES --

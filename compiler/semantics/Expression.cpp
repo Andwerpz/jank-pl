@@ -15,12 +15,133 @@
 #include "Destructor.h"
 #include "Operator.h"
 
-// -- CONSTRUCTOR --
-ExprPrimary::ExprPrimary(val_t _val) {
+// -- CONVERT CONSTRUCTOR --
+ExprNode::ExprNode(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+ExprPrimary::ExprPrimary(parser::token *tok) : ExprNode(tok) {
+    // do nothing
+}
+
+ExprBinary::ExprBinary(parser::token *tok) : ExprNode(tok) {
+    // do nothing
+}
+
+ExprPrefix::ExprPrefix(parser::token *tok) : ExprNode(tok) {
+    // do nothing
+}
+
+ExprPostfix::ExprPostfix(parser::token *tok) : ExprNode(tok) {
+    // do nothing
+}
+
+Expression::Expression(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+// -- COPY CONSTRUCTOR --
+ExprNode::ExprNode(const ExprNode& other) : ASTNode(other) {
+    // do nothing
+}
+
+ExprPrimary::ExprPrimary(const ExprPrimary& other) : ExprNode(other) {
+    if(std::holds_alternative<FunctionCall*>(other.val)) {
+        FunctionCall *fc = std::get<FunctionCall*>(other.val);
+        val = fc->make_copy();
+    }
+    else if(std::holds_alternative<ConstructorCall*>(other.val)) {
+        ConstructorCall *c = std::get<ConstructorCall*>(other.val);
+        val = c->make_copy();
+    }
+    else if(std::holds_alternative<OperatorCall*>(other.val)) {
+        OperatorCall *o = std::get<OperatorCall*>(other.val);
+        val = o->make_copy();
+    }
+    else if(std::holds_alternative<Identifier*>(other.val)) {
+        Identifier *id = std::get<Identifier*>(other.val);
+        val = id->make_copy();
+    }
+    else if(std::holds_alternative<Literal*>(other.val)) {
+        Literal *l = std::get<Literal*>(other.val);
+        val = l->make_copy();
+    }
+    else if(std::holds_alternative<Expression*>(other.val)) {
+        Expression *e = std::get<Expression*>(other.val);
+        val = e->make_copy();
+    }
+    else if(std::holds_alternative<Type*>(other.val)) {
+        Type *t = std::get<Type*>(other.val);
+        val = t->make_copy();
+    }
+    else assert(false);
+}
+
+ExprBinary::ExprBinary(const ExprBinary& other) : ExprNode(other) {
+    left = other.left->make_copy();
+    if(std::holds_alternative<std::string>(other.op)) {
+        std::string o = std::get<std::string>(other.op);
+        op = o;
+    }
+    else assert(false);
+    right = other.right->make_copy();
+}
+
+ExprPrefix::ExprPrefix(const ExprPrefix& other) : ExprNode(other) {
+    if(std::holds_alternative<std::string>(other.op)) {
+        std::string str_op = std::get<std::string>(other.op);
+        op = str_op;
+    }
+    else if(std::holds_alternative<Type*>(other.op)) {
+        Type *cast_t = std::get<Type*>(other.op);
+        op = cast_t->make_copy();
+    }
+    else assert(false);
+    right = other.right->make_copy();
+}
+
+ExprPostfix::ExprPostfix(const ExprPostfix& other) : ExprNode(other) {
+    left = other.left->make_copy();
+    if(std::holds_alternative<Expression*>(other.op)) {   //indexing
+        Expression *expr = std::get<Expression*>(other.op);
+        op = expr->make_copy();
+    }
+    else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(other.op)) {    //function call
+        std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(other.op);
+        op = std::make_pair(p.first, p.second->make_copy());
+    }
+    else if(std::holds_alternative<std::pair<std::string, Identifier*>>(other.op)) {    //member variable access
+        std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(other.op);
+        op = std::make_pair(p.first, p.second->make_copy());
+    }
+    else if(std::holds_alternative<std::string>(other.op)) {  //postfix increment / decrement
+        std::string str_op = std::get<std::string>(other.op);
+        op = str_op;
+    }   
+    else if(std::holds_alternative<std::vector<Expression*>>(other.op)) {
+        const std::vector<Expression*>& argument_list = std::get<std::vector<Expression*>>(other.op);
+        std::vector<Expression*> _argument_list;
+        for(int i = 0; i < argument_list.size(); i++) _argument_list.push_back(argument_list[i]->make_copy());
+        op = _argument_list;
+    }
+    else assert(false);
+}
+
+Expression::Expression(const Expression& other) : ASTNode(other) {
+    has_elaborated = other.has_elaborated;
+    expr_node = other.expr_node->make_copy();
+}
+
+// -- SYNTHESIS CONSTRUCTOR --
+ExprNode::ExprNode() : ASTNode() {
+    // do nothing
+}
+
+ExprPrimary::ExprPrimary(val_t _val) : ExprNode() {
     val = _val;
 }
 
-ExprBinary::ExprBinary(ExprNode *_left, op_t _op, ExprNode *_right) {
+ExprBinary::ExprBinary(ExprNode *_left, op_t _op, ExprNode *_right) : ExprNode() {
     left = _left;
     op = _op;
     right = _right;
@@ -28,108 +149,119 @@ ExprBinary::ExprBinary(ExprNode *_left, op_t _op, ExprNode *_right) {
     assert(right != nullptr);
 }
 
-ExprPrefix::ExprPrefix(op_t _op, ExprNode *_right) {
+ExprPrefix::ExprPrefix(op_t _op, ExprNode *_right) : ExprNode() {
     op = _op;
     right = _right;
     assert(right != nullptr);
 }
 
-ExprPostfix::ExprPostfix(ExprNode *_left, op_t _op) {
+ExprPostfix::ExprPostfix(ExprNode *_left, op_t _op) : ExprNode() {
     left = _left;
     op = _op;
     assert(left != nullptr);
 }
 
-Expression::Expression(ExprNode *_expr_node) {
+Expression::Expression(ExprNode *_expr_node) : ASTNode() {
     has_elaborated = false;
     expr_node = _expr_node;
 }
 
 // -- CONVERT --
 ExprNode* ExprNode::convert(parser::expr_primary *e) {
-    ExprPrimary::val_t val;
+    ExprPrimary* result = new ExprPrimary(e);
     if(e->is_a0) {
-        val = Literal::convert(e->t0->t0);
+        result->val = Literal::convert(e->t0->t0);
     }
     else if(e->is_a1) {
-        val = ConstructorCall::convert(e->t1->t0);
+        result->val = ConstructorCall::convert(e->t1->t0);
     }
     else if(e->is_a2) {
-        val = FunctionCall::convert(e->t2->t0);
+        result->val = FunctionCall::convert(e->t2->t0);
     }
     else if(e->is_a3) {
-        val = Identifier::convert(e->t3->t0);
+        result->val = Identifier::convert(e->t3->t0);
     }
     else if(e->is_a4) {
-        val = Expression::convert(e->t4->t2);
+        result->val = Expression::convert(e->t4->t2);
     }
     else assert(false);
-    return new ExprPrimary(val);
+    return result;
 }
 
 ExprNode* ExprNode::convert(parser::expr_postfix *e) {
-    ExprNode *left = ExprNode::convert(e->t0);
+    ExprNode* result = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
+        ExprPostfix* _result = new ExprPostfix(e->t1[i]->t1);
         if(e->t1[i]->t1->is_c0) {       //indexing
-            Expression *expr = Expression::convert(e->t1[i]->t1->t0->t2);
-            left = new ExprPostfix(left, expr);
+            _result->left = result;
+            _result->op = Expression::convert(e->t1[i]->t1->t0->t2);
         }
         else if(e->t1[i]->t1->is_c1) {  //call member function
             std::string op = ".";
             FunctionCall *fc = FunctionCall::convert(e->t1[i]->t1->t1->t2);
-            left = new ExprPostfix(left, std::make_pair(op, fc));
+            _result->left = result;
+            _result->op = std::make_pair(op, fc);
         }
         else if(e->t1[i]->t1->is_c2) {  //dereference, call member function
             std::string op = "->";
             FunctionCall *fc = FunctionCall::convert(e->t1[i]->t1->t2->t2);
-            left = new ExprPostfix(left, std::make_pair(op, fc));
+            _result->left = result;
+            _result->op = std::make_pair(op, fc);
         }
         else if(e->t1[i]->t1->is_c3) {  //access member variable
             std::string op = ".";
             Identifier *id = Identifier::convert(e->t1[i]->t1->t3->t2);
-            left = new ExprPostfix(left, std::make_pair(op, id));
+            _result->left = result;
+            _result->op = std::make_pair(op, id);
         }
         else if(e->t1[i]->t1->is_c4) {  //dereference, access member variable
             std::string op = "->";
             Identifier *id = Identifier::convert(e->t1[i]->t1->t4->t2);
-            left = new ExprPostfix(left, std::make_pair(op, id));
+            _result->left = result;
+            _result->op = std::make_pair(op, id);
         }
         else if(e->t1[i]->t1->is_c5) {  //postfix increment
             std::string op = "++";
-            left = new ExprPostfix(left, op);
+            _result->left = result;
+            _result->op = op;
         }
         else if(e->t1[i]->t1->is_c6) {  //postfix decrement
             std::string op = "--";
-            left = new ExprPostfix(left, op);
+            _result->left = result;
+            _result->op = op;
         }
         else if(e->t1[i]->t1->is_c7) {  //function pointer call
             std::vector<Expression*> argument_list = convert_argument_list(e->t1[i]->t1->t7->t1);
-            left = new ExprPostfix(left, argument_list);
+            _result->left = result;
+            _result->op = argument_list;
         }
         else if(e->t1[i]->t1->is_c8) {  //destructor call
             std::string op = ".~()";
-            left = new ExprPostfix(left, op);
+            _result->left = result;
+            _result->op = op;
         }
         else if(e->t1[i]->t1->is_c9) {  //dereference, destructor call
             std::string op = "->~()";
-            left = new ExprPostfix(left, op);
+            _result->left = result;
+            _result->op = op;
         }       
         else assert(false);
+        result = _result;
     }
-    return left;
+    return result;
 }
 
 ExprNode* ExprNode::convert(parser::expr_unary *e) {
-    if(e->is_a0) {  //unary operator + unary expression
-        ExprPrefix::op_t op;
+    if(e->is_a0) {      //unary operator + unary expression
+        ExprPrefix* result = new ExprPrefix(e);
         if(e->t0->t0->is_c8) {  //casting
-            op = Type::convert(e->t0->t0->t8->t1);
+            result->op = Type::convert(e->t0->t0->t8->t1);
         }
-        else {  //arithmetic operator
-            op = e->t0->t0->to_string();
+        else {                  //arithmetic operator
+            result->op = e->t0->t0->to_string();
         }
-        ExprNode *right = ExprNode::convert(e->t0->t2);
-        return new ExprPrefix(op, right);
+        result->right = ExprNode::convert(e->t0->t2);
+        return result;
     }
     else if(e->is_a1) { //postfix expression
         return ExprNode::convert(e->t1->t0);
@@ -138,121 +270,168 @@ ExprNode* ExprNode::convert(parser::expr_unary *e) {
 }
 
 ExprNode* ExprNode::convert(parser::expr_multiplicative *e) {
-    ExprNode *left = ExprNode::convert(e->t0);
+    ExprNode* result = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
+        ExprBinary* _result = new ExprBinary(e->t1[i]);
         std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
-        left = new ExprBinary(left, op, right);
+        _result->left = result;
+        _result->op = op;
+        _result->right = right;
+        result = _result;
     }
-    return left;
+    return result;
 }
 
 ExprNode* ExprNode::convert(parser::expr_additive *e) {
-    ExprNode *left = ExprNode::convert(e->t0);
+    ExprNode* result = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
+        ExprBinary* _result = new ExprBinary(e->t1[i]);
         std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
-        left = new ExprBinary(left, op, right);
+        _result->left = result;
+        _result->op = op;
+        _result->right = right;
+        result = _result;
     }
-    return left;
+    return result;
 }
 
 ExprNode* ExprNode::convert(parser::expr_shift *e) {
-    ExprNode *left = ExprNode::convert(e->t0);
+    ExprNode* result = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
+        ExprBinary* _result = new ExprBinary(e->t1[i]);
         std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
-        left = new ExprBinary(left, op, right);
+        _result->left = result;
+        _result->op = op;
+        _result->right = right;
+        result = _result;
     }
-    return left;
+    return result;
 }
 
 ExprNode* ExprNode::convert(parser::expr_relational *e) {
-    ExprNode *left = ExprNode::convert(e->t0);
+    ExprNode* result = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
+        ExprBinary* _result = new ExprBinary(e->t1[i]);
         std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
-        left = new ExprBinary(left, op, right);
+        _result->left = result;
+        _result->op = op;
+        _result->right = right;
+        result = _result;
     }
-    return left;
+    return result;
 }
 
 ExprNode* ExprNode::convert(parser::expr_equality *e) {
-    ExprNode *left = ExprNode::convert(e->t0);
+    ExprNode* result = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
+        ExprBinary* _result = new ExprBinary(e->t1[i]);
         std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
-        left = new ExprBinary(left, op, right);
+        _result->left = result;
+        _result->op = op;
+        _result->right = right;
+        result = _result;
     }
-    return left;
+    return result;
 }
 
 ExprNode* ExprNode::convert(parser::expr_bit_and *e) {
-    ExprNode *left = ExprNode::convert(e->t0);
+    ExprNode* result = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
+        ExprBinary* _result = new ExprBinary(e->t1[i]);
         std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
-        left = new ExprBinary(left, op, right);
+        _result->left = result;
+        _result->op = op;
+        _result->right = right;
+        result = _result;
     }
-    return left;
+    return result;
 }
 
 ExprNode* ExprNode::convert(parser::expr_bit_xor *e) {
-    ExprNode *left = ExprNode::convert(e->t0);
+    ExprNode* result = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
+        ExprBinary* _result = new ExprBinary(e->t1[i]);
         std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
-        left = new ExprBinary(left, op, right);
+        _result->left = result;
+        _result->op = op;
+        _result->right = right;
+        result = _result;
     }
-    return left;
+    return result;
 }
 
 ExprNode* ExprNode::convert(parser::expr_bit_or *e) {
-    ExprNode *left = ExprNode::convert(e->t0);
+    ExprNode* result = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
+        ExprBinary* _result = new ExprBinary(e->t1[i]);
         std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
-        left = new ExprBinary(left, op, right);
+        _result->left = result;
+        _result->op = op;
+        _result->right = right;
+        result = _result;
     }
-    return left;
+    return result;
 }
 
 ExprNode* ExprNode::convert(parser::expr_logical_and *e) {
-    ExprNode *left = ExprNode::convert(e->t0);
+    ExprNode* result = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
+        ExprBinary* _result = new ExprBinary(e->t1[i]);
         std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
-        left = new ExprBinary(left, op, right);
+        _result->left = result;
+        _result->op = op;
+        _result->right = right;
+        result = _result;
     }
-    return left;
+    return result;
 }   
 
 ExprNode* ExprNode::convert(parser::expr_logical_or *e) {
-    ExprNode *left = ExprNode::convert(e->t0);
+    ExprNode* result = ExprNode::convert(e->t0);
     for(int i = 0; i < e->t1.size(); i++){
+        ExprBinary* _result = new ExprBinary(e->t1[i]);
         std::string op = e->t1[i]->t1->to_string();
         ExprNode *right = ExprNode::convert(e->t1[i]->t3);
-        left = new ExprBinary(left, op, right);
+        _result->left = result;
+        _result->op = op;
+        _result->right = right;
+        result = _result;
     }
-    return left;
+    return result;
 }
 
 ExprNode* ExprNode::convert(parser::expr_assignment *e) {
+    //assignment is right to left associative
     std::vector<ExprNode*> nodes;
     nodes.push_back(ExprNode::convert(e->t0));
     for(int i = 0; i < e->t1.size(); i++) nodes.push_back(ExprNode::convert(e->t1[i]->t3));
 
-    ExprNode *right = nodes[nodes.size() - 1];
+    ExprNode* result = nodes[nodes.size() - 1];
     for(int i = (int) nodes.size() - 2; i >= 0; i--){
+        ExprBinary* _result = new ExprBinary(e->t1[i]);
         std::string op = e->t1[i]->t1->to_string();
-        right = new ExprBinary(nodes[i], op, right);
+        _result->left = nodes[i];
+        _result->op = op;
+        _result->right = result;
+        result = _result;
     }
-    return right;
+    return result;
 }
 
 Expression* Expression::convert(parser::expression *e) {
-    ExprNode *expr_node = ExprNode::convert(e->t0);
-    return new Expression(expr_node);
+    Expression* result = new Expression(e);
+    result->has_elaborated = false;
+    result->expr_node = ExprNode::convert(e->t0);
+    return result;
 }
 
 // -- RESOLVE_TYPE --
@@ -874,7 +1053,7 @@ void ExprPostfix::elaborate(ExprNode*& self) {
 
 void Expression::elaborate() {
     if(has_elaborated) {
-        if(debug) std::cout << "ALREADY ELABORATED : " << to_string() << "\n";
+        if(debug) std::cout << "ALREADY ELABORATED : " << to_string() << std::endl;
         assert(false);
     }
     if(debug) std::cout << "ELABORATING : " << to_string() << std::endl;
@@ -1741,81 +1920,23 @@ void Expression::id_to_type() {
 
 // -- COPY --
 ExprNode* ExprPrimary::make_copy() {
-    if(std::holds_alternative<FunctionCall*>(val)) {
-        FunctionCall *fc = std::get<FunctionCall*>(val);
-        return new ExprPrimary(fc->make_copy());
-    }
-    else if(std::holds_alternative<ConstructorCall*>(val)) {
-        ConstructorCall *c = std::get<ConstructorCall*>(val);
-        return new ExprPrimary(c->make_copy());
-    }
-    else if(std::holds_alternative<OperatorCall*>(val)) {
-        OperatorCall *o = std::get<OperatorCall*>(val);
-        return new ExprPrimary(o->make_copy());
-    }
-    else if(std::holds_alternative<Identifier*>(val)) {
-        Identifier *id = std::get<Identifier*>(val);
-        return new ExprPrimary(id->make_copy());
-    }
-    else if(std::holds_alternative<Literal*>(val)) {
-        Literal *l = std::get<Literal*>(val);
-        return new ExprPrimary(l->make_copy());
-    }
-    else if(std::holds_alternative<Expression*>(val)) {
-        Expression *e = std::get<Expression*>(val);
-        return new ExprPrimary(e->make_copy());
-    }
-    else if(std::holds_alternative<Type*>(val)) {
-        Type *t = std::get<Type*>(val);
-        return new ExprPrimary(t->make_copy());
-    }
-    else assert(false);
+    return new ExprPrimary(*this);
 }
 
 ExprNode* ExprBinary::make_copy() {
-    return new ExprBinary(left->make_copy(), op, right->make_copy());
+    return new ExprBinary(*this);
 }
 
 ExprNode* ExprPrefix::make_copy() {
-    if(std::holds_alternative<std::string>(op)) {
-        std::string str_op = std::get<std::string>(op);
-        return new ExprPrefix(str_op, right->make_copy());
-    }
-    else if(std::holds_alternative<Type*>(op)) {
-        Type *cast_t = std::get<Type*>(op);
-        return new ExprPrefix(cast_t->make_copy(), right->make_copy());
-    }
-    else assert(false);
+    return new ExprPrefix(*this);
 }
 
 ExprNode* ExprPostfix::make_copy() {
-    if(std::holds_alternative<Expression*>(op)) {   //indexing
-        Expression *expr = std::get<Expression*>(op);
-        return new ExprPostfix(left->make_copy(), expr->make_copy());
-    }
-    else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {    //function call
-        std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
-        return new ExprPostfix(left->make_copy(), std::make_pair(p.first, p.second->make_copy()));
-    }
-    else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {    //member variable access
-        std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
-        return new ExprPostfix(left->make_copy(), std::make_pair(p.first, p.second->make_copy()));
-    }
-    else if(std::holds_alternative<std::string>(op)) {  //postfix increment / decrement
-        std::string str_op = std::get<std::string>(op);
-        return new ExprPostfix(left->make_copy(), str_op);
-    }   
-    else if(std::holds_alternative<std::vector<Expression*>>(op)) {
-        std::vector<Expression*> argument_list = std::get<std::vector<Expression*>>(op);
-        std::vector<Expression*> _argument_list;
-        for(int i = 0; i < argument_list.size(); i++) _argument_list.push_back(argument_list[i]->make_copy());
-        return new ExprPostfix(left->make_copy(), _argument_list);
-    }
-    else assert(false);
+    return new ExprPostfix(*this);
 }
 
 Expression* Expression::make_copy() {
-    return new Expression(expr_node->make_copy());
+    return new Expression(*this);
 }
 
 // -- REPLACE TEMPLATED TYPES --

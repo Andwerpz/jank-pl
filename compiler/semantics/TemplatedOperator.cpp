@@ -9,18 +9,28 @@
 #include "OperatorCall.h"
 #include "OperatorSignature.h"
 
-TemplatedOperator::TemplatedOperator(TemplateHeader *_header, Operator *_op) {
-    assert(_header != nullptr);
-    assert(_op != nullptr);
+TemplatedOperator::TemplatedOperator(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+TemplatedOperator::TemplatedOperator(const TemplatedOperator& other) : ASTNode(other) {
+    header = other.header->make_copy();
+    op = other.op->make_copy();
+}
+
+TemplatedOperator::TemplatedOperator(TemplateHeader *_header, Operator *_op) : ASTNode() {
     header = _header;
     op = _op;
+    assert(header != nullptr);
+    assert(op != nullptr);
 }
 
 TemplatedOperator* TemplatedOperator::convert(parser::templated_overload *o) {
-    TemplateHeader *header = new TemplateHeader({});
-    if(o->t0.has_value()) header = TemplateHeader::convert(o->t0.value()->t0);
-    Operator *op = OperatorOverload::convert(o->t1);
-    return new TemplatedOperator(header, op);
+    TemplatedOperator* result = new TemplatedOperator(o);
+    result->header = new TemplateHeader(std::vector<BaseType*>());
+    if(o->t0.has_value()) result->header = TemplateHeader::convert(o->t0.value()->t0);
+    result->op = OperatorOverload::convert(o->t1);
+    return result;
 }
 
 bool TemplatedOperator::is_well_formed() {
@@ -171,4 +181,8 @@ bool TemplatedOperator::replace_templated_types(TemplateMapping *mapping) {
     }
 
     return op->replace_templated_types(mapping);
+}
+
+TemplatedOperator* TemplatedOperator::make_copy() {
+    return new TemplatedOperator(*this);
 }

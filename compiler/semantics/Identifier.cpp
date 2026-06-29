@@ -1,11 +1,21 @@
 #include "Identifier.h"
 
-Identifier::Identifier(std::string _name) {
+Identifier::Identifier(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+Identifier::Identifier(const Identifier& other) : ASTNode(other) {
+    name = other.name;
+}
+
+Identifier::Identifier(std::string _name) : ASTNode() {
     name = _name;
 }
 
 Identifier* Identifier::convert(parser::identifier *i) {
-    return new Identifier(i->to_string());
+    Identifier* result = new Identifier(i);
+    result->name = i->to_string();
+    return result;
 }
 
 size_t Identifier::hash() const {
@@ -26,5 +36,5 @@ bool Identifier::operator!=(const Identifier& other) const {
 }
 
 Identifier* Identifier::make_copy() {
-    return new Identifier(name);
+    return new Identifier(*this);
 }

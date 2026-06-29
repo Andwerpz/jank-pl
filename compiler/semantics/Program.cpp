@@ -27,11 +27,24 @@
 #include "Operator.h"
 #include "OperatorSignature.h"
 
-Program::Program() {
+Program::Program(parser::token *tok) : ASTNode(tok) {
     // do nothing
 }
 
-Program::Program(std::vector<StructDefinition*> _structs, std::vector<TemplatedStructDefinition*> _templated_structs, std::vector<TemplatedFunction*> _templated_functions, std::vector<TemplatedOperator*> _templated_operators, std::vector<Include*> _includes, std::vector<GlobalDeclaration*> _global_declarations, std::vector<GlobalNode*> _global_nodes, std::vector<Typedef*> _typedefs) {
+Program::Program(const Program& other) : ASTNode(other) {
+    assert(false);  //shouldn't be making copies of Program
+}
+
+Program::Program(
+    std::vector<StructDefinition*> _structs, 
+    std::vector<TemplatedStructDefinition*> _templated_structs, 
+    std::vector<TemplatedFunction*> _templated_functions, 
+    std::vector<TemplatedOperator*> _templated_operators, 
+    std::vector<Include*> _includes, 
+    std::vector<GlobalDeclaration*> _global_declarations, 
+    std::vector<GlobalNode*> _global_nodes, 
+    std::vector<Typedef*> _typedefs
+) : ASTNode() {
     structs = _structs;
 
     templated_structs = _templated_structs;
@@ -46,49 +59,44 @@ Program::Program(std::vector<StructDefinition*> _structs, std::vector<TemplatedS
     typedefs = _typedefs;
 }
 
+Program::Program() : ASTNode() {
+    // do nothing
+}
+
 Program* Program::convert(parser::program *p) {
-    std::vector<StructDefinition*> structs;
-    std::vector<Overload*> overloads;
-
-    std::vector<TemplatedStructDefinition*> templated_structs;
-    std::vector<TemplatedFunction*> templated_functions;
-    std::vector<TemplatedOperator*> templated_operators;
-
-    std::vector<Include*> includes;
-
-    std::vector<GlobalDeclaration*> global_declarations;
-    std::vector<GlobalNode*> global_nodes;
-
-    std::vector<Typedef*> typedefs;
-
+    Program* result = new Program(p);
     for(int i = 0; i < p->t0.size(); i++){
         if(p->t0[i]->t1->is_c0) {  //struct definition
-            structs.push_back(StructDefinition::convert(p->t0[i]->t1->t0->t0));
+            result->structs.push_back(StructDefinition::convert(p->t0[i]->t1->t0->t0));
         }
         else if(p->t0[i]->t1->is_c1) {  //templated function
-            templated_functions.push_back(TemplatedFunction::convert(p->t0[i]->t1->t1->t0));
+            result->templated_functions.push_back(TemplatedFunction::convert(p->t0[i]->t1->t1->t0));
         }
         else if(p->t0[i]->t1->is_c2) {  //templated struct definition
-            templated_structs.push_back(TemplatedStructDefinition::convert(p->t0[i]->t1->t2->t0));
+            result->templated_structs.push_back(TemplatedStructDefinition::convert(p->t0[i]->t1->t2->t0));
         }
         else if(p->t0[i]->t1->is_c3) {  //templated overload
-            templated_operators.push_back(TemplatedOperator::convert(p->t0[i]->t1->t3->t0));
+            result->templated_operators.push_back(TemplatedOperator::convert(p->t0[i]->t1->t3->t0));
         }
         else if(p->t0[i]->t1->is_c4) {  //include
-            includes.push_back(Include::convert(p->t0[i]->t1->t4->t0));
+            result->includes.push_back(Include::convert(p->t0[i]->t1->t4->t0));
         }
         else if(p->t0[i]->t1->is_c5) {  //global declaration
-            global_declarations.push_back(GlobalDeclaration::convert(p->t0[i]->t1->t5->t0));
+            result->global_declarations.push_back(GlobalDeclaration::convert(p->t0[i]->t1->t5->t0));
         }
         else if(p->t0[i]->t1->is_c6) {  //global node
-            global_nodes.push_back(GlobalNode::convert(p->t0[i]->t1->t6->t0));
+            result->global_nodes.push_back(GlobalNode::convert(p->t0[i]->t1->t6->t0));
         }
         else if(p->t0[i]->t1->is_c7) {  //typedef
-            typedefs.push_back(Typedef::convert(p->t0[i]->t1->t7->t0));
+            result->typedefs.push_back(Typedef::convert(p->t0[i]->t1->t7->t0));
         }
         else assert(false);
     }
-    return new Program(structs, templated_structs, templated_functions, templated_operators, includes, global_declarations, global_nodes, typedefs);
+    return result;
+}
+
+Program* Program::make_copy() {
+    return new Program(*this);
 }
 
 void Program::add_all(Program *other) {

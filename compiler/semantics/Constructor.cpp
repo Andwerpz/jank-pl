@@ -11,33 +11,62 @@
 #include "Literal.h"
 #include "Declaration.h"
 
-Constructor* Constructor::convert(parser::constructor *c) {
-    Type *type = BaseType::convert(c->t0->t0);
-    parser::parameter_list *pl = c->t0->t4;
-    std::vector<Parameter*> parameters = convert_parameter_list(pl); 
-    CompoundStatement *body = CompoundStatement::convert(c->t2);
-    return new StructConstructor(type, parameters, body);
+// -- CONSTRUCTOR --
+Constructor::Constructor(parser::token *tok) : ASTNode(tok) {
+    // do nothing
 }
 
-// -- CONSTRUCTOR --
-StructConstructor::StructConstructor(Type* _type, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
+Constructor::Constructor(const Constructor& other) : ASTNode(other) {
+    type = other.type->make_copy();
+    for(int i = 0; i < other.parameters.size(); i++) {
+        parameters.push_back(other.parameters[i]->make_copy());
+    }
+}
+
+Constructor::Constructor(Type* _type, std::vector<Parameter*> _parameters) : ASTNode() {
     type = _type;
     parameters = _parameters;
-    body = _body;
-
     assert(type != nullptr);
+    for(int i = 0; i < parameters.size(); i++) assert(parameters[i] != nullptr);
+}
+
+StructConstructor::StructConstructor(parser::token *tok) : Constructor(tok) {
+    // do nothing
+}
+
+StructConstructor::StructConstructor(const StructConstructor& other) : Constructor(other) {
+    body = dynamic_cast<CompoundStatement*>(other.body->make_copy());
+}
+
+StructConstructor::StructConstructor(Type* _type, std::vector<Parameter*> _parameters, CompoundStatement *_body) : Constructor(_type, _parameters) {
+    body = _body;
     assert(body != nullptr);
 }
 
-PrimitiveConstructor::PrimitiveConstructor(Type *_type, bool _is_copy_constructor) {
-    type = _type;
+PrimitiveConstructor::PrimitiveConstructor(const PrimitiveConstructor& other) : Constructor(other) {
+    is_copy_constructor = other.is_copy_constructor;
+}
+
+PrimitiveConstructor::PrimitiveConstructor(Type *_type, bool _is_copy_constructor) : Constructor(_type, {}) {
     is_copy_constructor = _is_copy_constructor;
-    assert(type != nullptr);
+
+    // primitive constructor should have primitive type
     assert(is_type_primitive(type));
 
+    // copy constructor should have one argument of the copied type
     if(is_copy_constructor) {
         parameters.push_back(new Parameter(type->make_copy(), new Identifier("x")));
     }
+}
+
+// -- CONVERT --
+Constructor* Constructor::convert(parser::constructor *c) {
+    StructConstructor* result = new StructConstructor(c);
+    result->type = BaseType::convert(c->t0->t0);
+    parser::parameter_list *pl = c->t0->t4;
+    result->parameters = convert_parameter_list(pl); 
+    result->body = CompoundStatement::convert(c->t2);
+    return result;
 }
 
 // -- RESOLVE CONSTRUCTOR SIGNATURE --
@@ -221,17 +250,11 @@ bool PrimitiveConstructor::is_well_formed() {
 
 // -- MAKE COPY --
 Constructor* StructConstructor::make_copy() {
-    Type *_type = type->make_copy();
-    std::vector<Parameter*> _parameters;
-    for(int i = 0; i < parameters.size(); i++){
-        _parameters.push_back(parameters[i]->make_copy());
-    }
-    CompoundStatement *_body = dynamic_cast<CompoundStatement*>(body->make_copy());
-    return new StructConstructor(_type, _parameters, _body);
+    return new StructConstructor(*this);
 }
 
 Constructor* PrimitiveConstructor::make_copy() {
-    return new PrimitiveConstructor(type->make_copy(), is_copy_constructor);
+    return new PrimitiveConstructor(*this);
 }
 
 // -- REPLACE TEMPLATED TYPES --

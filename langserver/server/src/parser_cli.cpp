@@ -27,7 +27,7 @@ struct semantic_token {
 	semantic_token(parser::token *tok, std::string _type) {
 		type = _type;
 		line = tok->start_ctx.line;
-		col = tok->start_ctx.line_off;
+		col = tok->start_ctx.col;
 		length = tok->end_ctx.ptr - tok->start_ctx.ptr;
 	}
 
@@ -53,9 +53,9 @@ struct diagnostic_token {
 		message = _message;
 		severity = _severity;
 		start_line = tok->start_ctx.line;
-		start_col = tok->start_ctx.line_off;
+		start_col = tok->start_ctx.col;
 		end_line = tok->end_ctx.line;
-		end_col = tok->end_ctx.line_off;
+		end_col = tok->end_ctx.col;
 	}
 
 	std::string to_json_str() {

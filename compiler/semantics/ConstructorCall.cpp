@@ -7,7 +7,22 @@
 #include "Parameter.h"
 #include "TemplateMapping.h"
 
-ConstructorCall::ConstructorCall(std::optional<Expression*> _cip_expr, Type *_type, std::vector<Expression*> _argument_list) {
+ConstructorCall::ConstructorCall(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+ConstructorCall::ConstructorCall(const ConstructorCall& other) : ASTNode(other) {
+    cip_expr = std::nullopt;
+    if(other.cip_expr != std::nullopt) {
+        cip_expr = other.cip_expr.value()->make_copy();
+    }
+    type = other.type->make_copy();
+    for(int i = 0; i < other.argument_list.size(); i++) {
+        argument_list.push_back(other.argument_list[i]->make_copy());
+    }
+}
+
+ConstructorCall::ConstructorCall(std::optional<Expression*> _cip_expr, Type *_type, std::vector<Expression*> _argument_list) : ASTNode() {
     assert(_type != nullptr);
     assert(dynamic_cast<ReferenceType*>(_type) == nullptr);
     cip_expr = _cip_expr;
@@ -17,14 +32,15 @@ ConstructorCall::ConstructorCall(std::optional<Expression*> _cip_expr, Type *_ty
 }
 
 ConstructorCall* ConstructorCall::convert(parser::constructor_call *c) {
-    std::optional<Expression*> cip_expr = std::nullopt;
+    ConstructorCall* result = new ConstructorCall(c);
+    result->cip_expr = std::nullopt;
     if(c->t2.has_value()) {
-        cip_expr = Expression::convert(c->t2.value()->t2);
+        result->cip_expr = Expression::convert(c->t2.value()->t2);
     }
-    Type *type = Type::convert(c->t3);
+    result->type = Type::convert(c->t3);
     parser::argument_list *al = c->t7;
-    std::vector<Expression*> argument_list = convert_argument_list(al);
-    return new ConstructorCall(cip_expr, type, argument_list);
+    result->argument_list = convert_argument_list(al);
+    return result;
 }
 
 Constructor* ConstructorCall::resolve_called_constructor() {
@@ -217,15 +233,7 @@ bool ConstructorCall::equals(ConstructorCall *other) {
 }
 
 ConstructorCall* ConstructorCall::make_copy() {
-    std::optional<Expression*> _cip_expr = std::nullopt;
-    if(cip_expr.has_value()) {
-        _cip_expr = cip_expr.value()->make_copy();
-    }
-    std::vector<Expression*> argument_list_copy;
-    for(int i = 0; i < argument_list.size(); i++){
-        argument_list_copy.push_back(argument_list[i]->make_copy());
-    }
-    return new ConstructorCall(_cip_expr, type->make_copy(), argument_list_copy);
+    return new ConstructorCall(*this);
 }
 
 bool ConstructorCall::replace_templated_types(TemplateMapping *mapping) {

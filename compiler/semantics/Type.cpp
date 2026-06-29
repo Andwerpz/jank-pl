@@ -8,50 +8,105 @@
 #include "FunctionSignature.h"
 #include "Parameter.h"
 
-Type* Type::remove_reference() {
-    Type *ret = this->make_copy();
-    if(dynamic_cast<ReferenceType*>(ret)) ret = dynamic_cast<ReferenceType*>(ret)->type;
-    return ret;
+// -- CONVERT CONSTRUCTOR --
+Type::Type(parser::token *tok) : ASTNode(tok) {
+    // do nothing
 }
 
-bool Type::operator==(const Type& other) const {
-    return this->equals(&other);
+BaseType::BaseType(parser::token *tok) : Type(tok) {
+    // do nothing
 }
 
-bool Type::operator!=(const Type& other) const {
-    return !this->equals(&other);
+PointerType::PointerType(parser::token *tok) : Type(tok) {
+    // do nothing
 }
 
-// -- CONSTRUCTOR --
-BaseType::BaseType(std::string _name) {
+ArrayType::ArrayType(parser::token *tok) : Type(tok) {
+    // do nothing
+}
+
+ReferenceType::ReferenceType(parser::token *tok) : Type(tok) {
+    // do nothing
+}
+
+TemplatedType::TemplatedType(parser::token *tok) : Type(tok) {
+    // do nothing
+}
+
+FunctionPointerType::FunctionPointerType(parser::token *tok) : Type(tok) {
+    // do nothing
+}
+
+// -- COPY CONSTRUCTOR --
+Type::Type(const Type& other) : ASTNode(other) {
+    // do nothing
+}
+
+BaseType::BaseType(const BaseType& other) : Type(other) {
+    name = other.name;
+}
+
+PointerType::PointerType(const PointerType& other) : Type(other) {
+    type = other.type->make_copy();
+}
+
+ArrayType::ArrayType(const ArrayType& other) : Type(other) {
+    type = other.type->make_copy();
+    amt = other.amt;
+}
+
+ReferenceType::ReferenceType(const ReferenceType& other) : Type(other) {
+    type = other.type->make_copy();
+}
+
+TemplatedType::TemplatedType(const TemplatedType& other) : Type(other) {
+    base_type = dynamic_cast<BaseType*>(other.base_type->make_copy());
+    for(int i = 0; i < other.template_types.size(); i++) {
+        template_types.push_back(other.template_types[i]->make_copy());
+    }
+}
+
+FunctionPointerType::FunctionPointerType(const FunctionPointerType& other) : Type(other) {
+    return_type = other.return_type->make_copy();
+    for(int i = 0; i < other.param_types.size(); i++) {
+        param_types.push_back(other.param_types[i]->make_copy());
+    }
+}
+
+// -- SYNTHESIS CONSTRUCTOR --
+Type::Type() : ASTNode() {
+    // do nothing
+}
+
+BaseType::BaseType(std::string _name) : Type() {
     name = _name;
 }
 
-PointerType::PointerType(Type *_type) {
-    assert(_type != nullptr);
+PointerType::PointerType(Type *_type) : Type() {
     type = _type;
+    assert(type != nullptr);
 }
 
-ArrayType:: ArrayType(Type *_type, int _amt) {
-    assert(_type != nullptr);
+ArrayType:: ArrayType(Type *_type, int _amt) : Type() {
     type = _type;
     amt = _amt;
+    assert(type != nullptr);
 }
 
-ReferenceType::ReferenceType(Type *_type) {
-    assert(_type != nullptr);
+ReferenceType::ReferenceType(Type *_type) : Type() {
     type = _type;
+    assert(type != nullptr);
 }
 
-TemplatedType::TemplatedType(BaseType *_base_type, std::vector<Type*> _template_types) {
-    assert(_base_type != nullptr);
-    assert(_template_types.size() != 0);
-    for(int i = 0; i < _template_types.size(); i++) assert(_template_types[i] != nullptr);
+TemplatedType::TemplatedType(BaseType *_base_type, std::vector<Type*> _template_types) : Type() {
     base_type = _base_type;
     template_types = _template_types;
+    assert(base_type != nullptr);
+    assert(template_types.size() != 0);
+    for(int i = 0; i < template_types.size(); i++) assert(template_types[i] != nullptr);
 }
 
-FunctionPointerType::FunctionPointerType(Type *_return_type, std::vector<Type*> _param_types) {
+FunctionPointerType::FunctionPointerType(Type *_return_type, std::vector<Type*> _param_types) : Type() {
     return_type = _return_type;
     param_types = _param_types;
     assert(return_type != nullptr);
@@ -217,90 +272,97 @@ std::string FunctionPointerType::to_string() {
 
 // -- MAKE COPY --
 Type* BaseType::make_copy() {
-    return new BaseType(name);
+    return new BaseType(*this);
 }
 
 Type* PointerType::make_copy() {
-    return new PointerType(type->make_copy());
+    return new PointerType(*this);
 }
 
 Type* ArrayType::make_copy() {
-    return new ArrayType(type->make_copy(), amt);
+    return new ArrayType(*this);
 }
 
 Type* ReferenceType::make_copy() {
-    return new ReferenceType(type->make_copy());
+    return new ReferenceType(*this);
 }
 
 Type* TemplatedType::make_copy() {
-    std::vector<Type*> template_types_copy;
-    for(int i = 0; i < template_types.size(); i++) {
-        template_types_copy.push_back(template_types[i]->make_copy());
-    }
-    return new TemplatedType(dynamic_cast<BaseType*>(base_type->make_copy()), template_types_copy);
+    return new TemplatedType(*this);
 }
 
 Type* FunctionPointerType::make_copy() {
-    std::vector<Type*> _param_types;
-    for(int i = 0; i < param_types.size(); i++) _param_types.push_back(param_types[i]->make_copy());
-    return new FunctionPointerType(return_type->make_copy(), _param_types);
+    return new FunctionPointerType(*this);
 }
 
 // -- CONVERT --
+Type* Type::convert(parser::type *t) {
+    Type* result = nullptr;
+    if(t->t0->is_b0) {      //function pointer type
+        result = FunctionPointerType::convert(t->t0->t0->t0);
+    }
+    else if(t->t0->is_b1) { //templated type
+        result = Type::convert(t->t0->t1->t0);
+    }
+    else assert(false);
+    assert(result != nullptr);
+    if(t->t1.has_value()) {
+        ReferenceType* _result = new ReferenceType(t);
+        _result->type = result;
+        result = _result;
+    }
+    return result;
+}
+
 Type* Type::convert(parser::templated_type *t) {
-    Type *res = BaseType::convert(t->t0);
+    Type* result = BaseType::convert(t->t0);
     if(t->t1.has_value()) {  //template types
-        std::vector<Type*> template_types;
-        template_types.push_back(Type::convert(t->t1.value()->t2));
+        TemplatedType* _result = new TemplatedType(t);
+        _result->base_type = dynamic_cast<BaseType*>(result);
+        _result->template_types.push_back(Type::convert(t->t1.value()->t2));
         for(int i = 0; i < t->t1.value()->t3.size(); i++){
-            template_types.push_back(Type::convert(t->t1.value()->t3[i]->t3));
+            _result->template_types.push_back(Type::convert(t->t1.value()->t3[i]->t3));
         }
-        res = new TemplatedType(dynamic_cast<BaseType*>(res), template_types);
+        result = _result;
     }
     for(int i = 0; i < t->t2.size(); i++){
-        if(t->t2[i]->is_b0) {   //pointer
-            res = new PointerType(res);
+        //is this a pointer type?
+        if(t->t2[i]->is_b0) { 
+            PointerType* _result = new PointerType(t);
+            _result->type = result;
+            result = _result;
             continue;
         }
+
+        //this is an array type
         //we want our arrays to be nested from right to left, the parser parses them from left to right
         //find the maximal chunk of arrays, reverse and nest them.
         assert(t->t2[i]->is_b1);    //array
         int r = i;
         while(r != t->t2.size() && t->t2[r]->is_b1) r ++;
         for(int j = r - 1; j >= i; j--) {
+            ArrayType* _result = new ArrayType(t);
+            _result->type = result;
             IntegerLiteral *ilit = IntegerLiteral::convert(t->t2[j]->t1->t1);
-            int amt = ilit->val;
-            res = new ArrayType(res, amt);
+            _result->amt = ilit->val;
+            result = _result;
         }   
         i = r - 1;
     }
-    return res;
-}
-
-Type* Type::convert(parser::type *t) {
-    Type *res = nullptr;
-    if(t->t0->is_b0) {  //function pointer type
-        res = FunctionPointerType::convert(t->t0->t0->t0);
-    }
-    else if(t->t0->is_b1) { //templated type
-        res = Type::convert(t->t0->t1->t0);
-    }
-    else assert(false);
-    assert(res != nullptr);
-    if(t->t1.has_value()) {
-        res = new ReferenceType(res);
-    }
-    return res;
+    return result;
 }
 
 BaseType* BaseType::convert(parser::base_type *t) {
-    return new BaseType(t->to_string());
+    BaseType* result = new BaseType(t);
+    result->name = t->to_string();
+    return result;
 }
 
 FunctionPointerType* FunctionPointerType::convert(parser::function_pointer_type *t) {
-    Type *return_type = Type::convert(t->t3);
-    std::vector<Type*> param_types = convert_type_list(t->t7);
-    return new FunctionPointerType(return_type, param_types);
+    FunctionPointerType* result = new FunctionPointerType(t);
+    result->return_type = Type::convert(t->t3);
+    result->param_types = convert_type_list(t->t7);
+    return result;
 }
 
 // -- REPLACE TEMPLATED TYPES --
@@ -591,3 +653,17 @@ void FunctionPointerType::find_all_basetypes(std::vector<BaseType*> &out) {
     for(int i = 0; i < param_types.size(); i++) param_types[i]->find_all_basetypes(out);
 }
 
+// -- MISC --
+Type* Type::remove_reference() {
+    Type *ret = this->make_copy();
+    if(dynamic_cast<ReferenceType*>(ret)) ret = dynamic_cast<ReferenceType*>(ret)->type;
+    return ret;
+}
+
+bool Type::operator==(const Type& other) const {
+    return this->equals(&other);
+}
+
+bool Type::operator!=(const Type& other) const {
+    return !this->equals(&other);
+}

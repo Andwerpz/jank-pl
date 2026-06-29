@@ -8,28 +8,41 @@
 #include "Parameter.h"
 #include "TemplateMapping.h"
 
-FunctionCall::FunctionCall(Identifier *_id, std::vector<Expression*> _argument_list) {
+FunctionCall::FunctionCall(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+FunctionCall::FunctionCall(const FunctionCall& other) : ASTNode(other) {
+    target_type = std::nullopt;
+    if(other.target_type.has_value()) target_type = other.target_type.value()->make_copy();
+    id = other.id->make_copy();
+    for(int i = 0; i < other.argument_list.size(); i++) argument_list.push_back(other.argument_list[i]->make_copy());
+}
+
+FunctionCall::FunctionCall(Identifier *_id, std::vector<Expression*> _argument_list) : ASTNode() {
     target_type = std::nullopt;
     id = _id;
     argument_list = _argument_list;
 }
 
-FunctionCall::FunctionCall(Type *_target_type, Identifier *_id, std::vector<Expression*> _argument_list) {
+FunctionCall::FunctionCall(Type *_target_type, Identifier *_id, std::vector<Expression*> _argument_list) : ASTNode() {
     target_type = _target_type;
     id = _id;
     argument_list = _argument_list;
 }
 
-FunctionCall::FunctionCall(std::optional<Type*> _target_type, Identifier *_id, std::vector<Expression*> _argument_list) {
+FunctionCall::FunctionCall(std::optional<Type*> _target_type, Identifier *_id, std::vector<Expression*> _argument_list) : ASTNode() {
     target_type = _target_type;
     id = _id;
     argument_list = _argument_list;
 }
 
 FunctionCall* FunctionCall::convert(parser::function_call *f) {
-    Identifier *fname = Identifier::convert(f->t0);
-    std::vector<Expression*> argument_list = convert_argument_list(f->t4);
-    return new FunctionCall(fname, argument_list);
+    FunctionCall* result = new FunctionCall(f);
+    result->target_type = std::nullopt;         // need context for this
+    result->id = Identifier::convert(f->t0);
+    result->argument_list = convert_argument_list(f->t4);
+    return result;
 }
 
 Function* FunctionCall::resolve_called_function() {
@@ -112,14 +125,7 @@ bool FunctionCall::equals(FunctionCall *other) {
 }
 
 FunctionCall* FunctionCall::make_copy() {
-    std::optional<Type*> _target_type = std::nullopt;
-    if(target_type.has_value()) _target_type = target_type.value()->make_copy();
-    Identifier *_id = id->make_copy();
-    std::vector<Expression*> _argument_list(argument_list.size());
-    for(int i = 0; i < argument_list.size(); i++){
-        _argument_list[i] = argument_list[i]->make_copy();
-    }
-    return new FunctionCall(_target_type, _id, _argument_list);
+    return new FunctionCall(*this);
 }
 
 bool FunctionCall::replace_templated_types(TemplateMapping *mapping) {

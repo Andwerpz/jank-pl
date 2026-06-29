@@ -11,38 +11,175 @@
 #include "InlineASMAccess.h"
 #include "Operator.h"
 
-// -- CONSTRUCTOR --
-DeclarationStatement::DeclarationStatement(Declaration *_declaration) {
+// -- CONVERT CONSTRUCTOR --
+Statement::Statement(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+SimpleStatement::SimpleStatement(parser::token *tok) : Statement(tok) {
+    // do nothing
+}
+
+DeclarationStatement::DeclarationStatement(parser::token *tok) : SimpleStatement(tok) {
+    // do nothing
+}
+
+ExpressionStatement::ExpressionStatement(parser::token *tok) : SimpleStatement(tok) {
+    // do nothing
+}
+
+ReturnStatement::ReturnStatement(parser::token *tok) : SimpleStatement(tok) {
+    // do nothing
+}
+
+InlineASMStatement::InlineASMStatement(parser::token *tok) : SimpleStatement(tok) {
+    // do nothing
+}
+
+BreakStatement::BreakStatement(parser::token *tok) : SimpleStatement(tok) {
+    // do nothing
+}
+
+ContinueStatement::ContinueStatement(parser::token *tok) : SimpleStatement(tok) {
+    // do nothing
+}
+
+ControlStatement::ControlStatement(parser::token *tok) : Statement(tok) {
+    // do nothing
+}
+
+IfStatement::IfStatement(parser::token *tok) : ControlStatement(tok) {
+    // do nothing
+}
+
+WhileStatement::WhileStatement(parser::token *tok) : ControlStatement(tok) {
+    // do nothing
+}
+
+ForStatement::ForStatement(parser::token *tok) : ControlStatement(tok) {
+    // do nothing
+}
+
+CompoundStatement::CompoundStatement(parser::token *tok) : Statement(tok) {
+    // do nothing
+}
+
+// -- COPY CONSTRUCTOR --
+Statement::Statement(const Statement& other) : ASTNode(other) {
+    // do nothing
+}
+
+SimpleStatement::SimpleStatement(const SimpleStatement& other) : Statement(other) {
+    // do nothing
+}
+
+DeclarationStatement::DeclarationStatement(const DeclarationStatement& other) : SimpleStatement(other) {
+    declaration = other.declaration->make_copy();
+}
+
+ExpressionStatement::ExpressionStatement(const ExpressionStatement& other) : SimpleStatement(other) {
+    expr = other.expr->make_copy();
+}
+
+ReturnStatement::ReturnStatement(const ReturnStatement& other) : SimpleStatement(other) {
+    opt_expr = std::nullopt;
+    if(other.opt_expr.has_value()) opt_expr = other.opt_expr.value()->make_copy();
+}
+
+InlineASMStatement::InlineASMStatement(const InlineASMStatement& other) : SimpleStatement(other) {
+    for(int i = 0; i < other.tokens.size(); i++) {
+        const std::variant<std::string, InlineASMAccess*>& tok = other.tokens[i];
+        if(std::holds_alternative<std::string>(tok)) {
+            std::string str = std::get<std::string>(tok);
+            tokens.push_back(str);
+        }   
+        else if(std::holds_alternative<InlineASMAccess*>(tok)) {
+            InlineASMAccess* ia = std::get<InlineASMAccess*>(tok);
+            tokens.push_back(ia->make_copy());
+        }
+        else assert(false);
+    }
+}
+
+BreakStatement::BreakStatement(const BreakStatement& other) : SimpleStatement(other) {
+    // do nothing
+}
+
+ContinueStatement::ContinueStatement(const ContinueStatement& other) : SimpleStatement(other) {
+    // do nothing
+}
+
+ControlStatement::ControlStatement(const ControlStatement& other) : Statement(other) {
+    // do nothing
+}
+
+IfStatement::IfStatement(const IfStatement& other) : ControlStatement(other) {
+    expr = other.expr->make_copy();
+    statement = other.statement->make_copy();
+    else_statement = std::nullopt;
+    if(other.else_statement.has_value()) else_statement = other.else_statement.value()->make_copy();
+}
+
+WhileStatement::WhileStatement(const WhileStatement& other) : ControlStatement(other) {
+    expr = other.expr->make_copy();
+    statement = other.statement->make_copy();
+}
+
+ForStatement::ForStatement(const ForStatement& other) : ControlStatement(other) {
+    declaration = std::nullopt;
+    if(other.declaration.has_value()) declaration = other.declaration.value()->make_copy();
+    expr1 = std::nullopt;
+    if(other.expr1.has_value()) expr1 = other.expr1.value()->make_copy();
+    expr2 = std::nullopt;
+    if(other.expr2.has_value()) expr2 = other.expr2.value()->make_copy();
+    statement = other.statement->make_copy();
+}
+
+CompoundStatement::CompoundStatement(const CompoundStatement& other) : Statement(other) {
+    for(int i = 0; i < other.statements.size(); i++) {
+        statements.push_back(other.statements[i]->make_copy());
+    }
+}
+
+// -- SYNTHESIS CONSTRUCTOR --
+Statement::Statement() : ASTNode() {
+    // do nothing
+}
+
+SimpleStatement::SimpleStatement() : Statement() {
+    // do nothing
+}
+
+DeclarationStatement::DeclarationStatement(Declaration *_declaration) : SimpleStatement() {
     declaration = _declaration;
 }
 
-ExpressionStatement::ExpressionStatement(Expression *_expr) {
+ExpressionStatement::ExpressionStatement(Expression *_expr) : SimpleStatement() {
     expr = _expr;
 }
 
-ReturnStatement::ReturnStatement(Expression* expr) {
-    if(expr == nullptr) opt_expr = std::nullopt;
-    else opt_expr = expr;
-}
-
-ReturnStatement::ReturnStatement(std::optional<Expression*> expr) {
-    if(expr.has_value()) assert(expr.value() != nullptr);
+ReturnStatement::ReturnStatement(std::optional<Expression*> expr) : SimpleStatement() {
     opt_expr = expr;
+    if(opt_expr.has_value()) assert(opt_expr.value() != nullptr);
 }
 
-InlineASMStatement::InlineASMStatement(std::vector<std::variant<std::string, InlineASMAccess*>> _tokens) {
+InlineASMStatement::InlineASMStatement(std::vector<std::variant<std::string, InlineASMAccess*>> _tokens) : SimpleStatement() {
     tokens = _tokens;
 }
 
-BreakStatement::BreakStatement() {
-    //do nothing
+BreakStatement::BreakStatement() : SimpleStatement() {
+    // do nothing
 }
 
-ContinueStatement::ContinueStatement() {
-    //do nothing
+ContinueStatement::ContinueStatement() : SimpleStatement() {
+    // do nothing
 }
 
-IfStatement::IfStatement(Expression *_expr, Statement *_statement, std::optional<Statement*> _else_statement) {
+ControlStatement::ControlStatement() : Statement() {
+    // do nothing
+}
+
+IfStatement::IfStatement(Expression *_expr, Statement *_statement, std::optional<Statement*> _else_statement) : ControlStatement() {
     expr = _expr;
     statement = _statement;
     else_statement = _else_statement;
@@ -51,22 +188,28 @@ IfStatement::IfStatement(Expression *_expr, Statement *_statement, std::optional
     if(else_statement.has_value()) assert(else_statement.value() != nullptr);
 }
 
-WhileStatement::WhileStatement(Expression *_expr, Statement *_statement) {
+WhileStatement::WhileStatement(Expression *_expr, Statement *_statement) : ControlStatement() {
     expr = _expr;
     statement = _statement;
 }
 
-ForStatement::ForStatement(Declaration *_declaration, Expression *_expr1, Expression *_expr2, Statement *_statement) {
-    if(_declaration == nullptr) declaration = std::nullopt;
-    else declaration = _declaration;
-    if(_expr1 == nullptr) expr1 = std::nullopt;
-    else expr1 = _expr1;
-    if(_expr2 == nullptr) expr2 = std::nullopt;
-    else expr2 = _expr2;
+ForStatement::ForStatement(
+    std::optional<Declaration*> _declaration, 
+    std::optional<Expression*> _expr1, 
+    std::optional<Expression*> _expr2, 
+    Statement *_statement
+) : ControlStatement() {
+    declaration = _declaration;
+    expr1 = _expr1;
+    expr2 = _expr2;
     statement = _statement;
+    if(declaration != std::nullopt) assert(declaration.value() != nullptr);
+    if(expr1 != std::nullopt) assert(expr1.value() != nullptr);
+    if(expr2 != std::nullopt) assert(expr2.value() != nullptr);
+    assert(statement != nullptr);
 }
 
-CompoundStatement::CompoundStatement(std::vector<Statement*> _statements) {
+CompoundStatement::CompoundStatement(std::vector<Statement*> _statements) : Statement() {
     statements = _statements;
 }
 
@@ -86,80 +229,86 @@ Statement* Statement::convert(parser::statement *s) {
 
 SimpleStatement* SimpleStatement::convert(parser::simple_statement *s) {
     if(s->is_a0) { //return 
-        Expression *expr = nullptr;
+        ReturnStatement* result = new ReturnStatement(s);
+        result->opt_expr = std::nullopt;
         if(s->t0->t1.has_value()) {
             //non-void return
-            expr = Expression::convert(s->t0->t1.value()->t1);
+            result->opt_expr = Expression::convert(s->t0->t1.value()->t1);
         }
-        return new ReturnStatement(expr);
+        return result;
     }
     else if(s->is_a1) { //break 
-        return new BreakStatement();
+        return new BreakStatement(s);
     }
     else if(s->is_a2) { //continue
-        return new ContinueStatement();
+        return new ContinueStatement(s);
     }
     else if(s->is_a3) {  //declaration
-        Declaration *declaration = Declaration::convert(s->t3->t0);
-        return new DeclarationStatement(declaration);
+        DeclarationStatement* result = new DeclarationStatement(s);
+        result->declaration = Declaration::convert(s->t3->t0);
+        return result;
     }
     else if(s->is_a4) { //expression
-        Expression *expr = Expression::convert(s->t4->t0);
-        return new ExpressionStatement(expr);
+        ExpressionStatement* result = new ExpressionStatement(s);
+        result->expr = Expression::convert(s->t4->t0);
+        return result;
     }
     else if(s->is_a5) { //inline asm
-        std::vector<std::variant<std::string, InlineASMAccess*>> tokens;
+        InlineASMStatement* result = new InlineASMStatement(s);
         parser::inline_asm_string *str = s->t5->t0->t3;
         for(int i = 0; i < str->t1.size(); i++){
             if(str->t1[i]->is_b0) {         //inline access
-                tokens.push_back(InlineASMAccess::convert(str->t1[i]->t0->t0));
+                result->tokens.push_back(InlineASMAccess::convert(str->t1[i]->t0->t0));
             }
             else if(str->t1[i]->is_b1) {    //string
-                tokens.push_back(str->t1[i]->t1->to_string());
+                result->tokens.push_back(str->t1[i]->t1->to_string());
             }
             else assert(false);
         }
-        return new InlineASMStatement(tokens);
+        return result;
     }
     else assert(false);
 }
 
 ControlStatement* ControlStatement::convert(parser::control_statement *s) {
     if(s->is_a0) {  //if statement
-        Expression *expr = Expression::convert(s->t0->t4);
-        Statement *statement = Statement::convert(s->t0->t8);
-        std::optional<Statement*> else_statement = std::nullopt;
+        IfStatement* result = new IfStatement(s);
+        result->expr = Expression::convert(s->t0->t4);
+        result->statement = Statement::convert(s->t0->t8);
+        result->else_statement = std::nullopt;
         if(s->t0->t9.has_value()) {
-            else_statement = Statement::convert(s->t0->t9.value()->t3);
+            result->else_statement = Statement::convert(s->t0->t9.value()->t3);
         }
-        return new IfStatement(expr, statement, else_statement);
+        return result;
     }
     else if(s->is_a1){  //while statement
-        Expression *expr = Expression::convert(s->t1->t4);
-        Statement *statement = Statement::convert(s->t1->t8);
-        return new WhileStatement(expr, statement);
+        WhileStatement* result = new WhileStatement(s);
+        result->expr = Expression::convert(s->t1->t4);
+        result->statement = Statement::convert(s->t1->t8);
+        return result;
     }
     else if(s->is_a2) { //for statement
-        Declaration *declaration = nullptr;
-        if(s->t2->t4.has_value()) declaration = Declaration::convert(s->t2->t4.value()->t0);
-        Expression *expr1 = nullptr;
-        if(s->t2->t8.has_value()) expr1 = Expression::convert(s->t2->t8.value()->t0);
-        Expression *expr2 = nullptr;
-        if(s->t2->t12.has_value()) expr2 = Expression::convert(s->t2->t12.value()->t0);
-        Statement *statement = Statement::convert(s->t2->t16);
-        return new ForStatement(declaration, expr1, expr2, statement);
+        ForStatement* result = new ForStatement(s);
+        result->declaration = std::nullopt;
+        if(s->t2->t4.has_value()) result->declaration = Declaration::convert(s->t2->t4.value()->t0);
+        result->expr1 = std::nullopt;
+        if(s->t2->t8.has_value()) result->expr1 = Expression::convert(s->t2->t8.value()->t0);
+        result->expr2 = std::nullopt;
+        if(s->t2->t12.has_value()) result->expr2 = Expression::convert(s->t2->t12.value()->t0);
+        result->statement = Statement::convert(s->t2->t16);
+        return result;
     }
     else assert(false);
 }
 
 CompoundStatement* CompoundStatement::convert(parser::compound_statement *s) {
-    std::vector<Statement*> statements;
+    CompoundStatement* result = new CompoundStatement(s);
     std::vector<parser::compound_statement::a0*> slist = s->t2;
     for(int i = 0; i < slist.size(); i++){
         assert(slist[i]->t0->is_c0);
-        statements.push_back(Statement::convert(slist[i]->t0->t0->t0));
+        result->statements.push_back(Statement::convert(slist[i]->t0->t0->t0));
     }
-    return new CompoundStatement(statements);
+    return result;
 }
 
 // -- IS ALWAYS RETURNING --
@@ -193,6 +342,7 @@ bool IfStatement::is_always_returning() {
 	if(!else_statement.has_value()) return false;
 	
     //every statement must return 
+    // TODO need to check if we're guaranteed to go into some if statement
     if(!statement->is_always_returning()) return false;
     if(!else_statement.value()->is_always_returning()) return false;
 	
@@ -618,72 +768,43 @@ bool CompoundStatement::is_well_formed() {
 
 // -- MAKE COPY --
 Statement* DeclarationStatement::make_copy() {
-    return new DeclarationStatement(declaration->make_copy());
+    return new DeclarationStatement(*this);
 }
 
 Statement* ExpressionStatement::make_copy() {
-    return new ExpressionStatement(expr->make_copy());
+    return new ExpressionStatement(*this);
 }
 
 Statement* ReturnStatement::make_copy() {
-    Expression *_expr = nullptr;
-    if(opt_expr.has_value()) _expr = opt_expr.value()->make_copy();
-    return new ReturnStatement(_expr);
+    return new ReturnStatement(*this);
 }
 
 Statement* InlineASMStatement::make_copy() {
-    std::vector<std::variant<std::string, InlineASMAccess*>> _tokens;
-    for(int i = 0; i < tokens.size(); i++){
-        if(std::holds_alternative<std::string>(tokens[i])) {
-            std::string tok = std::get<std::string>(tokens[i]);
-            _tokens.push_back(tok);
-        }
-        else if(std::holds_alternative<InlineASMAccess*>(tokens[i])) {
-            InlineASMAccess *access = std::get<InlineASMAccess*>(tokens[i]);
-            _tokens.push_back(access->make_copy());
-        }
-        else assert(false);
-    }
-    return new InlineASMStatement(_tokens);
+    return new InlineASMStatement(*this);
 }
 
 Statement* BreakStatement::make_copy(){
-    return new BreakStatement();
+    return new BreakStatement(*this);
 }
 
 Statement* ContinueStatement::make_copy() {
-    return new ContinueStatement();
+    return new ContinueStatement(*this);
 }
 
 Statement* IfStatement::make_copy() {
-    Expression *_expr = expr->make_copy();
-    Statement *_statement = statement->make_copy();
-    std::optional<Statement*> _else_statement = std::nullopt;
-    if(else_statement.has_value()) _else_statement = else_statement.value()->make_copy();
-    return new IfStatement(_expr, _statement, _else_statement);
+    return new IfStatement(*this);
 }
 
 Statement* WhileStatement::make_copy() {
-    return new WhileStatement(expr->make_copy(), statement->make_copy());
+    return new WhileStatement(*this);
 }
 
 Statement* ForStatement::make_copy() {
-    Declaration *_declaration = nullptr;
-    Expression *_expr1 = nullptr;
-    Expression *_expr2 = nullptr;
-    Statement *_statement = statement->make_copy();
-    if(declaration.has_value()) _declaration = declaration.value()->make_copy();
-    if(expr1.has_value()) _expr1 = expr1.value()->make_copy();
-    if(expr2.has_value()) _expr2 = expr2.value()->make_copy();
-    return new ForStatement(_declaration, _expr1, _expr2, _statement);
+    return new ForStatement(*this);
 }
 
 Statement* CompoundStatement::make_copy() {
-    std::vector<Statement*> _statements;
-    for(int i = 0; i < statements.size(); i++){
-        _statements.push_back(statements[i]->make_copy());
-    }
-    return new CompoundStatement(_statements);
+    return new CompoundStatement(*this);
 }
 
 // -- REPLACE TEMPLATED TYPES --

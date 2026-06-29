@@ -7,7 +7,20 @@
 
 #include "utils.h"
 
-Declaration::Declaration(Type *_type, Identifier *_id, std::optional<Expression*> _expr) {
+Declaration::Declaration(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+Declaration::Declaration(const Declaration& other) : ASTNode(other) {
+    type = other.type->make_copy();
+    id = other.id->make_copy();
+    expr = std::nullopt;
+    if(other.expr != std::nullopt) {
+        expr = other.expr.value()->make_copy();
+    }
+}
+
+Declaration::Declaration(Type *_type, Identifier *_id, std::optional<Expression*> _expr) : ASTNode() {
     type = _type;
     id = _id;
     expr = _expr;
@@ -16,13 +29,14 @@ Declaration::Declaration(Type *_type, Identifier *_id, std::optional<Expression*
 }
 
 Declaration* Declaration::convert(parser::declaration *d) {
-    Type *type = Type::convert(d->t0);
-    Identifier *name = Identifier::convert(d->t2);
-    std::optional<Expression*> expr = std::nullopt;
+    Declaration* result = new Declaration(d);
+    result->type = Type::convert(d->t0);
+    result->id = Identifier::convert(d->t2);
+    result->expr = std::nullopt;
     if(d->t3.has_value()) {
-        expr = Expression::convert(d->t3.value()->t3);
+        result->expr = Expression::convert(d->t3.value()->t3);
     }
-    return new Declaration(type, name, expr);
+    return result;
 }
 
 bool Declaration::is_well_formed() {
@@ -39,9 +53,7 @@ bool Declaration::is_well_formed() {
 }
 
 Declaration* Declaration::make_copy() {
-    std::optional<Expression*> _expr = std::nullopt;
-    if(expr.has_value()) _expr = expr.value()->make_copy();
-    return new Declaration(type->make_copy(), id->make_copy(), _expr);
+    return new Declaration(*this);
 }
 
 bool Declaration::replace_templated_types(TemplateMapping *mapping) {

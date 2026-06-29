@@ -1,4 +1,4 @@
-// Date Generated : 01-13-2026 12:52:19
+// Date Generated : 06-27-2026 19:02:34
 #pragma once
 #include <vector>
 #include <string>
@@ -25,13 +25,13 @@ namespace parser {
     struct parse_context {
         int ptr;        //where we are in the string
         int line;       //how many lines we are in the string
-        int line_off;   //current line offset 
+        int col;        //what column are we in the current line
     };
 
     struct token {
         // set during parse phase
-        parse_context start_ctx;
-        parse_context end_ctx;
+        parse_context start_ctx;    // inclusive
+        parse_context end_ctx;      // exclusive
 
         // set during postprocess phase
         std::string token_type;

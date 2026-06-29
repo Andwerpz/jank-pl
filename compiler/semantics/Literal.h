@@ -1,6 +1,7 @@
 
 #pragma once
 #include "../parser/parser.h"
+#include "ASTNode.h"
 
 struct Type;
 
@@ -13,8 +14,12 @@ struct TemplateMapping;
 struct Expression;
 struct Identifier;
 
-struct Literal {
-    static Literal* convert(parser::literal *n);
+struct Literal : public ASTNode {
+    Literal(parser::token* tok);
+    Literal(const Literal& other);
+    Literal();
+
+    static Literal* convert(parser::literal *l);
     virtual Type* resolve_type() = 0;
     virtual void emit_asm() = 0;    //some inline assembly to initialize this literal into %rax
     virtual size_t hash() = 0;
@@ -26,6 +31,9 @@ struct Literal {
 
 struct FloatLiteral : public Literal {
     float val;
+
+    FloatLiteral(parser::token *tok);
+    FloatLiteral(const FloatLiteral& other);
     FloatLiteral(float _val);
 
     static FloatLiteral* convert(parser::literal_float *l);
@@ -40,6 +48,9 @@ struct FloatLiteral : public Literal {
 
 struct IntegerLiteral : public Literal {
     int val;
+
+    IntegerLiteral(parser::token *tok);
+    IntegerLiteral(const IntegerLiteral& other);
     IntegerLiteral(int _val);
     
     static IntegerLiteral* convert(parser::literal_integer *l);
@@ -54,6 +65,9 @@ struct IntegerLiteral : public Literal {
 
 struct SizeofLiteral : public Literal {
     Type *type;
+
+    SizeofLiteral(parser::token *tok);
+    SizeofLiteral(const SizeofLiteral& other);
     SizeofLiteral(Type *_type);
     
     static SizeofLiteral* convert(parser::literal_sizeof *l);
@@ -68,6 +82,9 @@ struct SizeofLiteral : public Literal {
 
 struct CharLiteral : public Literal {
     char val;
+
+    CharLiteral(parser::token *tok);
+    CharLiteral(const CharLiteral& other);
     CharLiteral(char _val);
 
     static CharLiteral* convert(parser::literal_char *l);
@@ -82,6 +99,9 @@ struct CharLiteral : public Literal {
 
 struct StringLiteral : public Literal {
     std::string val;
+
+    StringLiteral(parser::token *tok);
+    StringLiteral(const StringLiteral& other);
     StringLiteral(std::string _val);
 
     static StringLiteral* convert(parser::literal_string *l);
@@ -98,6 +118,9 @@ struct SyscallLiteral : public Literal {
     int syscall_id;
     std::vector<Expression*> arguments;
     Type *type;
+
+    SyscallLiteral(parser::token *tok);
+    SyscallLiteral(const SyscallLiteral& other);
     SyscallLiteral(int _syscall_id, std::vector<Expression*> _arguments, Type *_type);
 
     static SyscallLiteral* convert(parser::literal_syscall *l);
@@ -112,6 +135,9 @@ struct SyscallLiteral : public Literal {
 
 struct HexLiteral : public Literal {
     std::string hex_str;    //doesn't contain 0x
+
+    HexLiteral(parser::token *tok);
+    HexLiteral(const HexLiteral& other);
     HexLiteral(std::string _hex_str);
 
     static HexLiteral* convert(parser::literal_hex *l);
@@ -126,6 +152,9 @@ struct HexLiteral : public Literal {
 
 struct BinaryLiteral : public Literal {
     std::string bin_str;    //doesn't contain 0b
+
+    BinaryLiteral(parser::token *tok);
+    BinaryLiteral(const BinaryLiteral& other);
     BinaryLiteral(std::string _bin_str);
 
     static BinaryLiteral* convert(parser::literal_binary *l);
@@ -140,6 +169,9 @@ struct BinaryLiteral : public Literal {
 
 struct OctalLiteral : public Literal {
     std::string oct_str;    //doesn't contain 0o
+
+    OctalLiteral(parser::token *tok);
+    OctalLiteral(const OctalLiteral& other);
     OctalLiteral(std::string _oct_str);
 
     static OctalLiteral* convert(parser::literal_octal *l);
@@ -155,6 +187,9 @@ struct OctalLiteral : public Literal {
 struct FunctionPointerLiteral : public Literal {
     Identifier *id;
     std::vector<Type*> param_types;
+
+    FunctionPointerLiteral(parser::token *tok);
+    FunctionPointerLiteral(const FunctionPointerLiteral& other);
     FunctionPointerLiteral(Identifier *_id, std::vector<Type*> _param_types);
 
     static FunctionPointerLiteral* convert(parser::literal_function_pointer *l);

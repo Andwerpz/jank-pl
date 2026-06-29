@@ -11,19 +11,28 @@
 #include "Parameter.h"
 #include "Statement.h"
 
-TemplatedFunction::TemplatedFunction(TemplateHeader *_header, Function *_function) {
-    assert(_header != nullptr);
-    assert(_function != nullptr);
+TemplatedFunction::TemplatedFunction(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
 
+TemplatedFunction::TemplatedFunction(const TemplatedFunction& other) : ASTNode(other) {
+    header = other.header->make_copy();
+    function = other.function->make_copy();
+}
+
+TemplatedFunction::TemplatedFunction(TemplateHeader *_header, Function *_function) : ASTNode() {
     header = _header;
     function = _function;
+    assert(header != nullptr);
+    assert(function != nullptr);
 }
 
 TemplatedFunction* TemplatedFunction::convert(parser::templated_function *f) {
-    TemplateHeader *header = new TemplateHeader({});
-    if(f->t0.has_value()) header = TemplateHeader::convert(f->t0.value()->t0);
-    Function *function = Function::convert(f->t1);
-    return new TemplatedFunction(header, function);
+    TemplatedFunction* result = new TemplatedFunction(f);
+    result->header = new TemplateHeader(std::vector<BaseType*>());
+    if(f->t0.has_value()) result->header = TemplateHeader::convert(f->t0.value()->t0);
+    result->function = Function::convert(f->t1);
+    return result;
 }
 
 bool TemplatedFunction::is_well_formed() {
@@ -160,5 +169,5 @@ bool TemplatedFunction::replace_templated_types(TemplateMapping *mapping) {
 }
 
 TemplatedFunction* TemplatedFunction::make_copy() {
-    return new TemplatedFunction(header->make_copy(), function->make_copy());
+    return new TemplatedFunction(*this);
 }

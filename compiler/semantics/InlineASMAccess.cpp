@@ -4,13 +4,53 @@
 #include "Type.h"
 #include "StructLayout.h"
 
-// -- CONSTRUCTOR --
-InlineASMVariable::InlineASMVariable(Identifier *_id){ 
+// -- CONVERT CONSTRUCTOR --
+InlineASMAccess::InlineASMAccess(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+InlineASMVariable::InlineASMVariable(parser::token *tok) : InlineASMAccess(tok) {
+    // do nothing
+}
+
+InlineASMMemberVariable::InlineASMMemberVariable(parser::token *tok) : InlineASMAccess(tok) {
+    // do nothing
+}
+
+InlineASMDereferencing::InlineASMDereferencing(parser::token *tok) : InlineASMAccess(tok) {
+    // do nothing
+}
+
+// -- COPY CONSTRUCTOR --
+InlineASMAccess::InlineASMAccess(const InlineASMAccess& other) : ASTNode(other) {
+    // do nothing
+}
+
+InlineASMVariable::InlineASMVariable(const InlineASMVariable& other) : InlineASMAccess(other) {
+    id = other.id->make_copy();
+}
+
+InlineASMMemberVariable::InlineASMMemberVariable(const InlineASMMemberVariable& other) : InlineASMAccess(other) {
+    id = other.id->make_copy();
+    op = other.op;
+    member_id = other.member_id->make_copy();
+}
+
+InlineASMDereferencing::InlineASMDereferencing(const InlineASMDereferencing& other) : InlineASMAccess(other) {
+    id = other.id->make_copy();
+}
+
+// -- SYNTHESIS CONSTRUCTOR --
+InlineASMAccess::InlineASMAccess() : ASTNode() {
+    // do nothing
+}
+
+InlineASMVariable::InlineASMVariable(Identifier *_id) : InlineASMAccess() { 
     id = _id;
     assert(id != nullptr);
 }
 
-InlineASMMemberVariable::InlineASMMemberVariable(Identifier *_id, std::string _op, Identifier *_member_id) {
+InlineASMMemberVariable::InlineASMMemberVariable(Identifier *_id, std::string _op, Identifier *_member_id) : InlineASMAccess() {
     id = _id;
     op = _op;
     member_id = _member_id;
@@ -19,7 +59,7 @@ InlineASMMemberVariable::InlineASMMemberVariable(Identifier *_id, std::string _o
     assert(member_id != nullptr);
 }
 
-InlineASMDereferencing::InlineASMDereferencing(Identifier *_id) {
+InlineASMDereferencing::InlineASMDereferencing(Identifier *_id) : InlineASMAccess() {
     id = _id;
     assert(id != nullptr);
 }
@@ -39,19 +79,23 @@ InlineASMAccess* InlineASMAccess::convert(parser::inline_access *ia) {
 }
 
 InlineASMVariable* InlineASMVariable::convert(parser::inline_variable *ia) {
-    return new InlineASMVariable(Identifier::convert(ia->t0));
+    InlineASMVariable* result = new InlineASMVariable(ia);
+    result->id = Identifier::convert(ia->t0);
+    return result;
 }
 
 InlineASMMemberVariable* InlineASMMemberVariable::convert(parser::inline_member_variable *ia) {
-    Identifier *id = Identifier::convert(ia->t0);
-    std::string op = ia->t1->to_string();
-    Identifier *member_id = Identifier::convert(ia->t2);
-    return new InlineASMMemberVariable(id, op, member_id);
+    InlineASMMemberVariable* result = new InlineASMMemberVariable(ia);
+    result->id = Identifier::convert(ia->t0);
+    result->op = ia->t1->to_string();
+    result->member_id = Identifier::convert(ia->t2);
+    return result;
 }
 
 InlineASMDereferencing* InlineASMDereferencing::convert(parser::inline_dereferencing *ia) {
-    Identifier *id = Identifier::convert(ia->t2);
-    return new InlineASMDereferencing(id);
+    InlineASMDereferencing* result = new InlineASMDereferencing(ia);
+    result->id = Identifier::convert(ia->t2);
+    return result;
 }
 
 // -- IS WELL FORMED --
@@ -246,15 +290,15 @@ std::string InlineASMDereferencing::get_addr() {
 
 // -- MAKE COPY --
 InlineASMAccess* InlineASMVariable::make_copy() {
-    return new InlineASMVariable(id->make_copy());
+    return new InlineASMVariable(*this);
 }
 
 InlineASMAccess* InlineASMMemberVariable::make_copy() {
-    return new InlineASMMemberVariable(id->make_copy(), op, member_id->make_copy());
+    return new InlineASMMemberVariable(*this);
 }
 
 InlineASMAccess* InlineASMDereferencing::make_copy() {
-    return new InlineASMDereferencing(id->make_copy());
+    return new InlineASMDereferencing(*this);
 }
 
 // -- TO STRING --

@@ -6,15 +6,27 @@
 #include "StructDefinition.h"
 #include "Function.h"
 
-TemplatedStructDefinition::TemplatedStructDefinition(TemplateHeader *_header, StructDefinition *_struct_def) {
+TemplatedStructDefinition::TemplatedStructDefinition(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+TemplatedStructDefinition::TemplatedStructDefinition(const TemplatedStructDefinition& other) : ASTNode(other) {
+    header = other.header->make_copy();
+    struct_def = other.struct_def->make_copy();
+}
+
+TemplatedStructDefinition::TemplatedStructDefinition(TemplateHeader *_header, StructDefinition *_struct_def) : ASTNode() {
     header = _header;
     struct_def = _struct_def;
+    assert(header != nullptr);
+    assert(struct_def != nullptr);
 }
 
 TemplatedStructDefinition* TemplatedStructDefinition::convert(parser::templated_struct_definition *s) {
-    TemplateHeader *header = TemplateHeader::convert(s->t0);
-    StructDefinition *struct_def = StructDefinition::convert(s->t2);
-    return new TemplatedStructDefinition(header, struct_def);
+    TemplatedStructDefinition* result = new TemplatedStructDefinition(s);
+    result->header = TemplateHeader::convert(s->t0);
+    result->struct_def = StructDefinition::convert(s->t2);
+    return result;
 }
 
 bool TemplatedStructDefinition::is_well_formed() {
@@ -85,5 +97,9 @@ StructDefinition* TemplatedStructDefinition::gen_struct_def(TemplatedType* type)
 
 bool TemplatedStructDefinition::replace_templated_types(TemplateMapping *mapping) {
     return struct_def->replace_templated_types(mapping);
+}
+
+TemplatedStructDefinition* TemplatedStructDefinition::make_copy() {
+    return new TemplatedStructDefinition(*this);
 }
 

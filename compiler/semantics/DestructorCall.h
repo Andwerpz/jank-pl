@@ -1,13 +1,17 @@
 #pragma once
 #include "../parser/parser.h"
+#include "ASTNode.h"
 
 struct Type;
 struct Expression;
 struct Destructor;
 struct TemplateMapping;
 
-struct DestructorCall {
+struct DestructorCall : public ASTNode {
     Type *type;
+
+    // DestructorCall(parser::tok *tok);
+    DestructorCall(const DestructorCall& other);
     DestructorCall(Type *_type);
 
     // static DestructorCall* convert(parser::destructor_call *d);

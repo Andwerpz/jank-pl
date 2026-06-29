@@ -8,25 +8,36 @@
 #include "Identifier.h"
 #include "Expression.h"
 
-GlobalDeclaration::GlobalDeclaration(std::optional<Identifier*> _node_id, bool _is_extern, Declaration *_declaration) {
+GlobalDeclaration::GlobalDeclaration(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+GlobalDeclaration::GlobalDeclaration(const GlobalDeclaration& other) : ASTNode(other) {
+    node_id = std::nullopt;
+    if(other.node_id.has_value()) node_id = other.node_id.value()->make_copy();
+    is_extern = other.is_extern;
+    declaration = other.declaration->make_copy();
+}
+
+GlobalDeclaration::GlobalDeclaration(std::optional<Identifier*> _node_id, bool _is_extern, Declaration *_declaration) : ASTNode() {
     node_id = _node_id;
     is_extern = _is_extern;
     declaration = _declaration;
+    if(node_id.has_value()) assert(node_id.value() != nullptr);
     assert(declaration != nullptr);
 }
 
 GlobalDeclaration* GlobalDeclaration::convert(parser::global_declaration *gd) {
-    std::optional<Identifier*> node_id = std::nullopt;
-    if(gd->t0.has_value()) node_id = Identifier::convert(gd->t0.value()->t2);
-    bool is_extern = gd->t1.has_value();
-    Declaration *declaration = Declaration::convert(gd->t2);
-    return new GlobalDeclaration(node_id, is_extern, declaration);
+    GlobalDeclaration* result = new GlobalDeclaration(gd);
+    result->node_id = std::nullopt;
+    if(gd->t0.has_value()) result->node_id = Identifier::convert(gd->t0.value()->t2);
+    result->is_extern = gd->t1.has_value();
+    result->declaration = Declaration::convert(gd->t2);
+    return result;
 }
 
 GlobalDeclaration* GlobalDeclaration::make_copy() {
-    std::optional<Identifier*> _node_id = std::nullopt;
-    if(node_id.has_value()) _node_id = node_id.value()->make_copy();
-    return new GlobalDeclaration(_node_id, is_extern, declaration->make_copy());
+    return new GlobalDeclaration(*this);
 }
 
 bool GlobalDeclaration::replace_templated_types(TemplateMapping *mapping) {

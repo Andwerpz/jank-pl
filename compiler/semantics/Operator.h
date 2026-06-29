@@ -1,5 +1,6 @@
 #pragma once
 #include "../parser/parser.h"
+#include "ASTNode.h"
 #include <optional>
 
 struct Parameter;
@@ -35,10 +36,11 @@ struct BuiltinOperator : public Operator {
     std::optional<Type*> right;
     std::vector<std::string> instructions;
 
+    BuiltinOperator(const BuiltinOperator& other);
     BuiltinOperator(Type *_type, std::optional<Type*> _left, std::string _op, std::optional<Type*> _right, std::vector<std::string> _instructions);
 
     OperatorSignature* resolve_operator_signature() const override;
-    Operator* make_copy() override;
+    BuiltinOperator* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
 
@@ -46,18 +48,19 @@ struct BuiltinOperator : public Operator {
 };
 
 //acts more like a function call. Gets called by OverloadCall
-struct OperatorOverload : public Operator {
+struct OperatorOverload : public Operator, public ASTNode {
     std::string op;
     std::vector<Parameter*> parameters;
     CompoundStatement *body;
 
+    OperatorOverload(parser::token *tok);
+    OperatorOverload(const OperatorOverload& other);
     OperatorOverload(Type *_type, std::string _op, std::vector<Parameter*> _parameters, CompoundStatement *_body);
-    static OperatorOverload* convert(parser::overload *o);
 
+    static OperatorOverload* convert(parser::overload *o);
     OperatorSignature* resolve_operator_signature() const override;
-    Operator* make_copy() override;
+    OperatorOverload* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
     bool look_for_templates() override;
-
     bool is_well_formed();
 };

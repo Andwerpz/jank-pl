@@ -1,5 +1,6 @@
 #pragma once
 #include "../parser/parser.h"
+#include "ASTNode.h"
 #include <vector>
 #include <string>
 
@@ -11,10 +12,13 @@ struct TemplateMapping;
 //normal constructor calls return r-value 
 //construct-in-place constructor calls return l-value
 
-struct ConstructorCall {
+struct ConstructorCall : public ASTNode {
     std::optional<Expression*> cip_expr;
     Type *type;
     std::vector<Expression*> argument_list;
+
+    ConstructorCall(parser::token *tok);
+    ConstructorCall(const ConstructorCall& other);
     ConstructorCall(std::optional<Expression*> _cip_expr, Type *_type, std::vector<Expression*> _argument_list);
 
     static ConstructorCall* convert(parser::constructor_call *c);

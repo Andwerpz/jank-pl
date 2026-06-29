@@ -1,4 +1,4 @@
-// Date Generated : 01-13-2026 12:52:19
+// Date Generated : 06-27-2026 19:02:34
 #include "parser.h"
 
 namespace parser {
@@ -139,10 +139,10 @@ namespace parser {
         if(ctx.ptr >= s.size()) return '\0';
         char ret = s[ctx.ptr];
         ctx.ptr ++;
-        ctx.line_off ++;
+        ctx.col ++;
         if(ret == '\n') {
             ctx.line ++;
-            ctx.line_off = 0;
+            ctx.col = 0;
         }
         return ret;
     }

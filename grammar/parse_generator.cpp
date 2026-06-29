@@ -1911,13 +1911,13 @@ void generate_h(grammar *g) {
     struct parse_context {
         int ptr;        //where we are in the string
         int line;       //how many lines we are in the string
-        int line_off;   //current line offset 
+        int col;        //what column are we in the current line
     };
 
     struct token {
         // set during parse phase
-        parse_context start_ctx;
-        parse_context end_ctx;
+        parse_context start_ctx;    // inclusive
+        parse_context end_ctx;      // exclusive
 
         // set during postprocess phase
         std::string token_type;
@@ -2113,10 +2113,10 @@ void generate_cpp(grammar *g) {
         if(ctx.ptr >= s.size()) return '\0';
         char ret = s[ctx.ptr];
         ctx.ptr ++;
-        ctx.line_off ++;
+        ctx.col ++;
         if(ret == '\n') {
             ctx.line ++;
-            ctx.line_off = 0;
+            ctx.col = 0;
         }
         return ret;
     }

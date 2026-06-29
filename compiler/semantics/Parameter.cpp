@@ -4,21 +4,31 @@
 #include "Identifier.h"
 #include "TemplateMapping.h"
 
-Parameter::Parameter(Type *_type, Identifier *_id) {
-    assert(_type != nullptr);
-    assert(_id != nullptr);
+Parameter::Parameter(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+Parameter::Parameter(const Parameter& other) : ASTNode(other) {
+    type = other.type->make_copy();
+    id = other.id->make_copy();
+}
+
+Parameter::Parameter(Type *_type, Identifier *_id) : ASTNode() {
     type = _type;
     id = _id;
+    assert(type != nullptr);
+    assert(id != nullptr);
 }
 
 Parameter* Parameter::convert(parser::parameter *p) {
-    Type *type = Type::convert(p->t0);
-    Identifier* name = Identifier::convert(p->t2);
-    return new Parameter(type, name);
+    Parameter* result = new Parameter(p);
+    result->type = Type::convert(p->t0);
+    result->id = Identifier::convert(p->t2);
+    return result;
 }
 
 Parameter* Parameter::make_copy() {
-    return new Parameter(type->make_copy(), id->make_copy());
+    return new Parameter(*this);
 }
 
 bool Parameter::replace_templated_types(TemplateMapping *mapping) {

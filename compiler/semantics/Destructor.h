@@ -1,13 +1,18 @@
 #pragma once
 #include "../parser/parser.h"
+#include "ASTNode.h"
 
+struct ASTNode;
 struct Type;
 struct CompoundStatement;
 struct TemplateMapping;
 
-struct Destructor {
+struct Destructor : public ASTNode {
     Type *type;
     CompoundStatement *body;
+
+    Destructor(parser::token *tok);
+    Destructor(const Destructor& other);
     Destructor(Type *_type, CompoundStatement *_body);
 
     static Destructor* convert(parser::destructor *d);

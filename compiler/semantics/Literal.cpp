@@ -15,46 +15,143 @@
 #include "Function.h"
 #include "Identifier.h"
 
-// -- CONSTRUCTOR --
-FloatLiteral::FloatLiteral(float _val) {
+// -- CONVERT CONSTRUCTOR --
+Literal::Literal(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+FloatLiteral::FloatLiteral(parser::token *tok) : Literal(tok) {
+    // do nothing
+}
+
+IntegerLiteral::IntegerLiteral(parser::token *tok) : Literal(tok) {
+    // do nothing
+}
+
+SizeofLiteral::SizeofLiteral(parser::token *tok) : Literal(tok) {
+    // do nothing
+}
+
+CharLiteral::CharLiteral(parser::token *tok) : Literal(tok) {
+    // do nothing
+}
+
+StringLiteral::StringLiteral(parser::token *tok) : Literal(tok) {
+    // do nothing
+}
+
+SyscallLiteral::SyscallLiteral(parser::token *tok) : Literal(tok) {
+    // do nothing
+}
+
+HexLiteral::HexLiteral(parser::token *tok) : Literal(tok) {
+    // do nothing
+}
+
+BinaryLiteral::BinaryLiteral(parser::token *tok) : Literal(tok) {
+    // do nothing
+}
+
+OctalLiteral::OctalLiteral(parser::token *tok) : Literal(tok) {
+    // do nothing
+}
+
+FunctionPointerLiteral::FunctionPointerLiteral(parser::token *tok) : Literal(tok) {
+    // do nothing
+}
+
+// -- COPY CONSTRUCTOR --
+Literal::Literal(const Literal& other) : ASTNode(other) {
+    // do nothing
+}
+
+FloatLiteral::FloatLiteral(const FloatLiteral& other) : Literal(other) {
+    val = other.val;
+}
+
+IntegerLiteral::IntegerLiteral(const IntegerLiteral& other) : Literal(other) {
+    val = other.val;
+}
+
+SizeofLiteral::SizeofLiteral(const SizeofLiteral& other) : Literal(other) {
+    type = other.type->make_copy();
+}
+
+CharLiteral::CharLiteral(const CharLiteral& other) : Literal(other) {
+    val = other.val;
+}
+
+StringLiteral::StringLiteral(const StringLiteral& other) : Literal(other) {
+    val = other.val;
+}
+
+SyscallLiteral::SyscallLiteral(const SyscallLiteral& other) : Literal(other) {
+    syscall_id = other.syscall_id;
+    for(int i = 0; i < other.arguments.size(); i++) arguments.push_back(other.arguments[i]->make_copy());
+    type = other.type->make_copy();
+}
+
+HexLiteral::HexLiteral(const HexLiteral& other) : Literal(other) {
+    hex_str = other.hex_str;
+}
+
+BinaryLiteral::BinaryLiteral(const BinaryLiteral& other) : Literal(other) {
+    bin_str = other.bin_str;
+}
+
+OctalLiteral::OctalLiteral(const OctalLiteral& other) : Literal(other) {
+    oct_str = other.oct_str;
+}
+
+FunctionPointerLiteral::FunctionPointerLiteral(const FunctionPointerLiteral& other) : Literal(other) {
+    id = other.id->make_copy();
+    for(int i = 0; i < other.param_types.size(); i++) param_types.push_back(other.param_types[i]->make_copy());
+}
+
+// -- SYNTHESIS CONSTRUCTOR --
+Literal::Literal() : ASTNode() {
+    // do nothing
+}
+
+FloatLiteral::FloatLiteral(float _val) : Literal() {
     val = _val;
 }
 
-IntegerLiteral::IntegerLiteral(int _val) {
+IntegerLiteral::IntegerLiteral(int _val) : Literal() {
     val = _val;
 }
 
-SizeofLiteral::SizeofLiteral(Type *_type) {
+SizeofLiteral::SizeofLiteral(Type *_type) : Literal() {
     type = _type;
 }
 
-CharLiteral::CharLiteral(char _val) {
+CharLiteral::CharLiteral(char _val) : Literal() {
     val = _val;
 }
 
-StringLiteral::StringLiteral(std::string _val) {
+StringLiteral::StringLiteral(std::string _val) : Literal() {
     val = _val;
 }
 
-SyscallLiteral::SyscallLiteral(int _syscall_id, std::vector<Expression*> _arguments, Type *_type) {
+SyscallLiteral::SyscallLiteral(int _syscall_id, std::vector<Expression*> _arguments, Type *_type) : Literal() {
     syscall_id = _syscall_id;
     arguments = _arguments;
     type = _type;
 }
 
-HexLiteral::HexLiteral(std::string _hex_str) {
+HexLiteral::HexLiteral(std::string _hex_str) : Literal() {
     hex_str = _hex_str;
 }
 
-BinaryLiteral::BinaryLiteral(std::string _bin_str) {
+BinaryLiteral::BinaryLiteral(std::string _bin_str) : Literal() {
     bin_str = _bin_str;
 }
 
-OctalLiteral::OctalLiteral(std::string _oct_str) {
+OctalLiteral::OctalLiteral(std::string _oct_str) : Literal() {
     oct_str = _oct_str;
 }
 
-FunctionPointerLiteral::FunctionPointerLiteral(Identifier *_id, std::vector<Type*> _param_types) {
+FunctionPointerLiteral::FunctionPointerLiteral(Identifier *_id, std::vector<Type*> _param_types) : Literal() {
     id = _id;
     param_types = _param_types;
     assert(id != nullptr);
@@ -107,73 +204,84 @@ Literal* Literal::convert(parser::literal *l) {
 }
 
 FloatLiteral* FloatLiteral::convert(parser::literal_float *lit) {
-    float val = std::stof(lit->to_string());
-    return new FloatLiteral(val);
+    FloatLiteral* result = new FloatLiteral(lit);
+    result->val = std::stof(lit->to_string());
+    return result;
 }
 
 IntegerLiteral* IntegerLiteral::convert(parser::literal_integer *lit) {
-    return new IntegerLiteral(stoi(lit->to_string()));
+    IntegerLiteral* result = new IntegerLiteral(lit);
+    result->val = std::stoi(lit->to_string());
+    return result;
 }
 
 SizeofLiteral* SizeofLiteral::convert(parser::literal_sizeof *lit) {
-    Type *t = Type::convert(lit->t4);
-    return new SizeofLiteral(t);
+    SizeofLiteral* result = new SizeofLiteral(lit);
+    result->type = Type::convert(lit->t4);
+    return result;
 }
 
 CharLiteral* CharLiteral::convert(parser::literal_char *lit) {
-    char val;
+    CharLiteral* result = new CharLiteral(lit);
     parser::literal_char::a0 *c = lit->t1;
-    if(c->is_b2) {    //escape
+    if(c->is_b2) {      //escape
         parser::escape *e = c->t2->t0;  
-        val = escape_to_char(e);
+        result->val = escape_to_char(e);
     }
-    else {  //not escape
-        val = c->to_string()[0];
+    else {              //not escape
+        result->val = c->to_string()[0];
     }
-    return new CharLiteral(val);
+    return result;
 }
 
 StringLiteral* StringLiteral::convert(parser::literal_string *lit) {
+    StringLiteral* result = new StringLiteral(lit);
     std::vector<parser::literal_string::a0*> chars = lit->t1;
-    std::string val = "";
     for(int i = 0; i < chars.size(); i++){
         parser::literal_string::a0* c = chars[i];
-        val += c->to_string();
+        result->val += c->to_string();
     }
-    return new StringLiteral(val);
+    return result;
 }
 
 SyscallLiteral* SyscallLiteral::convert(parser::literal_syscall *lit) {
+    SyscallLiteral* result = new SyscallLiteral(lit);
     IntegerLiteral *ilit = IntegerLiteral::convert(lit->t4);
-    int syscall_id = ilit->val;
-    std::vector<Expression*> arguments;
-    if(lit->t9.has_value()) arguments = convert_argument_list(lit->t9.value()->t3);
-    Type *type = Type::convert(lit->t8);  
-    return new SyscallLiteral(syscall_id, arguments, type);
+    result->syscall_id = ilit->val;
+    if(lit->t9.has_value()) result->arguments = convert_argument_list(lit->t9.value()->t3);
+    result->type = Type::convert(lit->t8);  
+    return result;
 }
 
 HexLiteral* HexLiteral::convert(parser::literal_hex *lit) {
-    std::string hex_str = lit->to_string();
-    assert(hex_str.size() >= 3);
-    return new HexLiteral(hex_str.substr(2));
+    HexLiteral* result = new HexLiteral(lit);
+    std::string str = lit->to_string();
+    assert(str.size() >= 3);
+    result->hex_str = str.substr(2);
+    return result;
 }
 
 BinaryLiteral* BinaryLiteral::convert(parser::literal_binary *lit) {
-    std::string bin_str = lit->to_string();
-    assert(bin_str.size() >= 3);
-    return new BinaryLiteral(bin_str.substr(2));
+    BinaryLiteral* result = new BinaryLiteral(lit);
+    std::string str = lit->to_string();
+    assert(str.size() >= 3);
+    result->bin_str = str.substr(2);
+    return result;
 }
 
 OctalLiteral* OctalLiteral::convert(parser::literal_octal *lit) {
-    std::string oct_str = lit->to_string();
-    assert(oct_str.size() >= 3);
-    return new OctalLiteral(oct_str.substr(2));
+    OctalLiteral* result = new OctalLiteral(lit);
+    std::string str = lit->to_string();
+    assert(str.size() >= 3);
+    result->oct_str = str.substr(2);
+    return result;
 }
 
 FunctionPointerLiteral* FunctionPointerLiteral::convert(parser::literal_function_pointer *lit) {
-    Identifier *id = Identifier::convert(lit->t3);
-    std::vector<Type*> param_types = convert_type_list(lit->t7);
-    return new FunctionPointerLiteral(id, param_types);
+    FunctionPointerLiteral* result = new FunctionPointerLiteral(lit);
+    result->id = Identifier::convert(lit->t3);
+    result->param_types = convert_type_list(lit->t7);
+    return result;
 }
 
 // -- RESOLVE TYPE --
@@ -521,47 +629,43 @@ bool FunctionPointerLiteral::equals(Literal *_other) {
 
 // -- MAKE COPY --
 Literal* FloatLiteral::make_copy() {
-    return new FloatLiteral(val);
+    return new FloatLiteral(*this);
 }
 
 Literal* IntegerLiteral::make_copy() {
-    return new IntegerLiteral(val);
+    return new IntegerLiteral(*this);
 }
 
 Literal* SizeofLiteral::make_copy() {
-    return new SizeofLiteral(type->make_copy());
+    return new SizeofLiteral(*this);
 }
 
 Literal* CharLiteral::make_copy() {
-    return new CharLiteral(val);
+    return new CharLiteral(*this);
 }
 
 Literal* StringLiteral::make_copy() {
-    return new StringLiteral(val);
+    return new StringLiteral(*this);
 }
 
 Literal* SyscallLiteral::make_copy() {
-    std::vector<Expression*> _arguments;
-    for(int i = 0; i < arguments.size(); i++) _arguments.push_back(arguments[i]->make_copy());
-    return new SyscallLiteral(syscall_id, _arguments, type->make_copy());
+    return new SyscallLiteral(*this);
 }
 
 Literal* HexLiteral::make_copy() {
-    return new HexLiteral(hex_str);
+    return new HexLiteral(*this);
 }
 
 Literal* BinaryLiteral::make_copy() {
-    return new BinaryLiteral(bin_str);
+    return new BinaryLiteral(*this);
 }
 
 Literal* OctalLiteral::make_copy() {
-    return new OctalLiteral(oct_str);
+    return new OctalLiteral(*this);
 }
 
 Literal* FunctionPointerLiteral::make_copy() {
-    std::vector<Type*> _param_types;
-    for(int i = 0; i < param_types.size(); i++) _param_types.push_back(param_types[i]->make_copy());
-    return new FunctionPointerLiteral(id->make_copy(), _param_types);
+    return new FunctionPointerLiteral(*this);
 }
 
 // -- TO STRING --

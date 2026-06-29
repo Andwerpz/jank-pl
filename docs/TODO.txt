@@ -103,6 +103,7 @@ struct C {
   - perhaps it'll be much easier to just make my own build tool, given that I have some odd requirements, 
     especially with global variables. 
     - important! what would be a good name for it
+      - I'll name it 'dylan'
 
 
 
@@ -118,6 +119,7 @@ Make parsing faster
 - alot of the parsing will happen when we're trying to just gather function definitions. 
   we can probably target this to make faster by writing a grammar that only sees function definitions and skips everything else. 
 - look into a tokenizer
+
 
 
 (side quest)

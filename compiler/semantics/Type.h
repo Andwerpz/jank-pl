@@ -1,16 +1,18 @@
 #pragma once
 #include "../parser/parser.h"
+#include "ASTNode.h"
 
 struct TemplateHeader;
 struct TemplateMapping;
 struct BaseType;
 
-struct Type {
+struct Type : public ASTNode {
+    Type(parser::token *tok);
+    Type(const Type& other);
+    Type();
+
     static Type* convert(parser::type *t);
     static Type* convert(parser::templated_type *t);
-    
-    Type* remove_reference();
-
     virtual int calc_size() = 0;
     virtual bool equals(const Type *other) const = 0;
     bool operator==(const Type& other) const;
@@ -22,13 +24,19 @@ struct Type {
     virtual bool look_for_templates() = 0;
     virtual TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) = 0;
     virtual void find_all_basetypes(std::vector<BaseType*> &out) = 0;
+
+    //if this is ReferenceType, returns the underlying type, otherwise returns this. 
+    Type* remove_reference();
 };
 
 struct BaseType : public Type {
     std::string name;
+    
+    BaseType(parser::token *tok);
+    BaseType(const BaseType& other);
     BaseType(std::string _name);
-    static BaseType* convert(parser::base_type *t);
 
+    static BaseType* convert(parser::base_type *t);
     int calc_size() override;
     bool equals(const Type *other) const override;
     size_t hash() const override;
@@ -42,6 +50,9 @@ struct BaseType : public Type {
 
 struct PointerType : public Type {
     Type *type;
+
+    PointerType(parser::token* tok);
+    PointerType(const PointerType& other);
     PointerType(Type *_type);
 
     int calc_size() override;
@@ -60,6 +71,9 @@ struct PointerType : public Type {
 struct ArrayType : public Type {
     Type *type;
     int amt;
+
+    ArrayType(parser::token* tok);
+    ArrayType(const ArrayType& other);
     ArrayType(Type *_type, int _amt);
 
     int calc_size() override;
@@ -75,6 +89,9 @@ struct ArrayType : public Type {
 
 struct ReferenceType : public Type {
     Type *type;
+
+    ReferenceType(parser::token* tok);
+    ReferenceType(const ReferenceType& other);
     ReferenceType(Type *_type);
 
     int calc_size() override;
@@ -91,6 +108,9 @@ struct ReferenceType : public Type {
 struct TemplatedType : public Type {
     BaseType *base_type;
     std::vector<Type*> template_types;
+
+    TemplatedType(parser::token* tok);
+    TemplatedType(const TemplatedType& other);
     TemplatedType(BaseType *_base_type, std::vector<Type*> _template_types);
 
     int calc_size() override;
@@ -107,9 +127,12 @@ struct TemplatedType : public Type {
 struct FunctionPointerType : public Type {
     Type *return_type;
     std::vector<Type*> param_types;
-    FunctionPointerType(Type *_return_type, std::vector<Type*> _param_types);
-    static FunctionPointerType* convert(parser::function_pointer_type *t);
 
+    FunctionPointerType(parser::token* tok);
+    FunctionPointerType(const FunctionPointerType& other);
+    FunctionPointerType(Type *_return_type, std::vector<Type*> _param_types);
+
+    static FunctionPointerType* convert(parser::function_pointer_type *t);
     int calc_size() override;
     bool equals(const Type *other) const override;
     size_t hash() const override;

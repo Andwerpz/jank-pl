@@ -1,5 +1,6 @@
 #pragma once
 #include "../parser/parser.h"
+#include "ASTNode.h"
 #include <optional>
 
 struct Type;
@@ -7,11 +8,13 @@ struct Identifier;
 struct Expression;
 struct TemplateMapping;
 
-struct Declaration {
+struct Declaration : public ASTNode {
     Type *type;
     Identifier *id;
     std::optional<Expression*> expr;
     
+    Declaration(parser::token *tok);
+    Declaration(const Declaration& other);
     Declaration(Type *_type, Identifier *_id, std::optional<Expression*> _expr);
 
     static Declaration* convert(parser::declaration *d);

@@ -1,5 +1,6 @@
 #pragma once
 #include "../parser/parser.h"
+#include "ASTNode.h"
 #include <string>
 #include <variant>
 #include <optional>
@@ -21,7 +22,11 @@ struct TemplateMapping;
 struct OperatorCall;
 struct Operator;
 
-struct ExprNode {
+struct ExprNode : public ASTNode {
+    ExprNode(parser::token *tok);
+    ExprNode(const ExprNode& other);
+    ExprNode();
+
     static ExprNode* convert(parser::expr_primary *e);
     static ExprNode* convert(parser::expr_postfix *e);
     static ExprNode* convert(parser::expr_unary *e);
@@ -49,6 +54,7 @@ struct ExprNode {
     // - should remove all overloads, after this stage the only operators should be hardcoded or Builtin. 
     //   overloads should turn into ExprPrimary function calls. 
     virtual void elaborate(ExprNode*& self) = 0;        
+
     virtual void emit_asm() = 0;                        // - no modify
     virtual std::string to_string() = 0;
     virtual size_t hash() = 0;
@@ -58,6 +64,7 @@ struct ExprNode {
     // If you don't do this, you'll be comparing Identifiers. 
     // if this expression is used within the same context, this should not change result of resolve_type(), is_lvalue()
     virtual void id_to_type() = 0;
+
     virtual ExprNode* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
     virtual bool look_for_templates() = 0;
@@ -69,6 +76,9 @@ struct ExprNode {
 struct ExprPrimary : ExprNode {
     using val_t = std::variant<FunctionCall*, ConstructorCall*, OperatorCall*, Identifier*, Literal*, Expression*, Type*>;
     val_t val;
+
+    ExprPrimary(parser::token *tok);
+    ExprPrimary(const ExprPrimary& other);
     ExprPrimary(val_t _val);
 
     Type* _resolve_type() override;
@@ -89,6 +99,9 @@ struct ExprBinary : ExprNode {
     ExprNode *left;
     op_t op;
     ExprNode *right;
+
+    ExprBinary(parser::token *tok);
+    ExprBinary(const ExprBinary& other);
     ExprBinary(ExprNode *_left, op_t _op, ExprNode *_right);
 
     Type* _resolve_type() override;
@@ -108,6 +121,9 @@ struct ExprPrefix : ExprNode {
     using op_t = std::variant<std::string, Type*>;
     op_t op;
     ExprNode *right;
+
+    ExprPrefix(parser::token *tok);
+    ExprPrefix(const ExprPrefix& other);
     ExprPrefix(op_t _op, ExprNode *_right);
 
     Type* _resolve_type() override;
@@ -127,6 +143,9 @@ struct ExprPostfix : ExprNode {
     using op_t = std::variant<Expression*, std::pair<std::string, FunctionCall*>, std::pair<std::string, Identifier*>, std::string, std::vector<Expression*>>;
     ExprNode *left;
     op_t op;
+
+    ExprPostfix(parser::token *tok);
+    ExprPostfix(const ExprPostfix& other);
     ExprPostfix(ExprNode *_left, op_t _op);
 
     Type* _resolve_type() override;
@@ -142,9 +161,12 @@ struct ExprPostfix : ExprNode {
     bool look_for_templates() override;
 };
 
-struct Expression {
+struct Expression : public ASTNode {
     bool has_elaborated;    //make sure we only elaborate once
     ExprNode *expr_node;
+
+    Expression(parser::token *tok);
+    Expression(const Expression& other);
     Expression(ExprNode *_expr_node);
 
     static Expression* convert(parser::expression *e);

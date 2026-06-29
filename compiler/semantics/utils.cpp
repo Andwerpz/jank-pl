@@ -936,7 +936,7 @@ bool add_struct_type(StructDefinition *sd) {
     }
 
     //default default constructor
-    add_constructor(new StructConstructor(t->make_copy(), {}, new CompoundStatement({})));
+    add_constructor(new StructConstructor(t->make_copy(), {}, new CompoundStatement(std::vector<Statement*>{})));
 
     //default copy constructor
     // - for each field, just does default copy constructor
@@ -971,7 +971,7 @@ bool add_struct_type(StructDefinition *sd) {
     }
 
     //default destructor
-    add_destructor(new Destructor(t->make_copy(), new CompoundStatement({})));
+    add_destructor(new Destructor(t->make_copy(), new CompoundStatement(std::vector<Statement*>{})));
 
     //resolve all templates in function signature and member variables
     if(!sd->look_for_templates()) {
@@ -1159,7 +1159,7 @@ bool create_arraytype(ArrayType *t) {
         return false;
     }
 
-    Constructor *default_constructor = new StructConstructor(t, {}, new CompoundStatement({}));
+    Constructor *default_constructor = new StructConstructor(t, {}, new CompoundStatement(std::vector<Statement*>{}));
 
     Identifier *xid = new Identifier("x");
     Identifier *thisid = new Identifier("this");
@@ -1186,7 +1186,7 @@ bool create_arraytype(ArrayType *t) {
         })
     );
 
-    Destructor *destructor = new Destructor(t, new CompoundStatement({}));
+    Destructor *destructor = new Destructor(t, new CompoundStatement(std::vector<Statement*>{}));
 
     add_constructor(default_constructor);
     add_constructor(copy_constructor);
@@ -1228,7 +1228,7 @@ bool add_builtin_operator(BuiltinOperator *o) {
     assert(o != nullptr);
 
     //just wrap this in a TemplatedOperator with no templating. 
-    TemplatedOperator *to = new TemplatedOperator(new TemplateHeader({}), o);
+    TemplatedOperator *to = new TemplatedOperator(new TemplateHeader(std::vector<BaseType*>{}), o);
 
     if(!add_templated_operator(to)) {
         assert(false);

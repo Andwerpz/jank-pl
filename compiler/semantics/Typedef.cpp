@@ -3,7 +3,16 @@
 #include "utils.h"
 #include "TemplateMapping.h"
 
-Typedef::Typedef(Type *_type, BaseType *_base_type) {
+Typedef::Typedef(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+Typedef::Typedef(const Typedef& other) : ASTNode(other) {
+    type = other.type->make_copy();
+    base_type = dynamic_cast<BaseType*>(other.base_type->make_copy());
+}
+
+Typedef::Typedef(Type *_type, BaseType *_base_type) : ASTNode() {
     type = _type;
     base_type = _base_type;
     assert(type != nullptr);
@@ -11,9 +20,10 @@ Typedef::Typedef(Type *_type, BaseType *_base_type) {
 }
 
 Typedef* Typedef::convert(parser::_typedef *t) {
-    Type *type = Type::convert(t->t2);
-    BaseType *base_type = BaseType::convert(t->t4);
-    return new Typedef(type, base_type);
+    Typedef* result = new Typedef(t);
+    result->type = Type::convert(t->t2);
+    result->base_type = BaseType::convert(t->t4);
+    return result;
 }   
 
 bool Typedef::equals(const Typedef *other) const {
@@ -34,7 +44,7 @@ std::string Typedef::to_string() const {
 }
 
 Typedef* Typedef::make_copy() {
-    return new Typedef(type->make_copy(), dynamic_cast<BaseType*>(base_type->make_copy()));
+    return new Typedef(*this);
 }
 
 bool Typedef::replace_templated_types(TemplateMapping *mapping) {

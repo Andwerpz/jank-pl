@@ -1,0 +1,28 @@
+right now I have a bunch of static functions whose sole purpose is to convert from parser tokens to AST nodes. 
+now that I want to make all the AST nodes inherit from one base class, this paradigm doesn't work very well
+because I need to pass in some parser token information to every AST node. 
+
+instead, I'll refactor the static convert methods to be a constructor for each AST node. 
+
+what to do with compiler-generated AST nodes?
+sometimes I inject some generated AST for convenience. Main culprit is generating templated functions. 
+what should be the metadata behaviour there? should I retain the original line numbers?
+- yes, I should retain the original line information, and also set the should_compile flag to true. 
+however, I won't have a parser::token to pass into the constructor. 
+could get around this by saving the original parser::token, but I feel like we should make a copy of the 
+existing AST node because we may have modified the fields. 
+
+we have two ways that the compiler synthesizes AST nodes
+- using constructor with parameters
+  - these AST nodes are completely synthesized, we should always be compiling them and they should have invalid line information
+  - modify constructor with parameters to also synthesize invalid line information and set should_compile = 1
+- using make_copy()
+  - these should retain the line information from the original ASTNode, and we should always be compiling them. 
+  - these all eventually call the constructor with parameters
+  - it's annoying to pass line information + parameters through a constructor, so I propose that we refactor 
+    all make_copy() methods into copy constructors. (it's what copy constructors are for after all). 
+  - should these copy constructors take in a const reference or a pointer?
+  - oh, we can also keep make_copy() by making it just a wrapper that calls the corresponding copy constructor. 
+
+
+

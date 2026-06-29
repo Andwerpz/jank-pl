@@ -1,5 +1,6 @@
 #pragma once
 #include "../parser/parser.h"
+#include "ASTNode.h"
 
 struct Identifier;
 
@@ -7,7 +8,11 @@ struct Identifier;
 // get_addr should spit out some inline dereferencing of that address
 // any value that is accessed should be some l-value (so the referencing operator is not valid for this)
 
-struct InlineASMAccess {
+struct InlineASMAccess : public ASTNode {
+    InlineASMAccess(parser::token *tok);
+    InlineASMAccess(const InlineASMAccess& other);
+    InlineASMAccess();
+
     static InlineASMAccess* convert(parser::inline_access *ia);
     virtual bool is_well_formed() = 0;
     virtual void emit_asm() = 0;
@@ -18,6 +23,9 @@ struct InlineASMAccess {
 
 struct InlineASMVariable : public InlineASMAccess {
     Identifier *id;
+
+    InlineASMVariable(parser::token *tok);
+    InlineASMVariable(const InlineASMVariable& other);
     InlineASMVariable(Identifier *_id);
 
     static InlineASMVariable* convert(parser::inline_variable *ia);
@@ -32,6 +40,9 @@ struct InlineASMMemberVariable : public InlineASMAccess {
     Identifier *id;
     std::string op;
     Identifier *member_id;
+
+    InlineASMMemberVariable(parser::token *tok);
+    InlineASMMemberVariable(const InlineASMMemberVariable& other);
     InlineASMMemberVariable(Identifier *_id, std::string _op, Identifier *_member_id);
 
     static InlineASMMemberVariable* convert(parser::inline_member_variable *ia);
@@ -44,6 +55,9 @@ struct InlineASMMemberVariable : public InlineASMAccess {
 
 struct InlineASMDereferencing : public InlineASMAccess {
     Identifier *id;
+
+    InlineASMDereferencing(parser::token *tok);
+    InlineASMDereferencing(const InlineASMDereferencing& other);
     InlineASMDereferencing(Identifier *_id);
 
     static InlineASMDereferencing* convert(parser::inline_dereferencing *ia);

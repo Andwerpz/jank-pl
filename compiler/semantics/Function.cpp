@@ -19,7 +19,23 @@
 #include <map>
 #include <queue>
 
-Function::Function(std::optional<Type*> _enclosing_type, bool _is_export, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) {
+Function::Function(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+Function::Function(const Function& other) : ASTNode(other) {
+    enclosing_type = std::nullopt;
+    if(other.enclosing_type.has_value()) enclosing_type = other.enclosing_type.value()->make_copy();
+    is_export = other.is_export;
+    type = other.type->make_copy();
+    id = other.id->make_copy();
+    for(int i = 0; i < other.parameters.size(); i++){
+        parameters.push_back(other.parameters[i]->make_copy());
+    }
+    body = dynamic_cast<CompoundStatement*>(other.body->make_copy());
+}
+
+Function::Function(std::optional<Type*> _enclosing_type, bool _is_export, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) : ASTNode() {
     enclosing_type = _enclosing_type;
     is_export = _is_export;
     id = _id;
@@ -32,7 +48,7 @@ Function::Function(std::optional<Type*> _enclosing_type, bool _is_export, Type *
     assert(id != nullptr);
 }
 
-Function::Function(Type *_type, Identifier *_id, std::vector<Type*> input_types) {
+Function::Function(Type *_type, Identifier *_id, std::vector<Type*> input_types) : ASTNode() {
     enclosing_type = std::nullopt;
     id = _id;
     type = _type;
@@ -65,14 +81,16 @@ bool Function::operator!=(const Function& other) const {
 }
 
 Function* Function::convert(parser::function *f) {
-    bool is_export = f->t0.has_value();
+    Function* result = new Function(f);
+    result->enclosing_type = std::nullopt;  //need context for this
+    result->is_export = f->t0.has_value();
     parser::function_definition *def = f->t1;
     parser::parameter_list *pl = def->t6;
-    Type *type = Type::convert(def->t0);
-    Identifier *name = new Identifier(def->t2->to_string());
-    std::vector<Parameter*> parameters = convert_parameter_list(pl);
-    CompoundStatement *body = CompoundStatement::convert(f->t3);
-    return new Function(std::nullopt, is_export, type, name, parameters, body);
+    result->type = Type::convert(def->t0);
+    result->id = new Identifier(def->t2->to_string());
+    result->parameters = convert_parameter_list(pl);
+    result->body = CompoundStatement::convert(f->t3);
+    return result;
 }
 
 bool Function::is_well_formed() {
@@ -196,16 +214,7 @@ bool Function::is_well_formed() {
 }
 
 Function* Function::make_copy() {
-    std::optional<Type*> _enclosing_type = std::nullopt;
-    if(enclosing_type.has_value()) _enclosing_type = enclosing_type.value()->make_copy();
-    Type *_type = type->make_copy();
-    Identifier *_id = id->make_copy();
-    std::vector<Parameter*> _parameters;
-    for(int i = 0; i < parameters.size(); i++){
-        _parameters.push_back(parameters[i]->make_copy());
-    }
-    CompoundStatement *_body = dynamic_cast<CompoundStatement*>(body->make_copy());
-    return new Function(_enclosing_type, is_export, _type, _id, _parameters, _body);
+    return new Function(*this);
 }
 
 bool Function::replace_templated_types(TemplateMapping *mapping) {

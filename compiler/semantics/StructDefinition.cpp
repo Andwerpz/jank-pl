@@ -11,19 +11,31 @@
 #include "Destructor.h"
 #include "TemplatedFunction.h"
 
-MemberVariable::MemberVariable(Type *_type, Identifier *_id) {
+MemberVariable::MemberVariable(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+MemberVariable::MemberVariable(const MemberVariable& other) : ASTNode(other) {
+    type = other.type->make_copy();
+    id = other.id->make_copy();
+}
+
+MemberVariable::MemberVariable(Type *_type, Identifier *_id) : ASTNode() {
     type = _type;
     id = _id;
+    assert(type != nullptr);
+    assert(id != nullptr);
 }
 
 MemberVariable* MemberVariable::convert(parser::member_variable_declaration *mvd) {
-    Type *type = Type::convert(mvd->t0);
-    Identifier *id = Identifier::convert(mvd->t2);
-    return new MemberVariable(type, id);
+    MemberVariable* result = new MemberVariable(mvd);
+    result->type = Type::convert(mvd->t0);
+    result->id = Identifier::convert(mvd->t2);
+    return result;
 }
 
 MemberVariable* MemberVariable::make_copy() {
-    return new MemberVariable(type->make_copy(), id->make_copy());
+    return new MemberVariable(*this);
 }
 
 bool MemberVariable::replace_templated_types(TemplateMapping *mapping) {
@@ -37,7 +49,28 @@ bool MemberVariable::look_for_templates(){
 }
 
 
-StructDefinition::StructDefinition(Type *_type, std::vector<MemberVariable*> _member_variables, std::vector<TemplatedFunction*> _functions, std::vector<Constructor*> _constructors, std::vector<Destructor*> _destructors) {
+
+StructDefinition::StructDefinition(parser::token *tok) : ASTNode(tok) {
+    // do nothing
+}
+
+StructDefinition::StructDefinition(const StructDefinition& other) : ASTNode(other) {
+    type = other.type->make_copy();
+    for(int i = 0; i < other.member_variables.size(); i++) {
+        member_variables.push_back(other.member_variables[i]->make_copy());
+    }
+    for(int i = 0; i < other.functions.size(); i++) {
+        functions.push_back(other.functions[i]->make_copy());
+    }
+    for(int i = 0; i < other.constructors.size(); i++) {
+        constructors.push_back(other.constructors[i]->make_copy());
+    }
+    for(int i = 0; i < other.destructors.size(); i++) {
+        destructors.push_back(other.destructors[i]->make_copy());
+    }
+}
+
+StructDefinition::StructDefinition(Type *_type, std::vector<MemberVariable*> _member_variables, std::vector<TemplatedFunction*> _functions, std::vector<Constructor*> _constructors, std::vector<Destructor*> _destructors) : ASTNode() {
     type = _type;
     member_variables = _member_variables;
     functions = _functions;
@@ -45,32 +78,33 @@ StructDefinition::StructDefinition(Type *_type, std::vector<MemberVariable*> _me
     destructors = _destructors;
 
     assert(_type != nullptr);
+    for(int i = 0; i < member_variables.size(); i++) assert(member_variables[i] != nullptr);
+    for(int i = 0; i < functions.size(); i++) assert(functions[i] != nullptr);
+    for(int i = 0; i < constructors.size(); i++) assert(constructors[i] != nullptr);
+    for(int i = 0; i < destructors.size(); i++) assert(destructors[i] != nullptr);
 }
 
 StructDefinition* StructDefinition::convert(parser::struct_definition *s) {
-    BaseType *type = BaseType::convert(s->t2);
-    std::vector<MemberVariable*> member_variables;
-    std::vector<TemplatedFunction*> functions;
-    std::vector<Constructor*> constructors;
-    std::vector<Destructor*> destructors;
+    StructDefinition* result = new StructDefinition(s);
+    result->type = BaseType::convert(s->t2);
     for(int i = 0; i < s->t6.size(); i++){
         if(s->t6[i]->t0->is_c0) {   //member variable declaration
-            member_variables.push_back(MemberVariable::convert(s->t6[i]->t0->t0->t0));
+            result->member_variables.push_back(MemberVariable::convert(s->t6[i]->t0->t0->t0));
         }
         else if(s->t6[i]->t0->is_c1) {  //function
             TemplatedFunction *f = TemplatedFunction::convert(s->t6[i]->t0->t1->t0);
-            f->function->enclosing_type = type->make_copy();
-            functions.push_back(f);
+            f->function->enclosing_type = result->type->make_copy();
+            result->functions.push_back(f);
         }
         else if(s->t6[i]->t0->is_c2) {  //constructor
-            constructors.push_back(Constructor::convert(s->t6[i]->t0->t2->t0));
+            result->constructors.push_back(Constructor::convert(s->t6[i]->t0->t2->t0));
         }
         else if(s->t6[i]->t0->is_c3) {  //destructor
-            destructors.push_back(Destructor::convert(s->t6[i]->t0->t3->t0));
+            result->destructors.push_back(Destructor::convert(s->t6[i]->t0->t3->t0));
         }
         else assert(false);
     }
-    return new StructDefinition(type, member_variables, functions, constructors, destructors);
+    return result;
 }
 
 bool StructDefinition::is_well_formed() {
@@ -113,24 +147,7 @@ bool StructDefinition::is_well_formed() {
 }
 
 StructDefinition* StructDefinition::make_copy() {
-    Type *_type = type->make_copy();
-    std::vector<MemberVariable*> _member_variables;
-    std::vector<TemplatedFunction*> _functions;
-    std::vector<Constructor*> _constructors;
-    std::vector<Destructor*> _destructors;
-    for(int i = 0; i < member_variables.size(); i++){
-        _member_variables.push_back(member_variables[i]->make_copy());
-    }
-    for(int i = 0; i < functions.size(); i++){
-        _functions.push_back(functions[i]->make_copy());
-    }
-    for(int i = 0; i < constructors.size(); i++){
-        _constructors.push_back(constructors[i]->make_copy());
-    }
-    for(int i = 0; i < destructors.size(); i++){
-        _destructors.push_back(destructors[i]->make_copy());
-    }
-    return new StructDefinition(_type, _member_variables, _functions, _constructors, _destructors);
+    return new StructDefinition(*this);
 }
 
 bool StructDefinition::replace_templated_types(TemplateMapping *mapping) {

@@ -1,5 +1,6 @@
 #pragma once
 #include "../parser/parser.h"
+#include "ASTNode.h"
 #include <optional>
 #include <vector>
 
@@ -12,7 +13,7 @@ struct Parameter;
 struct TemplateMapping;
 struct FunctionCall;
 
-struct Function {    
+struct Function : public ASTNode {    
     std::optional<Type*> enclosing_type;    //type of containing struct
     bool is_export;         //if true, will generate label equal to function id
     Type *type;             //return type
@@ -20,19 +21,17 @@ struct Function {
     std::vector<Parameter*> parameters;
     CompoundStatement *body;
 
+    Function(parser::token *tok);
+    Function(const Function& other);
     Function(std::optional<Type*> _enclosing_type, bool _is_export, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body);
-
-    //use when inputting pre-defined asm functions (sys functions)
     Function(Type *_type, Identifier *_id, std::vector<Type*> input_types);
 
-    virtual ~Function() = default;
-
+    static Function* convert(parser::function *f);
     FunctionSignature* resolve_function_signature() const;
     bool equals(const Function* other) const;
     bool operator==(const Function& other) const;
     bool operator!=(const Function& other) const;
 
-    static Function* convert(parser::function *f);
     bool is_well_formed();
     virtual Function* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
