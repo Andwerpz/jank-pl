@@ -188,8 +188,6 @@ bool OperatorOverload::is_well_formed(CompilationContext *ctx) {
         return false;
     }
 
-    std::cout << "CHECKING OVERLOAD : " << os->to_string() << "\n";
-
     push_declaration_stack();
 
     //print operator header

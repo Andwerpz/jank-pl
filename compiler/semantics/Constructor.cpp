@@ -99,7 +99,6 @@ bool PrimitiveConstructor::equals(Constructor *_other) const {
 // -- IS WELL FORMED --
 bool StructConstructor::is_well_formed(CompilationContext *ctx) {
     ConstructorSignature *cs = resolve_constructor_signature();
-    std::cout << "CHECKING CONSTRUCTOR : " << cs->to_string() << std::endl;
 
     push_declaration_stack();
 

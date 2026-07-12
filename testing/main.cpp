@@ -1,15 +1,7 @@
 #include <bits/stdc++.h>
 using namespace std;
 
-//running tests
-// TODO make this multithreaded. 
-//  - rework so that each test compiles to a separate directory before running. 
-//  - have a test job queue that threads take from 
-//  - notify all threads to stop when first test fails. 
-//  - maybe also have a nice test duration display like bazel does
-
-// TODO add support for multi-file tests
-//  - test ability to link multiple generated assembly files
+// jank test runner
 
 #include <unistd.h>  
 #include <sys/wait.h>

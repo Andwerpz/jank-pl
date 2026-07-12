@@ -143,7 +143,13 @@ public:
     void add_global_node(GlobalNode* gn);
     const std::vector<GlobalNode*>& get_global_nodes();
     CompilationContext* create_compilation_context();
-    bool ensure_ready();                                // just a wrapper to call the highest level of initialization 
+
+    // self explanatory :D
+    // parses the code
+    bool ensure_parsed();
+
+    // just a wrapper to call the highest level of initialization 
+    bool ensure_ready();                                
 
 private:
     // state
@@ -171,9 +177,6 @@ private:
     std::vector<std::string> include_filepaths;
     std::vector<Include*> includes;
     std::vector<GlobalNode*> global_nodes;
-
-    // ensures a DefinitionSpace exists for this file
-    bool ensure_parsed();
 
     // ensures all direct includes have been discovered and parsed
     bool ensure_includes_parsed();

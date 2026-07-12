@@ -37,8 +37,6 @@ bool Destructor::equals(Destructor *other) const {
 }
 
 bool Destructor::is_well_formed(CompilationContext *ctx) {
-    std::cout << "CHECKING DESTRUCTOR : " << type->to_string() << std::endl;
-
     // - is type of destructor declared?
     if(!ctx->is_type_declared(type)) {
         std::cout << "Destructor undeclared type : " << type->to_string() << "\n";

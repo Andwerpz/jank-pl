@@ -62,10 +62,13 @@ void CompilationContext::add_definition_space(DefinitionSpace* space, Visibility
 // TODO 
 // not all definition spaces have to actually be in the 'ready' state, for some we can 
 // just get away with a state like locally resolved. 
-void CompilationContext::ensure_ready() {
+bool CompilationContext::ensure_ready() {
     for(DefinitionSpaceView dsv : definition_spaces) {
-        dsv.space->ensure_ready();
+        if(!dsv.space->ensure_ready()) {
+            return false;
+        }
     }
+    return true;
 }
 
 // -- HELPERS --
@@ -150,7 +153,6 @@ auto CompilationContext::get_basetypes() const {
 //within templated function, we handle reference logic. (T cannot be assigned to T&)
 //Due to how the partial ordering works, this results in decent reference semantics. 
 Function* CompilationContext::get_called_function(FunctionCall* fc) {
-    std::cout << "CompilationContext::get_called_function() : " << fc->to_string() << std::endl;
     assert(fc != nullptr);
     
     // - gather all templated functions that work
@@ -225,15 +227,11 @@ Function* CompilationContext::get_called_function(FunctionCall* fc) {
         f->enclosing_type.value()->find_all_basetypes(basetypes);
     }
     CompilationContext *ctx = template_ds->create_compilation_context();
+    assert(ctx != nullptr);
     for(BaseType *bt : basetypes) {
         DefinitionSpace *ds = get_definition_space(bt);
         assert(ds != nullptr);
         ctx->add_definition_space(ds, Visibility::Public);
-    }
-
-    std::cout << "BASETYPES : " << std::endl;
-    for(BaseType *bt : basetypes) {
-        std::cout << "    " << bt->to_string() << std::endl;
     }
 
     // - add generated function to the definition space its templated counterpart comes from
@@ -316,7 +314,6 @@ Operator* CompilationContext::get_called_operator(OperatorCall* oc) {
     for(DefinitionSpaceView dsv : definition_spaces) {
         for(TemplatedOperator *to : dsv.space->get_templated_operators(dsv.vis)) {
             if(to == best[0]) {
-
                 template_ds = dsv.space;
             }
         }
@@ -324,12 +321,12 @@ Operator* CompilationContext::get_called_operator(OperatorCall* oc) {
     assert(template_ds != nullptr);
 
     // - generate compilation context for this instantiated operator 
-    std::cout << "BEST DS FOR OPERATOR : " << template_ds->get_filepath() << " : " << o->resolve_operator_signature()->to_string() << std::endl;
     TemplateMapping *tm = best[0]->calc_mapping(this, oc);
     assert(tm != nullptr);
     std::vector<BaseType*> basetypes;
     tm->find_all_basetypes(basetypes);
     CompilationContext *ctx = template_ds->create_compilation_context();
+    assert(ctx != nullptr);
     for(BaseType *bt : basetypes) {
         DefinitionSpace *ds = get_definition_space(bt);
         assert(ds != nullptr);

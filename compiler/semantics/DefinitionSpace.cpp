@@ -285,86 +285,62 @@ bool DefinitionSpace::add_basetype(BaseType* x, Visibility vis, Origin orig) {
 
 // -- RETRIEVING DECLARATIONS --
 const std::vector<TemplatedFunction*>& DefinitionSpace::get_templated_functions(Visibility vis, Origin orig) {
-    if(!ensure_typedefs_resolved()) {
-        assert(false);
-    }
+    assert(state >= DefinitionSpaceState::TypedefsResolved);
     return templated_functions.get(vis, orig);
 }
 
 const std::vector<TemplatedOperator*>& DefinitionSpace::get_templated_operators(Visibility vis, Origin orig) {
-    if(!ensure_typedefs_resolved()) {
-        assert(false);
-    }
+    assert(state >= DefinitionSpaceState::TypedefsResolved);
     return templated_operators.get(vis, orig);
 }
 
 const std::vector<TemplatedStructDefinition*>& DefinitionSpace::get_templated_structs(Visibility vis, Origin orig) {
-    if(!ensure_typedefs_resolved()) {
-        assert(false);
-    }
+    assert(state >= DefinitionSpaceState::TypedefsResolved);
     return templated_structs.get(vis, orig);
 }
 
 const std::vector<Operator*>& DefinitionSpace::get_operators(Visibility vis, Origin orig) {
-    if(!ensure_declarations_resolved()) {
-        assert(false);
-    }
+    assert(state >= DefinitionSpaceState::DeclarationsResolved);
     return operators.get(vis, orig);
 }
 
 const std::vector<Function*>& DefinitionSpace::get_functions(Visibility vis, Origin orig) {
-    if(!ensure_declarations_resolved()) {
-        assert(false);
-    }
+    assert(state >= DefinitionSpaceState::DeclarationsResolved);
     return functions.get(vis, orig);
 }
 
 const std::vector<StructDefinition*>& DefinitionSpace::get_structs(Visibility vis, Origin orig) {
-    if(!ensure_declarations_resolved()) {
-        assert(false);
-    }
+    assert(state >= DefinitionSpaceState::DeclarationsResolved);
     return structs.get(vis, orig);
 }
 
 const std::vector<Constructor*>& DefinitionSpace::get_constructors(Visibility vis, Origin orig) {
-    if(!ensure_declarations_resolved()) {
-        assert(false);
-    }
+    assert(state >= DefinitionSpaceState::DeclarationsResolved);
     return constructors.get(vis, orig);
 }
 
 const std::vector<Destructor*>& DefinitionSpace::get_destructors(Visibility vis, Origin orig) {
-    if(!ensure_declarations_resolved()) {
-        assert(false);
-    }
+    assert(state >= DefinitionSpaceState::DeclarationsResolved);
     return destructors.get(vis, orig);
 }
 
 const std::vector<Typedef*>& DefinitionSpace::get_typedefs(Visibility vis, Origin orig) {
-    if(!ensure_parsed()) {
-        assert(false);
-    }
+    assert(state >= DefinitionSpaceState::Parsed);
     return typedefs.get(vis, orig);
 }
 
 const std::vector<GlobalDeclaration*>& DefinitionSpace::get_global_variables(Visibility vis, Origin orig) {
-    if(!ensure_typedefs_resolved()) {
-        assert(false);
-    }
+    assert(state >= DefinitionSpaceState::TypedefsResolved);
     return global_variables.get(vis, orig);
 }
 
 const std::vector<Type*>& DefinitionSpace::get_types(Visibility vis, Origin orig) {
-    if(!ensure_typedefs_resolved()) {
-        assert(false);
-    }
+    assert(state >= DefinitionSpaceState::TypedefsResolved);
     return types.get(vis, orig);
 }
 
 const std::vector<BaseType*>& DefinitionSpace::get_basetypes(Visibility vis, Origin orig) {
-    if(!ensure_parsed()) {
-        assert(false);
-    }
+    assert(state >= DefinitionSpaceState::Parsed);
     return basetypes.get(vis, orig);
 }
 
@@ -384,7 +360,6 @@ bool DefinitionSpace::ensure_parsed() {
 
     // load source code
     // TODO check if the filepath given is actually valid
-    std::cout << "DefinitionSpace::ensure_parsed() : " << label_prefix << " : " << static_cast<int>(state) << std::endl;
     std::string code = read_file(filepath);
     source_files.push_back(filepath);
 
@@ -494,7 +469,7 @@ bool DefinitionSpace::ensure_includes_parsed() {
     // parse all includes
     for(DefinitionSpace* inc_ds : included_definition_spaces) {
         if(!inc_ds->ensure_parsed()) {
-            std::cout << "Could not resolve include : \"" << inc_ds->get_filepath() << "\"" << std::endl;
+            std::cout << "Could not parse include : \"" << inc_ds->get_filepath() << "\"" << std::endl;
             return false;
         }
     }
@@ -509,14 +484,13 @@ bool DefinitionSpace::ensure_typedefs_resolved() {
         return true;
     }
 
-    std::cout << "DefinitionSpace::ensure_typedefs_resolved() : " << label_prefix << std::endl;
-
     // make sure we've parsed all includes
     if(!ensure_includes_parsed()) {
         return false;
     }
 
     CompilationContext* ctx = create_compilation_context();
+    assert(ctx != nullptr);
 
     // gather all typedefs
     // TODO write a custom iterator for ctx and just iterate through all the typedefs
@@ -621,9 +595,11 @@ bool DefinitionSpace::ensure_typedefs_resolved() {
             }
         }
 
-        std::cout << "RESOLVED TYPEDEFS : \n";
-        for(int i = 0; i < n; i++){
-            std::cout << all_typedefs[i]->base_type->to_string() << " : " << all_typedefs[i]->type->to_string() << "\n";
+        if(debug) {
+            std::cout << "RESOLVED TYPEDEFS : \n";
+            for(int i = 0; i < n; i++){
+                std::cout << all_typedefs[i]->base_type->to_string() << " : " << all_typedefs[i]->type->to_string() << "\n";
+            }
         }
 
         //go through everything and replace typedef types
@@ -663,7 +639,16 @@ bool DefinitionSpace::ensure_declarations_resolved() {
         return false;
     }
 
+    // ensure our imports typedefs are resolved
+    for(DefinitionSpace* inc_ds : included_definition_spaces) {
+        if(!inc_ds->ensure_typedefs_resolved()) {
+            std::cout << "Could not resolve typedefs in include : \"" << inc_ds->get_filepath() << "\"" << std::endl;
+            return false;
+        }
+    }
+
     CompilationContext* ctx = create_compilation_context();
+    assert(ctx != nullptr);
 
     // ensure set of available basetypes are unique
     // TODO make this better by using a hashset or smth
@@ -698,7 +683,6 @@ bool DefinitionSpace::ensure_declarations_resolved() {
             StructDefinition *sd = tsd->struct_def->make_copy();
             Type *t = sd->type;
             add_struct(sd, Visibility::Public, Origin::Source);
-            std::cout << "DefinitionSpace::ensure_locally_resolved() : adding instantiated struct : " << t->to_string() << std::endl;
 
             // add struct member functions, constructors, destructors
             // don't want to add to work queue, just want to make this struct interface available
@@ -812,15 +796,8 @@ bool DefinitionSpace::ensure_declarations_resolved() {
     // look for templates in concrete instantiations
     // note that we already looked for templates in instantiated structs
     // don't want to do it here as then we'll start to look for templates within templated types
-    std::cout << "DefinitionSpace::ensure_declarations_resolved() : " << filepath << " : looking for templates in functions" << std::endl;
-    for(Function *f : functions.get(Visibility::All, Origin::Source)) {
-        std::cout << f->resolve_function_signature()->to_string() << std::endl;
-    }
-
     for(Function *f : functions.get(Visibility::All, Origin::Source)) {
         if(f->is_generated) continue;
-        std::cout << "DefinitionSpace :: looking for templates : " << filepath << " : " << f->resolve_function_signature()->to_string() << std::endl;
-        std::cout << "IS GENERATED : " << f->is_generated << std::endl;
         if(!f->look_for_templates(ctx)) {
             std::cout << "DefinitionSpace :: Failed to resolve templates in function : " << f->resolve_function_signature()->to_string() << std::endl;
             return false;
@@ -894,8 +871,6 @@ bool DefinitionSpace::ensure_includes_resolved() {
     if(state >= DefinitionSpaceState::IncludesResolved) {
         return true;
     }
-
-    std::cout << "DefinitionSpace::ensure_includes_resolved() : " << label_prefix << std::endl;
 
     // ensure we are locally resolved
     if(!ensure_declarations_resolved()) {
@@ -1103,12 +1078,12 @@ void DefinitionSpace::add_include(Include* inc) {
 }
 
 const std::vector<Include*>& DefinitionSpace::get_includes() {
-    ensure_parsed();
+    assert(state >= DefinitionSpaceState::Parsed);
     return includes;
 }
 
 const std::vector<DefinitionSpace*>& DefinitionSpace::get_included_definition_spaces() {
-    ensure_parsed();
+    assert(state >= DefinitionSpaceState::Parsed);
     return included_definition_spaces;
 }
 
@@ -1122,17 +1097,13 @@ void DefinitionSpace::add_global_node(GlobalNode* gn) {
 }
 
 const std::vector<GlobalNode*>& DefinitionSpace::get_global_nodes() {
-    if(!ensure_parsed()) {
-        assert(false);
-    }
+    assert(state >= DefinitionSpaceState::Parsed);
     return global_nodes;
 }
 
 CompilationContext* DefinitionSpace::create_compilation_context() {
     // make sure we've parsed all our includes
-    if(!ensure_includes_parsed()) {
-        assert(false);
-    }
+    assert(state >= DefinitionSpaceState::IncludesParsed);
 
     CompilationContext* ctx = new CompilationContext();
 

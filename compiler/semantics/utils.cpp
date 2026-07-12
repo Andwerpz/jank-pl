@@ -1025,8 +1025,6 @@ bool is_type_primitive(Type *t) {
 }
 
 DefinitionSpace* get_definition_space(std::string filepath) {
-    std::cout << "get_definition_space() : " << filepath << std::endl;
-
     // make sure filepath is normalized
     if(filepath[0] != '/') {
         filepath = cwd_rel_to_absolute(filepath);
@@ -1135,6 +1133,7 @@ bool create_templated_type(TemplatedType *t, CompilationContext* ctx) {
     std::vector<BaseType*> basetypes;
     tm->find_all_basetypes(basetypes);
     CompilationContext *template_ctx = ds->create_compilation_context();
+    assert(template_ctx != nullptr);
     for(BaseType *bt : basetypes) {
         DefinitionSpace *ds = get_definition_space(bt);
         assert(ds != nullptr);
@@ -1220,7 +1219,7 @@ bool create_array_type(ArrayType *t, CompilationContext *ctx) {
     else assert(false);
     assert(ds != nullptr);
 
-    //generate type
+    //generate relevant methods to type
     //  - default constructor
     //  - copy constructor
     //  - destructor
@@ -1260,17 +1259,22 @@ bool create_array_type(ArrayType *t, CompilationContext *ctx) {
 
     Destructor *destructor = new Destructor(t, new CompoundStatement(std::vector<Statement*>{}));
 
-    ds->add_constructor(default_constructor, vis, Origin::Generated);
-    ds->add_constructor(copy_constructor, vis, Origin::Generated);
-    ds->add_destructor(destructor, vis, Origin::Generated);
-
     // construct compilation context for array type
     CompilationContext *array_ctx = ds->create_compilation_context();
+    assert(array_ctx != nullptr);
 
-    // add constructors and destructors to work queue
-    work_queue.push({default_constructor, array_ctx});
-    work_queue.push({copy_constructor, array_ctx});
-    work_queue.push({destructor, array_ctx});
+    if(!add_constructor(ds, default_constructor, Visibility::Public, array_ctx)) {
+        std::cout << "Failed to add array default constructor : " << t->to_string() << std::endl;
+        return false;
+    }
+    if(!add_constructor(ds, copy_constructor, Visibility::Public, array_ctx)) {
+        std::cout << "Failed to add array copy constructor : " << t->to_string() << std::endl;
+        return false;
+    }
+    if(!add_destructor(ds, destructor, Visibility::Public, array_ctx)) {
+        std::cout << "Failed to add array destructor : " << t->to_string() << std::endl;
+        return false;
+    }
 
     return true;
 }
@@ -1290,9 +1294,6 @@ bool add_templated_function(DefinitionSpace* ds, TemplatedFunction* x, Visibilit
 }
 
 bool add_function(DefinitionSpace* ds, Function* x, Visibility vis, CompilationContext* ctx) {
-    std::cout << "ADDING GENERATED FUNCTION : " << x->resolve_function_signature()->to_string() << std::endl;
-    ctx->dump_context();
-
     x->is_generated = true;
     if(!ds->add_function(x, vis, Origin::Generated)) {
         std::cout << "Failed to add function : " << x->resolve_function_signature()->to_string() << std::endl;
@@ -1436,7 +1437,6 @@ bool add_struct(DefinitionSpace *ds, StructDefinition *x, Visibility vis, Compil
 bool add_constructor(DefinitionSpace* ds, Constructor* x, Visibility vis, CompilationContext* ctx) {
     x->is_generated = true;
     if(!ds->add_constructor(x, vis, Origin::Generated)) {
-        std::cout << "Failed to add constructor : " << x->resolve_constructor_signature()->to_string() << std::endl;
         return false;
     }
 
@@ -1452,7 +1452,6 @@ bool add_constructor(DefinitionSpace* ds, Constructor* x, Visibility vis, Compil
 bool add_destructor(DefinitionSpace* ds, Destructor* x, Visibility vis, CompilationContext* ctx) {
     x->is_generated = true;
     if(!ds->add_destructor(x, vis, Origin::Generated)) {
-        std::cout << "Failed to add destructor : " << x->type->to_string() << std::endl;
         return false;
     }
 
@@ -1502,7 +1501,6 @@ StructLayout* _get_struct_layout(Type *t) {
 // - first tries to see if it's already generated
 // - otherwise generates it and adds it to the global list
 bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_off) {
-    std::cout << "_construct_struct_layout() : " << t->to_string() << std::endl;
     assert(t != nullptr);
 
     // - have we gone too deep?
@@ -1688,6 +1686,8 @@ void initialize_controller() {
         // add '__GLOBAL_FIRST__' global node
         GlobalNode *global_first_gn = new GlobalNode(new Identifier("__GLOBAL_FIRST__"), {});
         builtin_definition_space->add_global_node(global_first_gn);
+
+        builtin_definition_space->ensure_ready();
     }
 }
 
@@ -1699,13 +1699,15 @@ void initialize_controller() {
 
 bool compile_file(std::string target_filepath) {
     assert(target_filepath.size() != 0);
-    std::cout << "COMPILING FILE : " << target_filepath << std::endl;
+    std::cout << " -- COMPILING FILE : " << target_filepath << std::endl;
 
     // place target file concrete instantiations into work queue
     // don't place generated instantiations into queue,
     //   if we just compiled another file, there could still be generated instantiations. 
     {
         DefinitionSpace* ds = get_definition_space(target_filepath);
+        ds->ensure_ready();
+
         assert(ds != nullptr);
         CompilationContext* ctx = ds->create_compilation_context();
         if(ctx == nullptr) {
@@ -1760,7 +1762,10 @@ bool compile_file(std::string target_filepath) {
         assert(declared_global_variables.size() == 0);
 
         // ensure context is ready
-        ctx->ensure_ready();
+        if(!ctx->ensure_ready()) {
+            std::cout << "Failed to initialize compilation context" << std::endl;
+            return false;
+        }
 
         //add all globals visible to the current context
         // TODO replace this with custom iterator
@@ -1780,6 +1785,8 @@ bool compile_file(std::string target_filepath) {
             assert(f != nullptr);
             enclosing_return_type = f->type->make_copy();
             enclosing_type = f->enclosing_type;
+
+            std::cout << "CHECKING FUNCTION : " << f->resolve_function_signature()->to_string() << std::endl;
             if(!f->is_well_formed(ctx)) {
                 std::cout << "Function not well formed : " << f->resolve_function_signature()->to_string() << std::endl;
                 return false;
@@ -1790,6 +1797,9 @@ bool compile_file(std::string target_filepath) {
             assert(oo != nullptr);
             enclosing_return_type = oo->type->make_copy();
             enclosing_type = std::nullopt;
+
+            assert(oo->resolve_operator_signature() != nullptr);
+            std::cout << "CHECKING OVERLOAD : " << oo->resolve_operator_signature()->to_string() << "\n";
             if(!oo->is_well_formed(ctx)) {
                 std::cout << "OperatorOverload not well formed : " << oo->resolve_operator_signature()->to_string() << std::endl;
                 return false;
@@ -1800,6 +1810,8 @@ bool compile_file(std::string target_filepath) {
             assert(c != nullptr);
             enclosing_return_type = primitives::_void->make_copy();
             enclosing_type = c->type->make_copy();
+
+            std::cout << "CHECKING CONSTRUCTOR : " << c->resolve_constructor_signature()->to_string() << std::endl;
             if(!c->is_well_formed(ctx)) {
                 std::cout << "Constructor not well formed : " << c->resolve_constructor_signature()->to_string() << std::endl;
                 return false;
@@ -1810,6 +1822,8 @@ bool compile_file(std::string target_filepath) {
             assert(d != nullptr);
             enclosing_return_type = primitives::_void->make_copy();
             enclosing_type = d->type->make_copy();
+
+            std::cout << "CHECKING DESTRUCTOR : ~" << d->type->to_string() << "()" << std::endl;
             if(!d->is_well_formed(ctx)) {
                 std::cout << "Destructor not well formed : ~" << d->type->to_string() << "()" << std::endl;
                 return false;
@@ -1979,7 +1993,10 @@ bool compile_file(std::string target_filepath) {
 }
 
 bool emit_driver(std::string target_filepath) {
+    std::cout << " -- EMIT DRIVER CODE : " << target_filepath << std::endl;
+
     DefinitionSpace *target_ds = get_definition_space(target_filepath);
+    target_ds->ensure_ready();
 
     // find entry point
     // there should be exactly one function that can be a valid entry point in the target file
@@ -2272,18 +2289,27 @@ bool compile_all(std::string target_filepath) {
         // find all reachable definition spaces
         // (that correspond to a source file)
         std::vector<DefinitionSpace*> all_definition_spaces;
-        std::function<void(DefinitionSpace*)> find_definition_spaces = 
-        [&all_definition_spaces, &find_definition_spaces](DefinitionSpace *ds) -> void {
+        std::function<bool(DefinitionSpace*)> find_definition_spaces = 
+        [&all_definition_spaces, &find_definition_spaces](DefinitionSpace *ds) -> bool {
             for(int i = 0; i < all_definition_spaces.size(); i++) {
-                if(all_definition_spaces[i] == ds) return;
+                if(all_definition_spaces[i] == ds) return true;
             }
-
             all_definition_spaces.push_back(ds);
-            for(DefinitionSpace* nds : ds->get_included_definition_spaces()) {
-                find_definition_spaces(nds);
+
+            if(!ds->ensure_parsed()) {
+                std::cout << "Failed to parse : " << ds->get_filepath() << std::endl;
+                return false;
             }
+            for(DefinitionSpace* nds : ds->get_included_definition_spaces()) {
+                if(!find_definition_spaces(nds)) {
+                    return false;
+                }
+            }
+            return true;
         };
-        find_definition_spaces(target_ds);
+        if(!find_definition_spaces(target_ds)) {
+            return false;
+        }
 
         // compile all files
         for(DefinitionSpace *ds : all_definition_spaces) {

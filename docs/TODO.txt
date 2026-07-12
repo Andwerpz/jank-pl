@@ -1,196 +1,14 @@
 
 (main quest)
-Each file should be compiled seperately instead of compiling them all together. 
-- this will improve build times of multi-file projects by just compiling what changed.
-  - detecting the things that changed may be relatively problematic though, perhaps it's good practice
-    to simply re-compile everything in the case that you modify struct memory layouts. 
-  - actually, I think you only need to re-compile files that import the changed file?
-    - no, it could be the case that a struct usage is 'hidden'. For example, consider  
-``` 
-// A.jank
-struct A {
-    i32 foo;
-}
-
-// B.jank
-#include "A.jank";
-struct B {
-    A foo;
-}
-
-// C.jank
-#include "B.jank";
-struct C {
-    B foo;
-}
-```
-      Changing the memory layout of A will change the memory layout of C, but it isn't visible to C
-      as the implementation details of A are hidden from C by B. 
-      For now, I'll just recompile all files that directly or indirectly import a modified file. 
-
-- this will improve import semantics. 
-  - Right now if you import a file, you also import all the files that
-    the imported file imports. Doing this will force me to make it so that a file only imports the files it 
-    specifically imports (+ automatic imports). 
-
-- The idea to implement this without changing the compiler too much is to modify the compiler so that 
-  it can pull in code from local imports, but only actually compiles the code from the file 
-  that was originally specified. 
-  - have to implement something to tell the compiler what functions to compile, 
-    and what functions are there from other files. 
-  - maybe every AST node should inherit from a base 'ASTNode' class, and that will contain metadata information
-    such as what file it comes from, and maybe the line and column number of the start and end of the node. 
-  - then we'll only check for well formedness for ASTNodes that originate from the file I'm currently compiling.
-    we'll still register all ASTNodes to the compiler, regardless of file of origin. 
-
-- how do we link generated binaries together?
-  - I emit x86-64 ELF AT&T assembly targeted for the GNU assembler
-  - I think I just have to declare any symbols I want to make public as 'global' and just call them normally from other files. 
-  - then we can just call `gcc main.jank A.jank B.jank -o main.exe` to link them all together.
-
-- how do we handle templates? 
-  - right now templated functions and structs are 'abstract' until they get made 'concrete'.
-    it's only when they're made concrete that any code is actually emitted from them. 
-  - the main issue now is that two different files when compiled can double-emit the same concrete
-    instantiation of a single templated function. 
-    Then if I create a function pointer pointing to the concrete templated function from both of the files, 
-    they may not point to the same address. 
-    - solution here is to let the linker handle de-duplication of concrete templated functions. 
-      there's a way to let the linker know that some symbol should only be included once in the final binary. 
-  - actually another issue is with templated structs. Suppose that my hashmap uses vector as part of its
-    internal implementation details. When a user tries to instantiate the hashmap template, they're also 
-    then required to know all about vector in order to actually typecheck the instantiated hashmap
-    - bandaid fixes (list them out so I know what to avoid lmao)
-      - require the user to also import vector
-      - make it so that standard libraries don't import each other too much
-    - for an instantiation T<U1, ..., UN>, we want to make visible to the compiler 
-      - everything visible to T, so that's all methods defined in T + all imports of T
-      - struct interfaces of U1, ..., UN. 
-        To make it simple, perhaps should expose everything defined in their respective files
-    - the issue with exposing the entire file is you may have defined a helper that was also defined in  
-      hashmap, which causes a compilation error. 
-      - realistically, this will never happen in the vast majority of cases, but it's pretty annoying when it does
-    - a solution to this new issue is placing a priority on methods defined in T + imported by T, so we only
-      resort to looking in files defining U1, ..., UN if we cannot resolve from the former. 
-      - an issue: suppose we define some universal hash 'template<T> u64 hash(T, x)'
-        then the compiler will not bother looking for more specific hash methods defined in U1, ..., UN
-        because it can always resolve to the universal hash. 
-    - another solution is to provide a way to mark methods as private, so they're only available to other methods
-      within the same file. 
-      - can probably go further with this, allowing structs, struct methods, struct member variables, and so on
-        to be marked private. Of course, all of these come with their own semantics.
-      - I think this should definitely be a feature, and it does address the symptoms, but I think the real
-        issue is that we don't have a good way to define what external methods to include when compiling 
-        a instantiated template. 
-    - the issue I have with including the file that contains U1 ... UN is that a 'file' is kinda arbitrary. 
-      i think we need some syntactic way to define a group of methods and structs
-      - so something like a python module or rust package. Make some artificial compilation unit. 
-    - ideally we only provide to hashmap the struct memory layout, and it shouldn't need to go looking around
-      for other external functions. 
-      - i think we can pretty much do this, it would just require one concession: we would have to pass 
-        the hash function into hashmap via function pointer. 
-    - one big thing is that we want the generated binary of T<U1, ..., UN> to be consistent regardless of 
-      what is visible to the target file. We don't want the behaviour of the template instance to be decided 
-      by the context in which it is instantiated. 
-    - after much contemplation and discussion, I've settled on just doing the 'include the file that 
-      defines U1, ..., UN, as well as everything imported by T and T itself'
-      - it's good enough for the vast majority of cases, and also guarantees that the compilation context
-        will be the same regardless of context. 
-  - one more issue with templated structs: Suppose I have two files, U1.jank, U2.jank, defining structs with 
-    the same name "U". Then I instantiate T<U> with the U from both U1.jank and U2.jank. How can the 
-    linker tell them apart?
-    - if we just mangle the struct names with the filepaths, then the linker should be able to tell that
-      they're different. 
-    - observe that this shouldn't cause any correctness issues as both U1.jank and U2.jank cannot be 
-      imported simultaneously without a duplicate type error
-
-- how do we handle globals? 
-  - right now I can order them because I compile all files at once. 
-    without that, how would I synchronize global variable initialization?
-  - one solution is just to make main dependent on every other file in the project. 
-    however that kinda defeats the purpose, because then every time we rebuild, main will be forced to recompile
-    which will cause it to parse through all files in the project. 
-  - what if instead each global simply exposed a function to call that would just populate the global. 
-    and instead of having to parse through every file to discover these functions, we could emit them into some metadata file.
-    ofc, we'd have to also emit global node definitions and dependencies into metadata as well
-    - how are these initializer functions going to allocate memory for the global?
-      right now all globals are allocated sequentially on the stack before main runs. 
-      they're addressed during runtime by taking an offset to some dedicated register. 
-      the issue is that if we do distributed global initialization, then how is each global going to know its own offset?
-    - we can solve this by making the global initializer functions also take in a pointer to the proper memory location on the stack
-      then when compiling main the memory locations can be synchronized
-    - if we do it this way, then we would still have to recompile main every time we changed any file, 
-      it would just be much faster to gather the full list of global functions by looking at the emitted metadata files. 
-
-- how do we ensure that all generated symbols are unique?
-  - with our now non-global importing system, it's possible to have two functions with identical signatures coexist in the same binary. 
-  - can do what C does and just prefix each symbol with the filepath from project root
-  - with imported templates, the filepath should be the source file in which the template was defined, 
-    not the file that instantiated the template. 
-
-- how do we handle stdlib binaries?
-  - treat them with same versioning as regular project binaries, the only difference is that stdlib doesn't import from the
-    project so you never have to recompile them. 
-  - the build tool does have to know the path of the regular project binaries, but that can probably be exposed via some environment variable. 
-
-- I probably need to make a build tool that can figure out what files to recompile given the set of changed files. 
-  - actually, we can get Make to handle this for us. Given the set of modified files, we want to recompile
-    any file that directly or indirectly imports from a modified file. 
-    We can emit the dependency graph to Make, and it will figure out the rest. 
-    - To determine if a file needs recompiling, Make looks at the timestamp of the target vs its dependencies
-      if the target doesn't exist -> compile
-      if the target is older than any of its dependencies -> compile 
-    - Make wants to know for each artifact, what files should it check to see if it needs to rebuild the artifact.
-      then, we can simply give Make the entire set of files that this file directly or indirectly imports from. 
-      - will have to figure out a way to actually keep track of these dependencies. 
-        perhaps after compilation, can spit out a file listing all immediate imports, 
-        then force Make to run a script to update the dependency lists 
-      - this way during the next compilation, the dependency lists will be updated. 
-  - perhaps it'll be much easier to just make my own build tool, given that I have some odd requirements, 
-    especially with global variables. 
-    - important! what would be a good name for it
-      - I'll name it 'dylan'
-
-- implement name mangler
-  - all names need to be mangled: functions, operators, types, constructors, destructors
-  - to keep everything unique, I should prefix everything with the relative path from root. 
-  - what characters are available for symbols?
-    - docs : https://sourceware.org/binutils/docs/as/Symbol-Names.html
-    - for global symbols, [a-zA-Z_][a-zA-Z0-9_]*
-    - symbols beginning with a '.' are local symbols and are removed from the symbol table when linking
-    - apparently you can also use quoted symbols and get rid of the character restrictions within the quotes.
-
-- implement 'CompilationContext'
-  - with one of these bad boys you should be able to
-    - resolve function/operator/constructor/destructor calls
-    - find struct layouts 
-    - find types
-  - each method and struct should specify what context they'd like to be compiled under 
-    - we can lazily construct contexts, part of this is parsing files that we haven't parsed before. 
-      this way we can also lazily parse only the source files that we need. 
-  - CompilationContext should not be responsible for storing function, struct, ect. definitions, it's only 
-    responsible for specifying what definitions are available in some context. 
-
-- implement 'DefinitionSpace'
-  - responsible for storing definitions tied to files (perhaps later modules)
-  - how to handle globally defined stuff? (primitive types like i32)
-    - stuff them into every space?
-    - make a special space for them only?
-    - I like making a special space for them. 
-  - suppose that main.jank imports vector.jank and instantiates vector<i32>. Where should the definition
-    of vector<i32> go? into main or vector space?
-    - semantically, vector<i32> should only be visible to main, so it should go into main space
-    - to make it not visible to anything else, I'll invent the notion of 'private' definitions, which should only be
-      visible within the space they're defined in. 
-      - this should also make creating private functions and structs much easier
-    - if compiling a template triggers further layers of template compilation, then all these instantiated templates
-      should go into the original 'requester' definition space. 
-
-
-(main quest)
 Add IR (D:)
 - this will make codegen easier, the instructions will map more directly to assembly. 
 - this will make performance improvements to generated code easier
+
+
+(main quest)
+Make test runner support multi-file tests
+- gains ability to test linking multiple generated assembly files
+- gains ability to test import semantics
 
 
 (side quest)
@@ -204,6 +22,16 @@ Make parsing faster
 - alot of the parsing will happen when we're trying to just gather function definitions. 
   we can probably target this to make faster by writing a grammar that only sees function definitions and skips everything else. 
 - look into a tokenizer
+- first, do benchmarking to figure out where the current parser is slow!!
+
+
+(side quest)
+Add better semantic error messages to the compiler
+- with the introduction of SourceSpans, we can probably print much better error messages to the user 
+- probably have to clean up the code alot in order to make this nice to do. 
+- if we get this working, should add a 'semantic error' mode to the compiler and add semantic error highlighting to 
+  the highlighting extension. 
+  - maybe even can implement ctrl+click!!
 
 
 (side quest)
@@ -211,3 +39,17 @@ Rewrite jjc in jank
 - mainly for the operating system, and for the flex
 - probably want to wait until IR is done before doing this, so the compiler can actually be relatively fast (relatively).
 
+
+(side quest)
+Make test runner multithreaded
+- rework so that each test compiles to a separate directory before running. 
+- have a test job queue that threads take from 
+- notify all threads to stop when first test fails. 
+- maybe also have a nice test duration display like bazel does
+- this will hopefully make running tests much faster
+
+
+(side quest)
+Make jank build tool
+- its name is 'dylan'
+- should be something like cargo from rust

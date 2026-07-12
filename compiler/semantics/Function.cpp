@@ -99,7 +99,6 @@ Function* Function::convert(parser::function *f) {
 bool Function::is_well_formed(CompilationContext *ctx) {
     assert(body != nullptr);
     FunctionSignature *fs = resolve_function_signature();
-    std::cout << "CHECKING FUNCTION : " << fs->to_string() << std::endl;
 
     // - struct member functions cannot have export modifier
     if(enclosing_type.has_value() && is_export) {

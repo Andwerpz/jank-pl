@@ -56,7 +56,7 @@ struct CompilationContext {
     void add_definition_space(DefinitionSpace* space, Visibility vis);
 
     // makes sure all definition spaces in this context are ready for compilation
-    void ensure_ready();
+    bool ensure_ready();
 
     // resolve result of calling something
     Function* get_called_function(FunctionCall* fc);
