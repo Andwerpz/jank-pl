@@ -5,3 +5,5 @@
 *.o
 *.vsix
 .env
+
+stdlib/asm/*

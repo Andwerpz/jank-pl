@@ -1697,7 +1697,7 @@ void initialize_controller() {
 // - can also make a 'global variable checker' tool that does more strict checks on all global variables
 // - add 'u8** environ' as a builtin global variable
 
-bool compile_file(std::string target_filepath) {
+bool compile(std::string target_filepath) {
     assert(target_filepath.size() != 0);
     std::cout << " -- COMPILING FILE : " << target_filepath << std::endl;
 
@@ -2283,40 +2283,38 @@ bool emit_driver(std::string target_filepath) {
 }
 
 bool compile_all(std::string target_filepath) {
-    if(!only_emit_driver){
-        DefinitionSpace *target_ds = get_definition_space(target_filepath);
+    DefinitionSpace *target_ds = get_definition_space(target_filepath);
 
-        // find all reachable definition spaces
-        // (that correspond to a source file)
-        std::vector<DefinitionSpace*> all_definition_spaces;
-        std::function<bool(DefinitionSpace*)> find_definition_spaces = 
-        [&all_definition_spaces, &find_definition_spaces](DefinitionSpace *ds) -> bool {
-            for(int i = 0; i < all_definition_spaces.size(); i++) {
-                if(all_definition_spaces[i] == ds) return true;
-            }
-            all_definition_spaces.push_back(ds);
+    // find all reachable definition spaces
+    // (that correspond to a source file)
+    std::vector<DefinitionSpace*> all_definition_spaces;
+    std::function<bool(DefinitionSpace*)> find_definition_spaces = 
+    [&all_definition_spaces, &find_definition_spaces](DefinitionSpace *ds) -> bool {
+        for(int i = 0; i < all_definition_spaces.size(); i++) {
+            if(all_definition_spaces[i] == ds) return true;
+        }
+        all_definition_spaces.push_back(ds);
 
-            if(!ds->ensure_parsed()) {
-                std::cout << "Failed to parse : " << ds->get_filepath() << std::endl;
-                return false;
-            }
-            for(DefinitionSpace* nds : ds->get_included_definition_spaces()) {
-                if(!find_definition_spaces(nds)) {
-                    return false;
-                }
-            }
-            return true;
-        };
-        if(!find_definition_spaces(target_ds)) {
+        if(!ds->ensure_parsed()) {
+            std::cout << "Failed to parse : " << ds->get_filepath() << std::endl;
             return false;
         }
-
-        // compile all files
-        for(DefinitionSpace *ds : all_definition_spaces) {
-            std::string filepath = ds->get_filepath();
-            if(!compile_file(filepath)) {
+        for(DefinitionSpace* nds : ds->get_included_definition_spaces()) {
+            if(!find_definition_spaces(nds)) {
                 return false;
             }
+        }
+        return true;
+    };
+    if(!find_definition_spaces(target_ds)) {
+        return false;
+    }
+
+    // compile all files
+    for(DefinitionSpace *ds : all_definition_spaces) {
+        std::string filepath = ds->get_filepath();
+        if(!compile(filepath)) {
+            return false;
         }
     }
 

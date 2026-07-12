@@ -25,25 +25,23 @@
 #include <libgen.h>
 #include <sys/stat.h>
 
-int compile_file(std::string src_path, char tmp_filename[]) {
-    //direct output to tmp file
-    fout = std::ofstream(tmp_filename);
-
-    //compile only one file
-    if(!compile_file(src_path)) {
-        std::cout << "Failed to compile" << std::endl;
-        return 1;
-    }
-
-    return 0;
-}
-
 int compile(std::string src_path, char tmp_filename[]) {
     //direct output to tmp file
     fout = std::ofstream(tmp_filename);
 
-    if(!compile_all(src_path)) {
-        std::cout << "Failed to compile" << std::endl;
+    bool success = false;
+    if(recursive_compile) {
+        success = compile_all(src_path);
+    }
+    else if(only_emit_driver) {
+        success = emit_driver(src_path);
+    }
+    else {
+        success = compile(src_path);
+    }
+
+    if(!success) {
+        std::cout << "Failed to compile : " << src_path << std::endl;
         return 1;
     }
 
@@ -83,49 +81,20 @@ int assemble(char src_path[], char res_path[]) {
 
 int main(int argc, char* argv[]) {
     if(argc == 1) {
-        std::cout << "USAGE : <filepath>\n";
+        std::cout << "USAGE : jjc { <filepath> , <flag> }\n";
         std::cout << "-S : generate assembly instead of executable\n";
-        std::cout << "-o <out_filepath>\n";
+        std::cout << "-o <path> : write output to <path>\n";
         std::cout << "-k : kernel mode\n";
+        std::cout << "--recursive : looks for all dependencies of the target and compiles them as well\n";
+        std::cout << "--no-default-includes : omits default stdlib includes\n";
         std::cout << "--time : prints some timing info\n";
         std::cout << "--asm-debug : assembly debug mode (prints some helpful (?) comments in the generated assembly)\n";
-        std::cout << "--no-default-includes\n";
-        std::cout << "--emit-driver : only emits driver code\n";
+        std::cout << "--startup-only : only emits startup and driver code\n";
         return 1;
     }
     int argptr = 1;
-    std::string filepath = read_cstr(argv[argptr ++]);
+    std::vector<std::string> filepaths;
     std::string dst_dir = "a.out";
-
-    //figure out compiler absolute directory
-    {
-        // /proc/self/exe is symlink to currently running binary
-        // so readlink should give the absolute path no matter how this was invoked
-        char exe_path[PATH_MAX];
-        ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
-        if (len != -1) {
-            exe_path[len] = '\0';
-            compiler_dir = dirname(exe_path);
-            std::cout << "COMPILER DIR : " << compiler_dir << "\n";
-        }
-        else {
-            std::cout << "Could not find jjc path\n";
-            return 1;
-        }
-    }
-
-    //figure out current working directory
-    {
-        char cwd_path[PATH_MAX];
-        if (getcwd(cwd_path, sizeof(cwd_path)) != NULL) {
-            cwd_dir = std::string(cwd_path);
-            std::cout << "CWD : " << cwd_dir << "\n";
-        }
-        else {
-            std::cout << "Could not find cwd\n";
-            return 1;
-        }
-    }
 
     //read in arguments
     bool return_asm = false;
@@ -144,23 +113,81 @@ int main(int argc, char* argv[]) {
         else if(arg == "-k") {
             kernel_mode = true;
         }
-        else if(arg == "--asm-debug") {
-            asm_debug = true;
+        else if(arg == "--recursive") {
+            recursive_compile = true;
+        }
+        else if(arg == "--no-default-includes") {
+            no_default_includes = true;
         }
         else if(arg == "--time") {
             print_timing_info = true;
             std::cout << "print timing info WIP" << std::endl;
             return 1;
         }
-        else if(arg == "--no-default-includes") {
-            no_default_includes = true;
+        else if(arg == "--asm-debug") {
+            asm_debug = true;
         }
-        else if(arg == "--emit-driver") {
+        else if(arg == "--startup-only") {
             only_emit_driver = true;
             return_asm = true;
         }
         else {
-            std::cout << "Unrecognized commandline argument : " << arg << "\n";
+            //assume everything else is a file
+            filepaths.push_back(arg);
+
+            // TODO check if we can actually open this file
+            // if we can't, then say it's an unrecognized flag
+        }
+    }
+    if(filepaths.size() == 0) {
+        std::cout << "Need to supply at least one source file\n";
+        return 1;
+    }
+    if(recursive_compile && filepaths.size() != 1) {
+        std::cout << "--recursive requires exactly one source file\n";
+        return 1;
+    }
+    if(recursive_compile && only_emit_driver) {
+        std::cout << "--recursive and --startup-only are mutually exclusive\n";
+        return 1;
+    }
+    if(filepaths.size() > 1) {
+        std::cout << "multiple files WIP\n";
+        return 1;
+    }
+
+    //figure out compiler absolute directory
+    {
+        // /proc/self/exe is symlink to currently running binary
+        // so readlink should give the absolute path no matter how this was invoked
+        char exe_path[PATH_MAX];
+        ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+        if (len != -1) {
+            exe_path[len] = '\0';
+            compiler_dir = dirname(exe_path);
+            std::cout << "COMPILER DIR : " << compiler_dir << "\n";
+        }
+        else {
+            std::cout << "Could not find jjc path\n";
+            return 1;
+        }
+    }
+
+    //figure out stdlib absolute directory
+    {
+        //for now just hardcode it
+        stdlib_dir = compiler_dir + "/../stdlib/src";
+    }
+
+    //figure out current working directory
+    {
+        char cwd_path[PATH_MAX];
+        if (getcwd(cwd_path, sizeof(cwd_path)) != NULL) {
+            cwd_dir = std::string(cwd_path);
+            std::cout << "CWD : " << cwd_dir << "\n";
+        }
+        else {
+            std::cout << "Could not find cwd\n";
             return 1;
         }
     }
@@ -178,7 +205,13 @@ int main(int argc, char* argv[]) {
 
     pid_t pid = fork();
     if(pid == 0) {
-        exit(compile(filepath, asm_file));
+        for(std::string filepath : filepaths) {
+            int status = compile(filepath, asm_file);
+            if(status) {
+                exit(status);
+            }
+        }
+        exit(0);
     }
     else {
         int status;

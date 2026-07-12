@@ -1061,9 +1061,11 @@ void DefinitionSpace::add_include(Include* inc) {
     //add the include
     std::string include_path;
     if(inc->is_library_include) {
-        include_path = compiler_dir + "/libj/" + inc->path + ".jank";
+        // stdlib include
+        include_path = stdlib_dir + "/" + inc->path + ".jank";
     }
     else {
+        // relative include
         include_path = extract_folder_path(get_filepath()) + inc->path;
     }
     DefinitionSpace *ds = get_definition_space(include_path);

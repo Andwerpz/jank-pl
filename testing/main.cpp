@@ -83,7 +83,7 @@ int run_compiler(string src_path, string dst_path) {
         dup2(fd, STDOUT_FILENO);
         close(fd);
 
-        execl(compiler_path.c_str(), "jjc", src_path.c_str(), "-o", dst_path.c_str(), (char*) NULL);
+        execl(compiler_path.c_str(), "jjc", src_path.c_str(), "-o", dst_path.c_str(), "--recursive", (char*) NULL);
         perror("compiler exec failed");
         exit(1);
     }

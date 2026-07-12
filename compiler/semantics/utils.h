@@ -218,8 +218,9 @@ std::string get_string_literal_label(std::string str);
 
 // -- CONTROLLER --
 //important directories
-inline std::string compiler_dir;       // directory of compiler executable
+inline std::string compiler_dir;        // directory of compiler executable
 inline std::string cwd_dir;
+inline std::string stdlib_dir;          // stdlib root
 
 //list of files we parsed source from
 //this list is referred to in the ASTNode struct
@@ -282,6 +283,9 @@ inline bool no_default_includes = false;
 //only emit driver code
 inline bool only_emit_driver = false;
 
+//recursively look for all dependencies of the target file
+inline bool recursive_compile = false;
+
 //descriptions of whatever is on the stack. 
 //to push anything, you need to provide a description
 //to pop anything, you need to provide a description, and it will only work if the descriptions match
@@ -294,7 +298,7 @@ inline int tmp_variable_counter = 0;
 void initialize_controller();                           // should call this once before trying to compile
 
 // these functions do some work and emit assembly via fout
-bool compile_file(std::string target_filepath);         // compiles the target file
+bool compile(std::string target_filepath);              // compiles the target file
 bool emit_driver(std::string target_filepath);          // looks for a main() in the target file, emits code to handle initialization and cleanup of program
-bool compile_all(std::string target_filepath);          // looks for all files required by the target file and compiles them all + emits startup code
+bool compile_all(std::string target_filepath);          // recursively look for all files that the target depends on and compiles them all
 
