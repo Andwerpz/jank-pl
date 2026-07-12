@@ -121,8 +121,8 @@ void ConstructorCall::emit_asm(CompilationContext *ctx, bool addr_provided) {
             }
         }
 
-        //initialize struct in given memory
-        emit_initialize_struct(ctx, type);
+        // //initialize struct in given memory
+        // emit_initialize_struct(ctx, type);
 
         //save reference to type for return value
         emit_push("%rax", "ConstructorCall::emit_asm() : target struct return ref %rax");

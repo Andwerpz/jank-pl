@@ -24,8 +24,8 @@ struct spinlock {
 
     i32 try_lock() {
         // Simple test-and-set implementation
-        if(this.locked == $u32 0) {
-            this.locked = $u32 1;
+        if(this.locked == 0x0) {
+            this.locked = 0x1;
             return 1;  // Successfully acquired lock
         }
         return 0;  // Lock was already taken
@@ -36,7 +36,7 @@ struct spinlock {
         asm!("mfence");
         
         // Release the lock
-        this.locked = $u32 0;
+        this.locked = 0x0;
         
         // Another memory fence to ensure the unlock is visible
         asm!("mfence");

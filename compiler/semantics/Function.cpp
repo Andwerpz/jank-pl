@@ -188,7 +188,6 @@ bool Function::is_well_formed(CompilationContext *ctx) {
     }
     
     // - if type is not void, check for existence of return statement as last reachable statement
-    // - constructors also don't have to have return statements, they're treated as void functions
     if(!type->equals(primitives::_void)) {
         // Note that if there is a statement before the last that is always returning, then any statement after
         // it is unreachable code, in which case we should print some warnings. 

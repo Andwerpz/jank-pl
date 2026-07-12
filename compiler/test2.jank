@@ -1,72 +1,10 @@
-#include <assert>;
 #include <iostream>;
-// #include <crypto/sha2>;
-#include <intx>;
-// #include <crypto/ed25519>;
+#include <assert>;
+#include <wait>;
+#include <exec>;
 
-u512 test(u512 a) {
-    return a;
-}
+#include "test3.jank";
 
-u512 test2(u512 a, u512 b) {
-    // cout << "TEST2 A : " << a << "\n";
-    cout << "A ADDR : " << @a << "\n";
-    return a;
-}
-
-// u512 test2(u512 a, u512 b) {
-//     if(a < b) return a;
-//     return b;
-// }
-
-i32 main() {
-
-    // u512 a;
-    // u512 b;
-    // u512 c = a + b;
-    // a += b;
-    // test(new u512());
-
-    // u512 a = test(new u512());
-
-    // fn<u512(u512)> fptr = #<test(u512)>;
-    // u512 a = fptr#(new u512());
-
-    // (new u512(0x1) << ($u64 255)) - (new u512($u64 19));
-    // (new u512(0x1) << ($u64 255)) - (new u512());
-    // (new u512() + new u512() + new u512());
-    // (new u512() + new u512());
-    // cout << "TEST : " << (new u512(0x10)) << "\n";
-    // u512 x = test2(new u512(0x10), new u512(0x50));
-    // cout << "X ADDR : " << @x << "\n";
-    // cout << "X : " << x << "\n";
-    // cout.flush();
-
-    // free($void* @x, sizeof(u512));
-    // cout << "AFTER FREE X\n";
-    // cout.flush();
-
-    // test2(x, new u512());
-    // test2(test2(new u512(), new u512()), new u512());
-
-    u512 x = 0x1;
-    u512 y = 0x1;
-    for(i32 i = 0; i < 300; i++) {
-        x += y;
-    }
-    cout << "X : " << x << "\n";
-
-    cout << "DEFAULT CONSTRUCT COUNT : " << U512_DEFAULT_CONSTRUCT_COUNT << "\n";
-    cout << "COPY COUNT : " << U512_COPY_COUNT << "\n";
-    cout << "DESTRUCT COUNT : " << U512_DESTRUCT_COUNT << "\n";
-    cout << "MUL COUNT : " << U512_MUL_COUNT << "\n";
-    cout << "ADDSUB COUNT : " << U512_ADDSUB_COUNT << "\n";
-    cout << "BITOP COUNT : " << U512_BITOP_COUNT << "\n";
-    cout << "DIVMOD COUNT : " << U512_DIVMOD_COUNT << "\n";
-    cout << "INCDEC COUNT : " << U512_INCDEC_COUNT << "\n";
-    cout << "SHIFT COUNT : " << U512_SHIFT_COUNT << "\n";
-    cout << "COMPARE COUNT : " << U512_COMPARE_COUNT << "\n";
-    cout.flush();
-
-    return 0;
+struct B {
+    C foo;
 }

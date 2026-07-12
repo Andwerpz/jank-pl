@@ -85,7 +85,7 @@ int main(int argc, char* argv[]) {
         std::cout << "-S : generate assembly instead of executable\n";
         std::cout << "-o <path> : write output to <path>\n";
         std::cout << "-k : kernel mode\n";
-        std::cout << "--recursive : looks for all dependencies of the target and compiles them as well\n";
+        std::cout << "--follow-imports : recursively compile source files referenced by imports\n";
         std::cout << "--no-default-includes : omits default stdlib includes\n";
         std::cout << "--time : prints some timing info\n";
         std::cout << "--asm-debug : assembly debug mode (prints some helpful (?) comments in the generated assembly)\n";
@@ -113,7 +113,7 @@ int main(int argc, char* argv[]) {
         else if(arg == "-k") {
             kernel_mode = true;
         }
-        else if(arg == "--recursive") {
+        else if(arg == "--follow-imports") {
             recursive_compile = true;
         }
         else if(arg == "--no-default-includes") {
@@ -144,11 +144,11 @@ int main(int argc, char* argv[]) {
         return 1;
     }
     if(recursive_compile && filepaths.size() != 1) {
-        std::cout << "--recursive requires exactly one source file\n";
+        std::cout << "--follow-imports requires exactly one source file\n";
         return 1;
     }
     if(recursive_compile && only_emit_driver) {
-        std::cout << "--recursive and --startup-only are mutually exclusive\n";
+        std::cout << "--follow-imports and --startup-only are mutually exclusive\n";
         return 1;
     }
     if(filepaths.size() > 1) {

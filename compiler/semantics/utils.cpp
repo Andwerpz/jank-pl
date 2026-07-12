@@ -520,6 +520,55 @@ void emit_destructor_call(CompilationContext *ctx, Type *t, bool should_dealloc)
     dc->emit_asm(ctx, should_dealloc);
 }
 
+//expects mem addr of the struct to be in %rax, returns with mem addr of the struct in %rax
+//calls destructor of all member variables of the struct in reverse order
+//does not deallocate struct memory
+void emit_cleanup_struct(CompilationContext *ctx, Type *t) {
+    StructLayout *sl = get_struct_layout(t);
+    assert(sl != nullptr);
+    if(auto atype = dynamic_cast<ArrayType*>(t)) {
+        Type *bt = atype->type;
+        int bt_sz = bt->calc_size();
+        assert(bt != nullptr);
+        if(!is_type_primitive(bt)) {
+            // TODO replace this with a loop or smth
+            for(int i = atype->amt - 1; i >= 0; i--){
+                //save base struct address
+                emit_push("%rax", "emit_cleanup_struct() : target struct");
+
+                //move member variable address into %rax
+                fout << indent() << "add $" << i * bt_sz << ", %rax\n";
+
+                //call destructor, no dealloc
+                emit_destructor_call(ctx, bt, false);
+
+                //retrieve base struct address
+                emit_pop("%rax", "emit_cleanup_struct() : target struct");
+            }
+        }
+    }
+    else {
+        for(int i = (int) sl->member_variables.size() - 1; i >= 0; i--){
+            Type *mvt = sl->member_variables[i]->type;
+            Identifier *mvid = sl->member_variables[i]->id;
+            int offset = sl->get_offset(mvid);
+            if(!is_type_primitive(mvt)) {
+                //save base struct address
+                emit_push("%rax", "emit_cleanup_struct() : target struct");
+
+                //move member variable address into %rax
+                fout << indent() << "add $" << offset << ", %rax\n";
+
+                //call destructor, no dealloc
+                emit_destructor_call(ctx, mvt, false);
+
+                //retrieve base struct address
+                emit_pop("%rax", "emit_cleanup_struct() : target struct");
+            }
+        }
+    }
+}
+
 //just emits frees, should not actually affect the controller
 //this should only be called outside of pop_declaration_stack() in special cases (return, break, continue)
 //specifically saves registers %rax, %rcx so that this can be called inside expressions
@@ -1044,6 +1093,55 @@ DefinitionSpace* get_definition_space(BaseType* t) {
     return basetype_to_definition_space.at(t);
 }
 
+DefinitionSpace* get_definition_space(Type *t) {
+    //find 'base type'
+    Type *bt = nullptr;
+    {
+        Type *tmp = t;
+        while(true) {
+            if(dynamic_cast<BaseType*>(tmp)) {
+                bt = tmp;
+                break;
+            }
+            else if(dynamic_cast<PointerType*>(tmp)) {
+                bt = tmp;
+                break;
+            }
+            else if(dynamic_cast<ReferenceType*>(tmp)) {
+                tmp = dynamic_cast<ReferenceType*>(tmp)->type;   
+            }
+            else if(dynamic_cast<ArrayType*>(tmp)) {
+                tmp = dynamic_cast<ArrayType*>(tmp)->type;
+            }
+            else if(dynamic_cast<TemplatedType*>(tmp)) {
+                tmp = dynamic_cast<TemplatedType*>(tmp)->base_type;   
+            }
+            else if(dynamic_cast<FunctionPointerType*>(tmp)) {
+                bt = tmp;
+                break;
+            }
+            else assert(false);
+        }
+    }
+    assert(bt != nullptr);
+
+    //find definition space
+    DefinitionSpace *ds = nullptr;
+    if(dynamic_cast<BaseType*>(bt)) {
+        ds = get_definition_space(dynamic_cast<BaseType*>(bt));
+    }
+    else if(dynamic_cast<PointerType*>(bt)) {
+        ds = builtin_definition_space;
+    }
+    else if(dynamic_cast<FunctionPointerType*>(bt)) {
+        ds = builtin_definition_space;
+    }
+    else assert(false);
+    assert(ds != nullptr);
+
+    return ds;
+}
+
 //just checks to make sure that it's composed of declared base types. 
 //also, none of the template types can be ReferenceType
 bool is_templated_type_well_formed(TemplatedType *t, CompilationContext *ctx) {
@@ -1151,39 +1249,6 @@ bool create_templated_type(TemplatedType *t, CompilationContext* ctx) {
 }
 
 bool create_array_type(ArrayType *t, CompilationContext *ctx) {
-    //find array base type
-    Type *bt = nullptr;
-    {
-        Type *tmp = t;
-        while(true) {
-            if(dynamic_cast<BaseType*>(tmp)) {
-                bt = tmp;
-                break;
-            }
-            else if(dynamic_cast<PointerType*>(tmp)) {
-                bt = tmp;
-                break;
-            }
-            else if(dynamic_cast<ReferenceType*>(tmp)) {
-                tmp = dynamic_cast<ReferenceType*>(tmp)->type;   
-            }
-            else if(dynamic_cast<ArrayType*>(tmp)) {
-                tmp = dynamic_cast<ArrayType*>(tmp)->type;
-            }
-            else if(dynamic_cast<TemplatedType*>(tmp)) {
-                tmp = dynamic_cast<TemplatedType*>(tmp)->base_type;   
-            }
-            else if(dynamic_cast<FunctionPointerType*>(tmp)) {
-                bt = tmp;
-                break;
-            }
-            else {
-                assert(false);
-            }
-        }
-    }
-    assert(bt != nullptr);
-
     //ensure array base type is declared
     if(!ctx->is_type_declared(t->type)) {
         std::cout << "Array base type not declared : " << t->type->to_string() << std::endl;
@@ -1200,23 +1265,7 @@ bool create_array_type(ArrayType *t, CompilationContext *ctx) {
     if(ctx->is_type_declared(t)) return true;
 
     //find definition space to add this type to
-    DefinitionSpace *ds = nullptr;
-    if(dynamic_cast<BaseType*>(bt)) {
-        ds = get_definition_space(dynamic_cast<BaseType*>(bt));
-
-        //ensure that BaseType is actually visible from context
-        if(!ctx->is_basetype_declared(dynamic_cast<BaseType*>(bt))) {
-            std::cout << "Array BaseType is not accessible from the current context : " << bt->to_string() << std::endl;
-            return false;
-        }
-    }
-    else if(dynamic_cast<PointerType*>(bt)) {
-        ds = builtin_definition_space;
-    }
-    else if(dynamic_cast<FunctionPointerType*>(bt)) {
-        ds = builtin_definition_space;
-    }
-    else assert(false);
+    DefinitionSpace *ds = get_definition_space(t);
     assert(ds != nullptr);
 
     //generate relevant methods to type
@@ -1500,6 +1549,11 @@ StructLayout* _get_struct_layout(Type *t) {
 //tries to construct the struct layout for the given type. 
 // - first tries to see if it's already generated
 // - otherwise generates it and adds it to the global list
+// TODO make this dynamically parse includes to find missing struct definitions. 
+//   more specifically, when we're constructing the struct layout of some type T, 
+//   it may depend on some or all of the imports of the file defining T. 
+//   just make sure to register the imports of T before trying to construct the struct
+//   layouts of all the member variables. 
 bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_off) {
     assert(t != nullptr);
 
@@ -1532,6 +1586,7 @@ bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_
     }
 
     // - handle arrays seperately
+    // ArrayTypes don't generate a StructDefinition 
     if(auto atype = dynamic_cast<ArrayType*>(t)) {
         StructLayout *nsl = nullptr;
         if(is_type_primitive(atype->type)) {
@@ -1555,6 +1610,13 @@ bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_
     }
 
     // - ok, generate the struct layout 
+    //ensure the definition space defining t has all of its imports resolved
+    DefinitionSpace *ds = get_definition_space(t);
+    assert(ds != nullptr);
+    if(!ds->ensure_ready()) {
+        return false;
+    }
+
     //get struct definition
     StructDefinition *sd = get_struct_definition(t);
     if(sd == nullptr) {

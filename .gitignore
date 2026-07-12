@@ -7,3 +7,5 @@
 .env
 
 stdlib/asm/*
+
+testing/main

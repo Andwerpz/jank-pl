@@ -97,6 +97,9 @@ bool PrimitiveConstructor::equals(Constructor *_other) const {
 }
 
 // -- IS WELL FORMED --
+
+// this should first construct all member variables, then execute constructor body
+// note that this expects that memory is already allocated by whatever is calling this. 
 bool StructConstructor::is_well_formed(CompilationContext *ctx) {
     ConstructorSignature *cs = resolve_constructor_signature();
 
@@ -120,7 +123,8 @@ bool StructConstructor::is_well_formed(CompilationContext *ctx) {
     //setup stack frame
     fout << indent() << "push %rbp\n";  //should not be managed by local_offset
     fout << indent() << "mov %rsp, %rbp\n";
-
+    
+    // - are parameters sane?
     for(int i = 0; i < parameters.size(); i++){
         // - does parameter correspond to existing type?
         if(!ctx->is_type_declared(parameters[i]->type)) {
@@ -140,12 +144,20 @@ bool StructConstructor::is_well_formed(CompilationContext *ctx) {
         return false;
     }
 
-    //register self as variable (Type& this)
-    local_offset = 8 + 8 * parameters.size();
+    //initialize struct memory
     {
-        //adjust local offset for 'extra variable'
-        local_offset += 8;
+        // emit_initialize_struct expects memory address of struct in %rax
+        // 'Type& this' is the memory address we need
+        std::string this_addr = std::to_string(8 + 8 * parameters.size() + 8) + "(%rbp)";
+        fout << indent() << "mov " << this_addr << ", %rax\n";
 
+        // init struct
+        emit_initialize_struct(ctx, cs->type);
+    }
+
+    //register arguments as variables
+    local_offset = 8 + 8 * parameters.size() + 8;   // extra 8 for 'Type& this'
+    {
         //register self as variable (Type& this)
         Type *vt = new ReferenceType(this->type->make_copy());
         Identifier *vid = new Identifier("this");

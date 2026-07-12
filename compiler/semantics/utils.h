@@ -159,6 +159,7 @@ void emit_dereference(Type *t);
 
 // -- EMIT ASM CLEANUP --
 void emit_destructor_call(CompilationContext *ctx, Type *t, bool should_dealloc = true);
+void emit_cleanup_struct(CompilationContext* ctx, Type *t);
 void emit_cleanup_declaration_stack_layer(CompilationContext *ctx, int layer_ind, std::vector<Identifier*> ignore);
 void emit_cleanup_declaration_stack_layer(CompilationContext *ctx, int layer_ind);
 
@@ -191,6 +192,7 @@ void pop_loop_stack(std::string start_label, std::string assignment_label, std::
 bool is_type_primitive(Type *t);
 DefinitionSpace* get_definition_space(std::string filepath);        // if a definition space doesn't exist, this creates it
 DefinitionSpace* get_definition_space(BaseType* t);                 // gets definition space that declares this BaseType
+DefinitionSpace* get_definition_space(Type *t);                     // gets definition space that is responsible for this type
 bool is_templated_type_well_formed(TemplatedType *t, CompilationContext *ctx);
 bool create_templated_type(TemplatedType *t, CompilationContext *ctx);
 bool create_array_type(ArrayType* t, CompilationContext *ctx);

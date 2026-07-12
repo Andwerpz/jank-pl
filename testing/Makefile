@@ -6,7 +6,7 @@ CXXFLAGS := -std=c++17 -Iinclude
 ENTRY := ./main.cpp
 
 # Output binary name
-TARGET := ./main.exe
+TARGET := ./main
 
 # Find all .cpp files (recursively), exclude jjc.cpp
 SRCS := $(filter-out $(ENTRY), $(shell find . -name '*.cpp'))
@@ -29,7 +29,7 @@ build/%.o: %.cpp
 
 # Run all tests
 test:
-	./main.exe run-tests
+	./main run-tests
 
 # Clean up build artifacts
 clean:

@@ -1,3 +1,13 @@
+(main quest)
+Make jank build tool
+- its name is 'dylan'
+- should be something like cargo from rust
+- it needs to somehow extract file dependency information 
+  - perhaps can add a mode to the compiler that just spits out dependency information into a file
+  - ig it should try to compile the file, and at the end additionally spit out a file
+    containing all the dependency information if the compilation was successful
+  - this dependency information should also contain transitive dependencies. 
+
 
 (main quest)
 Add IR (D:)
@@ -5,7 +15,7 @@ Add IR (D:)
 - this will make performance improvements to generated code easier
 
 
-(main quest)
+(side quest)
 Make test runner support multi-file tests
 - gains ability to test linking multiple generated assembly files
 - gains ability to test import semantics
@@ -48,8 +58,3 @@ Make test runner multithreaded
 - maybe also have a nice test duration display like bazel does
 - this will hopefully make running tests much faster
 
-
-(side quest)
-Make jank build tool
-- its name is 'dylan'
-- should be something like cargo from rust
