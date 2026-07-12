@@ -4,6 +4,8 @@
 #include "Type.h"
 #include "utils.h"
 #include "Identifier.h"
+#include "CompilationContext.h"
+#include "DefinitionSpace.h"
 
 Destructor::Destructor(parser::token *tok) : ASTNode(tok) {
     // do nothing
@@ -12,6 +14,7 @@ Destructor::Destructor(parser::token *tok) : ASTNode(tok) {
 Destructor::Destructor(const Destructor& other) : ASTNode(other) {
     type = other.type->make_copy();
     body = dynamic_cast<CompoundStatement*>(other.body->make_copy());
+    is_generated = other.is_generated;
 }
 
 Destructor::Destructor(Type *_type, CompoundStatement *_body) : ASTNode() {
@@ -33,27 +36,30 @@ bool Destructor::equals(Destructor *other) const {
     return true;
 }
 
-bool Destructor::is_well_formed() {
+bool Destructor::is_well_formed(CompilationContext *ctx) {
     std::cout << "CHECKING DESTRUCTOR : " << type->to_string() << std::endl;
 
     // - is type of destructor declared?
-    if(!is_type_declared(type)) {
+    if(!ctx->is_type_declared(type)) {
         std::cout << "Destructor undeclared type : " << type->to_string() << "\n";
-        return false;
-    }
-
-    // - can all the templates be resolved?
-    if(!look_for_templates()) {
-        std::cout << "Cannot resolve all templates in destructor : " << type->to_string() << "\n";
         return false;
     }
 
     push_declaration_stack();
 
-    if(asm_debug) {
-        fout << "# ~" << type->to_string() << "\n";
-    }
+    //print destructor header
+    if(asm_debug) fout << "# " << type->to_string() << "\n";
     std::string label = get_destructor_label(type);
+    assert(label.size() >= 2 && label[0] == '\"' && label[label.size() - 1] == '\"');
+    std::string label_noquotes = label.substr(1, label.size() - 2);
+    if(is_generated) {
+        fout << ".section \".text." << label_noquotes << "\",\"axG\",@progbits," << label << ",comdat\n";
+        fout << ".weak " << label << "\n";
+    }
+    else {
+        fout << ".section \".text." << label_noquotes << "\",\"ax\",@progbits\n";
+        fout << ".globl " << label << "\n";
+    }
     fout << label << ":\n";
 
     //setup stack frame
@@ -81,14 +87,14 @@ bool Destructor::is_well_formed() {
     assert(stack_desc.size() == 0);
 
     // - make sure body is well formed
-    if(!body->is_well_formed()) {
+    if(!body->is_well_formed(ctx)) {
         std::cout << "Constructor body not well formed\n";
         return false;
     }
 
     //add trailing return
     ReturnStatement *rs = new ReturnStatement(std::nullopt);
-    if(!rs->is_well_formed()) {
+    if(!rs->is_well_formed(ctx)) {
         std::cout << "Trailing return failed??";
         assert(0);  
     }
@@ -96,7 +102,7 @@ bool Destructor::is_well_formed() {
     fout << "\n";
 
     //unregister this as variable
-    pop_declaration_stack();
+    pop_declaration_stack(ctx);
 
     //local stack should be empty before returning
     assert(stack_desc.size() == 0);
@@ -115,8 +121,8 @@ bool Destructor::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-bool Destructor::look_for_templates() {
-    if(!type->look_for_templates()) return false;
-    if(!body->look_for_templates()) return false;
+bool Destructor::look_for_templates(CompilationContext *ctx) {
+    if(!type->look_for_templates(ctx)) return false;
+    if(!body->look_for_templates(ctx)) return false;
     return true;
 }

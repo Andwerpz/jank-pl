@@ -174,24 +174,44 @@ bool are_files_equal(string file1, string file2) {
 int main(int argc, char* argv[]) {
     if(argc == 1) {
         cout << "Usage : \n";
-        cout << "main run-tests\n";
+        cout << "main run-tests <--start <start_test>>\n";
         cout << "main gen-test <jankpath> <testname> <-a <argc> <argv>>\n";
         cout << "main regen-tests\n";
         return 1;
     }
 
-    string mode = string(argv[1]);
+    int argptr = 1;
+    string mode = string(argv[argptr ++]);
     if(mode == "run-tests") {
+        std::string start_test = "";
+
+        //parse arguments
+        while(argptr != argc) {
+            string next(argv[argptr ++]);
+            if(next == "--start") {
+                start_test = argv[argptr ++];
+            }
+            else {
+                cout << "Unknown argument : " << next << "\n";
+                return 1;
+            }
+        }
+
         //gather all tests
         vector<string> tests;
         for(auto entry : fs::directory_iterator("./tests")) {
             assert(entry.is_directory());
             tests.push_back(entry.path().filename().string());
         }
+        sort(tests.begin(), tests.end());
 
         bool passing = true;
         try {
             for(int i = 0; i < tests.size(); i++) {
+                if(start_test.size() != 0 && tests[i] < start_test) {
+                    continue;
+                }
+
                 cout << "Running " << tests[i] << " : " << flush;
                 string testdir = "./tests/" + tests[i];
     
@@ -260,12 +280,11 @@ int main(int argc, char* argv[]) {
     else if(mode == "gen-test") {        
         bool failed = false;
         int compile_status, run_status;
-        string jankpath = string(argv[2]);
-        string testname = string(argv[3]);
+        string jankpath = string(argv[argptr ++]);
+        string testname = string(argv[argptr ++]);
         vector<string> args = {"a.exe"};
 
         //parse arguments
-        int argptr = 4;
         while(argptr != argc) {
             string next(argv[argptr ++]);
             if(next == "-a") {

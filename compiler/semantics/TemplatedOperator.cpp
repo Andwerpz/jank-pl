@@ -8,6 +8,7 @@
 #include "Expression.h"
 #include "OperatorCall.h"
 #include "OperatorSignature.h"
+#include "CompilationContext.h"
 
 TemplatedOperator::TemplatedOperator(parser::token *tok) : ASTNode(tok) {
     // do nothing
@@ -33,10 +34,10 @@ TemplatedOperator* TemplatedOperator::convert(parser::templated_overload *o) {
     return result;
 }
 
-bool TemplatedOperator::is_well_formed() {
+bool TemplatedOperator::is_well_formed(CompilationContext *ctx) {
     // - are all of the templated basetypes not declared?
     for(int i = 0; i < header->types.size(); i++){
-        if(is_basetype_declared(header->types[i])) {
+        if(ctx->is_basetype_declared(header->types[i])) {
             std::cout << "Template basetype " << header->types[i]->to_string() << " already declared\n";
             return false;
         }
@@ -119,7 +120,7 @@ TemplateMapping* TemplatedOperator::calc_mapping(OperatorSignature *oos) {
     return mapping;
 }
 
-TemplateMapping* TemplatedOperator::calc_mapping(OperatorCall *oc) {
+TemplateMapping* TemplatedOperator::calc_mapping(CompilationContext *ctx, OperatorCall *oc) {
     OperatorSignature *os = op->resolve_operator_signature();
 
     // - does the operator match?
@@ -133,26 +134,26 @@ TemplateMapping* TemplatedOperator::calc_mapping(OperatorCall *oc) {
 
     std::optional<Type*> left = std::nullopt, right = std::nullopt;
     if(oc->left.has_value()) {
-        left = oc->left.value()->resolve_type();
+        left = oc->left.value()->resolve_type(ctx);
         if(left.value() == nullptr) return nullptr;
-        if(oc->left.value()->is_lvalue()) left = new ReferenceType(left.value());
+        if(oc->left.value()->is_lvalue(ctx)) left = new ReferenceType(left.value());
     }
     if(oc->right.has_value()) {
-        right = oc->right.value()->resolve_type();
+        right = oc->right.value()->resolve_type(ctx);
         if(right.value() == nullptr) return nullptr;
-        if(oc->right.value()->is_lvalue()) right = new ReferenceType(right.value());
+        if(oc->right.value()->is_lvalue(ctx)) right = new ReferenceType(right.value());
     }
     return this->calc_mapping(new OperatorSignature(left, oc->op, right));
 }
 
-Operator* TemplatedOperator::gen_operator(OperatorCall *oc) {
+Operator* TemplatedOperator::gen_operator(CompilationContext *ctx, OperatorCall *oc) {
     // - see if a previously generated operator works
     for(int i = 0; i < generated_operators.size(); i++){
-        if(generated_operators[i]->is_valid_call(oc)) return generated_operators[i];
+        if(generated_operators[i]->is_valid_call(ctx, oc)) return generated_operators[i];
     }
 
     // - is there a mapping?
-    TemplateMapping *mapping = this->calc_mapping(oc);
+    TemplateMapping *mapping = this->calc_mapping(ctx, oc);
     if(mapping == nullptr) return nullptr;
 
     // - try to construct
@@ -163,9 +164,8 @@ Operator* TemplatedOperator::gen_operator(OperatorCall *oc) {
     }
 
     // - ok we good
-    assert(n_operator->is_valid_call(oc));
+    assert(n_operator->is_valid_call(ctx, oc));
     generated_operators.push_back(n_operator);
-    if(!add_operator(n_operator)) assert(false);
 
     return n_operator;
 }

@@ -51,3 +51,9 @@ std::string TemplateMapping::to_string() {
     return res;
 }
 
+void TemplateMapping::find_all_basetypes(std::vector<BaseType*>& out) {
+    for(int i = 0; i < mapping.size(); i++) {
+        mapping[i].second->find_all_basetypes(out);
+    }
+}
+

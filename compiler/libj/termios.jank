@@ -1,4 +1,5 @@
 #include <defs>;
+#include <syscall>;
 
 i32 tcgetattr(i32 fd, termios* t) {
     return sys_ioctl(fd, $u32 TCGETS, $void* t);

@@ -8,6 +8,8 @@
 #include "StructLayout.h"
 #include "StructDefinition.h"
 #include "Identifier.h"
+#include "CompilationContext.h"
+#include "DefinitionSpace.h"
 
 DestructorCall::DestructorCall(const DestructorCall& other) : ASTNode(other) {
     type = other.type->make_copy();
@@ -17,12 +19,12 @@ DestructorCall::DestructorCall(Type *_type) : ASTNode() {
     type = _type;
 }
 
-Destructor* DestructorCall::resolve_called_destructor() {
-    return get_called_destructor(this);
+Destructor* DestructorCall::resolve_called_destructor(CompilationContext *ctx) {
+    return ctx->get_called_destructor(this);
 }
 
-Type* DestructorCall::resolve_type() {
-    Destructor *d = this->resolve_called_destructor();
+Type* DestructorCall::resolve_type(CompilationContext *ctx) {
+    Destructor *d = this->resolve_called_destructor(ctx);
     if(d == nullptr) {
         std::cout << "Cannot resolve destructor call : " << to_string() << "\n";
         return nullptr;
@@ -35,14 +37,14 @@ Type* DestructorCall::resolve_type() {
 // - top level destructor runs
 // - member variables are destructed in reverse order
 // - top level releases memory (this is only top level, should add flag to say to not release memory for member variables)
-void DestructorCall::emit_asm(bool should_dealloc) {
-    assert(is_type_declared(type));
+void DestructorCall::emit_asm(CompilationContext *ctx, bool should_dealloc) {
+    assert(ctx->is_type_declared(type));
     assert(!is_type_primitive(type));
 
     if(asm_debug) fout << indent() << "# calling destructor : " << type->to_string() << "\n";
 
     //find destructor
-    Destructor *d = this->resolve_called_destructor();
+    Destructor *d = this->resolve_called_destructor(ctx);
     assert(d != nullptr);
 
     //pass in struct as argument
@@ -71,7 +73,7 @@ void DestructorCall::emit_asm(bool should_dealloc) {
                 fout << indent() << "add $" << i * bt_sz << ", %rax\n";
 
                 //call destructor, no dealloc
-                emit_destructor_call(bt, false);
+                emit_destructor_call(ctx, bt, false);
 
                 //retrieve base struct address
                 emit_pop("%rax", "DestructorCall::emit_asm() : target struct");
@@ -91,7 +93,7 @@ void DestructorCall::emit_asm(bool should_dealloc) {
                 fout << indent() << "add $" << offset << ", %rax\n";
 
                 //call destructor, no dealloc
-                emit_destructor_call(mvt, false);
+                emit_destructor_call(ctx, mvt, false);
 
                 //retrieve base struct address
                 emit_pop("%rax", "DestructorCall::emit_asm() : target struct");
@@ -129,7 +131,7 @@ bool DestructorCall::replace_templated_types(TemplateMapping *mapping){
     return true;
 }
 
-bool DestructorCall::look_for_templates(){
-    if(!type->look_for_templates()) return false;
+bool DestructorCall::look_for_templates(CompilationContext *ctx){
+    if(!type->look_for_templates(ctx)) return false;
     return true;
 }

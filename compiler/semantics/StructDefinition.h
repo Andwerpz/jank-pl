@@ -10,6 +10,7 @@ struct Constructor;
 struct TemplateMapping;
 struct Destructor;
 struct TemplatedFunction;
+struct CompilationContext;
 
 struct MemberVariable : public ASTNode {
     Type *type;
@@ -22,7 +23,7 @@ struct MemberVariable : public ASTNode {
     static MemberVariable* convert(parser::member_variable_declaration *mvd);
     MemberVariable* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
-    bool look_for_templates();
+    bool look_for_templates(CompilationContext* ctx);
 };
 
 struct StructDefinition : public ASTNode {
@@ -37,8 +38,8 @@ struct StructDefinition : public ASTNode {
     StructDefinition(Type *_type, std::vector<MemberVariable*> _member_variables, std::vector<TemplatedFunction*> _functions, std::vector<Constructor*> _constructors, std::vector<Destructor*> _destructors);
     
     static StructDefinition* convert(parser::struct_definition *s);
-    bool is_well_formed(); 
+    bool is_well_formed(CompilationContext* ctx); 
     StructDefinition* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
-    bool look_for_templates();
+    bool look_for_templates(CompilationContext* ctx);
 };

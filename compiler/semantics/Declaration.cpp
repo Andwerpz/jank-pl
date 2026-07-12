@@ -4,6 +4,8 @@
 #include "Identifier.h"
 #include "Expression.h"
 #include "TemplateMapping.h"
+#include "CompilationContext.h"
+#include "DefinitionSpace.h"
 
 #include "utils.h"
 
@@ -39,9 +41,15 @@ Declaration* Declaration::convert(parser::declaration *d) {
     return result;
 }
 
-bool Declaration::is_well_formed() {
+bool Declaration::is_well_formed(CompilationContext *ctx) {
+    // - make sure type is declared
+    if(!ctx->is_type_declared(type)) {
+        std::cout << "Declaration type " << type->to_string() << " is not declared\n";
+        return false;
+    }
+
     if(asm_debug) fout << indent() << "# initialize local variable : " << type->to_string() << " " << id->name << "\n";
-    Variable *v = emit_initialize_stack_variable(type, id, expr);
+    Variable *v = emit_initialize_stack_variable(ctx, type, id, expr);
     if(asm_debug) fout << indent() << "# done initialize local variable : " << type->to_string() << " " << id->name << "\n";
 
     if(v == nullptr) {
@@ -63,9 +71,9 @@ bool Declaration::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-bool Declaration::look_for_templates(){
-    if(!type->look_for_templates()) return false;
-    if(expr.has_value() && !expr.value()->look_for_templates()) return false;
+bool Declaration::look_for_templates(CompilationContext *ctx){
+    if(!type->look_for_templates(ctx)) return false;
+    if(expr.has_value() && !expr.value()->look_for_templates(ctx)) return false;
     return true;
 }
 

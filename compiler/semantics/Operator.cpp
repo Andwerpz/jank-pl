@@ -9,6 +9,7 @@
 #include "Identifier.h"
 #include "OperatorCall.h"
 #include "Expression.h"
+#include "CompilationContext.h"
 
 // -- CONVERT CONSTRUCTOR --
 OperatorOverload::OperatorOverload(parser::token *tok) : ASTNode(tok) {
@@ -24,6 +25,7 @@ BuiltinOperator::BuiltinOperator(const BuiltinOperator& other) {
     right = std::nullopt;
     if(other.right.has_value()) right = other.right.value()->make_copy();
     instructions = other.instructions;
+    is_generated = other.is_generated;
 }
 
 OperatorOverload::OperatorOverload(const OperatorOverload& other) : ASTNode(other) {
@@ -31,6 +33,7 @@ OperatorOverload::OperatorOverload(const OperatorOverload& other) : ASTNode(othe
     op = other.op;
     for(int i = 0; i < other.parameters.size(); i++) parameters.push_back(other.parameters[i]->make_copy());
     body = dynamic_cast<CompoundStatement*>(other.body->make_copy());
+    is_generated = other.is_generated;
 }
 
 // -- SYNTHESIS CONSTRUCTOR --
@@ -132,19 +135,19 @@ bool OperatorOverload::replace_templated_types(TemplateMapping *mapping) {
 }
 
 // -- LOOK FOR TEMPLATES --
-bool BuiltinOperator::look_for_templates() {
+bool BuiltinOperator::look_for_templates(CompilationContext *ctx) {
     return true;    //shouldn't be any templates
 }
 
-bool OperatorOverload::look_for_templates() {
-    if(!type->look_for_templates()) return false;
-    for(int i = 0; i < parameters.size(); i++) if(!parameters[i]->look_for_templates()) return false;
-    if(!body->look_for_templates()) return false;
+bool OperatorOverload::look_for_templates(CompilationContext *ctx) {
+    if(!type->look_for_templates(ctx)) return false;
+    for(int i = 0; i < parameters.size(); i++) if(!parameters[i]->look_for_templates(ctx)) return false;
+    if(!body->look_for_templates(ctx)) return false;
     return true;
 }
 
 // -- MISC --
-bool Operator::is_valid_call(OperatorCall *oc) {
+bool Operator::is_valid_call(CompilationContext *ctx, OperatorCall *oc) {
     OperatorSignature *os = this->resolve_operator_signature();
 
     // - do the operators match?
@@ -156,7 +159,7 @@ bool Operator::is_valid_call(OperatorCall *oc) {
     if(os->left.has_value() != oc->left.has_value()) {
         return false;
     }
-    if(os->left.has_value() && !is_declarable(os->left.value()->make_copy(), new Expression(oc->left.value()->make_copy()))) {
+    if(os->left.has_value() && !ctx->is_declarable(os->left.value()->make_copy(), new Expression(oc->left.value()->make_copy()))) {
         return false;
     }
 
@@ -164,7 +167,7 @@ bool Operator::is_valid_call(OperatorCall *oc) {
     if(os->right.has_value() != oc->right.has_value()) {
         return false;
     }
-    if(os->right.has_value() && !is_declarable(os->right.value()->make_copy(), new Expression(oc->right.value()->make_copy()))) {
+    if(os->right.has_value() && !ctx->is_declarable(os->right.value()->make_copy(), new Expression(oc->right.value()->make_copy()))) {
         return false;
     }
 
@@ -178,7 +181,7 @@ void BuiltinOperator::emit_asm() {
     }
 }
 
-bool OperatorOverload::is_well_formed() {
+bool OperatorOverload::is_well_formed(CompilationContext *ctx) {
     OperatorSignature *os = resolve_operator_signature();
     if(os == nullptr) {
         std::cout << "Overload does not resolve to operator signature\n";
@@ -187,19 +190,21 @@ bool OperatorOverload::is_well_formed() {
 
     std::cout << "CHECKING OVERLOAD : " << os->to_string() << "\n";
 
-    // - are templates all resolvable?
-    if(!look_for_templates()) {
-        std::cout << "Unable to resolve templates in overload : " << os->to_string() << "\n";
-        return false;
-    }
-
     push_declaration_stack();
 
-    //print function label
-    if(asm_debug) {
-        fout << "# " << os->to_string() << "\n";
-    }
+    //print operator header
+    if(asm_debug) fout << "# " << os->to_string() << "\n";
     std::string label = get_operator_label(os);
+    assert(label.size() >= 2 && label[0] == '\"' && label[label.size() - 1] == '\"');
+    std::string label_noquotes = label.substr(1, label.size() - 2);
+    if(is_generated) {
+        fout << ".section \".text." << label_noquotes << "\",\"axG\",@progbits," << label << ",comdat\n";
+        fout << ".weak " << label << "\n";
+    }
+    else {
+        fout << ".section \".text." << label_noquotes << "\",\"ax\",@progbits\n";
+        fout << ".globl " << label << "\n";
+    }
     fout << label << ":\n";
 
     //setup stack frame
@@ -208,7 +213,7 @@ bool OperatorOverload::is_well_formed() {
 
     for(int i = 0; i < parameters.size(); i++){
         // - does parameter correspond to existing type?
-        if(!is_type_declared(parameters[i]->type)) {
+        if(!ctx->is_type_declared(parameters[i]->type)) {
             std::cout << "Undeclared type : " << parameters[i]->type->to_string() << "\n";
             return false;
         }
@@ -220,7 +225,7 @@ bool OperatorOverload::is_well_formed() {
     }
 
     // - is return type of function existing?
-    if(!is_type_declared(type)) {
+    if(!ctx->is_type_declared(type)) {
         std::cout << "Overload undeclared return type : " << type->to_string() << " " << os->to_string() << "\n";
         return false;
     }
@@ -243,7 +248,7 @@ bool OperatorOverload::is_well_formed() {
     assert(stack_desc.size() == 0);
 
     // - make sure body is well formed
-    if(!body->is_well_formed()) {
+    if(!body->is_well_formed(ctx)) {
         std::cout << "Function body not well formed\n";
         return false;
     }
@@ -261,7 +266,7 @@ bool OperatorOverload::is_well_formed() {
     else {
         //add trailing return for void functions
         ReturnStatement *rs = new ReturnStatement(std::nullopt);
-        if(!rs->is_well_formed()) {
+        if(!rs->is_well_formed(ctx)) {
             std::cout << "Trailing return failed??";
             assert(0);  
         }
@@ -270,7 +275,7 @@ bool OperatorOverload::is_well_formed() {
     fout << "\n";
 
     //unregister parameters as variables
-    pop_declaration_stack();
+    pop_declaration_stack(ctx);
 
     //local stack should be empty before returning
     assert(stack_desc.size() == 0);

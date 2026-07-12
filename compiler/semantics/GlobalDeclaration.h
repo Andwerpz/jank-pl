@@ -6,6 +6,7 @@
 struct Declaration;
 struct TemplateMapping;
 struct Identifier;
+struct CompilationContext;
 
 struct GlobalDeclaration : public ASTNode {
     std::optional<Identifier*> node_id;
@@ -19,5 +20,8 @@ struct GlobalDeclaration : public ASTNode {
     static GlobalDeclaration* convert(parser::global_declaration *gd);
     GlobalDeclaration* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
-    bool look_for_templates();
+    bool look_for_templates(CompilationContext* ctx);
+
+    std::string generate_init_label();
+    std::string generate_cleanup_label();
 };

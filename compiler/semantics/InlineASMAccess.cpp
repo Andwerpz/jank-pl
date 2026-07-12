@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "Type.h"
 #include "StructLayout.h"
+#include "CompilationContext.h"
 
 // -- CONVERT CONSTRUCTOR --
 InlineASMAccess::InlineASMAccess(parser::token *tok) : ASTNode(tok) {
@@ -99,7 +100,7 @@ InlineASMDereferencing* InlineASMDereferencing::convert(parser::inline_dereferen
 }
 
 // -- IS WELL FORMED --
-bool InlineASMVariable::is_well_formed() {
+bool InlineASMVariable::is_well_formed(CompilationContext *ctx) {
     // - does the struct variable exist?
     Variable *v = get_variable(id);
     if(v == nullptr) {
@@ -121,7 +122,7 @@ bool InlineASMVariable::is_well_formed() {
     return true;
 }
 
-bool InlineASMMemberVariable::is_well_formed() {
+bool InlineASMMemberVariable::is_well_formed(CompilationContext *ctx) {
     // - does the struct variable exist?
     Variable *v = get_variable(id);
     if(v == nullptr) {
@@ -170,7 +171,7 @@ bool InlineASMMemberVariable::is_well_formed() {
     return true;
 }
 
-bool InlineASMDereferencing::is_well_formed() {
+bool InlineASMDereferencing::is_well_formed(CompilationContext *ctx) {
     // - does the variable exist?
     Variable *v = get_variable(id);
     if(v == nullptr) {
@@ -206,7 +207,7 @@ bool InlineASMDereferencing::is_well_formed() {
 // perhaps should have some way to specify which register to use
 // maybe something like 'asm!("movq %0x100, {var:%r14}");'
 // it will be optional, if it's not specified will use %r15 automatically
-void InlineASMVariable::emit_asm() {
+void InlineASMVariable::emit_asm(CompilationContext *ctx) {
     Variable *v = get_variable(id);
     assert(v != nullptr);
     Type *vt = v->type->make_copy();
@@ -221,7 +222,7 @@ void InlineASMVariable::emit_asm() {
     }
 }
 
-void InlineASMMemberVariable::emit_asm() {
+void InlineASMMemberVariable::emit_asm(CompilationContext *ctx) {
     Variable *v = get_variable(id);
     assert(v != nullptr);
     Type *vt = v->type->make_copy();
@@ -257,7 +258,7 @@ void InlineASMMemberVariable::emit_asm() {
     fout << indent() << "lea " << offset << "(%r15), %r15\n";
 }
 
-void InlineASMDereferencing::emit_asm() {
+void InlineASMDereferencing::emit_asm(CompilationContext *ctx) {
     Variable *v = get_variable(id);
     assert(v != nullptr);
     Type *vt = v->type->make_copy();

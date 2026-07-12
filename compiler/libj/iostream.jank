@@ -1,7 +1,8 @@
 #include <jstring>;
 #include <assert>;
-#include <vector>;
 #include <string>;
+#include <syscall>;
+#include <malloc>;
 
 #global_node IOSTREAM [MALLOC];
 

@@ -10,16 +10,20 @@ struct OperatorSignature;
 struct TemplateMapping;
 struct OperatorCall;
 struct OperatorSignature;
+struct CompilationContext;
 
 struct Operator {
     Type *type;
 
+    //should be set by TemplatedOperator after generating
+    bool is_generated = false;
+
     virtual OperatorSignature* resolve_operator_signature() const = 0;
     virtual Operator* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
-    virtual bool look_for_templates() = 0;
+    virtual bool look_for_templates(CompilationContext* ctx) = 0;
 
-    bool is_valid_call(OperatorCall *oc);
+    bool is_valid_call(CompilationContext *ctx, OperatorCall *oc);
 };
 
 //just some hardcoded assembly. Is directly emitted when needed
@@ -42,7 +46,7 @@ struct BuiltinOperator : public Operator {
     OperatorSignature* resolve_operator_signature() const override;
     BuiltinOperator* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
 
     void emit_asm();
 };
@@ -61,6 +65,6 @@ struct OperatorOverload : public Operator, public ASTNode {
     OperatorSignature* resolve_operator_signature() const override;
     OperatorOverload* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
-    bool is_well_formed();
+    bool look_for_templates(CompilationContext* ctx) override;
+    bool is_well_formed(CompilationContext* ctx);
 };

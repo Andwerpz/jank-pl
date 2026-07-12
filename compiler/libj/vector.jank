@@ -1,3 +1,4 @@
+#include <malloc>;
 
 //the elements in range [0, sz) will be valid instances of T.
 

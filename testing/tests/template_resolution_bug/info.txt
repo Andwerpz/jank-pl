@@ -1,0 +1,2 @@
+compiled 1
+args a.exe 

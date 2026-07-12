@@ -10,6 +10,7 @@
 #include "FunctionSignature.h"
 #include "Parameter.h"
 #include "Statement.h"
+#include "CompilationContext.h"
 
 TemplatedFunction::TemplatedFunction(parser::token *tok) : ASTNode(tok) {
     // do nothing
@@ -35,7 +36,7 @@ TemplatedFunction* TemplatedFunction::convert(parser::templated_function *f) {
     return result;
 }
 
-bool TemplatedFunction::is_well_formed() {
+bool TemplatedFunction::is_well_formed(CompilationContext *ctx) {
     // - functions with templates cannot have export modifier
     if(function->is_export && header->types.size() != 0) {
         std::cout << "Templated functions cannot have export modifier : " << function->resolve_function_signature()->to_string() << "\n";
@@ -44,7 +45,7 @@ bool TemplatedFunction::is_well_formed() {
 
     // - are all of the templated basetypes not declared?
     for(int i = 0; i < header->types.size(); i++){
-        if(is_basetype_declared(header->types[i])) {
+        if(ctx->is_basetype_declared(header->types[i])) {
             std::cout << "Template basetype " << header->types[i]->to_string() << " already declared\n";
             return false;
         }
@@ -103,7 +104,7 @@ TemplateMapping* TemplatedFunction::calc_mapping(std::vector<Type*> arg_types) {
     return mapping;
 }
 
-TemplateMapping* TemplatedFunction::calc_mapping(FunctionCall *fc) {
+TemplateMapping* TemplatedFunction::calc_mapping(CompilationContext *ctx, FunctionCall *fc) {
     // - does number of arguments match?
     if(function->parameters.size() != fc->argument_list.size()) return nullptr;
 
@@ -118,26 +119,26 @@ TemplateMapping* TemplatedFunction::calc_mapping(FunctionCall *fc) {
     //before matching, we should have resolved all templates in all the function call arguments. 
     std::vector<Type*> arg_types;
     for(int i = 0; i < fc->argument_list.size(); i++){
-        Type *nt = fc->argument_list[i]->resolve_type();
+        Type *nt = fc->argument_list[i]->resolve_type(ctx);
         if(nt == nullptr) {
             return nullptr;
         }
         assert(dynamic_cast<ReferenceType*>(nt) == nullptr);
-        if(fc->argument_list[i]->is_lvalue()) nt = new ReferenceType(nt);
+        if(fc->argument_list[i]->is_lvalue(ctx)) nt = new ReferenceType(nt);
         arg_types.push_back(nt);
     }
 
     return calc_mapping(arg_types);
 }
 
-Function* TemplatedFunction::gen_function(FunctionCall *fc) {
+Function* TemplatedFunction::gen_function(CompilationContext *ctx, FunctionCall *fc) {
     // - see if a previously generated function works
     for(int i = 0; i < generated_functions.size(); i++){
-        if(generated_functions[i]->is_valid_call(fc)) return generated_functions[i];
+        if(generated_functions[i]->is_valid_call(ctx, fc)) return generated_functions[i];
     }
 
     // - is there a mapping?
-    TemplateMapping *mapping = this->calc_mapping(fc);
+    TemplateMapping *mapping = this->calc_mapping(ctx, fc);
     if(mapping == nullptr) return nullptr;
 
     // - try to construct
@@ -148,9 +149,8 @@ Function* TemplatedFunction::gen_function(FunctionCall *fc) {
     }
 
     // - ok we good
-    assert(n_function->is_valid_call(fc));
+    assert(n_function->is_valid_call(ctx, fc));
     generated_functions.push_back(n_function);
-    if(!add_function(n_function)) assert(false);
 
     return n_function;
 }

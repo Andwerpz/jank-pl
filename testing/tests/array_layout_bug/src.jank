@@ -1,3 +1,4 @@
+#include <iostream>;
 
 // small bug causing this to not compile
 // originally, when it tried to construct the struct layout for A, it needed to get the struct layout for B[4], 

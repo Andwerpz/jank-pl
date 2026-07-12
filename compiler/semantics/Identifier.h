@@ -15,4 +15,5 @@ struct Identifier : public ASTNode {
     bool operator==(const Identifier& other) const;
     bool operator!=(const Identifier& other) const;
     Identifier* make_copy() override;
+    std::string to_string() const;
 };

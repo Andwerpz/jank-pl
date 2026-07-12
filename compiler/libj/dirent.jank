@@ -1,3 +1,6 @@
+#include <malloc>;
+#include <string>;
+#include <assert>;
 
 //fd wrapper for directories
 struct dirstream {

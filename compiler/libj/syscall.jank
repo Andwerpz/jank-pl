@@ -1,4 +1,4 @@
-#include <time>;
+#include <defs>;
 
 // makes the current process exit with status
 // this should always succeed

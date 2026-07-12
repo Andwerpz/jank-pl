@@ -7,8 +7,8 @@
 
 struct SourceSpan {
     // index into filepath vector 
-    // TODO actually make this filepath vector
-    // - should store list of filepaths relative to CWD
+    // TODO consider making a 'SourceFile' struct that just holds the code in memory?
+    //   then this can just be a pointer to the relevant SourceFile
     int file_id;
 
     // starting line and column (inclusive) 
@@ -29,12 +29,6 @@ struct SourceSpan {
 struct ASTNode {
     // information regarding where this ASTNode came from
     SourceSpan span;
-
-    // should we be compiling this AST node? (typechecking and emitting assembly)
-    // should be true if
-    // - this node comes from the target file
-    // - this node was generated somehow by the compiler during compilation
-    bool should_compile;
 
     // invoking these have some specific semantic meanings. 
     // these should be mirrored in everything that inherits from ASTNode

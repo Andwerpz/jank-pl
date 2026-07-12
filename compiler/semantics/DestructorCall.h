@@ -6,6 +6,7 @@ struct Type;
 struct Expression;
 struct Destructor;
 struct TemplateMapping;
+struct CompilationContext;
 
 struct DestructorCall : public ASTNode {
     Type *type;
@@ -15,13 +16,13 @@ struct DestructorCall : public ASTNode {
     DestructorCall(Type *_type);
 
     // static DestructorCall* convert(parser::destructor_call *d);
-    Destructor* resolve_called_destructor();
-    Type* resolve_type();
-    void emit_asm(bool should_dealloc = true);
+    Destructor* resolve_called_destructor(CompilationContext *ctx);
+    Type* resolve_type(CompilationContext *ctx);
+    void emit_asm(CompilationContext *ctx, bool should_dealloc = true);
     std::string to_string();
     size_t hash();
     bool equals(DestructorCall *other);
     DestructorCall* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
-    bool look_for_templates();
+    bool look_for_templates(CompilationContext* ctx);
 };

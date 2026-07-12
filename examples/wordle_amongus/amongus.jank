@@ -1,6 +1,7 @@
 #include <iostream>;
 #include <string>;
 #include <vector>;
+#include <assert>;
 
 i32 VCORRECT    = 1;
 i32 VEXISTS     = 2;

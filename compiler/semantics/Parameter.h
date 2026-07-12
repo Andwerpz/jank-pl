@@ -5,6 +5,7 @@
 struct Type;
 struct Identifier;
 struct TemplateMapping;
+struct CompilationContext;
 
 struct Parameter : public ASTNode {
     Type *type;
@@ -17,6 +18,6 @@ struct Parameter : public ASTNode {
     static Parameter* convert(parser::parameter *p);
     Parameter* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping);
-    bool look_for_templates();
+    bool look_for_templates(CompilationContext* ctx);
     std::string to_string();
 };

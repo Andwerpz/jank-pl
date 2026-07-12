@@ -39,3 +39,7 @@ Include* Include::convert(parser::include *inc) {
 Include* Include::make_copy() {
     return new Include(*this);
 }
+
+bool Include::equals(const Include* other) const {
+    return this->path == other->path && this->is_library_include == other->is_library_include;
+}

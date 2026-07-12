@@ -1,3 +1,5 @@
+#include <malloc>;
+#include <pair>;
 
 template<T, U>
 struct hashmap {

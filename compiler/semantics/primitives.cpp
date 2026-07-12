@@ -5,8 +5,22 @@
 #include <string>
 #include <map>
 #include "Operator.h"
+#include "DefinitionSpace.h"
+#include "TemplatedOperator.h"
+#include "TemplateHeader.h"
 
 namespace primitives {
+
+    void add_primitive_basetype(BaseType* t) {
+        builtin_definition_space->add_basetype(t, Visibility::Public, Origin::Source);
+    }
+
+    void add_builtin_operator(BuiltinOperator* op) {
+        //wrap BuiltinOperator in a templated operator 
+        TemplatedOperator *to = new TemplatedOperator(new TemplateHeader(std::vector<BaseType*>{}), op);
+
+        builtin_definition_space->add_templated_operator(to, Visibility::Public, Origin::Source);
+    }
 
     void add_int_operators(Type *p_int, int sz_bytes, bool is_signed) {
         std::string rax, rbx, mov, inc, dec;

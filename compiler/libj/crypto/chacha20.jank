@@ -1,3 +1,4 @@
+#include <assert>;
 
 // https://cr.yp.to/chacha/chacha-20080128.pdf
 //given a message producer and consumer and a shared hidden key between them, chacha20 allows the producer to

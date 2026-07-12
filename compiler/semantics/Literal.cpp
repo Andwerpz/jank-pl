@@ -14,6 +14,7 @@
 #include "FunctionSignature.h"
 #include "Function.h"
 #include "Identifier.h"
+#include "CompilationContext.h"
 
 // -- CONVERT CONSTRUCTOR --
 Literal::Literal(parser::token *tok) : ASTNode(tok) {
@@ -285,27 +286,27 @@ FunctionPointerLiteral* FunctionPointerLiteral::convert(parser::literal_function
 }
 
 // -- RESOLVE TYPE --
-Type* FloatLiteral::resolve_type() {
+Type* FloatLiteral::resolve_type(CompilationContext *ctx) {
     return primitives::f32->make_copy();
 }
 
-Type* IntegerLiteral::resolve_type() {
+Type* IntegerLiteral::resolve_type(CompilationContext *ctx) {
     return primitives::i32->make_copy();
 }
 
-Type* SizeofLiteral::resolve_type() {
+Type* SizeofLiteral::resolve_type(CompilationContext *ctx) {
     return primitives::u64->make_copy();
 }
 
-Type* CharLiteral::resolve_type() {
+Type* CharLiteral::resolve_type(CompilationContext *ctx) {
     return primitives::u8->make_copy();
 }
 
-Type* StringLiteral::resolve_type() {
+Type* StringLiteral::resolve_type(CompilationContext *ctx) {
     return new PointerType(primitives::u8->make_copy());
 }
 
-Type* SyscallLiteral::resolve_type() {
+Type* SyscallLiteral::resolve_type(CompilationContext *ctx) {
     // - all syscall ids are >= 0. 
     if(syscall_id < 0) {
         std::cout << "Syscall id has to be >= 0\n";
@@ -320,7 +321,7 @@ Type* SyscallLiteral::resolve_type() {
 
     // - do all of the arguments resolve to a type?
     for(int i = 0; i < arguments.size(); i++){
-        if(arguments[i]->resolve_type() == nullptr){
+        if(arguments[i]->resolve_type(ctx) == nullptr){
             std::cout << "Syscall argument does not resolve to type\n";
             return nullptr;
         }
@@ -330,7 +331,7 @@ Type* SyscallLiteral::resolve_type() {
     return type->make_copy();
 }
 
-Type* HexLiteral::resolve_type() {
+Type* HexLiteral::resolve_type(CompilationContext *ctx) {
     // - can hex string fit in u64?
     if(hex_str.size() > 16) {
         std::cout << "Hex value too large : 0x" << hex_str << "\n";
@@ -350,7 +351,7 @@ Type* HexLiteral::resolve_type() {
     return primitives::u64->make_copy();
 }
 
-Type* BinaryLiteral::resolve_type() {
+Type* BinaryLiteral::resolve_type(CompilationContext *ctx) {
     // - can binary string fit in u64?
     if(bin_str.size() > 64) {
         std::cout << "Binary value too large : 0b" << bin_str << "\n";
@@ -360,7 +361,7 @@ Type* BinaryLiteral::resolve_type() {
     return primitives::u64->make_copy();
 }
 
-Type* OctalLiteral::resolve_type() {
+Type* OctalLiteral::resolve_type(CompilationContext *ctx) {
     // - can octal string fit in u64?
     if(oct_str.size() > 21) {
         std::cout << "Octal value too large : 0o" << oct_str << "\n";
@@ -370,14 +371,14 @@ Type* OctalLiteral::resolve_type() {
     return primitives::u64->make_copy();
 }
 
-Type* FunctionPointerLiteral::resolve_type() {
+Type* FunctionPointerLiteral::resolve_type(CompilationContext *ctx) {
     FunctionSignature *fs = new FunctionSignature(id, param_types);
 
     // - is there a corresponding function to this?
     // TODO decide if this should also map to operators
     // - how are we going to deal with builtin operators?
     // - this feature would be very nice actually
-    Function *f = get_called_function(fs);
+    Function *f = ctx->get_called_function(fs);
     if(f == nullptr) {
         std::cout << "Function pointer doesn't map to existing function : " << to_string() << "\n";
         return nullptr;
@@ -398,24 +399,24 @@ std::string float_to_hex_string(float f) {
     return ss.str();
 }
 
-void FloatLiteral::emit_asm() {
+void FloatLiteral::emit_asm(CompilationContext *ctx) {
     fout << indent() << "mov " << float_to_hex_string(val) << ", %eax\n";
 }
 
-void IntegerLiteral::emit_asm() {
+void IntegerLiteral::emit_asm(CompilationContext *ctx) {
     fout << indent() << "mov $" << val << ", %rax\n";
 }
 
-void SizeofLiteral::emit_asm() {
+void SizeofLiteral::emit_asm(CompilationContext *ctx) {
     int sz = type->calc_size();
     fout << indent() << "mov $" << sz << ", %rax\n";
 }
 
-void CharLiteral::emit_asm() {
+void CharLiteral::emit_asm(CompilationContext *ctx) {
     fout << indent() << "movb $" << (int) val << ", %al\n";
 }
 
-void StringLiteral::emit_asm() {
+void StringLiteral::emit_asm(CompilationContext *ctx) {
     //add this string literal to controller
     add_string_literal(val);
 
@@ -426,7 +427,7 @@ void StringLiteral::emit_asm() {
     fout << indent() << "lea " << label << "(%rip), %rax\n";
 }
 
-void SyscallLiteral::emit_asm() {
+void SyscallLiteral::emit_asm(CompilationContext *ctx) {
     if(asm_debug) fout << indent() << "# syscall : " << syscall_id << "\n";
 
     //gather all arguments into tmp variables
@@ -434,9 +435,9 @@ void SyscallLiteral::emit_asm() {
     std::vector<Variable*> argv;
     for(int i = 0; i < arguments.size(); i++){
         Identifier *id = new Identifier(create_new_tmp_variable_name());
-        Type *vt = arguments[i]->resolve_type();
+        Type *vt = arguments[i]->resolve_type(ctx);
         assert(vt != nullptr);
-        Variable *v = emit_initialize_stack_variable(vt, id, arguments[i]);
+        Variable *v = emit_initialize_stack_variable(ctx, vt, id, arguments[i]);
         argv.push_back(v);
     }
     assert(argv.size() == arguments.size());
@@ -458,17 +459,17 @@ void SyscallLiteral::emit_asm() {
     fout << indent() << "syscall\n";
 
     //cleanup tmp variables
-    pop_declaration_stack();
+    pop_declaration_stack(ctx);
 
     if(asm_debug) fout << indent() << "# done syscall : " << syscall_id << "\n";
 }
 
-void HexLiteral::emit_asm() {
+void HexLiteral::emit_asm(CompilationContext *ctx) {
     assert(hex_str.size() >= 1 && hex_str.size() <= 16);
     fout << indent() << "mov $0x" << hex_str << ", %rax\n";
 }
 
-void BinaryLiteral::emit_asm() {
+void BinaryLiteral::emit_asm(CompilationContext *ctx) {
     assert(bin_str.size() >= 1 && bin_str.size() <= 64);
     uint64_t val = 0;
     for(int i = 0; i < bin_str.size(); i++){
@@ -477,7 +478,7 @@ void BinaryLiteral::emit_asm() {
     fout << indent() << "mov $" << val << ", %rax\n";
 }
 
-void OctalLiteral::emit_asm() {
+void OctalLiteral::emit_asm(CompilationContext *ctx) {
     assert(oct_str.size() >= 1 && oct_str.size() <= 21);
     uint64_t val = 0;
     for(int i = 0; i < oct_str.size(); i++) {
@@ -486,9 +487,9 @@ void OctalLiteral::emit_asm() {
     fout << indent() << "mov $" << val << ", %rax\n";
 }
 
-void FunctionPointerLiteral::emit_asm() {
+void FunctionPointerLiteral::emit_asm(CompilationContext *ctx) {
     FunctionSignature *fs = new FunctionSignature(id, param_types);
-    Function *f = get_function(fs);
+    Function *f = ctx->get_called_function(fs);
     assert(f != nullptr);
     
     //load label address into register using %rip relative addressing. 

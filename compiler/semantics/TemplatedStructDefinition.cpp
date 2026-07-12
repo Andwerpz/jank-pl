@@ -5,6 +5,7 @@
 #include "utils.h"
 #include "StructDefinition.h"
 #include "Function.h"
+#include "CompilationContext.h"
 
 TemplatedStructDefinition::TemplatedStructDefinition(parser::token *tok) : ASTNode(tok) {
     // do nothing
@@ -24,15 +25,16 @@ TemplatedStructDefinition::TemplatedStructDefinition(TemplateHeader *_header, St
 
 TemplatedStructDefinition* TemplatedStructDefinition::convert(parser::templated_struct_definition *s) {
     TemplatedStructDefinition* result = new TemplatedStructDefinition(s);
-    result->header = TemplateHeader::convert(s->t0);
-    result->struct_def = StructDefinition::convert(s->t2);
+    result->header = new TemplateHeader(std::vector<BaseType*>());
+    if(s->t0.has_value()) result->header = TemplateHeader::convert(s->t0.value()->t0);
+    result->struct_def = StructDefinition::convert(s->t1);
     return result;
 }
 
-bool TemplatedStructDefinition::is_well_formed() {
+bool TemplatedStructDefinition::is_well_formed(CompilationContext *ctx) {
     // - are all of the templated basetypes not declared?
     for(int i = 0; i < header->types.size(); i++){
-        if(is_basetype_declared(header->types[i])) {
+        if(ctx->is_basetype_declared(header->types[i])) {
             std::cout << "Template basetype " << header->types[i]->to_string() << " already declared\n";
             return false;
         }
@@ -74,9 +76,9 @@ TemplateMapping* TemplatedStructDefinition::calc_mapping(TemplatedType *type) {
     return mapping;
 }   
 
-StructDefinition* TemplatedStructDefinition::gen_struct_def(TemplatedType* type) {
+StructDefinition* TemplatedStructDefinition::gen_struct_def(CompilationContext *ctx, TemplatedType* type) {
     // - is templated type well formed?
-    if(!is_templated_type_well_formed(type)) {
+    if(!is_templated_type_well_formed(type, ctx)) {
         return nullptr;
     }
 

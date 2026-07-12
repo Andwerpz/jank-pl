@@ -12,4 +12,5 @@ struct Include : public ASTNode {
 
     static Include* convert(parser::include* inc);
     Include* make_copy() override;
+    bool equals(const Include* other) const;
 };

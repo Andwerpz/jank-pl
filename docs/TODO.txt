@@ -55,8 +55,54 @@ struct C {
     instantiation of a single templated function. 
     Then if I create a function pointer pointing to the concrete templated function from both of the files, 
     they may not point to the same address. 
-  - solution here is to let the linker handle de-duplication of concrete templated functions. 
-    there's a way to let the linker know that some symbol should only be included once in the final binary. 
+    - solution here is to let the linker handle de-duplication of concrete templated functions. 
+      there's a way to let the linker know that some symbol should only be included once in the final binary. 
+  - actually another issue is with templated structs. Suppose that my hashmap uses vector as part of its
+    internal implementation details. When a user tries to instantiate the hashmap template, they're also 
+    then required to know all about vector in order to actually typecheck the instantiated hashmap
+    - bandaid fixes (list them out so I know what to avoid lmao)
+      - require the user to also import vector
+      - make it so that standard libraries don't import each other too much
+    - for an instantiation T<U1, ..., UN>, we want to make visible to the compiler 
+      - everything visible to T, so that's all methods defined in T + all imports of T
+      - struct interfaces of U1, ..., UN. 
+        To make it simple, perhaps should expose everything defined in their respective files
+    - the issue with exposing the entire file is you may have defined a helper that was also defined in  
+      hashmap, which causes a compilation error. 
+      - realistically, this will never happen in the vast majority of cases, but it's pretty annoying when it does
+    - a solution to this new issue is placing a priority on methods defined in T + imported by T, so we only
+      resort to looking in files defining U1, ..., UN if we cannot resolve from the former. 
+      - an issue: suppose we define some universal hash 'template<T> u64 hash(T, x)'
+        then the compiler will not bother looking for more specific hash methods defined in U1, ..., UN
+        because it can always resolve to the universal hash. 
+    - another solution is to provide a way to mark methods as private, so they're only available to other methods
+      within the same file. 
+      - can probably go further with this, allowing structs, struct methods, struct member variables, and so on
+        to be marked private. Of course, all of these come with their own semantics.
+      - I think this should definitely be a feature, and it does address the symptoms, but I think the real
+        issue is that we don't have a good way to define what external methods to include when compiling 
+        a instantiated template. 
+    - the issue I have with including the file that contains U1 ... UN is that a 'file' is kinda arbitrary. 
+      i think we need some syntactic way to define a group of methods and structs
+      - so something like a python module or rust package. Make some artificial compilation unit. 
+    - ideally we only provide to hashmap the struct memory layout, and it shouldn't need to go looking around
+      for other external functions. 
+      - i think we can pretty much do this, it would just require one concession: we would have to pass 
+        the hash function into hashmap via function pointer. 
+    - one big thing is that we want the generated binary of T<U1, ..., UN> to be consistent regardless of 
+      what is visible to the target file. We don't want the behaviour of the template instance to be decided 
+      by the context in which it is instantiated. 
+    - after much contemplation and discussion, I've settled on just doing the 'include the file that 
+      defines U1, ..., UN, as well as everything imported by T and T itself'
+      - it's good enough for the vast majority of cases, and also guarantees that the compilation context
+        will be the same regardless of context. 
+  - one more issue with templated structs: Suppose I have two files, U1.jank, U2.jank, defining structs with 
+    the same name "U". Then I instantiate T<U> with the U from both U1.jank and U2.jank. How can the 
+    linker tell them apart?
+    - if we just mangle the struct names with the filepaths, then the linker should be able to tell that
+      they're different. 
+    - observe that this shouldn't cause any correctness issues as both U1.jank and U2.jank cannot be 
+      imported simultaneously without a duplicate type error
 
 - how do we handle globals? 
   - right now I can order them because I compile all files at once. 
@@ -105,6 +151,40 @@ struct C {
     - important! what would be a good name for it
       - I'll name it 'dylan'
 
+- implement name mangler
+  - all names need to be mangled: functions, operators, types, constructors, destructors
+  - to keep everything unique, I should prefix everything with the relative path from root. 
+  - what characters are available for symbols?
+    - docs : https://sourceware.org/binutils/docs/as/Symbol-Names.html
+    - for global symbols, [a-zA-Z_][a-zA-Z0-9_]*
+    - symbols beginning with a '.' are local symbols and are removed from the symbol table when linking
+    - apparently you can also use quoted symbols and get rid of the character restrictions within the quotes.
+
+- implement 'CompilationContext'
+  - with one of these bad boys you should be able to
+    - resolve function/operator/constructor/destructor calls
+    - find struct layouts 
+    - find types
+  - each method and struct should specify what context they'd like to be compiled under 
+    - we can lazily construct contexts, part of this is parsing files that we haven't parsed before. 
+      this way we can also lazily parse only the source files that we need. 
+  - CompilationContext should not be responsible for storing function, struct, ect. definitions, it's only 
+    responsible for specifying what definitions are available in some context. 
+
+- implement 'DefinitionSpace'
+  - responsible for storing definitions tied to files (perhaps later modules)
+  - how to handle globally defined stuff? (primitive types like i32)
+    - stuff them into every space?
+    - make a special space for them only?
+    - I like making a special space for them. 
+  - suppose that main.jank imports vector.jank and instantiates vector<i32>. Where should the definition
+    of vector<i32> go? into main or vector space?
+    - semantically, vector<i32> should only be visible to main, so it should go into main space
+    - to make it not visible to anything else, I'll invent the notion of 'private' definitions, which should only be
+      visible within the space they're defined in. 
+      - this should also make creating private functions and structs much easier
+    - if compiling a template triggers further layers of template compilation, then all these instantiated templates
+      should go into the original 'requester' definition space. 
 
 
 (main quest)
@@ -113,13 +193,17 @@ Add IR (D:)
 - this will make performance improvements to generated code easier
 
 
+(side quest)
+Add compiler flag where you can specify default imports
+- One usecase is enabling compiler mode and replacing the default <malloc> with a kernel malloc.
+- also should be able to specify files from stdlib as default
+
 
 (side quest)
 Make parsing faster
 - alot of the parsing will happen when we're trying to just gather function definitions. 
   we can probably target this to make faster by writing a grammar that only sees function definitions and skips everything else. 
 - look into a tokenizer
-
 
 
 (side quest)

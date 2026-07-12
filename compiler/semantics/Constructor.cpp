@@ -10,6 +10,8 @@
 #include "primitives.h"
 #include "Literal.h"
 #include "Declaration.h"
+#include "CompilationContext.h"
+#include "DefinitionSpace.h"
 
 // -- CONSTRUCTOR --
 Constructor::Constructor(parser::token *tok) : ASTNode(tok) {
@@ -21,6 +23,7 @@ Constructor::Constructor(const Constructor& other) : ASTNode(other) {
     for(int i = 0; i < other.parameters.size(); i++) {
         parameters.push_back(other.parameters[i]->make_copy());
     }
+    is_generated = other.is_generated;
 }
 
 Constructor::Constructor(Type* _type, std::vector<Parameter*> _parameters) : ASTNode() {
@@ -94,22 +97,25 @@ bool PrimitiveConstructor::equals(Constructor *_other) const {
 }
 
 // -- IS WELL FORMED --
-bool StructConstructor::is_well_formed() {
-    ConstructorSignature *cc = resolve_constructor_signature();
-    std::cout << "CHECKING CONSTRUCTOR : " << cc->to_string() << std::endl;
-
-    // - can all the templates be resolved?
-    if(!look_for_templates()) {
-        std::cout << "Cannot resolve all templates in constructor : " << resolve_constructor_signature()->to_string();
-        return false;
-    }
+bool StructConstructor::is_well_formed(CompilationContext *ctx) {
+    ConstructorSignature *cs = resolve_constructor_signature();
+    std::cout << "CHECKING CONSTRUCTOR : " << cs->to_string() << std::endl;
 
     push_declaration_stack();
 
-    if(asm_debug) {
-        fout << "# " << cc->to_string() << "\n";
+    //print constructor header
+    if(asm_debug) fout << "# " << cs->to_string() << "\n";
+    std::string label = get_constructor_label(cs);
+    assert(label.size() >= 2 && label[0] == '\"' && label[label.size() - 1] == '\"');
+    std::string label_noquotes = label.substr(1, label.size() - 2);
+    if(is_generated) {
+        fout << ".section \".text." << label_noquotes << "\",\"axG\",@progbits," << label << ",comdat\n";
+        fout << ".weak " << label << "\n";
     }
-    std::string label = get_constructor_label(cc);
+    else {
+        fout << ".section \".text." << label_noquotes << "\",\"ax\",@progbits\n";
+        fout << ".globl " << label << "\n";
+    }
     fout << label << ":\n";
 
     //setup stack frame
@@ -118,7 +124,7 @@ bool StructConstructor::is_well_formed() {
 
     for(int i = 0; i < parameters.size(); i++){
         // - does parameter correspond to existing type?
-        if(!is_type_declared(parameters[i]->type)) {
+        if(!ctx->is_type_declared(parameters[i]->type)) {
             std::cout << "Undeclared type : " << parameters[i]->type->to_string() << "\n";
             return false;
         }
@@ -130,7 +136,7 @@ bool StructConstructor::is_well_formed() {
     }
 
     // - is return type of function existing?
-    if(!is_type_declared(type)) {
+    if(!ctx->is_type_declared(type)) {
         std::cout << "Constructor undeclared return type : " << type->to_string() << "\n";
         return false;
     }
@@ -167,14 +173,14 @@ bool StructConstructor::is_well_formed() {
     assert(stack_desc.size() == 0);
 
     // - make sure body is well formed
-    if(!body->is_well_formed()) {
+    if(!body->is_well_formed(ctx)) {
         std::cout << "Constructor body not well formed\n";
         return false;
     }
 
     //add trailing return
     ReturnStatement *rs = new ReturnStatement(std::nullopt);
-    if(!rs->is_well_formed()) {
+    if(!rs->is_well_formed(ctx)) {
         std::cout << "Trailing return failed??";
         assert(0);  
     }
@@ -182,7 +188,7 @@ bool StructConstructor::is_well_formed() {
     fout << "\n";
 
     //unregister parameters as variables
-    pop_declaration_stack();
+    pop_declaration_stack(ctx);
 
     //local stack should be empty before returning
     assert(stack_desc.size() == 0);
@@ -190,15 +196,23 @@ bool StructConstructor::is_well_formed() {
     return true;
 }
 
-bool PrimitiveConstructor::is_well_formed() {
+bool PrimitiveConstructor::is_well_formed(CompilationContext *ctx) {
     assert(is_type_primitive(type));
     ConstructorSignature *cs = this->resolve_constructor_signature();
 
-    //constructor label
-    if(asm_debug) {
-        fout << "# " << cs->to_string() << "\n";
-    }
+    //print constructor header
+    if(asm_debug) fout << "# " << cs->to_string() << "\n";
     std::string label = get_constructor_label(cs);
+    assert(label.size() >= 2 && label[0] == '\"' && label[label.size() - 1] == '\"');
+    std::string label_noquotes = label.substr(1, label.size() - 2);
+    if(is_generated) {
+        fout << ".section \".text." << label_noquotes << "\",\"axG\",@progbits," << label << ",comdat\n";
+        fout << ".weak " << label << "\n";
+    }
+    else {
+        fout << ".section \".text." << label_noquotes << "\",\"ax\",@progbits\n";
+        fout << ".globl " << label << "\n";
+    }
     fout << label << ":\n";
 
     //setup stack frame
@@ -233,10 +247,10 @@ bool PrimitiveConstructor::is_well_formed() {
         assert(stack_desc.size() == 0);
 
         Expression *a_expr = new Expression(new ExprBinary(new ExprPrimary(thisid), "=", new ExprPrimary(xid)));
-        assert(a_expr->resolve_type()->equals(type));
-        a_expr->emit_asm();
+        assert(a_expr->resolve_type(ctx)->equals(type));
+        a_expr->emit_asm(ctx);
         
-        pop_declaration_stack();
+        pop_declaration_stack(ctx);
     }
 
     //add trailing return
@@ -281,17 +295,17 @@ bool PrimitiveConstructor::replace_templated_types(TemplateMapping *mapping) {
 }
 
 // -- LOOK FOR TEMPLATES --
-bool StructConstructor::look_for_templates() {
-    if(!type->look_for_templates()) return false;
+bool StructConstructor::look_for_templates(CompilationContext *ctx) {
+    if(!type->look_for_templates(ctx)) return false;
     for(int i = 0; i < parameters.size(); i++){
-        if(!parameters[i]->look_for_templates()) return false;
+        if(!parameters[i]->look_for_templates(ctx)) return false;
     }
-    if(!body->look_for_templates()) return false;
+    if(!body->look_for_templates(ctx)) return false;
     return true;
 }
 
-bool PrimitiveConstructor::look_for_templates() {
-    if(!type->look_for_templates()) {
+bool PrimitiveConstructor::look_for_templates(CompilationContext *ctx) {
+    if(!type->look_for_templates(ctx)) {
         assert(false);
         return false;
     }

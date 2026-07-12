@@ -1,4 +1,7 @@
 #include <syscall>;
+#include <string>;
+#include <defs>;
+#include <assert>;
 
 i32 is_leap_year(u64 year) {
     return (year % $u64 4 == 0x0) && ((year % $u64 100 != 0x0) || (year % $u64 400 == 0x0));

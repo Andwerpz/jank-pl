@@ -2,6 +2,8 @@
 #include <assert>;
 #include <crypto/X25519>;
 #include <intx>;
+#include <string>;
+#include <jstring>;
 
 //all tests taken from https://datatracker.ietf.org/doc/html/rfc7748
 

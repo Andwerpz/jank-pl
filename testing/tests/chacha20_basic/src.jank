@@ -2,6 +2,8 @@
 #include <assert>;
 #include <crypto/chacha20>;
 #include <random>;
+#include <string>;
+#include <jstring>;
 
 string keystring(void* key) {
     return to_hexstring(key, $u64 32);

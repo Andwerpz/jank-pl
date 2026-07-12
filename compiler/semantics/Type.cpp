@@ -7,6 +7,7 @@
 #include "Function.h"
 #include "FunctionSignature.h"
 #include "Parameter.h"
+#include "CompilationContext.h"
 
 // -- CONVERT CONSTRUCTOR --
 Type::Type(parser::token *tok) : ASTNode(tok) {
@@ -420,44 +421,44 @@ bool FunctionPointerType::replace_templated_types(TemplateMapping *mapping) {
 }
 
 // -- LOOK FOR TEMPLATES --
-bool BaseType::look_for_templates() {
+bool BaseType::look_for_templates(CompilationContext *ctx) {
     // do nothing
     return true;
 }
 
-bool PointerType::look_for_templates() {
-    return type->look_for_templates();
+bool PointerType::look_for_templates(CompilationContext *ctx) {
+    return type->look_for_templates(ctx);
 }
 
-bool ArrayType::look_for_templates() {
-    if(!type->look_for_templates()) return false;
+bool ArrayType::look_for_templates(CompilationContext *ctx) {
+    if(!type->look_for_templates(ctx)) return false;
 
     //hijacking look_for_templates() to also find array types
-    if(!create_arraytype(this)) return false;
+    if(!create_array_type(this, ctx)) return false;
 
     return true;
 }
 
-bool ReferenceType::look_for_templates(){
-    return type->look_for_templates();
+bool ReferenceType::look_for_templates(CompilationContext *ctx){
+    return type->look_for_templates(ctx);
 }
 
-bool TemplatedType::look_for_templates() {
-    if(!base_type->look_for_templates()) return false;
+bool TemplatedType::look_for_templates(CompilationContext *ctx) {
+    if(!base_type->look_for_templates(ctx)) return false;
     for(int i = 0; i < template_types.size(); i++){
-        if(!template_types[i]->look_for_templates()) return false;
+        if(!template_types[i]->look_for_templates(ctx)) return false;
     }
 
     //aha! found one! 
-    if(!create_templated_type(this)) return false;
+    if(!create_templated_type(this, ctx)) return false;
     
     return true;
 }
 
-bool FunctionPointerType::look_for_templates() {
-    if(!return_type->look_for_templates()) return false;
+bool FunctionPointerType::look_for_templates(CompilationContext *ctx) {
+    if(!return_type->look_for_templates(ctx)) return false;
     for(int i = 0; i < param_types.size(); i++){
-        if(!param_types[i]->look_for_templates()) return false;
+        if(!param_types[i]->look_for_templates(ctx)) return false;
     }
     return true;
 }

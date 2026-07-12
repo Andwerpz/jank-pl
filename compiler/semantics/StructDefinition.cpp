@@ -10,6 +10,8 @@
 #include "TemplateMapping.h"
 #include "Destructor.h"
 #include "TemplatedFunction.h"
+#include "CompilationContext.h"
+#include "DefinitionSpace.h"
 
 MemberVariable::MemberVariable(parser::token *tok) : ASTNode(tok) {
     // do nothing
@@ -44,8 +46,8 @@ bool MemberVariable::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-bool MemberVariable::look_for_templates(){
-    return type->look_for_templates();
+bool MemberVariable::look_for_templates(CompilationContext *ctx){
+    return type->look_for_templates(ctx);
 }
 
 
@@ -107,12 +109,19 @@ StructDefinition* StructDefinition::convert(parser::struct_definition *s) {
     return result;
 }
 
-bool StructDefinition::is_well_formed() {
+// in order for this to succeed, you probably should first resolve templates for this struct
+bool StructDefinition::is_well_formed(CompilationContext* ctx) {
     // - do all member variable types exist?
     for(int i = 0; i < member_variables.size(); i++){
         Type *vt = member_variables[i]->type;
-        if(!is_type_declared(vt)) {
+        if(!ctx->is_type_declared(vt)) {
             std::cout << "Member variable type does not exist : " << vt->to_string() << "\n";
+
+            std::cout << "Context : " << std::endl;
+            for(CompilationContext::DefinitionSpaceView dsv : ctx->definition_spaces) {
+                std::cout << dsv.space->get_filepath() << std::endl;
+            }
+
             return false;
         }
     }
@@ -168,10 +177,10 @@ bool StructDefinition::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-bool StructDefinition::look_for_templates() {
-    if(!type->look_for_templates()) return false;
-    for(int i = 0; i < member_variables.size(); i++) if(!member_variables[i]->look_for_templates()) return false;
-    for(int i = 0; i < constructors.size(); i++) if(!constructors[i]->look_for_templates()) return false;
-    for(int i = 0; i < destructors.size(); i++) if(!destructors[i]->look_for_templates()) return false;
+bool StructDefinition::look_for_templates(CompilationContext *ctx) {
+    if(!type->look_for_templates(ctx)) return false;
+    for(int i = 0; i < member_variables.size(); i++) if(!member_variables[i]->look_for_templates(ctx)) return false;
+    for(int i = 0; i < constructors.size(); i++) if(!constructors[i]->look_for_templates(ctx)) return false;
+    for(int i = 0; i < destructors.size(); i++) if(!destructors[i]->look_for_templates(ctx)) return false;
     return true;
 }

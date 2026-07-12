@@ -7,6 +7,7 @@
 #include "Operator.h"
 #include "Type.h"
 #include "OperatorSignature.h"
+#include "CompilationContext.h"
 
 OperatorCall::OperatorCall(std::optional<ExprNode*> _left, std::string _op, std::optional<ExprNode*> _right) {
     left = _left;
@@ -14,12 +15,12 @@ OperatorCall::OperatorCall(std::optional<ExprNode*> _left, std::string _op, std:
     right = _right;
 }
 
-Operator* OperatorCall::resolve_called_operator() {
-    return get_called_operator(left, op, right);
+Operator* OperatorCall::resolve_called_operator(CompilationContext *ctx) {
+    return ctx->get_called_operator(left, op, right);
 }
 
-Type* OperatorCall::resolve_type() {
-    Operator *o = this->resolve_called_operator();
+Type* OperatorCall::resolve_type(CompilationContext *ctx) {
+    Operator *o = this->resolve_called_operator(ctx);
     if(o == nullptr) {
         std::cout << "Cannot resolve operator call : " << to_string() << "\n";
         return nullptr;
@@ -29,10 +30,10 @@ Type* OperatorCall::resolve_type() {
 
 //only works for overloads. Builtins should be handled with Expression
 //the name is kinda misleading, but we do use this to resolve called operators so ¯\_(:3)_/¯
-void OperatorCall::emit_asm() {
+void OperatorCall::emit_asm(CompilationContext *ctx) {
     if(asm_debug) fout << indent() << "# calling overload : \n";
 
-    OperatorOverload *o = dynamic_cast<OperatorOverload*>(resolve_called_operator());
+    OperatorOverload *o = dynamic_cast<OperatorOverload*>(resolve_called_operator(ctx));
     assert(o != nullptr);
     OperatorSignature *os = o->resolve_operator_signature();
     assert(os != nullptr);
@@ -42,13 +43,13 @@ void OperatorCall::emit_asm() {
     if(left.has_value()) {
         assert(os->left.has_value());
         Identifier *id = new Identifier(create_new_tmp_variable_name());
-        Variable *v = emit_initialize_stack_variable(os->left.value(), id, new Expression(left.value()));
+        Variable *v = emit_initialize_stack_variable(ctx, os->left.value(), id, new Expression(left.value()));
         assert(v != nullptr);
     }
     if(right.has_value()) {
         assert(os->right.has_value());
         Identifier *id = new Identifier(create_new_tmp_variable_name());
-        Variable *v = emit_initialize_stack_variable(os->right.value(), id, new Expression(right.value()));
+        Variable *v = emit_initialize_stack_variable(ctx, os->right.value(), id, new Expression(right.value()));
         assert(v != nullptr);
     }
 
@@ -57,7 +58,7 @@ void OperatorCall::emit_asm() {
     fout << indent() << "call " << label << "\n";
 
     //clean up temp variables, freeing them is handled by the operator
-    pop_declaration_stack(false);
+    pop_declaration_stack(ctx, false);
 }
 
 std::string OperatorCall::to_string() {
@@ -105,8 +106,8 @@ bool OperatorCall::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-bool OperatorCall::look_for_templates() {
-    if(left.has_value()) if(!left.value()->look_for_templates()) return false;
-    if(right.has_value()) if(!right.value()->look_for_templates()) return false;
+bool OperatorCall::look_for_templates(CompilationContext *ctx) {
+    if(left.has_value()) if(!left.value()->look_for_templates(ctx)) return false;
+    if(right.has_value()) if(!right.value()->look_for_templates(ctx)) return false;
     return true;
 }

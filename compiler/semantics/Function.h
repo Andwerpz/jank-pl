@@ -12,6 +12,7 @@ struct OperatorSignature;
 struct Parameter;
 struct TemplateMapping;
 struct FunctionCall;
+struct CompilationContext;
 
 struct Function : public ASTNode {    
     std::optional<Type*> enclosing_type;    //type of containing struct
@@ -20,6 +21,9 @@ struct Function : public ASTNode {
     Identifier *id;
     std::vector<Parameter*> parameters;
     CompoundStatement *body;
+
+    //should be set to true externally when generated. 
+    bool is_generated = false;
 
     Function(parser::token *tok);
     Function(const Function& other);
@@ -32,12 +36,12 @@ struct Function : public ASTNode {
     bool operator==(const Function& other) const;
     bool operator!=(const Function& other) const;
 
-    bool is_well_formed();
+    bool is_well_formed(CompilationContext* ctx);
     virtual Function* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
-    bool look_for_templates();
+    bool look_for_templates(CompilationContext* ctx);
     std::string to_string();
 
     bool is_main();
-    bool is_valid_call(FunctionCall *fc);       //returns true if the given function call can be used to call the function
+    bool is_valid_call(CompilationContext *ctx, FunctionCall *fc);       //returns true if the given function call can be used to call the function
 };

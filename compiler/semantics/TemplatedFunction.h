@@ -9,6 +9,7 @@ struct OperatorSignature;
 struct OperatorOverload;
 struct TemplateMapping;
 struct Type;
+struct CompilationContext;
 
 struct TemplatedFunction : public ASTNode {
     TemplateHeader *header;
@@ -20,11 +21,11 @@ struct TemplatedFunction : public ASTNode {
     TemplatedFunction(TemplateHeader* _header, Function *_function);
 
     static TemplatedFunction* convert(parser::templated_function *f);
-    bool is_well_formed();
+    bool is_well_formed(CompilationContext* ctx);
     bool is_main();
     TemplateMapping* calc_mapping(std::vector<Type*> arg_types);
-    TemplateMapping* calc_mapping(FunctionCall *fc);
-    Function* gen_function(FunctionCall *fc);
+    TemplateMapping* calc_mapping(CompilationContext *ctx, FunctionCall *fc);
+    Function* gen_function(CompilationContext *ctx, FunctionCall *fc);
     bool replace_templated_types(TemplateMapping *mapping);
     TemplatedFunction* make_copy();
 };

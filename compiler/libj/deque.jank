@@ -1,6 +1,6 @@
+#include <malloc>;
 
 //expandable rotating buffer
-
 template<T>
 struct deque {
     u64 cap;

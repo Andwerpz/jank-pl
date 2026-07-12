@@ -21,6 +21,7 @@ struct ConstructorCall;
 struct TemplateMapping;
 struct OperatorCall;
 struct Operator;
+struct CompilationContext;
 
 struct ExprNode : public ASTNode {
     ExprNode(parser::token *tok);
@@ -43,19 +44,19 @@ struct ExprNode : public ASTNode {
     static ExprNode* convert(parser::expr_assignment *e);
 
     std::optional<Type*> resolve_type_cache = std::nullopt;
-    Type* resolve_type();                               
-    virtual Type* _resolve_type() = 0;                  // - no modify
+    Type* resolve_type(CompilationContext *ctx);                               
+    virtual Type* _resolve_type(CompilationContext *ctx) = 0;           // - no modify
 
     std::optional<bool> is_lvalue_cache = std::nullopt;
-    bool is_lvalue();                                   
-    virtual bool _is_lvalue() = 0;                      // - no modify
+    bool is_lvalue(CompilationContext *ctx);                                   
+    virtual bool _is_lvalue(CompilationContext *ctx) = 0;               // - no modify
 
     // - can modify, but should not change return value of resolve_type(), is_lvalue()
     // - should remove all overloads, after this stage the only operators should be hardcoded or Builtin. 
     //   overloads should turn into ExprPrimary function calls. 
-    virtual void elaborate(ExprNode*& self) = 0;        
+    virtual void elaborate(CompilationContext *ctx, ExprNode*& self) = 0;        
 
-    virtual void emit_asm() = 0;                        // - no modify
+    virtual void emit_asm(CompilationContext *ctx) = 0;                 // - no modify
     virtual std::string to_string() = 0;
     virtual size_t hash() = 0;
     virtual bool equals(ExprNode* other) = 0;
@@ -67,7 +68,7 @@ struct ExprNode : public ASTNode {
 
     virtual ExprNode* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
-    virtual bool look_for_templates() = 0;
+    virtual bool look_for_templates(CompilationContext* ctx) = 0;
 };
 
 //Type* is just a placeholder for a variable of that type. It's just used for type conversion purposes. 
@@ -81,17 +82,17 @@ struct ExprPrimary : ExprNode {
     ExprPrimary(const ExprPrimary& other);
     ExprPrimary(val_t _val);
 
-    Type* _resolve_type() override;
-    bool _is_lvalue() override;
-    void elaborate(ExprNode*& self) override;
-    void emit_asm() override;
+    Type* _resolve_type(CompilationContext *ctx) override;
+    bool _is_lvalue(CompilationContext *ctx) override;
+    void elaborate(CompilationContext *ctx, ExprNode*& self) override;
+    void emit_asm(CompilationContext *ctx) override;
     std::string to_string() override;
     size_t hash() override;
     bool equals(ExprNode* other) override;
     void id_to_type() override;
     ExprNode* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
 };
 
 struct ExprBinary : ExprNode {
@@ -104,17 +105,17 @@ struct ExprBinary : ExprNode {
     ExprBinary(const ExprBinary& other);
     ExprBinary(ExprNode *_left, op_t _op, ExprNode *_right);
 
-    Type* _resolve_type() override;
-    bool _is_lvalue() override;
-    void elaborate(ExprNode*& self) override;
-    void emit_asm() override;
+    Type* _resolve_type(CompilationContext *ctx) override;
+    bool _is_lvalue(CompilationContext *ctx) override;
+    void elaborate(CompilationContext *ctx, ExprNode*& self) override;
+    void emit_asm(CompilationContext *ctx) override;
     std::string to_string() override;
     size_t hash() override;
     bool equals(ExprNode* other) override;
     void id_to_type() override;
     ExprNode* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
 };
 
 struct ExprPrefix : ExprNode {
@@ -126,17 +127,17 @@ struct ExprPrefix : ExprNode {
     ExprPrefix(const ExprPrefix& other);
     ExprPrefix(op_t _op, ExprNode *_right);
 
-    Type* _resolve_type() override;
-    bool _is_lvalue() override;
-    void elaborate(ExprNode*& self) override;
-    void emit_asm() override;
+    Type* _resolve_type(CompilationContext *ctx) override;
+    bool _is_lvalue(CompilationContext *ctx) override;
+    void elaborate(CompilationContext *ctx, ExprNode*& self) override;
+    void emit_asm(CompilationContext *ctx) override;
     std::string to_string() override;
     size_t hash() override;
     bool equals(ExprNode* other) override;
     void id_to_type() override;
     ExprNode* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
 };
 
 struct ExprPostfix : ExprNode {
@@ -148,17 +149,17 @@ struct ExprPostfix : ExprNode {
     ExprPostfix(const ExprPostfix& other);
     ExprPostfix(ExprNode *_left, op_t _op);
 
-    Type* _resolve_type() override;
-    bool _is_lvalue() override;
-    void elaborate(ExprNode*& self) override;
-    void emit_asm() override;
+    Type* _resolve_type(CompilationContext *ctx) override;
+    bool _is_lvalue(CompilationContext *ctx) override;
+    void elaborate(CompilationContext *ctx, ExprNode*& self) override;
+    void emit_asm(CompilationContext *ctx) override;
     std::string to_string() override;
     size_t hash() override;
     bool equals(ExprNode* other) override;
     void id_to_type() override;
     ExprNode* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
 };
 
 struct Expression : public ASTNode {
@@ -170,17 +171,17 @@ struct Expression : public ASTNode {
     Expression(ExprNode *_expr_node);
 
     static Expression* convert(parser::expression *e);
-    Type* resolve_type();
-    bool is_lvalue();
-    void elaborate();
+    Type* resolve_type(CompilationContext *ctx);
+    bool is_lvalue(CompilationContext *ctx);
+    void elaborate(CompilationContext *ctx);
     //if should_dealloc == true, will auto dealloc any produced struct r-value
     //this should probably only be true when calling from a control statement. 
-    void emit_asm(bool should_dealloc = false); 
+    void emit_asm(CompilationContext *ctx, bool should_dealloc = false); 
     std::string to_string();
     size_t hash();
     bool equals(Expression* other);
     void id_to_type();
     Expression* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
-    bool look_for_templates();
+    bool look_for_templates(CompilationContext* ctx);
 };

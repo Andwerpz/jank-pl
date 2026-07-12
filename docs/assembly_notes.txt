@@ -1,0 +1,38 @@
+
+
+documentation on .section : https://sourceware.org/binutils/docs/as/Section.html
+
+syntax of '.section' headers are:
+    .section <name>,"<flags>",@<type>
+or if you want to use 'comdat'
+    .section <name>,"<flags>",@<type>,<comdat_signature>,comdat
+
+COMDAT is used when you have multiple identical sections emitted in different files, 
+and you want the linker to know that taking any one of them is sufficient. 
+
+to mark a symbol as visible from other files do
+    .globl <symbol>
+to mark a symbol as 'weakly visible' from other files do
+    .weak <symbol>
+if there is another .globl symbol of the same name, the linker will prefer that one
+
+section flags are these:
+    a = allocatable; section is loaded into memory
+    w = writable
+    x = executable
+    M = mergeable
+    S = contains null-terminated strings
+    G = section group / COMDAT
+    T = thread-local storage
+so for example "axG" marks a COMDAT executable section and "ax" would be a normal executable section
+
+the @<type> field can be one of these:
+    @progbits = section contains data 
+    @nobits = section does not contain data (i.e., section only occupies space) 
+    @note = section contains data which is used by things other than the program 
+    @init_array = section contains an array of pointers to init functions 
+    @fini_array = section contains an array of pointers to finish functions 
+    @preinit_array = section contains an array of pointers to pre-init functions 
+    @<number> = a numeric value to be set as the ELF section header’s type field. 
+
+

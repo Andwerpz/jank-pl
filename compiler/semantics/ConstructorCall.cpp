@@ -6,6 +6,8 @@
 #include "Identifier.h"
 #include "Parameter.h"
 #include "TemplateMapping.h"
+#include "CompilationContext.h"
+#include "DefinitionSpace.h"
 
 ConstructorCall::ConstructorCall(parser::token *tok) : ASTNode(tok) {
     // do nothing
@@ -43,7 +45,7 @@ ConstructorCall* ConstructorCall::convert(parser::constructor_call *c) {
     return result;
 }
 
-Constructor* ConstructorCall::resolve_called_constructor() {
+Constructor* ConstructorCall::resolve_called_constructor(CompilationContext *ctx) {
     // - can we even emit code to initialize this struct?
     //equivalent to checking if a struct layout for this type exists if it's not primitive
     if(!is_type_primitive(type) && !get_struct_layout(type)) {
@@ -51,12 +53,12 @@ Constructor* ConstructorCall::resolve_called_constructor() {
         return nullptr;
     }
     
-    return get_called_constructor(this);
+    return ctx->get_called_constructor(this);
 }
 
-Type* ConstructorCall::resolve_type() {
+Type* ConstructorCall::resolve_type(CompilationContext *ctx) {
     // - try to resolve called constructor
-    Constructor *c = this->resolve_called_constructor();
+    Constructor *c = this->resolve_called_constructor(ctx);
     if(c == nullptr){
         std::cout << "Cannot resolve constructor call : " << to_string() << "\n";
         return nullptr;
@@ -64,7 +66,7 @@ Type* ConstructorCall::resolve_type() {
 
     // - if this is construct-in-place, make sure that cip_expr resolves to a pointer
     if(cip_expr.has_value()) {
-        Type *et = cip_expr.value()->resolve_type();
+        Type *et = cip_expr.value()->resolve_type(ctx);
         if(et == nullptr) {
             std::cout << "Construct in place expression does not resolve to type : " << cip_expr.value()->to_string() << "\n";
             return nullptr;
@@ -81,7 +83,7 @@ Type* ConstructorCall::resolve_type() {
 //if addr_provided, assumes memory addr is already in %rax
 //calls emit_initialize_struct()
 //should return with %rax holding initialized type
-void ConstructorCall::emit_asm(bool addr_provided) {
+void ConstructorCall::emit_asm(CompilationContext *ctx, bool addr_provided) {
     if(asm_debug) fout << indent() << "# calling constructor : " << type->to_string() << "\n";
 
     //should never have a provided address and construct-in-place
@@ -90,7 +92,7 @@ void ConstructorCall::emit_asm(bool addr_provided) {
     }
 
     //find constructor
-    Constructor *c = this->resolve_called_constructor();
+    Constructor *c = this->resolve_called_constructor(ctx);
     assert(c != nullptr);
 
     if(!is_type_primitive(type)) {
@@ -100,7 +102,7 @@ void ConstructorCall::emit_asm(bool addr_provided) {
         if(!addr_provided) {
             if(cip_expr.has_value()) {  
                 //resolve cip expr for memory address
-                cip_expr.value()->emit_asm();
+                cip_expr.value()->emit_asm(ctx);
             }
             else {
                 //if type is not primitive, make sure struct layout exists
@@ -120,7 +122,7 @@ void ConstructorCall::emit_asm(bool addr_provided) {
         }
 
         //initialize struct in given memory
-        emit_initialize_struct(type);
+        emit_initialize_struct(ctx, type);
 
         //save reference to type for return value
         emit_push("%rax", "ConstructorCall::emit_asm() : target struct return ref %rax");
@@ -133,7 +135,7 @@ void ConstructorCall::emit_asm(bool addr_provided) {
         assert(c->parameters.size() == argument_list.size());
         for(int i = 0; i < argument_list.size(); i++){
             Identifier *id = new Identifier(create_new_tmp_variable_name());
-            Variable *v = emit_initialize_stack_variable(c->parameters[i]->type, id, argument_list[i]);
+            Variable *v = emit_initialize_stack_variable(ctx, c->parameters[i]->type, id, argument_list[i]);
             assert(v != nullptr);
         }
 
@@ -142,7 +144,7 @@ void ConstructorCall::emit_asm(bool addr_provided) {
         fout << indent() << "call " << label << "\n";
 
         //clean up argument temp variables, freeing them is handled by the constructor
-        pop_declaration_stack(false);
+        pop_declaration_stack(ctx, false);
 
         //clean up target struct argument
         emit_add_rsp(8, "ConstructorCall::emit_asm() : target struct");
@@ -168,7 +170,7 @@ void ConstructorCall::emit_asm(bool addr_provided) {
         assert(c->parameters.size() == argument_list.size());
         for(int i = 0; i < argument_list.size(); i++){
             Identifier *id = new Identifier(create_new_tmp_variable_name());
-            Variable *v = emit_initialize_stack_variable(c->parameters[i]->type, id, argument_list[i]);
+            Variable *v = emit_initialize_stack_variable(ctx, c->parameters[i]->type, id, argument_list[i]);
             assert(v != nullptr);
         }
 
@@ -177,7 +179,7 @@ void ConstructorCall::emit_asm(bool addr_provided) {
         fout << indent() << "call " << label << "\n";
 
         //clean up argument temp variables, freeing them is handled by the constructor
-        pop_declaration_stack(false);
+        pop_declaration_stack(ctx, false);
 
         //return primitive
         emit_pop("%rax", "ConstructorCall::emit_asm() : primitive this");
@@ -186,7 +188,7 @@ void ConstructorCall::emit_asm(bool addr_provided) {
         if(cip_expr.has_value()) {
             //resolve cip expr for memory address
             emit_push("%rax", "ConstructorCall::emit_asm() : primitive cip save value");
-            cip_expr.value()->emit_asm();
+            cip_expr.value()->emit_asm(ctx);
 
             //place primitive into cip addr
             fout << indent() << "mov %rax, %rbx\n";
@@ -245,8 +247,8 @@ bool ConstructorCall::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-bool ConstructorCall::look_for_templates() {
-    if(!type->look_for_templates()) return false;
-    for(int i = 0; i < argument_list.size(); i++) if(!argument_list[i]->look_for_templates()) return false;
+bool ConstructorCall::look_for_templates(CompilationContext *ctx) {
+    if(!type->look_for_templates(ctx)) return false;
+    for(int i = 0; i < argument_list.size(); i++) if(!argument_list[i]->look_for_templates(ctx)) return false;
     return true;
 }

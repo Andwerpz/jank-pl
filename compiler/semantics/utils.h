@@ -4,6 +4,7 @@
 #include <vector>
 #include <unordered_map>
 #include <unordered_set>
+#include <queue>
 #include "../parser/parser.h"
 
 struct ExprNode;
@@ -34,6 +35,11 @@ struct Operator;
 struct OperatorCall;
 struct TemplatedOperator;
 struct OperatorOverload;
+struct DefinitionSpace;
+struct CompilationContext;
+struct CompilationController;
+struct ASTNode;
+struct ArrayType;
 
 struct Variable;
 struct OperatorImplementation;
@@ -42,26 +48,50 @@ struct FunctionOperator;
 struct StructLayout;
 struct LoopContext;
 
-// -- GENERAL UTILS --
-typedef long double ld;
-long double current_time_seconds();
-void add_duration_stat(std::string name, ld dur);
-void print_duration_stats();
+enum class Visibility;
 
 // -- HASHING STRUCTS --
-namespace {
-    struct TypeHash;
-    struct TypeEquals;
+struct TypeHash {
+    size_t operator()(Type* t) const;
+};
+struct TypeEquals {
+    bool operator()(Type* lhs, Type* rhs) const;
+};
 
-    struct IdentifierHash;
-    struct IdentifierEquals;
+struct IdentifierHash {
+    size_t operator()(Identifier* id) const;
+};
+struct IdentifierEquals {
+    bool operator()(Identifier *lhs, Identifier *rhs) const;
+};
 
-    struct FunctionSignatureHash;
-    struct FunctionSignatureEquals;
+struct FunctionSignatureHash {
+    size_t operator()(FunctionSignature *fc) const;
+};
+struct FunctionSignatureEquals {
+    bool operator()(FunctionSignature* lhs, FunctionSignature *rhs) const;
+};
 
-    struct OperatorSignatureHash;
-    struct OperatorSignatureEquals;
-}
+struct ConstructorSignatureHash {
+    size_t operator()(ConstructorSignature *cs) const;
+};
+struct ConstructorSignatureEquals {
+    bool operator()(ConstructorSignature *lhs, ConstructorSignature *rhs) const;
+};
+
+struct OperatorSignatureHash {
+    size_t operator()(OperatorSignature *os) const;
+};
+struct OperatorSignatureEquals {
+    bool operator()(OperatorSignature* lhs, OperatorSignature *rhs) const;
+};
+
+struct DeclarableHash {
+    size_t operator()(std::pair<Type*, Expression*> p) const;
+};
+struct DeclarableEquals {
+    bool operator()(std::pair<Type*, Expression*> lhs, std::pair<Type*, Expression*> rhs) const;
+};
 
 // -- UTIL STRUCTS --
 struct Variable {
@@ -82,119 +112,155 @@ struct LoopContext {
     LoopContext(std::string _start_label, std::string assignment_label, std::string _end_label, int _declaration_layer);
 }; 
 
-// -- UTIL FNDEFS --
+// -- GENERAL UTILS --
+typedef long double ld;
+long double current_time_seconds();
+void add_duration_stat(std::string name, ld dur);
+void print_duration_stats();
 void hash_combine(size_t& seed, size_t value);
-std::string indent();
-char escape_to_char(parser::escape *e);
-std::string create_new_label();
-std::string create_new_tmp_variable_name();
-void emit_retrieve_array(int sz);
-void emit_address_array(int sz);
-void emit_write_array(int sz);
-void emit_mem_retrieve(int sz);
-void emit_mem_store(int sz);
-bool is_declarable(Type *a, Expression* expr);       //does the declaration A foo = expr work?
-Type* find_resulting_type(std::optional<Expression*> left, std::string op, std::optional<Expression*> right);
-Type* find_resulting_type(std::optional<ExprNode*> left, std::string op, std::optional<ExprNode*> right);
-Type* find_variable_type(Identifier *id);
-Type* find_function_type(FunctionSignature *fs);
-bool is_type_declared(Type *t);
-bool is_basetype_declared(BaseType *t);
-bool is_templated_struct_declared(TemplatedStructDefinition *t);
-bool is_templated_type_well_formed(TemplatedType *t);
-bool is_type_primitive(Type *t);
-bool is_function_declared(FunctionSignature *fs);
-bool is_operator_declared(OperatorSignature *os);
-bool is_variable_declared(Identifier *id);
-bool is_constructor_declared(ConstructorSignature *cs);
-bool is_destructor_declared(Type *t);
-Function* get_function(FunctionSignature *fs);  
-Function* get_called_function(FunctionCall *fc);
-Function* get_called_function(FunctionSignature *fs);
-Operator* get_operator(OperatorSignature *os);
-Operator* get_called_operator(OperatorCall *oc);
-Operator* get_called_operator(std::optional<Expression*> left, std::string op, std::optional<Expression*> right);
-Operator* get_called_operator(std::optional<ExprNode*> left, std::string op, std::optional<ExprNode*> right);
-Operator* get_called_typecast(Type *from, Type *to);
-Constructor* get_called_constructor(ConstructorCall *cc);
-Destructor* get_called_destructor(DestructorCall *dc);
-std::string get_function_label(FunctionSignature *fs);
-std::string get_constructor_label(ConstructorSignature *cs);
-std::string get_destructor_label(Type *t);
-std::string get_operator_label(OperatorSignature *os);
-Variable* get_variable(Identifier *id);
-bool add_struct_type(StructDefinition *sd);
-bool add_primitive_basetype(BaseType *t);   //these don't constitute all the primitive types, you can have derived primitive types (like pointer)
-bool add_basetype(BaseType *t);
-bool add_arraytype(ArrayType *t);
-bool add_templated_struct(TemplatedStructDefinition *t);
-bool add_templated_function(TemplatedFunction *f);  
-bool add_templated_operator(TemplatedOperator *o);
-bool create_templated_type(TemplatedType *t); 
-bool create_arraytype(ArrayType *t);
-bool add_function(Function *f);
-bool add_operator(Operator *o);
-bool add_builtin_operator(BuiltinOperator *o);
-bool add_constructor(Constructor *c);
-bool add_destructor(Destructor *d);
-Variable* add_stack_variable(Type *t, Identifier *id);
-Variable* add_global_variable(Type *t, Identifier *id, bool is_extern);
-Variable* add_variable(Type *t, Identifier *id, std::string addr_str, bool is_global = false, bool is_extern = false);
-void remove_function(Function *f);
-void remove_variable(Identifier *id);
-void remove_constructor(Constructor *c);
-void remove_destructor(Destructor *d);
-void push_declaration_stack();
-void emit_destructor_call(Type *t, bool should_dealloc = true);
-void emit_cleanup_global_variables();
-void emit_cleanup_declaration_stack_layer(int layer_ind, std::vector<Identifier*> ignore);
-void emit_cleanup_declaration_stack_layer(int layer_ind);
-void pop_declaration_stack(bool do_free = true);
-void push_loop_stack(std::string start_label, std::string assignment_label, std::string end_label);   //call these when the loop variables are on the top of the declaration stack
-void pop_loop_stack(std::string start_label, std::string assignment_label, std::string end_label);
-bool construct_struct_layout(Type *t);
-StructLayout* get_struct_layout(Type *t);   
-StructDefinition* get_struct_definition(Type *t);   
-void emit_initialize_primitive(Type *t);
-void emit_initialize_struct(Type *t);
-Variable* emit_initialize_stack_variable(Type *vt, Identifier *id, std::optional<Expression*> expr);
-Variable* emit_initialize_global_variable(Type* vt, Identifier *id, std::optional<Expression*> expr, bool is_extern);
-Variable* emit_initialize_variable(Type* vt, Identifier *id, std::optional<Expression*> expr, std::string addr_str, bool is_global = false, bool is_extern = false);
-void emit_dereference(Type *t);
-void dump_stack_desc();
-void emit_push(std::string reg, std::string desc);
-void emit_pop(std::string reg, std::string desc);
-void emit_add_rsp(int amt, std::string desc);
-void emit_add_rsp(int amt, std::vector<std::string> desc_list);
-void emit_sub_rsp(int amt, std::string desc);
-void emit_malloc(int sz_bytes);
-void emit_free(int sz_bytes);
-bool add_string_literal(std::string str);
-std::string get_string_literal_label(std::string str);
-void emit_data_section();
+std::string read_file(const std::string& filename);
+std::string read_cstr(char* s);
+std::vector<std::string> str_split(const std::string& s, char sep);
+std::string extract_filename(std::string path);             // given path to file, gives you the filename
+std::string extract_folder_path(std::string path);          // given path to file, gives you path to folder the file is in
+std::string extract_stem(std::string filename);             // given filename 'foo.jank', gives you 'foo'
+std::string extract_ext(std::string filename);              // given filename 'foo.jank', gives you 'jank'
+std::string cwd_rel_to_absolute(std::string path);          // given path relative to CWD, gives absolute path
+std::string libj_to_absolute(std::string name);             // given name of stdlib file, gives absolute path
+std::string normalize_path(std::string path);               // given an absolute filepath, removes all relative moves ("..", ".")
+std::string labelize_path(std::string path);                // given an absolute path, normalizes it, then replaces '/' between parts with underscores
 
 // -- PARSE UTILS --
+char escape_to_char(parser::escape *e);
 std::vector<Type*> convert_type_list(parser::type_list *t);
 std::vector<Parameter*> convert_parameter_list(parser::parameter_list *t);
 std::vector<Expression*> convert_argument_list(parser::argument_list *t);
 std::vector<Identifier*> convert_identifier_list(parser::identifier_list *t);
 
-// -- CONTROLLER --
-//should probably move this stuff into its own file
+// -- EMIT ASM HELPERS --
+std::string indent();
+std::string create_new_label();
+std::string create_new_tmp_variable_name();
+void emit_push(std::string reg, std::string desc);
+void emit_pop(std::string reg, std::string desc);
+void emit_add_rsp(int amt, std::string desc);
+void emit_add_rsp(int amt, std::vector<std::string> desc_list);
+void emit_sub_rsp(int amt, std::string desc);
 
+// -- EMIT ASM MEMORY ACCESS --
+void emit_retrieve_array(int sz);
+void emit_address_array(int sz);
+void emit_write_array(int sz);
+void emit_mem_retrieve(int sz);
+void emit_mem_store(int sz);
+void emit_malloc(int sz_bytes);
+void emit_free(int sz_bytes);
+void emit_dereference(Type *t);
+
+// -- EMIT ASM CLEANUP --
+void emit_destructor_call(CompilationContext *ctx, Type *t, bool should_dealloc = true);
+void emit_cleanup_declaration_stack_layer(CompilationContext *ctx, int layer_ind, std::vector<Identifier*> ignore);
+void emit_cleanup_declaration_stack_layer(CompilationContext *ctx, int layer_ind);
+
+// -- EMIT ASM INITIALIZATION --
+void emit_initialize_primitive(Type *t);
+void emit_initialize_array(CompilationContext *ctx, ArrayType *t);
+void emit_initialize_struct(CompilationContext *ctx, Type *t);
+Variable* emit_initialize_stack_variable(CompilationContext *ctx, Type *vt, Identifier *id, std::optional<Expression*> expr);
+bool emit_initialize_global_variable(CompilationContext *ctx, Type* vt, Identifier *id, std::optional<Expression*> expr, bool is_extern);
+bool emit_initialize_variable(CompilationContext *ctx, Type* vt, Identifier *id, std::optional<Expression*> expr, std::string addr_str, bool is_global = false, bool is_extern = false);
+
+// -- LOCAL VARIABLE STATE --
+Variable* get_variable(Identifier *id);
+Type* get_variable_type(Identifier *id);
+Variable* add_stack_variable(Type *t, Identifier *id);
+Variable* add_global_variable(Type *t, Identifier *id, bool is_extern);
+Variable* add_variable(Type *t, Identifier *id, std::string addr_str, bool is_global = false, bool is_extern = false);
+void remove_variable(Identifier *id);
+void remove_all_global_variables();         // can only be used when there are only global variables
+bool is_variable_declared(Identifier *id);
+void push_declaration_stack();
+void pop_declaration_stack(CompilationContext *ctx, bool do_free = true);
+void dump_stack_desc();
+
+// -- LOOP STATE --
+void push_loop_stack(std::string start_label, std::string assignment_label, std::string end_label);
+void pop_loop_stack(std::string start_label, std::string assignment_label, std::string end_label);
+
+// -- CONTEXT UTILS --
+bool is_type_primitive(Type *t);
+DefinitionSpace* get_definition_space(std::string filepath);        // if a definition space doesn't exist, this creates it
+DefinitionSpace* get_definition_space(BaseType* t);                 // gets definition space that declares this BaseType
+bool is_templated_type_well_formed(TemplatedType *t, CompilationContext *ctx);
+bool create_templated_type(TemplatedType *t, CompilationContext *ctx);
+bool create_array_type(ArrayType* t, CompilationContext *ctx);
+
+//these add declarations to the specified DefinitionSpace and also the work queue
+//also does some well formedness checking
+//after DefinitionSpace initialization, should be purely using these
+bool add_templated_function(DefinitionSpace* ds, TemplatedFunction* x, Visibility vis, CompilationContext* ctx);
+bool add_function(DefinitionSpace* ds, Function* x, Visibility vis, CompilationContext* ctx);
+bool add_operator(DefinitionSpace* ds, Operator* x, Visibility vis, CompilationContext* ctx);
+bool add_struct(DefinitionSpace* ds, StructDefinition* x, Visibility vis, CompilationContext* ctx);
+bool add_constructor(DefinitionSpace* ds, Constructor* x, Visibility vis, CompilationContext* ctx);
+bool add_destructor(DefinitionSpace* ds, Destructor* x, Visibility vis, CompilationContext* ctx);
+
+// -- GLOBAL UTILS --
+StructDefinition* get_struct_definition(Type *t);
+TemplatedStructDefinition* get_templated_struct_definition(BaseType *t);
+StructLayout* get_struct_layout(Type *t);
+std::string get_function_label(FunctionSignature *fs);
+std::string get_constructor_label(ConstructorSignature *cs);
+std::string get_destructor_label(Type *t);
+std::string get_operator_label(OperatorSignature *os);
+bool add_string_literal(std::string str);
+std::string get_string_literal_label(std::string str);
+
+// -- CONTROLLER --
+//important directories
+inline std::string compiler_dir;       // directory of compiler executable
+inline std::string cwd_dir;
+
+//list of files we parsed source from
+//this list is referred to in the ASTNode struct
+//the most recent file to be parsed is always the last file in this list
+inline std::vector<std::string> source_files;
+
+//the target file should always be parsed first
+const int TARGET_SOURCE_FILE = 0;
+
+//output stream to assembly file
 inline std::ofstream fout;
 
-//have these here to be visible. 
-inline std::optional<Type*> enclosing_type;
-inline Type* enclosing_return_type;
-inline std::vector<Function*> declared_functions;
-inline std::vector<StructDefinition*> declared_structs;
-inline std::vector<Operator*> declared_operators;
-inline std::vector<Constructor*> declared_constructors;
-inline std::vector<Destructor*> declared_destructors;
-inline std::vector<Variable*> declared_variables;
-inline std::vector<std::vector<Variable*>> declaration_stack;   //every 'layer' of the declaration stack should be contiguous on the stack
-inline std::vector<LoopContext*> loop_stack;
+//definition spaces
+inline DefinitionSpace* builtin_definition_space;                  //holds all builtin definitions
+inline std::unordered_map<std::string, DefinitionSpace*> definition_spaces;  //mapping absolute filepath -> definition space
+inline std::unordered_map<Type*, DefinitionSpace*, TypeHash, TypeEquals> basetype_to_definition_space;    //maps basetype to what definition space defines it
+
+//queue of instantiated declarations to compile
+inline std::queue<std::pair<ASTNode*, CompilationContext*>> work_queue;
+
+//global struct information
+inline std::vector<StructDefinition*> struct_definitions;
+inline std::vector<std::pair<Type*, StructLayout*>> struct_layouts;    
+
+inline int is_declarable_cntr = 0;
+inline std::unordered_map<std::pair<Type*, Expression*>, bool, DeclarableHash, DeclarableEquals> is_declarable_cache;
+
+//global label information
+inline std::unordered_map<FunctionSignature*, std::string, FunctionSignatureHash, FunctionSignatureEquals> function_label_map;
+inline std::unordered_map<ConstructorSignature*, std::string, ConstructorSignatureHash, ConstructorSignatureEquals> constructor_label_map;
+inline std::unordered_map<Type*, std::string, TypeHash, TypeEquals> destructor_label_map;
+inline std::unordered_map<OperatorSignature*, std::string, OperatorSignatureHash, OperatorSignatureEquals> operator_label_map;
+inline std::unordered_map<std::string, std::string> string_literal_label_map;
+
+//compilation state
+inline std::vector<Variable*> declared_variables;               // holds all variables currently in scope
+inline std::vector<Variable*> declared_global_variables;        // holds all global variables visible to the current compilation context
+inline std::optional<Type*> enclosing_type;                     // if we're compiling a struct member function, this should be set to the type of the struct
+inline Type* enclosing_return_type;                             // this should be set to the return type of the thing we're compiling 
+inline std::vector<std::vector<Variable*>> declaration_stack;   // every 'layer' of the declaration stack should be contiguous on the stack in memory
+inline std::vector<LoopContext*> loop_stack;                    
 
 //add some helpful (?) comments in the generated asm. 
 inline bool asm_debug = false;
@@ -207,13 +273,28 @@ inline bool kernel_mode = false;
 //add some helpful (?) prints in the compiler
 inline bool debug = false;
 
+//toggle to print various performance related information
+inline bool print_timing_info = false;
+
+//disables all default includes
+inline bool no_default_includes = false;
+
+//only emit driver code
+inline bool only_emit_driver = false;
+
 //descriptions of whatever is on the stack. 
 //to push anything, you need to provide a description
 //to pop anything, you need to provide a description, and it will only work if the descriptions match
 inline std::vector<std::string> stack_desc;  
 
-inline std::string global_init_label;
-inline int local_offset;   //tracks the value %rsp - %rbp
+inline int local_offset = 0;   //tracks the value %rsp - %rbp
+inline int label_counter = 0;
+inline int tmp_variable_counter = 0;
 
-void reset_controller();
+void initialize_controller();                           // should call this once before trying to compile
+
+// these functions do some work and emit assembly via fout
+bool compile_file(std::string target_filepath);         // compiles the target file
+bool emit_driver(std::string target_filepath);          // looks for a main() in the target file, emits code to handle initialization and cleanup of program
+bool compile_all(std::string target_filepath);          // looks for all files required by the target file and compiles them all + emits startup code
 

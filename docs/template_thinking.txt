@@ -1,0 +1,91 @@
+
+what to do when instantiating a type like hashset<vector<T>>
+
+
+-- T.jank --
+struct T {
+    i32 foo;
+    i32 bar;
+}
+
+u64 hash(T& x) {
+    return ($u64 x.foo * $u64 x.bar) & 0xFFFFFFFF;
+}
+
+-- main.jank --
+#include <hashset>;
+#include <vector>;
+#include "T.jank";
+
+i32 main() {
+    hashset<vector<T>> foo = new hashset<vector<T>>();
+    return 0;
+}
+
+
+
+
+what about something like hashset<T> where T includes a member like vector<U>
+seems like to compile hashset<T> we just need to include T and whatever hashset includes
+
+-- U.jank --
+struct U {
+    i32 foo;
+}
+
+-- T.jank --
+#include <vector>
+
+template<U>
+struct T {
+    vector<U> foo;
+}
+
+u64 hash(T& x) {
+    return x.foo.size();
+}
+
+-- main.jank --
+#include <hashset>;
+#include "T.jank";
+
+i32 main() {
+    hashset<T> foo = new hashset<T>();
+    return 0;
+}
+
+
+
+my main question is what definition space the templated instantiation should be added to. 
+after the templated instantiation is fully compiled, I see that it should be added privately 
+to the requester's definition space, but I don't see where any intermediate results should go
+
+for example, compiling vector<vector<T>>. To compile a templated type, we first must compile 
+all template argument types, so we'll compile vector<T> first. This requires private access to
+vector + public access to all vector imports + public access to T
+
+once that's done compiling, what definition space should it go into?
+- what if it goes into the public declarations of vector?
+  so then vector declares vector<T> (even though vector has no idea what T is)
+  when compiling vector<vector<T>>, we can actually re-use the same context used to compile vector<T>
+  one issue is that other things that have no idea what T is will now see T,
+    but that shouldn't be an issue. 
+
+- what if we manufacture a new definition space that just declares vector<T>?
+  nice thing about this is that we get import semantics for free, can just add the imports we want
+  and compile like a normal definition space, something like
+```
+#include "T.jank";
+#include <vector>;
+struct vector<T> {
+    // implementation omitted
+}
+```
+  also, when we want to compile vector<vector<T>>, can just import vector<T>.jank and vector
+  the problem is that anyone who wants to use vector<T> has to import this manufactured definition space
+  I don't really want to adjust imports after building definition spaces. 
+
+ok, I actually like placing vector<T> into vector's definition space as a public struct declaration. 
+will have to compile it using an ad-hoc compilation context though. 
+
+

@@ -15,18 +15,6 @@
 #include <set>
 #include <iomanip>
 
-#include "semantics/Program.h"
-#include "semantics/StructDefinition.h"
-#include "semantics/Function.h"
-#include "semantics/Identifier.h"
-#include "semantics/Type.h"
-#include "semantics/Statement.h"
-#include "semantics/FunctionSignature.h"
-#include "semantics/Parameter.h"
-#include "semantics/Constructor.h"
-#include "semantics/ConstructorSignature.h"
-#include "semantics/Include.h"
-
 #include "semantics/utils.h"
 
 #include <unistd.h>  
@@ -37,176 +25,26 @@
 #include <libgen.h>
 #include <sys/stat.h>
 
-bool print_timing_info = false;
-bool no_default_includes = false;
+int compile_file(std::string src_path, char tmp_filename[]) {
+    //direct output to tmp file
+    fout = std::ofstream(tmp_filename);
 
-std::string compiler_dir;
-std::string cwd_dir;
-
-std::string read_file(const std::string& filename) {
-    std::ifstream file(filename); 
-    if (!file) {
-        throw std::runtime_error("Failed to open file: " + filename);
-    }
-    std::ostringstream buffer;
-    buffer << file.rdbuf(); 
-    return buffer.str();     
-}
-
-std::string read_cstr(char* s) {
-    std::string ans = "";
-    int ptr = 0;
-    while(s[ptr] != '\0') {
-        ans.push_back(s[ptr ++]);
-    }
-    return ans;
-}
-
-std::vector<std::string> str_split(std::string s, char sep) {
-    std::vector<std::string> ret;
-    int l = 0;
-    for(int i = 0; i < s.size(); i++) {
-        if(s[i] == sep) {
-            ret.push_back(s.substr(l, i - l));
-            l = i + 1;
-        }
-    }
-    ret.push_back(s.substr(l, s.size() - l));
-    return ret;
-}
-
-std::string extract_filename(std::string path) {
-    return *(str_split(path, '/').rbegin());
-}
-
-std::string extract_folder_path(std::string path) {
-    for(int i = (int) path.size() - 1; i >= 0; i--){
-        if(path[i] == '/') return path.substr(0, i + 1);
-    }
-    //there is no '/', just return "./"
-    return "./";
-}
-
-std::string extract_stem(std::string filename) {
-    for(int i = filename.size() - 1; i >= 0; i--) {
-        if(filename[i] == '.') return filename.substr(0, i);
-    }
-    return filename;
-}   
-
-std::string extract_ext(std::string filename) {
-    for(int i = filename.size() - 1; i >= 0; i--){
-        if(filename[i] == '.') return filename.substr(i);
-    }
-    return "";
-}
-
-std::string cwd_rel_to_absolute(std::string path){
-    if(path[0] == '/') return path;
-    return cwd_dir + "/" + path;
-}
-
-std::string libj_to_absolute(std::string name) {
-    return compiler_dir + "/libj/" + name + ".jank";
-}
-
-int gen_asm(std::string src_path, char tmp_filename[]) {
-    std::cout << "--- GATHERING FILES + PARSING + CONVERTING ---" << std::endl;
-    Program *program = new Program();
-    ld parse_duration = 0, convert_duration = 0;
-    {
-        std::queue<std::string> to_parse;
-        std::set<std::string> parsed_paths;
-
-        //include default libraries
-        std::vector<std::string> default_includes = {
-            "memory",
-            "error",
-            "defs",
-        };  
-
-        //if we're not in kernel mode, can include some utilities provided by the kernel
-        if(!kernel_mode) {
-            default_includes.push_back("syscall");
-            default_includes.push_back("malloc");
-        }
-
-        if(no_default_includes) default_includes.clear();
-
-        for(std::string s : default_includes) {
-            std::string npath = libj_to_absolute(s);
-            to_parse.push(npath);
-            parsed_paths.insert(npath);
-        }
-
-        //base source file
-        to_parse.push(cwd_rel_to_absolute(src_path));
-        parsed_paths.insert(cwd_rel_to_absolute(src_path));
-
-        while(to_parse.size() != 0){
-            std::string cpath = to_parse.front();
-            to_parse.pop();
-            std::cout << cpath << std::endl;
-
-            std::string code = read_file(cpath);
-
-            ld parse_start_time = current_time_seconds();
-            parser::set_s(code);
-            parser::set_gen_errors(false);
-            parser::program *pp = parser::program::parse();
-            if(!parser::check_finished_parsing(true) || parser::get_errors().size() != 0) {
-                std::cout << "SYNTAX ERROR\n";
-                return 1;
-            }
-            parse_duration += current_time_seconds() - parse_start_time;
-
-            ld convert_start_time = current_time_seconds();
-            Program *np = Program::convert(pp);
-            program->add_all(np);
-            convert_duration += current_time_seconds() - convert_start_time;
-
-            //grab all includes
-            for(int i = 0; i < np->includes.size(); i++){
-                Include *inc = np->includes[i];
-                std::string npath;
-                if(inc->is_library_include) npath = compiler_dir + "/libj/" + inc->path + ".jank";
-                else npath = extract_folder_path(cpath) + inc->path;
-
-                //check if we already parsed
-                if(parsed_paths.count(npath)) continue;
-
-                parsed_paths.insert(npath);
-                to_parse.push(npath);
-            }
-        }        
-    }   
-
-    std::cout << "--- CHECK PROGRAM SEMANTICS ---" << std::endl;
-    ld semantics_duration;
-    {
-        ld semantics_start_time = current_time_seconds();
-
-        fout = std::ofstream(tmp_filename);
-        if(!program->is_well_formed()) {
-            std::cout << "Program not well formed\n";
-            fout.close();
-            return 1;
-        }
-        std::cout << "Program is well formed\n";
-        fout.close();
-
-        semantics_duration = current_time_seconds() - semantics_start_time;
-        
+    //compile only one file
+    if(!compile_file(src_path)) {
+        std::cout << "Failed to compile" << std::endl;
+        return 1;
     }
 
-    if(print_timing_info) {
-        std::cout << "--- TIMING INFO ---" << "\n";
-        print_duration_stats();
-        
-        std::cout << "--- TIMING OVERALL ---" << "\n";
-        std::cout << std::fixed << std::setprecision(3) << "Parse Duration : " << parse_duration << "\n";
-        std::cout << std::fixed << std::setprecision(3) << "Convert Duration : " << convert_duration << "\n";
-        std::cout << std::fixed << std::setprecision(3) << "Semantics Duration : " << semantics_duration << "\n";
+    return 0;
+}
+
+int compile(std::string src_path, char tmp_filename[]) {
+    //direct output to tmp file
+    fout = std::ofstream(tmp_filename);
+
+    if(!compile_all(src_path)) {
+        std::cout << "Failed to compile" << std::endl;
+        return 1;
     }
 
     return 0;
@@ -249,8 +87,10 @@ int main(int argc, char* argv[]) {
         std::cout << "-S : generate assembly instead of executable\n";
         std::cout << "-o <out_filepath>\n";
         std::cout << "-k : kernel mode\n";
-        std::cout << "-ad : assembly debug mode (prints some helpful (?) comments in the generated assembly)\n";
-        std::cout << "-nodefincl : no default includes\n";
+        std::cout << "--time : prints some timing info\n";
+        std::cout << "--asm-debug : assembly debug mode (prints some helpful (?) comments in the generated assembly)\n";
+        std::cout << "--no-default-includes\n";
+        std::cout << "--emit-driver : only emits driver code\n";
         return 1;
     }
     int argptr = 1;
@@ -304,20 +144,29 @@ int main(int argc, char* argv[]) {
         else if(arg == "-k") {
             kernel_mode = true;
         }
-        else if(arg == "-ad") {
+        else if(arg == "--asm-debug") {
             asm_debug = true;
         }
-        else if(arg == "-time") {
+        else if(arg == "--time") {
             print_timing_info = true;
+            std::cout << "print timing info WIP" << std::endl;
+            return 1;
         }
-        else if(arg == "-nodefincl") {
+        else if(arg == "--no-default-includes") {
             no_default_includes = true;
+        }
+        else if(arg == "--emit-driver") {
+            only_emit_driver = true;
+            return_asm = true;
         }
         else {
             std::cout << "Unrecognized commandline argument : " << arg << "\n";
             return 1;
         }
     }
+
+    //initialize compilation controller
+    initialize_controller();
 
     char asm_file[] = "jjc_asmXXXXXX";
     int fd = mkstemp(asm_file);
@@ -329,7 +178,7 @@ int main(int argc, char* argv[]) {
 
     pid_t pid = fork();
     if(pid == 0) {
-        exit(gen_asm(filepath, asm_file));
+        exit(compile(filepath, asm_file));
     }
     else {
         int status;

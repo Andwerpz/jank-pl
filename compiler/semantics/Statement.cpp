@@ -10,6 +10,7 @@
 #include "Literal.h"
 #include "InlineASMAccess.h"
 #include "Operator.h"
+#include "CompilationContext.h"
 
 // -- CONVERT CONSTRUCTOR --
 Statement::Statement(parser::token *tok) : ASTNode(tok) {
@@ -371,35 +372,35 @@ bool CompoundStatement::is_always_returning() {
 }
 
 // -- IS WELL FORMED --
-bool DeclarationStatement::is_well_formed() {
+bool DeclarationStatement::is_well_formed(CompilationContext *ctx) {
     // - is the declaration well formed?
-    if(!declaration->is_well_formed()) {
+    if(!declaration->is_well_formed(ctx)) {
         std::cout << "Declaration not well formed\n";
         return false;
     }
     return true;
 }
 
-bool ExpressionStatement::is_well_formed() {
+bool ExpressionStatement::is_well_formed(CompilationContext *ctx) {
     // - does the expression resolve to a type?
-    Type *t = expr->resolve_type();
+    Type *t = expr->resolve_type(ctx);
     if(t == nullptr) {
         std::cout << "Expression does not resolve to type : " << expr->to_string() << "\n";
         return false;
     }
 
     // - does the type actually exist?
-    if(!is_type_declared(t)) {
+    if(!ctx->is_type_declared(t)) {
         std::cout << "Type " << t->to_string() << " does not exist\n";
         return false;
     }
 
-    expr->emit_asm(true);
+    expr->emit_asm(ctx, true);
 
     return true;
 }
 
-bool ReturnStatement::is_well_formed() {
+bool ReturnStatement::is_well_formed(CompilationContext *ctx) {
     //list of variables we shouldn't clean after returning 
     // (either we returned them, or the variable is 'this' and we have an enclosing type)
     std::vector<Identifier*> escape;
@@ -428,7 +429,7 @@ bool ReturnStatement::is_well_formed() {
         // - does the expression resolve to a type?
         Expression *expr = opt_expr.value();
         assert(expr != nullptr);
-        Type *et = opt_expr.value()->resolve_type();
+        Type *et = opt_expr.value()->resolve_type(ctx);
         Type *ft = enclosing_return_type->make_copy();
         if(et == nullptr) {
             std::cout << "Return expression does not resolve to type\n";
@@ -475,7 +476,7 @@ bool ReturnStatement::is_well_formed() {
 
             // - can the expression return type be assigned to the return type of enclosing function?
             Identifier *vid = new Identifier(create_new_tmp_variable_name());
-            Variable *v = emit_initialize_stack_variable(ft, vid, expr);
+            Variable *v = emit_initialize_stack_variable(ctx, ft, vid, expr);
             if(v == nullptr) {
                 std::cout << "Return expression cannot be cast to function return type, " << et->to_string() << " -> " << ft->to_string() << "\n";
                 return false;
@@ -485,7 +486,7 @@ bool ReturnStatement::is_well_formed() {
             fout << indent() << "mov " << v->addr << ", %rax\n";
 
             //clean up temp variable (but don't dealloc)
-            pop_declaration_stack(false);
+            pop_declaration_stack(ctx, false);
         }
         return_done: {}
     }
@@ -493,7 +494,7 @@ bool ReturnStatement::is_well_formed() {
     // - do cleanup and return from function. 
     //clean up local variables + function arguments
     for(int i = (int) declaration_stack.size() - 1; i >= 0; i--) {
-        emit_cleanup_declaration_stack_layer(i, escape);
+        emit_cleanup_declaration_stack_layer(ctx, i, escape);
     }
 
     //reset %rsp
@@ -508,7 +509,7 @@ bool ReturnStatement::is_well_formed() {
     return true;
 }
 
-bool InlineASMStatement::is_well_formed() {
+bool InlineASMStatement::is_well_formed(CompilationContext *ctx) {
     //we should only have one InlineASMAccess
     int access_cnt = 0;
     std::string asm_str = "";
@@ -524,11 +525,11 @@ bool InlineASMStatement::is_well_formed() {
             }
 
             InlineASMAccess *access = std::get<InlineASMAccess*>(tokens[i]);
-            if(!access->is_well_formed()) {
+            if(!access->is_well_formed(ctx)) {
                 std::cout << "InlineASMAccess not well formed\n";
                 return false;
             }
-            access->emit_asm();
+            access->emit_asm(ctx);
             asm_str += access->get_addr();
         }
         else assert(false);
@@ -539,7 +540,7 @@ bool InlineASMStatement::is_well_formed() {
     return true;
 }
 
-bool BreakStatement::is_well_formed() {
+bool BreakStatement::is_well_formed(CompilationContext *ctx) {
     // - are we inside a loop?
     if(loop_stack.size() == 0) {
         std::cout << "Break statement must be inside a loop\n";
@@ -555,7 +556,7 @@ bool BreakStatement::is_well_formed() {
     int tot_sz = 0;
     for(int i = (int) declaration_stack.size() - 1; i > dl; i--) {
         //free heap structs
-        emit_cleanup_declaration_stack_layer(i);
+        emit_cleanup_declaration_stack_layer(ctx, i);
 
         tot_sz += declaration_stack[i].size() * 8;
     }
@@ -567,7 +568,7 @@ bool BreakStatement::is_well_formed() {
     return true;
 }
 
-bool ContinueStatement::is_well_formed() {
+bool ContinueStatement::is_well_formed(CompilationContext *ctx) {
     // - are we inside a loop?
     if(loop_stack.size() == 0) {
         std::cout << "Continue statement must be inside a loop\n";
@@ -583,7 +584,7 @@ bool ContinueStatement::is_well_formed() {
     int tot_sz = 0;
     for(int i = (int) declaration_stack.size() - 1; i > dl; i--) {
         //free heap structs
-        emit_cleanup_declaration_stack_layer(i);
+        emit_cleanup_declaration_stack_layer(ctx, i);
 
         tot_sz += declaration_stack[i].size() * 8;
     }
@@ -595,9 +596,9 @@ bool ContinueStatement::is_well_formed() {
     return true;
 }
 
-bool IfStatement::is_well_formed() {
+bool IfStatement::is_well_formed(CompilationContext *ctx) {
     // - does the expression resolve to nonvoid?
-    Type *t = expr->resolve_type();
+    Type *t = expr->resolve_type(ctx);
     if(t == nullptr || t->equals(primitives::_void)) {
         std::cout << "If statement expression must resolve to non-void type\n";
         return false;
@@ -611,7 +612,7 @@ bool IfStatement::is_well_formed() {
     std::string end_if_label = create_new_label();
 
     //check if we should jump into if statement
-    expr->emit_asm(true);
+    expr->emit_asm(ctx, true);
     fout << indent() << "cmp $0, %rax\n";
     fout << indent() << "jne " << if_label << "\n";
     if(else_statement.has_value()) fout << indent() << "jmp " << else_label << "\n";
@@ -621,20 +622,20 @@ bool IfStatement::is_well_formed() {
     //each statement should implicitly introduce a scope
     fout << if_label << ":\n";
     push_declaration_stack();
-    if(!statement->is_well_formed()) {
+    if(!statement->is_well_formed(ctx)) {
         return false;
     }
-    pop_declaration_stack();
+    pop_declaration_stack(ctx);
     fout << indent() << "jmp " << end_if_label << "\n";
 
     // - is else statement well formed?
     if(else_statement.has_value()) {
         fout << else_label << ":\n";
         push_declaration_stack();
-        if(!else_statement.value()->is_well_formed()) {
+        if(!else_statement.value()->is_well_formed(ctx)) {
             return false;
         }
-        pop_declaration_stack();
+        pop_declaration_stack(ctx);
         fout << indent() << "jmp " << end_if_label << "\n";
     }
 
@@ -644,9 +645,9 @@ bool IfStatement::is_well_formed() {
     return true;
 }
 
-bool WhileStatement::is_well_formed() {
+bool WhileStatement::is_well_formed(CompilationContext *ctx) {
     // - does the expression resolve to nonvoid?
-    Type *t = expr->resolve_type();
+    Type *t = expr->resolve_type(ctx);
     if(t == nullptr || t->equals(primitives::_void)) {
         std::cout << "While loop expression must resolve to nonvoid type\n";
         return false;
@@ -661,16 +662,16 @@ bool WhileStatement::is_well_formed() {
     fout << loop_start_label << ":\n";
 
     //check loop condition
-    expr->emit_asm(true);
+    expr->emit_asm(ctx, true);
     fout << indent() << "cmp $0, %rax\n";
     fout << indent() << "je " << loop_end_label << "\n";
 
     // - is the statement well formed?
     push_declaration_stack();
-    if(!statement->is_well_formed()) {
+    if(!statement->is_well_formed(ctx)) {
         return false;
     }
-    pop_declaration_stack();
+    pop_declaration_stack(ctx);
 
     //loop variable assignment (just for continue)
     fout << loop_assignment_label << ":\n";
@@ -687,21 +688,21 @@ bool WhileStatement::is_well_formed() {
     return true;
 }
 
-bool ForStatement::is_well_formed() {
+bool ForStatement::is_well_formed(CompilationContext *ctx) {
     push_declaration_stack();
 
     if(asm_debug) fout << indent() << "# for loop start\n";
 
     // - is declaration well formed?   
     if(declaration.has_value()) {
-        if(!declaration.value()->is_well_formed()) {
+        if(!declaration.value()->is_well_formed(ctx)) {
             return false;
         }
     }
 
     // - does the conditional expression resolve to nonvoid?
     if(expr1.has_value()) {
-        Type *t = expr1.value()->resolve_type();
+        Type *t = expr1.value()->resolve_type(ctx);
         if(t == nullptr || t->equals(primitives::_void)) {
             std::cout << "For loop conditional expression must resolve to type\n";
             return false;
@@ -709,7 +710,7 @@ bool ForStatement::is_well_formed() {
     }
     // - is the assignment expression well formed?
     if(expr2.has_value()) {
-        if(expr2.value()->resolve_type() == nullptr) {
+        if(expr2.value()->resolve_type(ctx) == nullptr) {
             std::cout << "For loop assignment expression not well formed\n";
             return false;
         }
@@ -724,21 +725,21 @@ bool ForStatement::is_well_formed() {
 
     //check loop condition
     if(expr1.has_value()) {
-        expr1.value()->emit_asm(true);
+        expr1.value()->emit_asm(ctx, true);
         fout << indent() << "cmp $0, %rax\n";
         fout << indent() << "je " << loop_end_label << "\n";
     }
 
     // - is the statement well formed?
     push_declaration_stack();
-    if(!statement->is_well_formed()) {
+    if(!statement->is_well_formed(ctx)) {
         return false;
     }
-    pop_declaration_stack();
+    pop_declaration_stack(ctx);
 
     //loop variable assignment
     fout << loop_assignment_label << ":\n";
-    if(expr2.has_value()) expr2.value()->emit_asm(true);
+    if(expr2.has_value()) expr2.value()->emit_asm(ctx, true);
 
     //jump to start of loop
     fout << indent() << "jmp " << loop_start_label << "\n";
@@ -749,19 +750,19 @@ bool ForStatement::is_well_formed() {
 
     if(asm_debug) fout << indent() << "# for loop end\n";
 
-    pop_declaration_stack();
+    pop_declaration_stack(ctx);
     return true;
 }
 
-bool CompoundStatement::is_well_formed() {
+bool CompoundStatement::is_well_formed(CompilationContext *ctx) {
     // - are all statements within well formed?
     push_declaration_stack();
     for(int i = 0; i < statements.size(); i++){
-        if(!statements[i]->is_well_formed()) {
+        if(!statements[i]->is_well_formed(ctx)) {
             return false;
         }
     }
-    pop_declaration_stack();
+    pop_declaration_stack(ctx);
 
     return true;
 }
@@ -870,56 +871,56 @@ bool CompoundStatement::replace_templated_types(TemplateMapping *mapping) {
 }
 
 // -- LOOK FOR TEMPLATES --
-bool DeclarationStatement::look_for_templates() {
-    return declaration->look_for_templates();
+bool DeclarationStatement::look_for_templates(CompilationContext *ctx) {
+    return declaration->look_for_templates(ctx);
 }
 
-bool ExpressionStatement::look_for_templates() {
-    return expr->look_for_templates();
+bool ExpressionStatement::look_for_templates(CompilationContext *ctx) {
+    return expr->look_for_templates(ctx);
 }
 
-bool ReturnStatement::look_for_templates() {
-    if(opt_expr.has_value()) if(!opt_expr.value()->look_for_templates()) return false;
+bool ReturnStatement::look_for_templates(CompilationContext *ctx) {
+    if(opt_expr.has_value()) if(!opt_expr.value()->look_for_templates(ctx)) return false;
     return true;
 }
 
-bool InlineASMStatement::look_for_templates() {
+bool InlineASMStatement::look_for_templates(CompilationContext *ctx) {
     return true;    //do nothing
 }
 
-bool BreakStatement::look_for_templates() {
+bool BreakStatement::look_for_templates(CompilationContext *ctx) {
     return true;    //do nothing
 }
 
-bool ContinueStatement::look_for_templates() {
+bool ContinueStatement::look_for_templates(CompilationContext *ctx) {
     return true;    //do nothing
 }
 
-bool IfStatement::look_for_templates() {
-    if(!expr->look_for_templates()) return false;
-    if(!statement->look_for_templates()) return false;
+bool IfStatement::look_for_templates(CompilationContext *ctx) {
+    if(!expr->look_for_templates(ctx)) return false;
+    if(!statement->look_for_templates(ctx)) return false;
     if(else_statement.has_value()) {
-        if(!else_statement.value()->look_for_templates()) return false;
+        if(!else_statement.value()->look_for_templates(ctx)) return false;
     }
     return true;
 }
 
-bool WhileStatement::look_for_templates() {
-    if(!expr->look_for_templates()) return false;
-    if(!statement->look_for_templates()) return false;
+bool WhileStatement::look_for_templates(CompilationContext *ctx) {
+    if(!expr->look_for_templates(ctx)) return false;
+    if(!statement->look_for_templates(ctx)) return false;
     return true;
 }
 
-bool ForStatement::look_for_templates() {
-    if(declaration.has_value()) if(!declaration.value()->look_for_templates()) return false;
-    if(expr1.has_value()) if(!expr1.value()->look_for_templates()) return false;
-    if(expr2.has_value()) if(!expr2.value()->look_for_templates()) return false;
-    if(!statement->look_for_templates()) return false;
+bool ForStatement::look_for_templates(CompilationContext *ctx) {
+    if(declaration.has_value()) if(!declaration.value()->look_for_templates(ctx)) return false;
+    if(expr1.has_value()) if(!expr1.value()->look_for_templates(ctx)) return false;
+    if(expr2.has_value()) if(!expr2.value()->look_for_templates(ctx)) return false;
+    if(!statement->look_for_templates(ctx)) return false;
     return true;
 }
 
-bool CompoundStatement::look_for_templates() {
-    for(int i = 0; i < statements.size(); i++) if(!statements[i]->look_for_templates()) return false;
+bool CompoundStatement::look_for_templates(CompilationContext *ctx) {
+    for(int i = 0; i < statements.size(); i++) if(!statements[i]->look_for_templates(ctx)) return false;
     return true;
 }
 

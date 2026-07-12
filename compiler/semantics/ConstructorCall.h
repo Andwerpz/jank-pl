@@ -8,6 +8,7 @@ struct Type;
 struct Expression;
 struct Constructor;
 struct TemplateMapping;
+struct CompilationContext;
 
 //normal constructor calls return r-value 
 //construct-in-place constructor calls return l-value
@@ -22,13 +23,13 @@ struct ConstructorCall : public ASTNode {
     ConstructorCall(std::optional<Expression*> _cip_expr, Type *_type, std::vector<Expression*> _argument_list);
 
     static ConstructorCall* convert(parser::constructor_call *c);
-    Constructor* resolve_called_constructor();
-    Type* resolve_type();
-    void emit_asm(bool alloc_new);
+    Constructor* resolve_called_constructor(CompilationContext *ctx);
+    Type* resolve_type(CompilationContext *ctx);
+    void emit_asm(CompilationContext *ctx, bool addr_provided);
     std::string to_string();
     size_t hash();
     bool equals(ConstructorCall *other);
     ConstructorCall* make_copy();
     bool replace_templated_types(TemplateMapping *mapping);
-    bool look_for_templates();
+    bool look_for_templates(CompilationContext* ctx);
 };

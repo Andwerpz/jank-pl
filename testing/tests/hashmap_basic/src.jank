@@ -3,6 +3,8 @@
 #include <hashmap>;
 #include <random>;
 #include <pair>;
+#include <hashmap>;
+#include <vector>;
 
 void test_small() {
     u64 n = $u64 100;

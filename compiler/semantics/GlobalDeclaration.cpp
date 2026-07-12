@@ -7,6 +7,7 @@
 #include "Type.h"
 #include "Identifier.h"
 #include "Expression.h"
+#include "CompilationContext.h"
 
 GlobalDeclaration::GlobalDeclaration(parser::token *tok) : ASTNode(tok) {
     // do nothing
@@ -44,6 +45,14 @@ bool GlobalDeclaration::replace_templated_types(TemplateMapping *mapping) {
     return declaration->replace_templated_types(mapping);
 }
 
-bool GlobalDeclaration::look_for_templates() {
-    return declaration->look_for_templates();
+bool GlobalDeclaration::look_for_templates(CompilationContext *ctx) {
+    return declaration->look_for_templates(ctx);
+}
+
+std::string GlobalDeclaration::generate_init_label() {
+    return "__global_init__" + declaration->id->to_string();
+}
+
+std::string GlobalDeclaration::generate_cleanup_label() {
+    return "__global_cleanup__" + declaration->id->to_string();
 }

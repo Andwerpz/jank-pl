@@ -14,6 +14,8 @@
 #include "DestructorCall.h"
 #include "Destructor.h"
 #include "Operator.h"
+#include "CompilationContext.h"
+#include "DefinitionSpace.h"
 
 // -- CONVERT CONSTRUCTOR --
 ExprNode::ExprNode(parser::token *tok) : ASTNode(tok) {
@@ -435,16 +437,16 @@ Expression* Expression::convert(parser::expression *e) {
 }
 
 // -- RESOLVE_TYPE --
-Type* ExprNode::resolve_type() {
+Type* ExprNode::resolve_type(CompilationContext *ctx) {
     if(resolve_type_cache.has_value()) return resolve_type_cache.value();
-    resolve_type_cache = this->_resolve_type();
+    resolve_type_cache = this->_resolve_type(ctx);
     return resolve_type_cache.value();
 }
 
-Type* ExprPrimary::_resolve_type() {
+Type* ExprPrimary::_resolve_type(CompilationContext *ctx) {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *f = std::get<FunctionCall*>(val);
-        Type *res = f->resolve_type();
+        Type *res = f->resolve_type(ctx);
         if(res == nullptr) {
             std::cout << "Function call does not resolve to type : " << f->to_string() << "\n";
             return nullptr;
@@ -458,7 +460,7 @@ Type* ExprPrimary::_resolve_type() {
     }
     else if(std::holds_alternative<ConstructorCall*>(val)) {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
-        Type *res = c->resolve_type();
+        Type *res = c->resolve_type(ctx);
         if(res == nullptr){
             std::cout << "Constructor call does not resolve to type : " << c->to_string() << "\n";
             return nullptr;
@@ -467,7 +469,7 @@ Type* ExprPrimary::_resolve_type() {
     }
     else if(std::holds_alternative<OperatorCall*>(val)) {
         OperatorCall *o = std::get<OperatorCall*>(val);
-        Type *res = o->resolve_type();
+        Type *res = o->resolve_type(ctx);
         if(res == nullptr){
             std::cout << "Overload does not resolve to type : " << o->to_string() << "\n";
             return nullptr;
@@ -481,7 +483,7 @@ Type* ExprPrimary::_resolve_type() {
     }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
-        Type *res = find_variable_type(id);
+        Type *res = get_variable_type(id);
         if(res == nullptr) {
             std::cout << "Unable to find variable : " << id->name << "\n";
             return nullptr;
@@ -495,11 +497,11 @@ Type* ExprPrimary::_resolve_type() {
     }
     else if(std::holds_alternative<Literal*>(val)) {
         Literal *l = std::get<Literal*>(val);
-        return l->resolve_type();
+        return l->resolve_type(ctx);
     }
     else if(std::holds_alternative<Expression*>(val)) {
         Expression *e = std::get<Expression*>(val);
-        return e->resolve_type();
+        return e->resolve_type(ctx);
     }
     else if(std::holds_alternative<Type*>(val)) {
         Type *res = std::get<Type*>(val);
@@ -513,14 +515,14 @@ Type* ExprPrimary::_resolve_type() {
     else assert(false);
 }
 
-Type* ExprBinary::_resolve_type() {
-    Type *lt = left->resolve_type(), *rt = right->resolve_type();
+Type* ExprBinary::_resolve_type(CompilationContext *ctx) {
+    Type *lt = left->resolve_type(ctx), *rt = right->resolve_type(ctx);
     if(lt == nullptr || rt == nullptr) return nullptr;    
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
 
         //try to find overload / builtin
-        Type *otype = find_resulting_type(left, str_op, right);
+        Type *otype = ctx->find_resulting_type(left, str_op, right);
         if(otype != nullptr) {
             //auto dereference reference type
             if(auto x = dynamic_cast<ReferenceType*>(otype)) {
@@ -531,7 +533,7 @@ Type* ExprBinary::_resolve_type() {
 
         //default behaviour
         if(str_op == "=") {
-            if(!left->is_lvalue()) {
+            if(!left->is_lvalue(ctx)) {
                 if(debug) std::cout << "Cannot assign to r-value\n";
                 return nullptr;
             }
@@ -548,14 +550,14 @@ Type* ExprBinary::_resolve_type() {
     else assert(false);
 }
 
-Type* ExprPrefix::_resolve_type() {
-    Type *rt = right->resolve_type();
+Type* ExprPrefix::_resolve_type(CompilationContext *ctx) {
+    Type *rt = right->resolve_type(ctx);
     if(rt == nullptr) return nullptr;
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
 
         //try to find overload / builtin
-        Type *otype = find_resulting_type(std::nullopt, str_op, right);
+        Type *otype = ctx->find_resulting_type(std::nullopt, str_op, right);
         if(otype != nullptr) {
             //auto dereference reference type
             if(auto x = dynamic_cast<ReferenceType*>(otype)) {
@@ -577,7 +579,7 @@ Type* ExprPrefix::_resolve_type() {
         }
         else if(str_op == "@") {
             //right must be an l-value in order to reference
-            if(!right->is_lvalue()) {
+            if(!right->is_lvalue(ctx)) {
                 std::cout << "Cannot create reference of r-value : " << right->to_string() << "\n";
                 return nullptr;
             }
@@ -593,7 +595,7 @@ Type* ExprPrefix::_resolve_type() {
         Type *cast_t = std::get<Type*>(op);
 
         //try to find cast operator implementation
-        Operator *o = get_called_typecast(rt, cast_t);
+        Operator *o = ctx->get_called_typecast(rt, cast_t);
         if(o == nullptr) {
             std::cout << "Cannot cast from " << rt->to_string() << " to " << cast_t->to_string() << "\n";
             return nullptr;
@@ -604,16 +606,16 @@ Type* ExprPrefix::_resolve_type() {
     else assert(false);
 }
 
-Type* ExprPostfix::_resolve_type() {
-    Type *lt = left->resolve_type();
+Type* ExprPostfix::_resolve_type(CompilationContext *ctx) {
+    Type *lt = left->resolve_type(ctx);
     if(lt == nullptr) return nullptr;
     if(std::holds_alternative<Expression*>(op)) {   //indexing
         Expression *expr = std::get<Expression*>(op);
-        Type *et = expr->resolve_type();
+        Type *et = expr->resolve_type(ctx);
         if(et == nullptr) return nullptr;
 
         //try to find overload
-        Type *otype = find_resulting_type(left, "[]", expr->expr_node);
+        Type *otype = ctx->find_resulting_type(left, "[]", expr->expr_node);
         if(otype != nullptr) {
             //auto dereference reference type
             if(auto x = dynamic_cast<ReferenceType*>(otype)) {
@@ -623,7 +625,7 @@ Type* ExprPostfix::_resolve_type() {
         }
 
         //default behaviour
-        if(get_called_typecast(et, primitives::u64) == nullptr) {
+        if(ctx->get_called_typecast(et, primitives::u64) == nullptr) {
             std::cout << "Builtin indexing expression must be convertible to u64\n";
             return nullptr;
         }
@@ -659,8 +661,8 @@ Type* ExprPostfix::_resolve_type() {
 
         //member function call
         fc = new FunctionCall(lt, fc->id, fc->argument_list);
-        Type *nt = fc->resolve_type();
-        if(fc->resolve_type() == nullptr) {
+        Type *nt = fc->resolve_type(ctx);
+        if(fc->resolve_type(ctx) == nullptr) {
             std::cout << "Failed to resolve type of function call\n";
             return nullptr;
         }
@@ -729,7 +731,7 @@ Type* ExprPostfix::_resolve_type() {
         }
 
         //try to find overload / builtin
-        Type *otype = find_resulting_type(left, str_op, std::nullopt);
+        Type *otype = ctx->find_resulting_type(left, str_op, std::nullopt);
         if(otype != nullptr) {
             //auto dereference reference type
             if(auto x = dynamic_cast<ReferenceType*>(otype)) {
@@ -759,7 +761,7 @@ Type* ExprPostfix::_resolve_type() {
 
         // - can the arguments actually call the function?
         for(int i = 0; i < argument_list.size(); i++){
-            if(!is_declarable(fpt->param_types[i], argument_list[i])){
+            if(!ctx->is_declarable(fpt->param_types[i], argument_list[i])){
                 std::cout << "Cannot declare function pointer argument : " << fpt->param_types[i]->to_string() << " with expression " << argument_list[i]->to_string() << "\n";
                 return nullptr;
             }
@@ -770,21 +772,21 @@ Type* ExprPostfix::_resolve_type() {
     else assert(false);
 }
 
-Type* Expression::resolve_type() {
-    return expr_node->resolve_type();
+Type* Expression::resolve_type(CompilationContext *ctx) {
+    return expr_node->resolve_type(ctx);
 }
 
 // -- IS_LVALUE --
-bool ExprNode::is_lvalue() {
+bool ExprNode::is_lvalue(CompilationContext *ctx) {
     if(is_lvalue_cache.has_value()) return is_lvalue_cache.value();
-    is_lvalue_cache = this->_is_lvalue();
+    is_lvalue_cache = this->_is_lvalue(ctx);
     return is_lvalue_cache.value();
 }
 
-bool ExprPrimary::_is_lvalue() {
+bool ExprPrimary::_is_lvalue(CompilationContext *ctx) {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *fc = std::get<FunctionCall*>(val);
-        Type *t = fc->resolve_type();
+        Type *t = fc->resolve_type(ctx);
         if(t == nullptr) return false;
         //if return type is a reference, it gets auto-dereferenced. 
         if(dynamic_cast<ReferenceType*>(t) != nullptr) return true;
@@ -798,7 +800,7 @@ bool ExprPrimary::_is_lvalue() {
     }
     else if(std::holds_alternative<OperatorCall*>(val)) {
         OperatorCall *o = std::get<OperatorCall*>(val);
-        Type *t = o->resolve_type();
+        Type *t = o->resolve_type(ctx);
         if(t == nullptr) return false;
         //if return type is reference, auto-dereference
         if(dynamic_cast<ReferenceType*>(t) != nullptr) return true;
@@ -812,7 +814,7 @@ bool ExprPrimary::_is_lvalue() {
     }
     else if(std::holds_alternative<Expression*>(val)) {
         Expression *e = std::get<Expression*>(val);
-        return e->is_lvalue();
+        return e->is_lvalue(ctx);
     }
     else if(std::holds_alternative<Type*>(val)) {
         //if type is reference, this is an l-value
@@ -822,14 +824,14 @@ bool ExprPrimary::_is_lvalue() {
     else assert(false);
 }
 
-bool ExprBinary::_is_lvalue() {
-    Type *lt = left->resolve_type(), *rt = right->resolve_type();
+bool ExprBinary::_is_lvalue(CompilationContext *ctx) {
+    Type *lt = left->resolve_type(ctx), *rt = right->resolve_type(ctx);
     if(lt == nullptr || rt == nullptr) return false;
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
 
         //find overload / builtin
-        Type *otype = find_resulting_type(left, str_op, right);
+        Type *otype = ctx->find_resulting_type(left, str_op, right);
         if(otype != nullptr) {
             return dynamic_cast<ReferenceType*>(otype) != nullptr;
         }
@@ -840,14 +842,14 @@ bool ExprBinary::_is_lvalue() {
     else assert(false);
 }
 
-bool ExprPrefix::_is_lvalue() {
-    Type *rt = right->resolve_type();
-    if(!right->is_lvalue()) return false;
+bool ExprPrefix::_is_lvalue(CompilationContext *ctx) {
+    Type *rt = right->resolve_type(ctx);
+    if(!right->is_lvalue(ctx)) return false;
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
 
         //find overload / builtin
-        Type *otype = find_resulting_type(std::nullopt, str_op, right);
+        Type *otype = ctx->find_resulting_type(std::nullopt, str_op, right);
         if(otype != nullptr) {
             return dynamic_cast<ReferenceType*>(otype) != nullptr;
         }
@@ -867,16 +869,16 @@ bool ExprPrefix::_is_lvalue() {
     else assert(false);
 }
 
-bool ExprPostfix::_is_lvalue() {
-    Type *lt = left->resolve_type();
+bool ExprPostfix::_is_lvalue(CompilationContext *ctx) {
+    Type *lt = left->resolve_type(ctx);
     if(lt == nullptr) return false;
     if(std::holds_alternative<Expression*>(op)) {   //indexing
         Expression *expr = std::get<Expression*>(op);
-        Type *et = expr->resolve_type();
+        Type *et = expr->resolve_type(ctx);
         if(et == nullptr) return false;
         
         //find overload
-        Type *otype = find_resulting_type(left, "[]", expr->expr_node);
+        Type *otype = ctx->find_resulting_type(left, "[]", expr->expr_node);
         if(otype != nullptr) {
             return dynamic_cast<ReferenceType*>(otype) != nullptr;
         }
@@ -898,8 +900,8 @@ bool ExprPostfix::_is_lvalue() {
 
         //member function call
         fc = new FunctionCall(lt, fc->id, fc->argument_list);
-        Type *nt = fc->resolve_type();
-        if(fc->resolve_type() == nullptr) {
+        Type *nt = fc->resolve_type(ctx);
+        if(fc->resolve_type(ctx) == nullptr) {
             return false;
         }
 
@@ -919,7 +921,7 @@ bool ExprPostfix::_is_lvalue() {
         }
 
         //find overload
-        Type *otype = find_resulting_type(left, str_op, std::nullopt);
+        Type *otype = ctx->find_resulting_type(left, str_op, std::nullopt);
         if(otype != nullptr) {
             return dynamic_cast<ReferenceType*>(otype) != nullptr;
         }
@@ -936,12 +938,12 @@ bool ExprPostfix::_is_lvalue() {
     else assert(false);
 }
 
-bool Expression::is_lvalue() {
-    return expr_node->is_lvalue();
+bool Expression::is_lvalue(CompilationContext *ctx) {
+    return expr_node->is_lvalue(ctx);
 }
 
 // -- ELABORATE --
-void ExprPrimary::elaborate(ExprNode*& self) {
+void ExprPrimary::elaborate(CompilationContext *ctx, ExprNode*& self) {
     if(std::holds_alternative<FunctionCall*>(val)) {
         //do nothing
     }
@@ -959,7 +961,7 @@ void ExprPrimary::elaborate(ExprNode*& self) {
     }
     else if(std::holds_alternative<Expression*>(val)) {
         Expression *expr = std::get<Expression*>(val);
-        expr->elaborate();
+        expr->elaborate(ctx);
     }
     else if(std::holds_alternative<Type*>(val)) {
         //do nothing
@@ -967,12 +969,12 @@ void ExprPrimary::elaborate(ExprNode*& self) {
     else assert(false);
 }
 
-void ExprBinary::elaborate(ExprNode*& self) {
+void ExprBinary::elaborate(CompilationContext *ctx, ExprNode*& self) {
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
 
         //convert overloads into overload calls
-        Operator *o = get_called_operator(left, str_op, right);
+        Operator *o = ctx->get_called_operator(left, str_op, right);
         if(dynamic_cast<OperatorOverload*>(o) != nullptr) {
             OperatorCall *oc = new OperatorCall(left, str_op, right);
             self = new ExprPrimary(oc);
@@ -982,16 +984,16 @@ void ExprBinary::elaborate(ExprNode*& self) {
     else assert(false);
 
     //if we haven't replaced ourself, elaborate children
-    left->elaborate(left);
-    right->elaborate(right);
+    left->elaborate(ctx, left);
+    right->elaborate(ctx, right);
 }
 
-void ExprPrefix::elaborate(ExprNode*& self) {
+void ExprPrefix::elaborate(CompilationContext *ctx, ExprNode*& self) {
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
 
         //convert overloads into overload calls
-        Operator *o = get_called_operator(std::nullopt, str_op, right);
+        Operator *o = ctx->get_called_operator(std::nullopt, str_op, right);
         if(dynamic_cast<OperatorOverload*>(o) != nullptr) {
             OperatorCall *oc = new OperatorCall(std::nullopt, str_op, right);
             self = new ExprPrimary(oc);
@@ -1000,25 +1002,25 @@ void ExprPrefix::elaborate(ExprNode*& self) {
     }
     else if(std::holds_alternative<Type*>(op)) {
         Type *cast_t = std::get<Type*>(op);
-        Type *rt = right->resolve_type();
+        Type *rt = right->resolve_type(ctx);
 
         //for now, assume that all typecasts are builtin
-        Operator *oe = get_called_typecast(rt, cast_t);
+        Operator *oe = ctx->get_called_typecast(rt, cast_t);
         assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
     }
     else assert(false);
 
     //if we haven't replaced ourself, elaborate children
-    right->elaborate(right);
+    right->elaborate(ctx, right);
 }
 
-void ExprPostfix::elaborate(ExprNode*& self) { 
+void ExprPostfix::elaborate(CompilationContext *ctx, ExprNode*& self) { 
     if(std::holds_alternative<Expression*>(op)) {   //indexing
         Expression *expr = std::get<Expression*>(op);
-        assert(expr->resolve_type() != nullptr);
+        assert(expr->resolve_type(ctx) != nullptr);
 
         //convert overloads into overload calls
-        Operator *o = get_called_operator(left, "[]", expr->expr_node);
+        Operator *o = ctx->get_called_operator(left, "[]", expr->expr_node);
         if(dynamic_cast<OperatorOverload*>(o) != nullptr) {
             OperatorCall *oc = new OperatorCall(left, "[]", expr->expr_node);
             self = new ExprPrimary(oc);
@@ -1035,7 +1037,7 @@ void ExprPostfix::elaborate(ExprNode*& self) {
         std::string str_op = std::get<std::string>(op);
 
         //convert overloads into overload calls
-        Operator *o = get_called_operator(left, str_op, std::nullopt);
+        Operator *o = ctx->get_called_operator(left, str_op, std::nullopt);
         if(dynamic_cast<OperatorOverload*>(o) != nullptr) {
             OperatorCall *oc = new OperatorCall(left, str_op, std::nullopt);
             self = new ExprPrimary(oc);
@@ -1048,27 +1050,27 @@ void ExprPostfix::elaborate(ExprNode*& self) {
     else assert(false);
 
     //if we haven't replaced ourself, elaborate children
-    left->elaborate(left);
+    left->elaborate(ctx, left);
 }
 
-void Expression::elaborate() {
+void Expression::elaborate(CompilationContext *ctx) {
     if(has_elaborated) {
         if(debug) std::cout << "ALREADY ELABORATED : " << to_string() << std::endl;
         assert(false);
     }
     if(debug) std::cout << "ELABORATING : " << to_string() << std::endl;
     has_elaborated = true;
-    expr_node->elaborate(expr_node);
+    expr_node->elaborate(ctx, expr_node);
     if(debug) std::cout << "DONE ELABORATING : " << to_string() << std::endl;
 }
 
 // -- EMIT_ASM -- 
-void ExprPrimary::emit_asm() {
+void ExprPrimary::emit_asm(CompilationContext *ctx) {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *f = std::get<FunctionCall*>(val);
-        f->emit_asm();
+        f->emit_asm(ctx);
 
-        Type *ft = f->resolve_type();
+        Type *ft = f->resolve_type(ctx);
         assert(ft != nullptr);
         
         //if this is a reference, dereference it
@@ -1078,13 +1080,13 @@ void ExprPrimary::emit_asm() {
     }
     else if(std::holds_alternative<ConstructorCall*>(val)) {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
-        c->emit_asm(false);
+        c->emit_asm(ctx, false);
     }
     else if(std::holds_alternative<OperatorCall*>(val)) {
         OperatorCall *o = std::get<OperatorCall*>(val);
-        o->emit_asm();
+        o->emit_asm(ctx);
 
-        Type *ot = o->resolve_type();
+        Type *ot = o->resolve_type(ctx);
         assert(ot != nullptr);
 
         //if this is a reference, dereference it
@@ -1118,11 +1120,11 @@ void ExprPrimary::emit_asm() {
     }
     else if(std::holds_alternative<Literal*>(val)) {
         Literal *l = std::get<Literal*>(val);
-        l->emit_asm();
+        l->emit_asm(ctx);
     }
     else if(std::holds_alternative<Expression*>(val)) {
         Expression *e = std::get<Expression*>(val);
-        e->expr_node->emit_asm();   //bypass elaboration
+        e->expr_node->emit_asm(ctx);   //bypass elaboration
     }
     else if(std::holds_alternative<Type*>(val)) {
         assert(false);  //Type* is just for checking if an expression resolves to something. 
@@ -1130,13 +1132,13 @@ void ExprPrimary::emit_asm() {
     else assert(false);
 }
 
-void ExprBinary::emit_asm() {
-    Type *lt = left->resolve_type(), *rt = right->resolve_type();
+void ExprBinary::emit_asm(CompilationContext *ctx) {
+    Type *lt = left->resolve_type(ctx), *rt = right->resolve_type(ctx);
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
         if(str_op == "||") {    //logical or
             std::string label = create_new_label();
-            left->emit_asm();
+            left->emit_asm(ctx);
 
             //see if we should short circuit
             fout << indent() << "cmp $0, %rax\n";
@@ -1145,11 +1147,11 @@ void ExprBinary::emit_asm() {
             //if we don't short circuit, evaluate right branch and merge
             {
                 emit_push("%rax", "ExprBinary::emit_asm() : || save left");
-                right->emit_asm();
+                right->emit_asm(ctx);
                 fout << indent() << "mov %rax, %rbx\n";
                 emit_pop("%rax", "ExprBinary::emit_asm() : || save left");
 
-                Operator *oe = get_called_operator(left, str_op, right);
+                Operator *oe = ctx->get_called_operator(left, str_op, right);
                 assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
                 dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
             }
@@ -1158,7 +1160,7 @@ void ExprBinary::emit_asm() {
         }
         else if(str_op == "&&") {   //logical and
             std::string label = create_new_label();
-            left->emit_asm();
+            left->emit_asm(ctx);
 
             //see if we should short circuit
             fout << indent() << "cmp $0, %rax\n";
@@ -1167,11 +1169,11 @@ void ExprBinary::emit_asm() {
             //if we don't short circuit, evaluate right branch and merge
             {
                 emit_push("%rax", "ExprBinary::emit_asm() : && save left");
-                right->emit_asm();
+                right->emit_asm(ctx);
                 fout << indent() << "mov %rax, %rbx\n";
                 emit_pop("%rax", "ExprBinary::emit_asm() : && save left");
 
-                Operator *oe = get_called_operator(left, str_op, right);
+                Operator *oe = ctx->get_called_operator(left, str_op, right);
                 assert(dynamic_cast<BuiltinOperator*>(oe) != nullptr);
                 dynamic_cast<BuiltinOperator*>(oe)->emit_asm();
             }
@@ -1184,13 +1186,13 @@ void ExprBinary::emit_asm() {
 
             if(is_type_primitive(lt)) {
                 //eval right r-value
-                right->emit_asm();
+                right->emit_asm(ctx);
 
                 //save value
                 emit_push("%rax", "ExprBinary::emit_asm() : = save right");
 
                 //evaluate left l-value
-                left->emit_asm();
+                left->emit_asm(ctx);
 
                 //move right value into left mem location
                 int sz = lt->calc_size();
@@ -1200,7 +1202,7 @@ void ExprBinary::emit_asm() {
             }
             else {
                 //generate right struct
-                right->emit_asm();
+                right->emit_asm(ctx);
 
                 //create temp struct reference variable 
                 push_declaration_stack();
@@ -1210,21 +1212,21 @@ void ExprBinary::emit_asm() {
                 Variable *v = add_stack_variable(new ReferenceType(rt), id);
 
                 //generate left struct. %rax should now hold struct mem location
-                left->emit_asm();
+                left->emit_asm(ctx);
                 
                 //destruct left struct without dealloccing
                 emit_push("%rax", "ExprBinary::emit_asm() : save left addr before destruct");
-                emit_destructor_call(lt, false);
+                emit_destructor_call(ctx, lt, false);
                 emit_pop("%rax", "ExprBinary::emit_asm() : save left addr before destruct");
 
                 //use copy constructor to overwrite left struct mem location
                 ConstructorCall *cc = new ConstructorCall(std::nullopt, lt, {new Expression(new ExprPrimary(id))});
-                assert(cc->resolve_called_constructor() != nullptr);
-                cc->emit_asm(true);    //%rax should now hold struct mem location
+                assert(cc->resolve_called_constructor(ctx) != nullptr);
+                cc->emit_asm(ctx, true);    //%rax should now hold struct mem location
 
                 //if the right struct is not an lvalue, deallocate it
                 //This is not handled by pop_declaration_stack() as the temp variable is of reference type
-                if(!right->is_lvalue()){
+                if(!right->is_lvalue(ctx)){
                     //save left mem addr
                     emit_push("%rax", "ExprBinary::emit_asm() : save struct addr during right dealloc");
                     
@@ -1232,14 +1234,14 @@ void ExprBinary::emit_asm() {
                     fout << indent() << "movq " << v->addr << ", %rax\n";
 
                     //call destructor
-                    emit_destructor_call(rt, true);
+                    emit_destructor_call(ctx, rt, true);
                     
                     //retrieve left mem addr
                     emit_pop("%rax", "ExprBinary::emit_asm() : save struct addr during right dealloc");
                 }
 
                 //clean up temp variables
-                pop_declaration_stack();
+                pop_declaration_stack(ctx);
 
                 //%rax should hold address, copy it over to %rcx
                 fout << indent() << "mov %rax, %rcx\n";
@@ -1249,12 +1251,12 @@ void ExprBinary::emit_asm() {
             //the address of left should be in %rcx
         }
         else {
-            right->emit_asm();
+            right->emit_asm(ctx);
             emit_push("%rax", "ExprBinary::emit_asm() : save right");
-            left->emit_asm();
+            left->emit_asm(ctx);
             emit_pop("%rbx", "ExprBinary::emit_asm() : save right");
             
-            Operator *o = get_called_operator(left, str_op, right);
+            Operator *o = ctx->get_called_operator(left, str_op, right);
             assert(dynamic_cast<BuiltinOperator*>(o) != nullptr);
             dynamic_cast<BuiltinOperator*>(o)->emit_asm();
 
@@ -1268,9 +1270,9 @@ void ExprBinary::emit_asm() {
     else assert(false);
 }
 
-void ExprPrefix::emit_asm() {
-    Type *rt = right->resolve_type();
-    right->emit_asm();
+void ExprPrefix::emit_asm(CompilationContext *ctx) {
+    Type *rt = right->resolve_type(ctx);
+    right->emit_asm(ctx);
 
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
@@ -1281,7 +1283,7 @@ void ExprPrefix::emit_asm() {
             assert(rt != nullptr);
         }
         else if(str_op == "@") {
-            assert(right->is_lvalue());
+            assert(right->is_lvalue(ctx));
             if(is_type_primitive(rt)) {
                 //only replace the value if it's a primitive type. 
                 //If it's a struct, then it's already equivalent to a pointer. 
@@ -1289,7 +1291,7 @@ void ExprPrefix::emit_asm() {
             }
         }
         else {
-            Operator *o = get_called_operator(std::nullopt, str_op, right);
+            Operator *o = ctx->get_called_operator(std::nullopt, str_op, right);
             assert(dynamic_cast<BuiltinOperator*>(o) != nullptr);
             dynamic_cast<BuiltinOperator*>(o)->emit_asm();
 
@@ -1304,18 +1306,18 @@ void ExprPrefix::emit_asm() {
         Type *cast_t = std::get<Type*>(op);
 
         //for now, assume all typecasts are builtin
-        Operator *oi = get_called_typecast(rt, cast_t);
+        Operator *oi = ctx->get_called_typecast(rt, cast_t);
         assert(dynamic_cast<BuiltinOperator*>(oi) != nullptr);
         dynamic_cast<BuiltinOperator*>(oi)->emit_asm();
     }
     else assert(false);
 }
 
-void ExprPostfix::emit_asm() {
-    Type *lt = left->resolve_type();
+void ExprPostfix::emit_asm(CompilationContext *ctx) {
+    Type *lt = left->resolve_type(ctx);
     if(std::holds_alternative<Expression*>(op)) {   //indexing
         //evaluate left expr
-        left->emit_asm();
+        left->emit_asm(ctx);
 
         //t must be PointerType or ArrayType
         if(dynamic_cast<PointerType*>(lt)) {
@@ -1332,12 +1334,12 @@ void ExprPostfix::emit_asm() {
 
         //evaluate expression
         Expression *expr = std::get<Expression*>(op);
-        Type *et = expr->resolve_type();
+        Type *et = expr->resolve_type(ctx);
         assert(expr != nullptr);
-        expr->emit_asm();
+        expr->emit_asm(ctx);
 
         //convert et to u64
-        BuiltinOperator *cast_op = dynamic_cast<BuiltinOperator*>(get_called_typecast(et, primitives::u64));
+        BuiltinOperator *cast_op = dynamic_cast<BuiltinOperator*>(ctx->get_called_typecast(et, primitives::u64));
         assert(cast_op != nullptr);
         cast_op->emit_asm();
 
@@ -1375,7 +1377,7 @@ void ExprPostfix::emit_asm() {
         FunctionCall *fc = p.second;
 
         //evaluate left expr
-        left->emit_asm();
+        left->emit_asm(ctx);
 
         //dereference
         if(p.first == "->") {
@@ -1387,12 +1389,12 @@ void ExprPostfix::emit_asm() {
 
         //member function call
         fc = new FunctionCall(lt, fc->id, fc->argument_list);
-        Function *f = fc->resolve_called_function();
+        Function *f = fc->resolve_called_function(ctx);
         assert(f != nullptr);
 
         //this is no longer l-value, so don't have to maintain %rcx
         //reference to type is in %rax, so emit function call
-        fc->emit_asm();
+        fc->emit_asm(ctx);
 
         //if the return value is a reference, auto-dereference it
         Type *ft = f->type;
@@ -1405,7 +1407,7 @@ void ExprPostfix::emit_asm() {
         Identifier *id = p.second;
 
         //evaluate left expr
-        left->emit_asm();
+        left->emit_asm(ctx);
 
         //dereference
         if(p.first == "->") {
@@ -1441,7 +1443,7 @@ void ExprPostfix::emit_asm() {
         std::string str_op = std::get<std::string>(op);
 
         //evaluate left expr
-        left->emit_asm();
+        left->emit_asm(ctx);
 
         //manual destructor calls
         if(str_op == ".~()" || str_op == "->~()") {
@@ -1457,12 +1459,12 @@ void ExprPostfix::emit_asm() {
             
             //if this is not primitive, destruct without deallocing
             if(!is_type_primitive(lt)) {
-                emit_destructor_call(lt, false);
+                emit_destructor_call(ctx, lt, false);
             }
         }
         else {
             //evaluate operator
-            Operator *o = get_called_operator(left, str_op, std::nullopt);
+            Operator *o = ctx->get_called_operator(left, str_op, std::nullopt);
             assert(dynamic_cast<BuiltinOperator*>(o) != nullptr);
             dynamic_cast<BuiltinOperator*>(o)->emit_asm();
 
@@ -1487,35 +1489,35 @@ void ExprPostfix::emit_asm() {
         for(int i = 0; i < argument_list.size(); i++){
             if(asm_debug) fout << indent() << "# function pointer call member variable : " << vt->param_types[i]->to_string() << "\n";
             Identifier *id = new Identifier(create_new_tmp_variable_name());
-            Variable *v = emit_initialize_stack_variable(vt->param_types[i], id, argument_list[i]);
+            Variable *v = emit_initialize_stack_variable(ctx, vt->param_types[i], id, argument_list[i]);
             assert(v != nullptr);
         }
 
         //evaluate left expr
-        left->emit_asm();
+        left->emit_asm(ctx);
 
         //call function pointer
         fout << indent() << "call *%rax\n"; //*%rax denotes an indirect call, otherwise %rax would be interpreted as a label
 
         //cleanup argument temp variables, function will deallocate them
-        pop_declaration_stack(false);
+        pop_declaration_stack(ctx, false);
 
         if(asm_debug) fout << indent() << "# done calling function pointer : " << lt->to_string() << "\n";
     }
     else assert(false);
 }
 
-void Expression::emit_asm(bool should_dealloc) {
-    elaborate();
-    expr_node->emit_asm();
+void Expression::emit_asm(CompilationContext *ctx, bool should_dealloc) {
+    elaborate(ctx);
+    expr_node->emit_asm(ctx);
 
     //dealloc unused r-value struct
     if(should_dealloc) {
-        Type *et = resolve_type();
+        Type *et = resolve_type(ctx);
         assert(et != nullptr);
-        if(!is_type_primitive(et) && !is_lvalue()) {
+        if(!is_type_primitive(et) && !is_lvalue(ctx)) {
             //call destructor
-            emit_destructor_call(et, true);
+            emit_destructor_call(ctx, et, true);
         }
     }
 }
@@ -1855,7 +1857,7 @@ void ExprPrimary::id_to_type() {
         Identifier *id = std::get<Identifier*>(val);   
 
         //retrieve identifier type and replace
-        Type *t = find_variable_type(id);
+        Type *t = get_variable_type(id);
         if(t == nullptr) {
             std::cout << "Could not find type of variable : " << id->name << "\n";
             assert(false);
@@ -2034,18 +2036,18 @@ bool Expression::replace_templated_types(TemplateMapping *mapping) {
 }
 
 // -- LOOK FOR TEMPLATES --
-bool ExprPrimary::look_for_templates() {
+bool ExprPrimary::look_for_templates(CompilationContext *ctx) {
     if(std::holds_alternative<FunctionCall*>(val)) {
         FunctionCall *fc = std::get<FunctionCall*>(val);
-        if(!fc->look_for_templates()) return false;
+        if(!fc->look_for_templates(ctx)) return false;
     }
     else if(std::holds_alternative<ConstructorCall*>(val)) {
         ConstructorCall *c = std::get<ConstructorCall*>(val);
-        if(!c->look_for_templates()) return false;
+        if(!c->look_for_templates(ctx)) return false;
     }
     else if(std::holds_alternative<OperatorCall*>(val)) {
         OperatorCall *o = std::get<OperatorCall*>(val);
-        if(!o->look_for_templates()) return false;
+        if(!o->look_for_templates(ctx)) return false;
     }
     else if(std::holds_alternative<Identifier*>(val)) {
         Identifier *id = std::get<Identifier*>(val);
@@ -2057,19 +2059,19 @@ bool ExprPrimary::look_for_templates() {
     }
     else if(std::holds_alternative<Expression*>(val)) {
         Expression *e = std::get<Expression*>(val);
-        if(!e->look_for_templates()) return false;
+        if(!e->look_for_templates(ctx)) return false;
     }
     else if(std::holds_alternative<Type*>(val)) {
         Type *t = std::get<Type*>(val);
-        if(!t->look_for_templates()) return false;
+        if(!t->look_for_templates(ctx)) return false;
     }
     else assert(false);
     return true;
 }
 
-bool ExprBinary::look_for_templates() {
-    if(!left->look_for_templates()) return false;
-    if(!right->look_for_templates()) return false;
+bool ExprBinary::look_for_templates(CompilationContext *ctx) {
+    if(!left->look_for_templates(ctx)) return false;
+    if(!right->look_for_templates(ctx)) return false;
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
         // do nothing
@@ -2078,29 +2080,29 @@ bool ExprBinary::look_for_templates() {
     return true;
 }
 
-bool ExprPrefix::look_for_templates() {
-    if(!right->look_for_templates()) return false;
+bool ExprPrefix::look_for_templates(CompilationContext *ctx) {
+    if(!right->look_for_templates(ctx)) return false;
     if(std::holds_alternative<std::string>(op)) {
         std::string str_op = std::get<std::string>(op);
         // do nothing
     }
     else if(std::holds_alternative<Type*>(op)) {
         Type *cast_t = std::get<Type*>(op);
-        if(!cast_t->look_for_templates()) return false;
+        if(!cast_t->look_for_templates(ctx)) return false;
     }
     else assert(false);
     return true;
 }
 
-bool ExprPostfix::look_for_templates() {
-    if(!left->look_for_templates()) return false;
+bool ExprPostfix::look_for_templates(CompilationContext *ctx) {
+    if(!left->look_for_templates(ctx)) return false;
     if(std::holds_alternative<Expression*>(op)) {   //indexing
         Expression *expr = std::get<Expression*>(op);
-        if(!expr->look_for_templates()) return false;
+        if(!expr->look_for_templates(ctx)) return false;
     }
     else if(std::holds_alternative<std::pair<std::string, FunctionCall*>>(op)) {    //function call
         std::pair<std::string, FunctionCall*> p = std::get<std::pair<std::string, FunctionCall*>>(op);
-        if(!p.second->look_for_templates()) return false;
+        if(!p.second->look_for_templates(ctx)) return false;
     }
     else if(std::holds_alternative<std::pair<std::string, Identifier*>>(op)) {    //member variable access
         std::pair<std::string, Identifier*> p = std::get<std::pair<std::string, Identifier*>>(op);
@@ -2113,13 +2115,13 @@ bool ExprPostfix::look_for_templates() {
     else if(std::holds_alternative<std::vector<Expression*>>(op)) {
         std::vector<Expression*> argument_list = std::get<std::vector<Expression*>>(op);
         for(int i = 0; i < argument_list.size(); i++){
-            if(!argument_list[i]->look_for_templates()) return false;
+            if(!argument_list[i]->look_for_templates(ctx)) return false;
         }
     }
     else assert(false);
     return true;
 }
 
-bool Expression::look_for_templates() {
-    return expr_node->look_for_templates();
+bool Expression::look_for_templates(CompilationContext *ctx) {
+    return expr_node->look_for_templates(ctx);
 }

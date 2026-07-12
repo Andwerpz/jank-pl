@@ -5,6 +5,7 @@
 struct TemplateHeader;
 struct TemplateMapping;
 struct BaseType;
+struct CompilationContext;
 
 struct Type : public ASTNode {
     Type(parser::token *tok);
@@ -21,7 +22,7 @@ struct Type : public ASTNode {
     virtual std::string to_string() = 0;
     virtual Type* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
-    virtual bool look_for_templates() = 0;
+    virtual bool look_for_templates(CompilationContext* ctx) = 0;
     virtual TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) = 0;
     virtual void find_all_basetypes(std::vector<BaseType*> &out) = 0;
 
@@ -43,7 +44,7 @@ struct BaseType : public Type {
     std::string to_string() override;
     Type* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
     void find_all_basetypes(std::vector<BaseType*> &out) override;
 };  
@@ -61,7 +62,7 @@ struct PointerType : public Type {
     std::string to_string() override;
     Type* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
     void find_all_basetypes(std::vector<BaseType*> &out) override;
 };
@@ -82,7 +83,7 @@ struct ArrayType : public Type {
     std::string to_string() override;
     Type* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
     void find_all_basetypes(std::vector<BaseType*> &out) override;
 };  
@@ -100,7 +101,7 @@ struct ReferenceType : public Type {
     std::string to_string() override;
     Type* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
     void find_all_basetypes(std::vector<BaseType*> &out) override;
 };
@@ -119,7 +120,7 @@ struct TemplatedType : public Type {
     std::string to_string() override;
     Type* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
     void find_all_basetypes(std::vector<BaseType*> &out) override;
 };
@@ -139,7 +140,7 @@ struct FunctionPointerType : public Type {
     std::string to_string() override;
     Type* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     TemplateMapping* generate_mapping(Type *t, TemplateHeader *header) override;
     void find_all_basetypes(std::vector<BaseType*> &out) override;
 };

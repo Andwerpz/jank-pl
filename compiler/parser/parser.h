@@ -1,4 +1,4 @@
-// Date Generated : 06-27-2026 19:02:34
+// Date Generated : 07-11-2026 15:29:18
 #pragma once
 #include <vector>
 #include <string>
@@ -1394,15 +1394,24 @@ namespace parser {
         void postprocess() override;
     };
 
-    // templated_struct_definition = template_header , ows , struct_definition ;
+    // templated_struct_definition = [ template_header , ows ] , struct_definition ;
     struct templated_struct_definition : public token {
-        template_header *t0;
-        ows *t1;
-        struct_definition *t2;
-        templated_struct_definition(template_header *_t0, ows *_t1, struct_definition *_t2) {
+        struct a0 : public token {
+            template_header *t0;
+            ows *t1;
+            a0(template_header *_t0, ows *_t1) {
+                t0 = _t0;
+                t1 = _t1;
+            }
+            static a0* parse();
+            std::string to_string() override;
+            void postprocess() override;
+        };
+        std::optional<a0*> t0;
+        struct_definition *t1;
+        templated_struct_definition(std::optional<a0*> _t0, struct_definition *_t1) {
             t0 = _t0;
             t1 = _t1;
-            t2 = _t2;
         }
         static templated_struct_definition* parse();
         std::string to_string() override;
@@ -7430,13 +7439,13 @@ namespace parser {
         void postprocess() override;
     };
 
-    // program = { ows , ( struct_definition | templated_function | templated_struct_definition | templated_overload | include | global_declaration | global_node | _typedef | error( & ";" | "}" ) ) } , ows ;
+    // program = { ows , ( templated_function | templated_struct_definition | templated_overload | include | global_declaration | global_node | _typedef | error( & ";" | "}" ) ) } , ows ;
     struct program : public token {
         struct a0 : public token {
             struct b0 : public token {
                 struct c0 : public token {
-                    struct_definition *t0;
-                    c0(struct_definition *_t0) {
+                    templated_function *t0;
+                    c0(templated_function *_t0) {
                         t0 = _t0;
                     }
                     static c0* parse();
@@ -7444,8 +7453,8 @@ namespace parser {
                     void postprocess() override;
                 };
                 struct c1 : public token {
-                    templated_function *t0;
-                    c1(templated_function *_t0) {
+                    templated_struct_definition *t0;
+                    c1(templated_struct_definition *_t0) {
                         t0 = _t0;
                     }
                     static c1* parse();
@@ -7453,8 +7462,8 @@ namespace parser {
                     void postprocess() override;
                 };
                 struct c2 : public token {
-                    templated_struct_definition *t0;
-                    c2(templated_struct_definition *_t0) {
+                    templated_overload *t0;
+                    c2(templated_overload *_t0) {
                         t0 = _t0;
                     }
                     static c2* parse();
@@ -7462,8 +7471,8 @@ namespace parser {
                     void postprocess() override;
                 };
                 struct c3 : public token {
-                    templated_overload *t0;
-                    c3(templated_overload *_t0) {
+                    include *t0;
+                    c3(include *_t0) {
                         t0 = _t0;
                     }
                     static c3* parse();
@@ -7471,8 +7480,8 @@ namespace parser {
                     void postprocess() override;
                 };
                 struct c4 : public token {
-                    include *t0;
-                    c4(include *_t0) {
+                    global_declaration *t0;
+                    c4(global_declaration *_t0) {
                         t0 = _t0;
                     }
                     static c4* parse();
@@ -7480,8 +7489,8 @@ namespace parser {
                     void postprocess() override;
                 };
                 struct c5 : public token {
-                    global_declaration *t0;
-                    c5(global_declaration *_t0) {
+                    global_node *t0;
+                    c5(global_node *_t0) {
                         t0 = _t0;
                     }
                     static c5* parse();
@@ -7489,8 +7498,8 @@ namespace parser {
                     void postprocess() override;
                 };
                 struct c6 : public token {
-                    global_node *t0;
-                    c6(global_node *_t0) {
+                    _typedef *t0;
+                    c6(_typedef *_t0) {
                         t0 = _t0;
                     }
                     static c6* parse();
@@ -7498,15 +7507,6 @@ namespace parser {
                     void postprocess() override;
                 };
                 struct c7 : public token {
-                    _typedef *t0;
-                    c7(_typedef *_t0) {
-                        t0 = _t0;
-                    }
-                    static c7* parse();
-                    std::string to_string() override;
-                    void postprocess() override;
-                };
-                struct c8 : public token {
                     struct d0 : public error {
                         struct e1 : public token {
                             struct f0 : public token {
@@ -7551,10 +7551,10 @@ namespace parser {
                         void postprocess() override;
                     };
                     d0 *t0;
-                    c8(d0 *_t0) {
+                    c7(d0 *_t0) {
                         t0 = _t0;
                     }
-                    static c8* parse();
+                    static c7* parse();
                     std::string to_string() override;
                     void postprocess() override;
                 };
@@ -7574,8 +7574,6 @@ namespace parser {
                 c6 *t6;
                 bool is_c7 = false;
                 c7 *t7;
-                bool is_c8 = false;
-                c8 *t8;
                 b0(c0 *_t0) {
                     is_c0 = true;
                     t0 = _t0;
@@ -7607,10 +7605,6 @@ namespace parser {
                 b0(c7 *_t7) {
                     is_c7 = true;
                     t7 = _t7;
-                }
-                b0(c8 *_t8) {
-                    is_c8 = true;
-                    t8 = _t8;
                 }
                 static b0* parse();
                 std::string to_string() override;

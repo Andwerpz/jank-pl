@@ -9,6 +9,7 @@ struct Declaration;
 struct Expression;
 struct TemplateMapping;
 struct InlineASMAccess;
+struct CompilationContext;
 
 struct Statement : public ASTNode {
     Statement(parser::token *tok);
@@ -16,11 +17,11 @@ struct Statement : public ASTNode {
     Statement();
 
     static Statement* convert(parser::statement *s);
-    virtual bool is_well_formed() = 0;
+    virtual bool is_well_formed(CompilationContext* ctx) = 0;
     virtual bool is_always_returning() = 0;
     virtual Statement* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
-    virtual bool look_for_templates() = 0;
+    virtual bool look_for_templates(CompilationContext* ctx) = 0;
     virtual std::string to_string() = 0;
 };
 
@@ -30,11 +31,11 @@ struct SimpleStatement : public Statement {
     SimpleStatement();
 
     static SimpleStatement* convert(parser::simple_statement *s);
-    virtual bool is_well_formed() = 0;
+    virtual bool is_well_formed(CompilationContext* ctx) = 0;
     virtual bool is_always_returning() = 0;
     virtual Statement* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
-    virtual bool look_for_templates() = 0;
+    virtual bool look_for_templates(CompilationContext* ctx) = 0;
     virtual std::string to_string() = 0;
 };
 
@@ -45,11 +46,11 @@ struct DeclarationStatement : public SimpleStatement {
     DeclarationStatement(const DeclarationStatement& other);
     DeclarationStatement(Declaration* _declaration);
 
-    bool is_well_formed() override;
+    bool is_well_formed(CompilationContext* ctx) override;
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     std::string to_string() override;
 };
 
@@ -60,11 +61,11 @@ struct ExpressionStatement : public SimpleStatement {
     ExpressionStatement(const ExpressionStatement& other);
     ExpressionStatement(Expression *_expr);
 
-    bool is_well_formed() override;
+    bool is_well_formed(CompilationContext* ctx) override;
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     std::string to_string() override;
 };
 
@@ -75,11 +76,11 @@ struct ReturnStatement : public SimpleStatement {
     ReturnStatement(const ReturnStatement& other);
     ReturnStatement(std::optional<Expression*> expr);
 
-    bool is_well_formed() override;
+    bool is_well_formed(CompilationContext* ctx) override;
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     std::string to_string() override;
 };
 
@@ -90,11 +91,11 @@ struct InlineASMStatement : public SimpleStatement {
     InlineASMStatement(const InlineASMStatement& other);
     InlineASMStatement(std::vector<std::variant<std::string, InlineASMAccess*>> _tokens);
 
-    bool is_well_formed() override;
+    bool is_well_formed(CompilationContext* ctx) override;
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     std::string to_string() override;
 };
 
@@ -103,11 +104,11 @@ struct BreakStatement : public SimpleStatement {
     BreakStatement(const BreakStatement& other);
     BreakStatement();
 
-    bool is_well_formed() override;
+    bool is_well_formed(CompilationContext* ctx) override;
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     std::string to_string() override;
 };
 
@@ -116,11 +117,11 @@ struct ContinueStatement : public SimpleStatement {
     ContinueStatement(const ContinueStatement& other);
     ContinueStatement();
 
-    bool is_well_formed() override;
+    bool is_well_formed(CompilationContext* ctx) override;
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     std::string to_string() override;
 };
 
@@ -130,11 +131,11 @@ struct ControlStatement : public Statement {
     ControlStatement();
 
     static ControlStatement* convert(parser::control_statement *s);
-    virtual bool is_well_formed() = 0;
+    virtual bool is_well_formed(CompilationContext* ctx) = 0;
     virtual bool is_always_returning() = 0;
     virtual Statement* make_copy() = 0;
     virtual bool replace_templated_types(TemplateMapping *mapping) = 0;
-    virtual bool look_for_templates() = 0;
+    virtual bool look_for_templates(CompilationContext* ctx) = 0;
     virtual std::string to_string() = 0;
 };
 
@@ -147,11 +148,11 @@ struct IfStatement : public ControlStatement {
     IfStatement(const IfStatement& other);
     IfStatement(Expression *expr, Statement *statement, std::optional<Statement*> else_statement);
 
-    bool is_well_formed() override;
+    bool is_well_formed(CompilationContext* ctx) override;
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     std::string to_string() override;
 };
 
@@ -163,11 +164,11 @@ struct WhileStatement : public ControlStatement {
     WhileStatement(const WhileStatement& other);
     WhileStatement(Expression *_expr, Statement *_statement);
 
-    bool is_well_formed() override;
+    bool is_well_formed(CompilationContext* ctx) override;
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     std::string to_string() override;
 };
 
@@ -186,11 +187,11 @@ struct ForStatement : public ControlStatement {
         Statement *_statement
     );
 
-    bool is_well_formed() override;
+    bool is_well_formed(CompilationContext* ctx) override;
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     std::string to_string() override;
 };  
 
@@ -202,10 +203,10 @@ struct CompoundStatement : public Statement {
     CompoundStatement(std::vector<Statement*> _statements);
 
     static CompoundStatement* convert(parser::compound_statement *s);
-    bool is_well_formed() override;
+    bool is_well_formed(CompilationContext* ctx) override;
     bool is_always_returning() override;
     Statement* make_copy() override;
     bool replace_templated_types(TemplateMapping *mapping) override;
-    bool look_for_templates() override;
+    bool look_for_templates(CompilationContext* ctx) override;
     std::string to_string() override;
 };

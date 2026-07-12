@@ -38,3 +38,7 @@ bool Identifier::operator!=(const Identifier& other) const {
 Identifier* Identifier::make_copy() {
     return new Identifier(*this);
 }
+
+std::string Identifier::to_string() const {
+    return this->name;
+}

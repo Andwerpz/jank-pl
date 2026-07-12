@@ -7,6 +7,7 @@
 #include "Function.h"
 #include "Parameter.h"
 #include "TemplateMapping.h"
+#include "CompilationContext.h"
 
 FunctionCall::FunctionCall(parser::token *tok) : ASTNode(tok) {
     // do nothing
@@ -45,12 +46,12 @@ FunctionCall* FunctionCall::convert(parser::function_call *f) {
     return result;
 }
 
-Function* FunctionCall::resolve_called_function() {
-    return get_called_function(this);
+Function* FunctionCall::resolve_called_function(CompilationContext *ctx) {
+    return ctx->get_called_function(this);
 }
 
-Type* FunctionCall::resolve_type() {
-    Function *f = this->resolve_called_function();
+Type* FunctionCall::resolve_type(CompilationContext *ctx) {
+    Function *f = this->resolve_called_function(ctx);
     if(f == nullptr) {
         std::cout << "Cannot resolve function call : " << to_string() << "\n";
         return nullptr;
@@ -58,11 +59,11 @@ Type* FunctionCall::resolve_type() {
     return f->type;
 }
 
-void FunctionCall::emit_asm() {
+void FunctionCall::emit_asm(CompilationContext *ctx) {
     if(asm_debug) fout << indent() << "# calling function : " << id->name << "\n";
     
     //find original function
-    Function *f = this->resolve_called_function();
+    Function *f = this->resolve_called_function(ctx);
     assert(f != nullptr);
     
     //if is member function, pass in target struct as an argument
@@ -77,7 +78,7 @@ void FunctionCall::emit_asm() {
     for(int i = 0; i < argument_list.size(); i++){
         if(asm_debug) fout << indent() << "# function call member variable : " << f->parameters[i]->id->name << "\n";
         Identifier *id = new Identifier(create_new_tmp_variable_name());
-        Variable *v = emit_initialize_stack_variable(f->parameters[i]->type, id, argument_list[i]);
+        Variable *v = emit_initialize_stack_variable(ctx, f->parameters[i]->type, id, argument_list[i]);
         assert(v != nullptr);
     }
 
@@ -86,7 +87,7 @@ void FunctionCall::emit_asm() {
     fout << indent() << "call " << label << "\n";
 
     //clean up argument temp variables, freeing them is handled by the function itself
-    pop_declaration_stack(false);
+    pop_declaration_stack(ctx, false);
     
     //clean up target struct argument
     if(target_type.has_value()) {
@@ -141,8 +142,8 @@ bool FunctionCall::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-bool FunctionCall::look_for_templates() {
-    if(target_type.has_value()) if(!target_type.value()->look_for_templates()) return false;
-    for(int i = 0; i < argument_list.size(); i++) if(!argument_list[i]->look_for_templates()) return false;
+bool FunctionCall::look_for_templates(CompilationContext *ctx) {
+    if(target_type.has_value()) if(!target_type.value()->look_for_templates(ctx)) return false;
+    for(int i = 0; i < argument_list.size(); i++) if(!argument_list[i]->look_for_templates(ctx)) return false;
     return true;
 }

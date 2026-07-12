@@ -37,8 +37,8 @@ bool Parameter::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-bool Parameter::look_for_templates() {
-    return type->look_for_templates();
+bool Parameter::look_for_templates(CompilationContext *ctx) {
+    return type->look_for_templates(ctx);
 }
 
 std::string Parameter::to_string() {

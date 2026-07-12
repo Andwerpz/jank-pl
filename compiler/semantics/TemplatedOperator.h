@@ -9,6 +9,7 @@ struct OperatorCall;
 struct OperatorSignature;
 struct TemplateMapping;
 struct Expression;
+struct CompilationContext;
 
 struct TemplatedOperator : public ASTNode {
     TemplateHeader *header;
@@ -20,10 +21,10 @@ struct TemplatedOperator : public ASTNode {
     TemplatedOperator(TemplateHeader *_header, Operator *_op);
 
     static TemplatedOperator* convert(parser::templated_overload *o);
-    bool is_well_formed();
+    bool is_well_formed(CompilationContext* ctx);
     TemplateMapping* calc_mapping(OperatorSignature *os);
-    TemplateMapping* calc_mapping(OperatorCall *oc);
-    Operator* gen_operator(OperatorCall *oc);
+    TemplateMapping* calc_mapping(CompilationContext *ctx, OperatorCall *oc);
+    Operator* gen_operator(CompilationContext *ctx, OperatorCall *oc);
     bool replace_templated_types(TemplateMapping *mapping);
     TemplatedOperator* make_copy() override;
 };

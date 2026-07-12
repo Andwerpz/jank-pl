@@ -14,6 +14,8 @@
 #include "GlobalNode.h"
 #include "utils.h"
 #include "FunctionCall.h"
+#include "CompilationContext.h"
+#include "DefinitionSpace.h"
 
 #include <algorithm>
 #include <map>
@@ -33,6 +35,7 @@ Function::Function(const Function& other) : ASTNode(other) {
         parameters.push_back(other.parameters[i]->make_copy());
     }
     body = dynamic_cast<CompoundStatement*>(other.body->make_copy());
+    is_generated = other.is_generated;
 }
 
 Function::Function(std::optional<Type*> _enclosing_type, bool _is_export, Type *_type, Identifier *_id, std::vector<Parameter*> _parameters, CompoundStatement *_body) : ASTNode() {
@@ -93,13 +96,9 @@ Function* Function::convert(parser::function *f) {
     return result;
 }
 
-bool Function::is_well_formed() {
+bool Function::is_well_formed(CompilationContext *ctx) {
+    assert(body != nullptr);
     FunctionSignature *fs = resolve_function_signature();
-
-    if(body == nullptr) {
-        std::cout << "SKIPPING SYS FUNCTION : " << fs->to_string() << std::endl;
-        return true;
-    }
     std::cout << "CHECKING FUNCTION : " << fs->to_string() << std::endl;
 
     // - struct member functions cannot have export modifier
@@ -108,15 +107,21 @@ bool Function::is_well_formed() {
         return false;
     }
 
-    // - are templates all resolvable?
-    if(!look_for_templates()) {
-        std::cout << "Unable to resolve templates in function : " << resolve_function_signature()->to_string() << "\n";
-        return false;
-    }
-
-    //print function label
+    //print function header
     if(asm_debug) fout << "# " << fs->to_string() << "\n";
     std::string label = get_function_label(fs);
+    std::string label_noquotes = label;
+    if(label.size() >= 2 && label[0] == '\"' && label[label.size() - 1] == '\"') {
+        label_noquotes = label.substr(1, label.size() - 2);
+    }
+    if(is_generated) {
+        fout << ".section \".text." << label_noquotes << "\",\"axG\",@progbits," << label << ",comdat\n";
+        fout << ".weak " << label << "\n";
+    }
+    else {
+        fout << ".section \".text." << label_noquotes << "\",\"ax\",@progbits\n";
+        fout << ".globl " << label << "\n";
+    }
     fout << label << ":\n";
 
     //setup function stack frame
@@ -127,7 +132,7 @@ bool Function::is_well_formed() {
     
     for(int i = 0; i < parameters.size(); i++){
         // - does parameter correspond to existing type?
-        if(!is_type_declared(parameters[i]->type)) {
+        if(!ctx->is_type_declared(parameters[i]->type)) {
             std::cout << "Undeclared type : " << parameters[i]->type->to_string() << "\n";
             return false;
         }
@@ -139,7 +144,7 @@ bool Function::is_well_formed() {
     }
 
     // - is return type of function existing?
-    if(!is_type_declared(type)) {
+    if(!ctx->is_type_declared(type)) {
         std::cout << "Function undeclared return type : " << type->to_string() << " " << id->name << "\n";
         return false;
     }
@@ -178,7 +183,7 @@ bool Function::is_well_formed() {
     assert(stack_desc.size() == 0);
 
     // - make sure body is well formed
-    if(!body->is_well_formed()) {
+    if(!body->is_well_formed(ctx)) {
         std::cout << "Function body not well formed\n";
         return false;
     }
@@ -196,7 +201,7 @@ bool Function::is_well_formed() {
     else {
         //add trailing return for void functions
         ReturnStatement *rs = new ReturnStatement(std::nullopt);
-        if(!rs->is_well_formed()) {
+        if(!rs->is_well_formed(ctx)) {
             std::cout << "Trailing return failed??";
             assert(0);  
         }
@@ -205,7 +210,7 @@ bool Function::is_well_formed() {
     fout << "\n";
 
     //unregister parameters as variables
-    pop_declaration_stack();
+    pop_declaration_stack(ctx);
 
     //local stack should be empty before returning
     assert(stack_desc.size() == 0);
@@ -233,11 +238,11 @@ bool Function::replace_templated_types(TemplateMapping *mapping) {
     return true;
 }
 
-bool Function::look_for_templates() {
-    if(enclosing_type.has_value()) if(!enclosing_type.value()->look_for_templates()) return false;
-    if(!type->look_for_templates()) return false;
-    for(int i = 0; i < parameters.size(); i++) if(!parameters[i]->look_for_templates()) return false;
-    if(!body->look_for_templates()) return false;
+bool Function::look_for_templates(CompilationContext *ctx) {
+    if(enclosing_type.has_value()) if(!enclosing_type.value()->look_for_templates(ctx)) return false;
+    if(!type->look_for_templates(ctx)) return false;
+    for(int i = 0; i < parameters.size(); i++) if(!parameters[i]->look_for_templates(ctx)) return false;
+    if(!body->look_for_templates(ctx)) return false;
     return true;
 }
 
@@ -258,13 +263,14 @@ std::string Function::to_string() {
 bool Function::is_main() {
     FunctionSignature *fs = resolve_function_signature();
     assert(fs != nullptr);
+    if(is_generated) return false;
     if(!type->equals(primitives::i32)) return false;
     if(fs->equals(new FunctionSignature(new Identifier("main"), {}))) return true;
     if(fs->equals(new FunctionSignature(new Identifier("main"), {primitives::u64->make_copy(), new PointerType(new PointerType(primitives::u8->make_copy()))}))) return true;
     return false;
 }
 
-bool Function::is_valid_call(FunctionCall *fc) {
+bool Function::is_valid_call(CompilationContext *ctx, FunctionCall *fc) {
     // - do the identifiers match?
     if(!this->id->equals(fc->id)) {
         return false;
@@ -281,11 +287,11 @@ bool Function::is_valid_call(FunctionCall *fc) {
         return false;
     }
 
-    // - can all the arguments somehow be converted into nfs?
+    // - can all the argument expressions be declared as the corresponding parameter types?
     bool is_viable = true;
     for(int i = 0; i < this->parameters.size(); i++) {
         Type *nt = this->parameters[i]->type;
-        if(!is_declarable(nt, fc->argument_list[i])) {
+        if(!ctx->is_declarable(nt, fc->argument_list[i])) {
             return false;
         }
     }
