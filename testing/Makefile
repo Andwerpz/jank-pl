@@ -1,6 +1,6 @@
 # Compiler and flags
 CXX := g++
-CXXFLAGS := -std=c++17 -Iinclude
+CXXFLAGS := -std=c++20 -Iinclude
 
 # Entry point
 ENTRY := ./main.cpp

@@ -1,0 +1,10 @@
+#include <iostream>;
+#include <assert>;
+#include <wait>;
+#include <exec>;
+
+#include "D.jank";
+
+struct C {
+    D foo;
+}

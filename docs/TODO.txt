@@ -16,12 +16,6 @@ Add IR (D:)
 
 
 (side quest)
-Make test runner support multi-file tests
-- gains ability to test linking multiple generated assembly files
-- gains ability to test import semantics
-
-
-(side quest)
 Add compiler flag where you can specify default imports
 - One usecase is enabling compiler mode and replacing the default <malloc> with a kernel malloc.
 - also should be able to specify files from stdlib as default
@@ -49,12 +43,4 @@ Rewrite jjc in jank
 - mainly for the operating system, and for the flex
 - probably want to wait until IR is done before doing this, so the compiler can actually be relatively fast (relatively).
 
-
-(side quest)
-Make test runner multithreaded
-- rework so that each test compiles to a separate directory before running. 
-- have a test job queue that threads take from 
-- notify all threads to stop when first test fails. 
-- maybe also have a nice test duration display like bazel does
-- this will hopefully make running tests much faster
 

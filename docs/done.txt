@@ -1,3 +1,17 @@
+(side quest)
+Make test runner multithreaded
+- rework so that each test compiles to a separate directory before running. 
+- have a test job queue that threads take from 
+- notify all threads to stop when first test fails. 
+- maybe also have a nice test duration display like bazel does
+- this will hopefully make running tests much faster
+
+
+(side quest)
+Make test runner support multi-file tests
+- gains ability to test linking multiple generated assembly files
+- gains ability to test import semantics
+
 
 (main quest)
 Each file should be compiled seperately instead of compiling them all together. 

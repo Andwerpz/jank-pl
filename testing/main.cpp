@@ -3,6 +3,28 @@ using namespace std;
 
 // jank test runner
 
+// all tests should have the following format:
+// ./tests/<testname>
+//   info.txt
+//   out.txt
+//   main.jank
+//   src
+//     <other source files>
+
+// info.txt holds information regarding stuff like
+// - whether or not the code should compile
+// - what arguments to use when running the generated executable
+
+// out.txt holds the expected STDOUT of the generated executable
+
+// for source files, it's expected that main.jank exists and has a valid entry point
+// all other source files are optional. 
+
+// to make a new test, just write main.jank and your other source files into ./wip_test
+// the test runner should automatically create your test and populate info.txt and out.txt 
+//   it's important to make sure that your test actually compiled, so double check the generated test afterwards
+//   perhaps should add a flag to the test generator to explicitly specify whether or not a test should compile
+
 #include <unistd.h>  
 #include <sys/wait.h>
 #include <cstring>
@@ -11,10 +33,15 @@ using namespace std;
 #include <libgen.h>
 #include <sys/stat.h>
 #include <fcntl.h>
+#include <syncstream>
+#include <iomanip>
+#include <chrono>
 
 
 #include <filesystem>
 namespace fs = std::filesystem;
+
+string compiler_path = "../compiler/jjc.exe";
 
 std::string read_file(const std::string& filename) {
     std::ifstream file(filename); 
@@ -68,81 +95,6 @@ std::string extract_ext(std::string filename) {
     return "";
 }
 
-string compiler_path = "../compiler/jjc.exe";
-
-int run_compiler(string src_path, string dst_path) {
-    pid_t pid = fork();
-    if(pid == 0) {
-        //redirect compiler output to "compiler.out"
-        int fd = open("compiler.out", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-        if(fd < 0) {
-            cout << "create fd failed\n";
-            exit(1);
-        }
-
-        dup2(fd, STDOUT_FILENO);
-        close(fd);
-
-        execl(compiler_path.c_str(), "jjc", src_path.c_str(), "-o", dst_path.c_str(), "--follow-imports", (char*) NULL);
-        perror("compiler exec failed");
-        exit(1);
-    }
-    else {
-        int status;
-        waitpid(pid, &status, 0);
-        if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-int compile_from_test(string testname) {
-    return run_compiler("./tests/" + testname, "a.exe");
-}
-
-int run_aexe(vector<string> args) {
-    pid_t pid = fork();
-    if(pid == 0) {
-        //redirect output to a.out
-        int fd = open("a.out", O_WRONLY | O_CREAT | O_TRUNC, 0644);
-        if(fd < 0) {
-            cout << "create fd failed\n";
-            exit(1);
-        }
-
-        dup2(fd, STDOUT_FILENO);
-        close(fd);
-
-        //prepare arguments
-        char** argv = (char**) malloc(sizeof(char*) * (args.size() + 1));
-        for(int i = 0; i < args.size(); i++) {
-            argv[i] = (char*) malloc(sizeof(char) * (args[i].size() + 1));
-            memcpy(argv[i], args[i].c_str(), args[i].size() + 1);
-        }
-        argv[args.size()] = nullptr;
-
-        //exec
-        execv("a.exe", argv);
-        perror("execl a.exe failed");
-        exit(1);
-    }
-    else {
-        int status;
-        waitpid(pid, &status, 0);
-        if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-//removes a.exe, a.out
-void clean_tmp() {
-    fs::remove("a.exe");
-    fs::remove("a.out");
-}
-
 bool are_files_equal(string file1, string file2) {
     ifstream f1(file1, std::ios::binary | std::ios::ate);
     ifstream f2(file2, std::ios::binary | std::ios::ate);
@@ -163,18 +115,346 @@ bool are_files_equal(string file1, string file2) {
     return std::equal(begin1, std::istreambuf_iterator<char>(), begin2);
 }
 
+struct TestInfo {
+    bool should_compile;
+    vector<string> args;
+};
+
+TestInfo parse_test_info(string test_path) {
+    ifstream fin(test_path + "/info.txt");
+    if(!fin) {
+        throw runtime_error("failed to open " + test_path + "/info.txt");
+    }
+
+    TestInfo info;
+
+    int should_compile = -1;
+    while(!fin.eof()) {
+        string line;
+        getline(fin, line);
+        vector<string> tok = str_split(line, ' ');
+        if(tok.size() == 0) continue;
+        if(tok[0] == "compiled") {
+            should_compile = stoi(tok[1]);
+            if(should_compile != 0 && should_compile != 1) {
+                std::cout << "Invalid value after 'compiled', should be in {0, 1}" << std::endl;
+                exit(1);
+            }
+        }
+        else if(tok[0] == "args") {
+            info.args.clear();
+            for(int i = 1; i < tok.size(); i++) info.args.push_back(tok[i]);
+        }
+        else {
+            std::cout << "Unknown info : " + tok[0] << std::endl;
+            exit(1);
+        }
+    }
+    if(should_compile == -1) {
+        std::cout << "Didn't find 'compiled'" << std::endl;
+        exit(1);
+    }
+    info.should_compile = should_compile;
+
+    return info;
+}
+
+//recursively copies src directory into dst
+int copy_directory(const string& src, const string& dst) {
+    pid_t pid = fork();
+
+    if(pid == 0) {
+        execlp(
+            "cp",
+            "cp",
+            "-r",
+            (src + "/.").c_str(),
+            dst.c_str(),
+            (char*) nullptr
+        );
+
+        perror("cp failed");
+        exit(1);
+    }
+
+    int status;
+    waitpid(pid, &status, 0);
+
+    return !WIFEXITED(status) || WEXITSTATUS(status) != 0;
+}
+
+//prints the entire file contents to STDOUT
+void print_file(const string& filepath) {
+    ifstream fin(filepath);
+    if(!fin) {
+        std::cout << "failed to open " << filepath << std::endl;
+        exit(1);
+    }
+    cout << fin.rdbuf();
+}
+
+// compiles the provided source file into exe_path
+int run_compiler(string src_path, string exe_path) {
+    pid_t pid = fork();
+    if(pid == 0) {
+        //redirect compiler output to "compiler.out"
+        int fd = open("compiler.out", O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if(fd < 0) {
+            cout << "create fd failed\n";
+            exit(1);
+        }
+
+        dup2(fd, STDOUT_FILENO);
+        close(fd);
+
+        execl(compiler_path.c_str(), "jjc", src_path.c_str(), "-o", exe_path.c_str(), "--follow-imports", (char*) nullptr);
+        perror("compiler exec failed");
+        exit(1);
+    }
+    else {
+        int status;
+        waitpid(pid, &status, 0);
+        if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// runs an exe with the provided arguments
+// redirects STDOUT to out_path
+int run_exe(string exe_path, vector<string> args, string out_path) {
+    pid_t pid = fork();
+    if(pid == 0) {
+        //redirect output to a.out
+        int fd = open(out_path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+        if(fd < 0) {
+            cout << "create fd failed\n";
+            exit(1);
+        }
+
+        dup2(fd, STDOUT_FILENO);
+        close(fd);
+
+        //prepare arguments
+        // first arg is exe path
+        char** argv = (char**) malloc(sizeof(char*) * (args.size() + 2));
+        argv[0] = (char*) malloc(sizeof(char) * exe_path.size() + 1);
+        memcpy(argv[0], exe_path.c_str(), exe_path.size() + 1);
+        for(int i = 1; i <= args.size(); i++) {
+            string arg = args[i - 1];
+            argv[i] = (char*) malloc(sizeof(char) * (arg.size() + 1));
+            memcpy(argv[i], arg.c_str(), arg.size() + 1);
+        }
+        argv[args.size() + 1] = nullptr;
+
+        //exec
+        execv(exe_path.c_str(), argv);
+        perror("execl exe failed");
+        exit(1);
+    }
+    else {
+        int status;
+        waitpid(pid, &status, 0);
+        if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+            return 1;
+        }
+    }
+    return 0;
+}
+
+// Validates a test without checking its output against out.txt.
+// If the test should compile, this leaves its generated output in ./a.out.
+int validate_test(const string& test_path) {
+    TestInfo info = parse_test_info(test_path);
+    string exe_path = "./a.exe";
+    string out_path = "./a.out";
+
+    bool compiled = !run_compiler(test_path + "/main.jank", exe_path);
+    if(compiled != info.should_compile) {
+        std::cout << "expected to compile: " << info.should_compile << " actual: " << compiled << std::endl;
+        return 1;
+    }
+
+    if(!compiled) {
+        return 0;
+    }
+
+    if(run_exe(exe_path, info.args, out_path)) {
+        std::cout << "test compiled but failed while running" << std::endl;
+        return 1;
+    }
+
+    return 0;
+}
+
+// runs the entire test. 
+// returns 0 on success, nonzero on failure
+int run_test(string test_path, string work_path, string& error_message) {
+    //parse info.txt
+    TestInfo info = parse_test_info(test_path);
+    string exe_path = work_path + "/a.exe";
+    string out_path = work_path + "/a.out";
+
+    //see if it compiles
+    bool compiled = !run_compiler(test_path + "/main.jank", exe_path);
+    if(compiled != info.should_compile) {
+        error_message = ("expected to compile : " + to_string(info.should_compile) + " actual : " + to_string(compiled));
+        return 1;
+    }
+
+    if(compiled) {
+        //see if it runs
+        int run_status = run_exe(exe_path, info.args, out_path);
+        if(!run_status) {
+            //run success, see if outputs match
+            if(!are_files_equal(out_path, test_path + "/out.txt")) {
+                error_message = "output mismatch";
+                return 1;
+            }
+        }
+        else {
+            //this should not happen
+            error_message = "compiled but did not run";
+            return 1;
+        }
+    }
+
+    return 0;
+}
+
+void run_tests_multithreaded(vector<string> tests, size_t thread_count = std::thread::hardware_concurrency()) {
+    assert(thread_count >= 1);
+    std::cout << "THREAD COUNT : " << thread_count << std::endl;
+    
+    vector<bool> passed(tests.size(), false);
+    vector<string> error_output(tests.size());
+    atomic<size_t> next_test = 0;
+
+    size_t test_name_width = 0;
+    for(const string& test : tests) {
+        test_name_width = max(test_name_width, test.size());
+    }
+
+    auto worker = [&]() {
+        while(true) {
+            size_t index = next_test.fetch_add(1);
+            if(index >= tests.size()) {
+                break;
+            }
+
+            const string& testname = tests[index];
+            string test_path = "./tests/" + testname;
+            string work_path = "./tmp/tests/" + testname;
+
+            auto start_time = std::chrono::steady_clock::now();
+
+            fs::remove_all(work_path);
+            fs::create_directories(work_path);
+
+            string error_message;
+            int status = run_test(test_path, work_path, error_message);
+
+            passed[index] = (status == 0);
+            error_output[index] = std::move(error_message);
+
+            auto end_time = std::chrono::steady_clock::now();
+            double elapsed_s = std::chrono::duration<double>(end_time - start_time).count();
+
+            std::osyncstream output(cout);
+
+            output << "Running "
+                << std::left
+                << std::setw(static_cast<int>(test_name_width))
+                << testname
+                << " : ";
+
+            if(passed[index]) {
+                output << "\033[1;32mPASSED\033[0m";
+            }
+            else {
+                output << "\033[1;31mFAILED\033[0m";
+            }
+
+            output << "  ("
+                << std::fixed
+                << std::setprecision(2)
+                << elapsed_s
+                << " s)\n";
+        }
+    };
+
+    auto start_time = std::chrono::steady_clock::now();
+    vector<thread> workers;
+    for(size_t i = 0; i < thread_count; i++) {
+        workers.emplace_back(worker);
+    }
+    for(thread& worker_thread : workers) {
+        worker_thread.join();
+    }
+    auto end_time = std::chrono::steady_clock::now();
+    double elapsed_ms = std::chrono::duration<double>(end_time - start_time).count();
+    std::cout << "Total time elapsed : " << std::fixed << std::setprecision(2) << elapsed_ms << " s" << std::endl;
+
+    bool passed_all = true;
+    for(int i = 0; i < tests.size(); i++) {
+        if(!passed[i]) {
+            passed_all = false;
+        }
+    }
+    if(passed_all) {
+        cout << "All tests passed" << std::endl;
+    }
+    else {
+        cout << "Failed tests : " << std::endl;
+        for(int i = 0; i < tests.size(); i++) {
+            if(!passed[i]) {
+                cout << tests[i] << " : " << error_output[i] << "\n";
+            }
+        }
+    }
+}
+
 int main(int argc, char* argv[]) {
     if(argc == 1) {
         cout << "Usage : \n";
+        cout << "main run-wip\n";
+        cout << "main run-test <testname>\n";
         cout << "main run-tests <--start <start_test>>\n";
-        cout << "main gen-test <jankpath> <testname> <-a <argc> <argv>>\n";
-        cout << "main regen-tests\n";
+        cout << "main gen-test <testname>\n";
         return 1;
     }
 
     int argptr = 1;
     string mode = string(argv[argptr ++]);
-    if(mode == "run-tests") {
+    if(mode == "run-wip") {
+        string test_path = "./wip_test";
+        TestInfo info = parse_test_info(test_path);
+        if(validate_test(test_path)) {
+            std::cout << "WIP test failed to validate" << std::endl;
+        }
+        else {
+            std::cout << "WIP test validated" << std::endl;
+            if(info.should_compile) {
+                std::cout << "Test STDOUT : " << std::endl;
+                print_file("./a.out");
+            }
+        }
+    }
+    else if(mode == "run-test") {
+        if(argc < 3) {
+            std::cout << "Too few arguments for run-test" << std::endl;
+            return 1;
+        }
+        string testname = argv[argptr ++];
+        if(argptr != argc) {
+            cout << "Unexpected argument: " << argv[argptr] << "\n";
+            return 1;
+        }
+
+        run_tests_multithreaded({testname});
+    }
+    else if(mode == "run-tests") {
         std::string start_test = "";
 
         //parse arguments
@@ -193,159 +473,73 @@ int main(int argc, char* argv[]) {
         vector<string> tests;
         for(auto entry : fs::directory_iterator("./tests")) {
             assert(entry.is_directory());
-            tests.push_back(entry.path().filename().string());
+            string testname = entry.path().filename().string();
+            if(start_test.size() != 0 && testname < start_test) {
+                continue;
+            }
+            tests.push_back(testname);
         }
         sort(tests.begin(), tests.end());
 
-        bool passing = true;
-        try {
-            for(int i = 0; i < tests.size(); i++) {
-                if(start_test.size() != 0 && tests[i] < start_test) {
-                    continue;
-                }
-
-                cout << "Running " << tests[i] << " : " << flush;
-                string testdir = "./tests/" + tests[i];
-    
-                ifstream info_fin(testdir + "/info.txt");
-                int should_compile = -1;
-                vector<string> args = {"a.exe"};
-                while(!info_fin.eof()) {
-                    string line;
-                    getline(info_fin, line);
-                    vector<string> tok = str_split(line, ' ');
-                    if(tok.size() == 0) continue;
-                    if(tok[0] == "compiled") {
-                        should_compile = stoi(tok[1]);
-                    }
-                    else if(tok[0] == "args") {
-                        args.clear();
-                        for(int i = 1; i < tok.size(); i++) args.push_back(tok[i]);
-                    }
-                    else throw runtime_error("Unknown info : " + tok[0]);
-                }
-
-                if(should_compile != 0 && should_compile != 1) {
-                    throw runtime_error("could not find 'compiled' in info");
-                }
-    
-                //see if it compiles
-                bool compiled = !run_compiler(testdir + "/src.jank", "a.exe");
-                if(compiled != should_compile) {
-                    throw runtime_error("expected to compile : " + to_string(should_compile) + " actual : " + to_string(compiled));
-                }
-
-                if(compiled) {
-                    //see if it runs
-                    int run_status = run_aexe(args);
-                    if(!run_status) {
-                        //run success, see if outputs match
-                        if(!are_files_equal("a.out", testdir + "/out.txt")) {
-                            throw runtime_error("output mismatch");
-                        }
-                    }
-                    else {
-                        //this should not happen
-                        throw runtime_error("compiled but did not run");
-                    }
-                }
-                
-                //clean up
-                clean_tmp();
-
-                cout << "PASSED" << endl;
-            }
-        } catch(runtime_error e) {
-            cout << "FAILED : " << e.what() << endl;
-            passing = false;
-        }
-
-        cout << (passing? "All tests passed" : "Tests failed") << endl;
+        //run tests
+        run_tests_multithreaded(tests);
     }
-    else if(mode == "regen-tests") {
-        //just the src.jank from each test should be enough to completely regenerate it. 
-        //should just extract the src.jank, delete the test, and call gen-test to regenerate
-        //upd : now that we've introduced arguments, should also look at info.txt to see if we have any arguments
-        //TODO
-        assert(false);
-    }
-    else if(mode == "gen-test") {        
-        bool failed = false;
-        int compile_status, run_status;
-        string jankpath = string(argv[argptr ++]);
-        string testname = string(argv[argptr ++]);
-        vector<string> args = {"a.exe"};
-
-        //parse arguments
-        while(argptr != argc) {
-            string next(argv[argptr ++]);
-            if(next == "-a") {
-                int amt = stoi(argv[argptr ++]);
-                if(argptr + amt > argc) {
-                    cout << "Invalid -a amt : " << amt << "\n";
-                    return 1;
-                }
-                for(int i = 0; i < amt; i++) {
-                    args.push_back(string(argv[argptr ++]));
-                }
-            }
-            else {
-                cout << "Unknown argument : " << next << "\n";
-                return 1;
-            }
+    else if(mode == "gen-test") {
+        if(argc < 3) {
+            std::cout << "Too few arguments for gen-test" << std::endl;
+            return 1;
+        }
+        string testname = argv[argptr ++];
+        if(argptr != argc) {
+            cout << "Unexpected argument: " << argv[argptr] << "\n";
+            return 1;
         }
 
-        string n_testdir = "./tests/" + testname;
+        string wip_path = "./wip_test";
+        string test_path = "./tests/" + testname;
 
-        //check if test already exists
-        if(fs::exists(n_testdir) && fs::is_directory(n_testdir)) {
-            cout << "Test " << testname << " already exists\n";
-            goto gen_failed;
+        if(!fs::exists(wip_path) || !fs::is_directory(wip_path)) {
+            cout << "Could not find " << wip_path << "\n";
+            return 1;
+        }
+        if(!fs::exists(wip_path + "/main.jank")) {
+            cout << "Could not find " << wip_path << "/main.jank" << std::endl;
+            return 1;
+        }
+        if(!fs::exists(wip_path + "/info.txt")) {
+            cout << "Could not find " << wip_path << "/info.txt" << std::endl;
+            return 1;
+        }
+        if(fs::exists(test_path)) {
+            cout << "Test " << testname << " already exists" << std::endl;
+            return 1;
         }
 
-        //create test directory
-        fs::create_directory(n_testdir);
-        
-        //copy .jank into test directory
-        fs::copy_file(jankpath, n_testdir + "/src.jank");
-
-        //try to compile test   
-        compile_status = run_compiler(n_testdir + "/src.jank", "a.exe");
-
-        //if compiles, try to run exe
-        if(!compile_status) {
-            run_status = run_aexe(args);
-            if(!run_status) {
-                //copy output to test
-                fs::copy_file("a.out", n_testdir + "/out.txt");
-            }
-            else {
-                //if it compiles, it must run properly
-                goto gen_failed;
-            }
+        // validate WIP test
+        if(validate_test(wip_path)) {
+            cout << "WIP test failed to validate" << std::endl;
+            return 1;
         }
 
-        //print some metadata
-        {
-            ofstream fout(n_testdir + "/info.txt");
-            fout << "compiled" << " " << (compile_status == 0) << "\n";
-            fout << "args" << " ";
-            for(string s : args) fout << s << " ";
-            fout << "\n";
-        }
-        
-        goto gen_done;
-        gen_failed : {
-            //delete test directory
-            fs::remove_all(n_testdir);
-            failed = true;
+        // move WIP test
+        TestInfo info = parse_test_info(wip_path);
+        fs::create_directories(test_path);
+        if(copy_directory(wip_path, test_path)) {
+            cout << "Failed to copy " << wip_path << " into " << test_path << std::endl;
+            return 1;
         }
 
-        gen_done : {
-            clean_tmp();
+        // see if we need to generate out.txt
+        if(info.should_compile) {
+            fs::copy_file(
+                "a.out",
+                test_path + "/out.txt",
+                fs::copy_options::overwrite_existing
+            );
         }
 
-        return failed;
+        cout << "Generated test " << testname << "\n";
+        return 0;
     }
     else {
         cout << "Invalid mode : " << mode << "\n";

@@ -1,0 +1,8 @@
+#include <iostream>;
+#include <assert>;
+#include <wait>;
+#include <exec>;
+
+struct D {
+    i32 foo;
+}

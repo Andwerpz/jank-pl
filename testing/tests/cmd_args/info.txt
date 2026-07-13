@@ -1,2 +1,2 @@
 compiled 1
-args a.exe test arg 123 bello steven 
+args test arg 123 bello steven 

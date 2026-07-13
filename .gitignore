@@ -9,3 +9,4 @@
 stdlib/asm/*
 
 testing/main
+testing/tmp/*
