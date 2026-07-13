@@ -22,8 +22,7 @@ using namespace std;
 
 // to make a new test, just write main.jank and your other source files into ./wip_test
 // the test runner should automatically create your test and populate info.txt and out.txt 
-//   it's important to make sure that your test actually compiled, so double check the generated test afterwards
-//   perhaps should add a flag to the test generator to explicitly specify whether or not a test should compile
+//   make sure to double check the generated test afterwards 
 
 #include <unistd.h>  
 #include <sys/wait.h>

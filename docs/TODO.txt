@@ -44,3 +44,7 @@ Rewrite jjc in jank
 - probably want to wait until IR is done before doing this, so the compiler can actually be relatively fast (relatively).
 
 
+(steven quest!!)
+Add CI/CD pipeline
+- want to make it so that tests are automatically run whenever you try to merge to main
+- also, you shouldn't be allowed to merge to main with failing tests
