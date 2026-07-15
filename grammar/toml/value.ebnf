@@ -1,0 +1,28 @@
+#include "toml.ebnf" ;
+
+value = basic_string | integer | boolean | array ;
+
+(* Strings *)
+basic_string_char = alpha | digit | symbol | escape | " " | "'" ;
+basic_string = "\"" , { basic_string_char } , "\"" ;
+(* TODO multiline basic strings *)
+(* TODO literal strings *)
+(* TODO multiline literal strings *)
+
+(* Integers *)
+nonzero_digit = "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9" ;
+unsigned_integer = "0" | nonzero_digit , { [ "_" ] , digit } ;
+integer = [ "+" | "-" ] , unsigned_integer ;
+(* TODO hex, octal, and binary integers *)
+
+(* TODO Floats *)
+
+(* Booleans *)
+boolean = "true" | "false" ;
+
+(* Arrays *)
+value_list = value , ws , { "," , ws , value } , [ ws , "," ] ;
+array = "[" , ws , value_list , ws , "]" ;
+
+(* TODO Inline Tables *)
+

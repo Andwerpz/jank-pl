@@ -6,6 +6,8 @@
 *.vsix
 .env
 
+grammar/gen
+
 stdlib/asm/*
 
 testing/main

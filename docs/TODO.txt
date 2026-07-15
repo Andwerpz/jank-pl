@@ -1,4 +1,12 @@
 (main quest)
+When compiling recursively, don't compile stdlib source files
+- use the precompiled assembly files instead. 
+- hmm, this seems like the responsibility of the build tool right? the compiler doesn't really know the difference. 
+  - the compiler should spit out some dependency metadata, and the build tool will be able to apply some 
+    heuristics to know which files are in the stdlib and extract the corresponding assembly files instead of compiling them. 
+
+
+(main quest)
 Make jank build tool
 - its name is 'dylan'
 - should be something like cargo from rust
@@ -13,6 +21,7 @@ Make jank build tool
 Add IR (D:)
 - this will make codegen easier, the instructions will map more directly to assembly. 
 - this will make performance improvements to generated code easier
+- this will be very difficult, should probably read a textbook on IR design before attempting this. 
 
 
 (side quest)

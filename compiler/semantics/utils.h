@@ -119,16 +119,15 @@ void add_duration_stat(std::string name, ld dur);
 void print_duration_stats();
 void hash_combine(size_t& seed, size_t value);
 std::string read_file(const std::string& filename);
-std::string read_cstr(char* s);
 std::vector<std::string> str_split(const std::string& s, char sep);
 std::string extract_filename(std::string path);             // given path to file, gives you the filename
 std::string extract_folder_path(std::string path);          // given path to file, gives you path to folder the file is in
 std::string extract_stem(std::string filename);             // given filename 'foo.jank', gives you 'foo'
 std::string extract_ext(std::string filename);              // given filename 'foo.jank', gives you 'jank'
-std::string cwd_rel_to_absolute(std::string path);          // given path relative to CWD, gives absolute path
-std::string libj_to_absolute(std::string name);             // given name of stdlib file, gives absolute path
 std::string normalize_path(std::string path);               // given an absolute filepath, removes all relative moves ("..", ".")
 std::string labelize_path(std::string path);                // given an absolute path, normalizes it, then replaces '/' between parts with underscores
+std::string cwd_rel_to_absolute(std::string path);          // given path relative to CWD, gives absolute path
+std::string libj_to_absolute(std::string name);             // given name of stdlib file, gives absolute path
 
 // -- PARSE UTILS --
 char escape_to_char(parser::escape *e);

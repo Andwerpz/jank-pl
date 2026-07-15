@@ -10,9 +10,10 @@ compiler:
 	cd ./compiler && make all 
 
 stdlib:
-	cd ./compiler && make all
+	cd ./stdlib && make all
 
 install: compiler stdlib
+	cd ./compiler && make install
 
 .PHONY: all grammar test compiler stdlib install
 

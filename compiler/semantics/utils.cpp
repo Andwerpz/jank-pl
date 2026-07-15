@@ -141,15 +141,6 @@ std::string read_file(const std::string& filename) {
     return buffer.str();     
 }
 
-std::string read_cstr(char* s) {
-    std::string ans = "";
-    int ptr = 0;
-    while(s[ptr] != '\0') {
-        ans.push_back(s[ptr ++]);
-    }
-    return ans;
-}
-
 std::vector<std::string> str_split(const std::string& s, char sep) {
     std::vector<std::string> ret;
     for(int i = 0; i < s.size(); ) {
@@ -191,15 +182,6 @@ std::string extract_ext(std::string filename) {
     return "";
 }
 
-std::string cwd_rel_to_absolute(std::string path){
-    if(path[0] == '/') return path;
-    return cwd_dir + "/" + path;
-}
-
-std::string libj_to_absolute(std::string name) {
-    return compiler_dir + "/libj/" + name + ".jank";
-}
-
 std::string normalize_path(std::string path) {
     std::vector<std::string> parts = str_split(path, '/');
     std::vector<std::string> nparts;
@@ -226,6 +208,15 @@ std::string labelize_path(std::string path) {
         label += "_" + parts[i];
     }
     return label;
+}
+
+std::string cwd_rel_to_absolute(std::string path){
+    if(path[0] == '/') return path;
+    return cwd_dir + "/" + path;
+}
+
+std::string libj_to_absolute(std::string name) {
+    return compiler_dir + "/libj/" + name + ".jank";
 }
 
 // -- PARSE UTILS --

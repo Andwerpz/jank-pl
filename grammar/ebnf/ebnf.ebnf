@@ -17,8 +17,10 @@ escape = "\\" , ( "n" | "t" | "r" | "f" | "b" | "\"" | "\\" ) ;
 
 identifier = < letter > ;
 
-(* comments can contain everything except for asterisks *)
-(* also, idk a better way to handle this without implementing set subtraction in the grammar *)
+(* 
+comments can contain everything except for asterisks. For example, here is a multiline comment!
+also, idk a better way to handle this without implementing set subtraction in the grammar 
+*)
 comment_char    = letter | digit | ws 
                 | "[" | "]" | "{" | "}" | "(" | ")" | "<" | ">"         (* everything that symbol has except for the asterisk *)
                 | "'" | "=" | "|" | "." | "," | ";" | "-" | "+"         (* but including double quotes and backslash *)

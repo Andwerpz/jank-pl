@@ -112,6 +112,7 @@ const std::vector<T*>& DeclarationSet<T>::all() const {
 
 // -- DEFINITION SPACE --
 DefinitionSpace::DefinitionSpace() {
+    is_stdlib = false;
     is_builtin = true;
     filepath = "";
     label_prefix = "__builtin__";
