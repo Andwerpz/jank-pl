@@ -29,15 +29,17 @@ int compile(std::string src_path, char tmp_filename[]) {
     //direct output to tmp file
     fout = std::ofstream(tmp_filename);
 
+    assert(current_package != nullptr);
+
     bool success = false;
     if(recursive_compile) {
-        success = compile_all(src_path);
+        success = compile_all(src_path, current_package);
     }
     else if(only_emit_driver) {
-        success = emit_driver(src_path);
+        success = emit_driver(src_path, current_package);
     }
     else {
-        success = compile(src_path);
+        success = compile(src_path, current_package);
     }
 
     if(!success) {
@@ -284,13 +286,15 @@ int main(int argc, char* argv[]) {
         // hmm, need to add jank-stdlib if it's not already added here?
         if(!no_default_package_dependencies) {
             // if jank-stdlib doesn't exist as a package, add it
-            // just hardcode the path, TODO find it dynamically somehow
+            // TODO find and load the package information dynamically somehow
+            //   right now i'm just hardcoding it
             if(get_package(jank_stdlib_name) == nullptr) {
                 std::string jank_stdlib_alias = "std";
                 std::string jank_stdlib_path = normalize_path(compiler_dir + "/../stdlib/src");
                 if(!add_package(jank_stdlib_name, jank_stdlib_alias, jank_stdlib_path)) {
                     assert(false);
                 }
+                
             }
 
             // add dependency to jank-stdlib

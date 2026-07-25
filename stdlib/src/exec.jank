@@ -4,6 +4,7 @@
 #include "syscall.jank";
 #include "malloc.jank";
 #include "jstring.jank";
+#include "defs.jank";
 
 // the family of exec functions all replace the current process with another process
 // the letters after exec specify what sort of arguments they accept/how they behave. 

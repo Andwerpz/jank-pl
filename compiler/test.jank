@@ -2,6 +2,9 @@
 #include <assert>;
 #include <wait>;
 #include <exec>;
+#include <crypto/sha2>;
+#include <crypto/X25519>;
+#include <crypto/ed25519>;
 
 #include "test2.jank";
 

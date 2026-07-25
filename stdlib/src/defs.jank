@@ -1,4 +1,27 @@
 //these defs should mostly follow what linux has so that it's easy to test
+//this file shouldn't include anything else
+
+[__GLOBAL_FIRST__] void* nullptr = $void* $u64 0;
+
+template<T, U>
+i32 operator==(T* a, U* b) {
+    return $u64 a == $u64 b;
+}
+
+template<T, U>
+i32 operator!=(T* a, U* b) {
+    return $u64 a != $u64 b;
+}
+
+template<T, U>
+i32 operator>(T* a, U* b) {
+    return $u64 a > $u64 b;
+}
+
+template<T, U>
+i32 operator<(T* a, U* b) {
+    return $u64 a < $u64 b;
+}
 
 typedef i64 pid_t;              //process id
 typedef i32 fd_t;               //file descriptor

@@ -206,7 +206,7 @@ int run_compiler(string src_path, string exe_path) {
         dup2(fd, STDOUT_FILENO);
         close(fd);
 
-        execl(compiler_path.c_str(), "jjc", src_path.c_str(), "-o", exe_path.c_str(), "--follow-imports", (char*) nullptr);
+        execl(compiler_path.c_str(), "jjc", src_path.c_str(), "-o", exe_path.c_str(), "--follow-includes", (char*) nullptr);
         perror("compiler exec failed");
         exit(1);
     }

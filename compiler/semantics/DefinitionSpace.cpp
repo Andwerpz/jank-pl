@@ -1084,13 +1084,10 @@ bool DefinitionSpace::add_include(Include* inc) {
             }
         }
         else {
-            std::cout << "LOOKING THROUGH DEPS : " << inc->to_string() << " : " << get_package()->dependencies.size() << std::endl;
             // look through dependencies for a match
             // error if there are multiple valid packages to include from. 
             for(Package* dep  : get_package()->dependencies) {
                 std::string path = dep->path + "/" + inc->path + ".jank";
-                std::cout << "LOOKING AT PACKAGE : " << dep->name << " " << dep->path << std::endl;
-                std::cout << "PATH : " << path << std::endl;
                 if(!fs::exists(path)) {
                     continue;
                 }

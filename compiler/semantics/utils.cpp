@@ -1748,10 +1748,7 @@ bool add_package(std::string name, std::string alias, std::string path) {
             return false;
         }
     }
-    Package* p = new Package();
-    p->name = name;
-    p->alias = alias;
-    p->path = path;
+    Package* p = new Package(name, alias, path);
     packages.push_back(p);
     return true;
 }
@@ -1856,7 +1853,7 @@ void initialize_controller() {
     }
 }
 
-bool compile(std::string target_filepath) {
+bool compile(std::string target_filepath, Package* target_package) {
     assert(target_filepath.size() != 0);
     std::cout << " -- COMPILING FILE : " << target_filepath << std::endl;
 
@@ -1864,7 +1861,7 @@ bool compile(std::string target_filepath) {
     // don't place generated instantiations into queue,
     //   if we just compiled another file, there could still be generated instantiations. 
     {
-        DefinitionSpace* ds = get_definition_space(target_filepath, current_package);
+        DefinitionSpace* ds = get_definition_space(target_filepath, target_package);
         ds->ensure_ready();
 
         assert(ds != nullptr);
@@ -2120,7 +2117,7 @@ bool compile(std::string target_filepath) {
     // emit global storage
     fout << ".section .data\n";
     {
-        DefinitionSpace *ds = get_definition_space(target_filepath, current_package);
+        DefinitionSpace *ds = get_definition_space(target_filepath, target_package);
         assert(ds != nullptr);
         for(GlobalDeclaration *gd : ds->get_global_variables(Visibility::All)) {
             Type *t = gd->declaration->type;
@@ -2151,10 +2148,10 @@ bool compile(std::string target_filepath) {
     return true;
 }
 
-bool emit_driver(std::string target_filepath) {
+bool emit_driver(std::string target_filepath, Package* target_package) {
     std::cout << " -- EMIT DRIVER CODE : " << target_filepath << std::endl;
 
-    DefinitionSpace *target_ds = get_definition_space(target_filepath, current_package);
+    DefinitionSpace *target_ds = get_definition_space(target_filepath, target_package);
     target_ds->ensure_ready();
 
     // find entry point
@@ -2441,8 +2438,8 @@ bool emit_driver(std::string target_filepath) {
     return true;
 }
 
-bool compile_all(std::string target_filepath) {
-    DefinitionSpace *target_ds = get_definition_space(target_filepath, current_package);
+bool compile_all(std::string target_filepath, Package* target_package) {
+    DefinitionSpace *target_ds = get_definition_space(target_filepath, target_package);
 
     // find all reachable definition spaces
     // (that correspond to a source file)
@@ -2472,13 +2469,14 @@ bool compile_all(std::string target_filepath) {
     // compile all files
     for(DefinitionSpace *ds : all_definition_spaces) {
         std::string filepath = ds->get_filepath();
-        if(!compile(filepath)) {
+        Package* package = ds->get_package();
+        if(!compile(filepath, package)) {
             return false;
         }
     }
 
     // emit driver code
-    if(!emit_driver(target_filepath)) {
+    if(!emit_driver(target_filepath, target_package)) {
         return false;
     }
 

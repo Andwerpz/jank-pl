@@ -334,7 +334,8 @@ inline int tmp_variable_counter = 0;
 void initialize_controller();                           // should call this once before trying to compile
 
 // these functions do some work and emit assembly via fout
-bool compile(std::string target_filepath);              // compiles the target file
-bool emit_driver(std::string target_filepath);          // looks for a main() in the target file, emits code to handle initialization and cleanup of program
-bool compile_all(std::string target_filepath);          // recursively look for all files that the target depends on and compiles them all
+// it's assumed that the target file belongs to the target package
+bool compile(std::string target_filepath, Package* target_package);              // compiles the target file
+bool emit_driver(std::string target_filepath, Package* target_package);          // looks for a main() in the target file, emits code to handle initialization and cleanup of program
+bool compile_all(std::string target_filepath, Package* target_package);          // recursively look for all files that the target depends on and compiles them all
 

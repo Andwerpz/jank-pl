@@ -3,6 +3,9 @@
 #include "string.jank";
 #include "syscall.jank";
 #include "malloc.jank";
+#include "error.jank";
+#include "memory.jank";
+#include "defs.jank";
 
 #global_node IOSTREAM [MALLOC];
 

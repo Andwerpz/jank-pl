@@ -1,6 +1,8 @@
 #include "malloc.jank";
 #include "string.jank";
 #include "assert.jank";
+#include "syscall.jank";
+#include "defs.jank";
 
 //fd wrapper for directories
 struct dirstream {
