@@ -13,9 +13,9 @@ REPO_ROOT=$(git rev-parse --show-toplevel)
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 CHANGED_FILES=$(git -C "$REPO_ROOT" diff --cached --name-only)
 WATCHED_DIRS="
-compiler/src
-stdlib/src
-testing/tests
+compiler/src/
+stdlib/src/
+testing/tests/
 testing/main.cpp
 "
 
