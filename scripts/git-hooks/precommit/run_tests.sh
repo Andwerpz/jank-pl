@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+trap cleanup EXIT
+
+RED='\e[31m'
+GREEN='\e[32m'
+YELLOW='\e[0;33m'
+BLUE='\e[0;34m'
+RESET='\e[0m'
+
+REPO_ROOT=$(git rev-parse --show-toplevel)
+CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
+CHANGED_FILES=$(git -C "$REPO_ROOT" diff --cached --name-only)
+WATCHED_DIRS="
+compiler/
+stdlib/
+"
+
+cleanup() {
+    echo -e "${BLUE}Bai bai Mr Li!${RESET}"
+}
+
+run_tests() {
+    cd "${REPO_ROOT}/testing"
+
+    echo -e "${BLUE}Bello guys! My name is Dylan Janky! I love Andrew Mc Li!${RESET}"
+
+    echo -e "${BLUE}Building test runner...${RESET}"
+    if make -s; then
+        echo -e "${GREEN}Test runner built!${RESET}"
+    else
+        echo -e "${RED}Test runner not working... Ask Sanat Dubey @(512) 995-9950!${RESET}"
+        return 1
+    fi
+
+    echo -e "${BLUE}Running tests...${RESET}"
+    if make -s test; then
+        echo -e "${GREEN}Good work big man!${RESET}"
+    else
+        echo -e "${RED}Not working big man! Ask Sanat Dubey @(512) 995-9950!${RESET}"
+        return 1
+    fi
+}
+
+echo -e "${YELLOW}Running precommit tests on branch: '${CURRENT_BRANCH}'${RESET}"
+for dir in $WATCHED_DIRS; do
+    if echo "$CHANGED_FILES" | grep -q "^$dir"; then
+        echo -e "${YELLOW}Changes detected. Running tests...${RESET}"
+        run_tests
+    fi
+done
+
+echo -e "${YELLOW}No watched directory changes. Skipping tests.${RESET}"
+exit 0
