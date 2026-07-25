@@ -47,7 +47,11 @@ echo -e "${YELLOW}Running precommit tests on branch: '${CURRENT_BRANCH}'${RESET}
 for dir in $WATCHED_DIRS; do
     if echo "$CHANGED_FILES" | grep -q "^$dir"; then
         echo -e "${YELLOW}Changes detected. Running tests...${RESET}"
-        run_tests
+        if run_tests; then
+            exit 0
+        else
+            exit 1
+        fi
     fi
 done
 
