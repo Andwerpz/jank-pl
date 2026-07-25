@@ -40,6 +40,7 @@ struct CompilationContext;
 struct CompilationController;
 struct ASTNode;
 struct ArrayType;
+struct Include;
 
 struct Variable;
 struct OperatorImplementation;
@@ -112,6 +113,21 @@ struct LoopContext {
     LoopContext(std::string _start_label, std::string assignment_label, std::string _end_label, int _declaration_layer);
 }; 
 
+struct Package {
+    bool is_named;
+    std::string name;
+    std::string alias;
+    std::string path;
+    std::vector<Package*> dependencies;
+    std::vector<std::pair<Package*, std::string>> default_includes; 
+
+    // unnamed package
+    Package();
+    
+    // named package (library package)
+    Package(std::string name, std::string alias, std::string path);
+};
+
 // -- GENERAL UTILS --
 typedef long double ld;
 long double current_time_seconds();
@@ -123,7 +139,7 @@ std::vector<std::string> str_split(const std::string& s, char sep);
 std::string extract_filename(std::string path);             // given path to file, gives you the filename
 std::string extract_folder_path(std::string path);          // given path to file, gives you path to folder the file is in
 std::string extract_stem(std::string filename);             // given filename 'foo.jank', gives you 'foo'
-std::string extract_ext(std::string filename);              // given filename 'foo.jank', gives you 'jank'
+std::string extract_ext(std::string filename);              // given filename 'foo.jank', gives you '.jank'
 std::string normalize_path(std::string path);               // given an absolute filepath, removes all relative moves ("..", ".")
 std::string labelize_path(std::string path);                // given an absolute path, normalizes it, then replaces '/' between parts with underscores
 std::string cwd_rel_to_absolute(std::string path);          // given path relative to CWD, gives absolute path
@@ -189,9 +205,9 @@ void pop_loop_stack(std::string start_label, std::string assignment_label, std::
 
 // -- CONTEXT UTILS --
 bool is_type_primitive(Type *t);
-DefinitionSpace* get_definition_space(std::string filepath);        // if a definition space doesn't exist, this creates it
-DefinitionSpace* get_definition_space(BaseType* t);                 // gets definition space that declares this BaseType
-DefinitionSpace* get_definition_space(Type *t);                     // gets definition space that is responsible for this type
+DefinitionSpace* get_definition_space(std::string filepath, Package* package);       // if a definition space doesn't exist, this creates it
+DefinitionSpace* get_definition_space(BaseType* t);                                                 // gets definition space that declares this BaseType
+DefinitionSpace* get_definition_space(Type *t);                                                     // gets definition space that is responsible for this type
 bool is_templated_type_well_formed(TemplatedType *t, CompilationContext *ctx);
 bool create_templated_type(TemplatedType *t, CompilationContext *ctx);
 bool create_array_type(ArrayType* t, CompilationContext *ctx);
@@ -217,19 +233,31 @@ std::string get_operator_label(OperatorSignature *os);
 bool add_string_literal(std::string str);
 std::string get_string_literal_label(std::string str);
 
+// -- PACKAGES --
+bool add_package(std::string name, std::string alias, std::string path);
+Package* get_package(std::string name);
+bool add_package_dependency(Package* package, Package* dep); 
+bool add_package_default_include(Package* package, Package* dep, std::string path);
+bool set_current_package(Package* package);
+
 // -- CONTROLLER --
 //important directories
 inline std::string compiler_dir;        // directory of compiler executable
 inline std::string cwd_dir;
-inline std::string stdlib_dir;          // stdlib root
+
+//list of available packages used to resolve library includes
+//these should all be PackageType::Named packages
+inline std::vector<Package*> packages;
+
+//package of any file supplied as an argument to the compiler
+//should not be nullptr by the time the compiler runs
+//  if the user does not specify a current package a synthetic unnamed package should be generated 
+inline Package* current_package = nullptr;
 
 //list of files we parsed source from
 //this list is referred to in the ASTNode struct
 //the most recent file to be parsed is always the last file in this list
 inline std::vector<std::string> source_files;
-
-//the target file should always be parsed first
-const int TARGET_SOURCE_FILE = 0;
 
 //output stream to assembly file
 inline std::ofstream fout;
@@ -278,14 +306,21 @@ inline bool debug = false;
 //toggle to print various performance related information
 inline bool print_timing_info = false;
 
-//disables all default includes
-inline bool no_default_includes = false;
+//disables all default package dependencies
+inline bool no_default_package_dependencies = false;
+
+//disables all default package includes
+inline bool no_default_package_includes = false;
 
 //only emit driver code
 inline bool only_emit_driver = false;
 
 //recursively look for all dependencies of the target file
 inline bool recursive_compile = false;
+
+//after compilation, writes file containing all files required during compilation
+inline bool emit_dependencies = false;
+inline std::string emit_dependencies_dir;
 
 //descriptions of whatever is on the stack. 
 //to push anything, you need to provide a description

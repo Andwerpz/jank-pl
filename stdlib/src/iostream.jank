@@ -1,8 +1,8 @@
-#include <jstring>;
-#include <assert>;
-#include <string>;
-#include <syscall>;
-#include <malloc>;
+#include "jstring.jank";
+#include "assert.jank";
+#include "string.jank";
+#include "syscall.jank";
+#include "malloc.jank";
 
 #global_node IOSTREAM [MALLOC];
 

@@ -1,5 +1,5 @@
-#include <assert>;
-#include <iostream>;
+#include "assert.jank";
+#include "iostream.jank";
 
 // wide integer types
 // all these integers are little endian

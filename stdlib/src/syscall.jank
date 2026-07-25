@@ -1,4 +1,4 @@
-#include <defs>;
+#include "defs.jank";
 
 // makes the current process exit with status
 // this should always succeed

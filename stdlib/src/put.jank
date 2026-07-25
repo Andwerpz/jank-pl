@@ -1,6 +1,6 @@
-#include <jstring>;
-#include <string>;
-#include <syscall>;
+#include "jstring.jank";
+#include "string.jank";
+#include "syscall.jank";
 
 void puts(u8* s) {
     sys_write(1, $void* s, strlen(s));

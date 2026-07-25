@@ -1,6 +1,6 @@
-#include <malloc>;
-#include <string>;
-#include <assert>;
+#include "malloc.jank";
+#include "string.jank";
+#include "assert.jank";
 
 //fd wrapper for directories
 struct dirstream {

@@ -11,26 +11,31 @@ Include::Include(const Include& other) : ASTNode(other) {
     path = other.path;
 }
 
-Include::Include(std::string _path, bool _is_library_include) : ASTNode() {
-    path = _path;
+Include::Include(bool _is_library_include, std::optional<std::string> _package, std::string _path) : ASTNode() {
     is_library_include = _is_library_include;
+    package = _package;
+    path = _path;
+
+    if(package.has_value()) {
+        assert(is_library_include);
+    }
 }   
 
 Include* Include::convert(parser::include *inc) {
     Include* result = new Include(inc);
     if(inc->t2->is_b0) {
         result->is_library_include = false;
-        std::string path_str = inc->t2->t0->to_string();
-        assert(path_str.size() >= 2);
-        assert(path_str[0] == '"' && path_str[path_str.size() - 1] == '"');
-        result->path = path_str.substr(1, path_str.size() - 2);
+        parser::include_path_relative* inc_rel = inc->t2->t0->t0;
+        result->path = inc_rel->t1->to_string();
     }
     else if(inc->t2->is_b1){
         result->is_library_include = true;
-        std::string path_str = inc->t2->t1->to_string();
-        assert(path_str.size() >= 2);
-        assert(path_str[0] == '<' && path_str[path_str.size() - 1] == '>');
-        result->path = path_str.substr(1, path_str.size() - 2);
+        parser::include_path_lib* inc_lib = inc->t2->t1->t0;
+        std::optional<std::string> package = std::nullopt;
+        if(inc_lib->t1.has_value()) {
+            package = inc_lib->t1.value()->t0->to_string();
+        }
+        result->path = inc_lib->t2->to_string();
     }
     else assert(false);
     return result;
@@ -41,5 +46,18 @@ Include* Include::make_copy() {
 }
 
 bool Include::equals(const Include* other) const {
-    return this->path == other->path && this->is_library_include == other->is_library_include;
+    return 
+        this->is_library_include == other->is_library_include && 
+        this->package == other->package &&
+        this->path == other->path
+    ;   
+}
+
+std::string Include::to_string() const {
+    std::string ret = "#include ";
+    ret += is_library_include? "<" : "\"";
+    if(package.has_value()) ret += package.value() + "::";
+    ret += path;
+    ret += is_library_include? ">" : "\"";
+    return ret;
 }

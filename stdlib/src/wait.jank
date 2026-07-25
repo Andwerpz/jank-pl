@@ -1,5 +1,5 @@
-#include <defs>;
-#include <syscall>;
+#include "defs.jank";
+#include "syscall.jank";
 
 pid_t wait(i32* wstatus) {
     return waitpid($pid_t -1, wstatus, 0);

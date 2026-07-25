@@ -1,5 +1,5 @@
-#include <malloc>;
-#include <pair>;
+#include "malloc.jank";
+#include "pair.jank";
 
 template<T, U>
 struct hashmap {

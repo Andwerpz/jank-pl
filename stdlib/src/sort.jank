@@ -1,4 +1,4 @@
-#include <random>;
+#include "random.jank";
 
 //sorts the vector a using quick sort
 //cmp(x, y) should return 1 if x < y and 0 otherwise

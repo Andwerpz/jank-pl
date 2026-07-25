@@ -1,4 +1,4 @@
-#include <assert>;
+#include "assert.jank";
 
 // Secure Hash Algorithm 2
 // https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.180-4.pdf

@@ -1,5 +1,5 @@
-#include <jstring>;
-#include <vector>;
+#include "jstring.jank";
+#include "vector.jank";
 
 //internally, string should keep a null terminated jstr. 
 //it does this by maintaining that everything after and including index sz is '\0'

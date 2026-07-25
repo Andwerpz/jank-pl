@@ -1,5 +1,5 @@
-#include <syscall>;
-#include <malloc>;
+#include "syscall.jank";
+#include "malloc.jank";
 
 //returns a random integer in range [0, 65536)
 i32 rand_i32() {

@@ -74,8 +74,9 @@ include_path = < alpha | digit |
         "#" | "$" | "%" | "^" | "&" | "*" | "(" | 
         ")" | "_" | "=" | ":" | ";" | "?" | "|" | 
         "{" | "}" | "[" | "]" | "~" | "`" > ;
+include_package = < alpha | digit | "_" | "-" > ;
 include_path_relative = "\"" , include_path , "\"" ;
-include_path_lib = "<" , include_path , ">" ;
+include_path_lib = "<" , [ include_package , "::" ] , include_path , ">" ;
 include = "#include" , rws , ( include_path_relative | include_path_lib ) , ows , ";" ;
 
 _typedef = "typedef" , rws , type , rws , base_type , ows , ";" ; 

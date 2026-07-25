@@ -1,9 +1,9 @@
-#include <dirent>;
-#include <string>;
-#include <vector>;
-#include <syscall>;
-#include <malloc>;
-#include <jstring>;
+#include "dirent.jank";
+#include "string.jank";
+#include "vector.jank";
+#include "syscall.jank";
+#include "malloc.jank";
+#include "jstring.jank";
 
 // the family of exec functions all replace the current process with another process
 // the letters after exec specify what sort of arguments they accept/how they behave. 

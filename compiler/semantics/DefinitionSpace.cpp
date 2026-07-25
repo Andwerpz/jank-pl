@@ -40,6 +40,9 @@
 #include "CompilationContext.h"
 #include "GlobalNode.h"
 
+#include <filesystem>
+namespace fs = std::filesystem;
+
 // -- DECLARATION SET --
 template <typename T>
 void DeclarationSet<T>::Bucket::add(T* decl, Visibility vis) {
@@ -112,24 +115,41 @@ const std::vector<T*>& DeclarationSet<T>::all() const {
 
 // -- DEFINITION SPACE --
 DefinitionSpace::DefinitionSpace() {
-    is_stdlib = false;
     is_builtin = true;
     filepath = "";
+    package = new Package();
     label_prefix = "__builtin__";
     state = DefinitionSpaceState::Unparsed;
 }
 
-DefinitionSpace::DefinitionSpace(std::string _filepath) {
+DefinitionSpace::DefinitionSpace(std::string _filepath, Package* _package) {
     is_builtin = false;
     filepath = _filepath;
+    package = _package;
     state = DefinitionSpaceState::Unparsed;
 
+    assert(extract_ext(filepath) == ".jank");    // hmm, should probably figure out a way to enforce this more gracefully. 
+    assert(package != nullptr);
+
     //normalize filepath
-    if(filepath[0] != '/') {
-        filepath = cwd_rel_to_absolute(filepath);
-    }
+    assert(filepath[0] == '/');     // should already be absolute
     filepath = normalize_path(filepath);
-    label_prefix = filepath;
+
+    //build label prefix
+    if(_package->is_named) {
+        // subtract off package path from full path
+        // it should produce something like : <jank-stdlib::vector>
+        std::string package_path = package->path;
+        assert(filepath.size() > package_path.size());
+        assert(filepath.substr(0, package_path.size()) == package_path);
+        assert(filepath.size() >= 5);
+        std::string subtracted_path = filepath.substr(package_path.size() + 1, filepath.size() - 5);
+        label_prefix = "<" + package->name + "::" + subtracted_path + ">";
+    }
+    else {
+        // use full absolute filepath as label prefix
+        label_prefix = filepath;
+    }
 }
 
 // -- ADDING DECLARATIONS --
@@ -360,14 +380,16 @@ bool DefinitionSpace::ensure_parsed() {
     }
 
     // load source code
-    // TODO check if the filepath given is actually valid
+    if(!fs::exists(filepath)) {
+        std::cout << "Filepath doesn't exist : " << filepath << "\n";
+        return false;
+    }
+    if(!fs::is_regular_file(filepath)) {
+        std::cout << "Filepath does not refer to regular file : " << filepath << "\n";
+        return false;
+    }
     std::string code = read_file(filepath);
     source_files.push_back(filepath);
-
-    if(filepath == "/home/steven/jank-pl/compiler") {
-        std::cout << "GOT CODE : \n" << code << std::endl;
-        assert(false);
-    }
 
     // parse source code
     parser::set_s(code);
@@ -421,34 +443,21 @@ bool DefinitionSpace::ensure_parsed() {
         }
     }
     for(Include* inc : p->includes) {
-        add_include(inc);
+        if(!add_include(inc)) {
+            std::cout << "Failed to add include : " << inc->to_string() << std::endl;
+            return false;
+        }
     }
     for(GlobalNode* gn : p->global_nodes) {
         add_global_node(gn);
     }
 
     // add default library includes
-    {
-        std::vector<std::string> default_includes = {
-            "memory",
-            "error",
-            "defs",
-        };  
-
-        //if we're not in kernel mode, can include some utilities provided by the kernel
-        if(!kernel_mode) {
-            default_includes.push_back("syscall");
-            default_includes.push_back("malloc");
-        }
-
-        //do we have default includes disabled?
-        if(no_default_includes) {
-            default_includes.clear();
-        }
-
-        for(std::string s : default_includes) {
-            Include* inc = new Include(s, true);
-            add_include(inc);
+    for(auto &[dep, path] : package->default_includes) {
+        Include* inc = new Include(true, dep->name, path);
+        if(!add_include(inc)) {
+            std::cout << "Failed to add default include : " << inc->to_string() << std::endl;
+            return false;
         }
     }
 
@@ -470,7 +479,7 @@ bool DefinitionSpace::ensure_includes_parsed() {
     // parse all includes
     for(DefinitionSpace* inc_ds : included_definition_spaces) {
         if(!inc_ds->ensure_parsed()) {
-            std::cout << "Could not parse include : \"" << inc_ds->get_filepath() << "\"" << std::endl;
+            std::cout << "Could not parse file : \"" << inc_ds->get_filepath() << "\"" << std::endl;
             return false;
         }
     }
@@ -1046,43 +1055,86 @@ std::string DefinitionSpace::get_filepath() const {
     return filepath;
 }
 
-void DefinitionSpace::add_include(Include* inc) {
+Package* DefinitionSpace::get_package() const {
+    assert(package != nullptr);
+    return package;
+}
+
+bool DefinitionSpace::add_include(Include* inc) {
     assert(inc != nullptr);
+    assert(package != nullptr);
 
     //should only be adding includes when parsing
     assert(state == DefinitionSpaceState::Unparsed);
 
-    //make sure we haven't added this include yet
-    for(Include* _inc : includes) {
-        if(inc->equals(_inc)) {
-            return;
+    //resolve the include
+    std::string include_path = "";
+    Package* include_package = nullptr;
+    if(inc->is_library_include) {   // library include
+        // find which package to include from
+        if(inc->package.has_value()) {
+            // make sure given package is in this packages dependencies
+            std::string dep_name = inc->package.value();
+            for(Package* dep : get_package()->dependencies) {
+                if(dep->name == dep_name) {
+                    assert(include_package == nullptr);
+                    include_path = dep->path + "/" + inc->path + ".jank";
+                    include_package = dep;
+                }
+            }
+        }
+        else {
+            std::cout << "LOOKING THROUGH DEPS : " << inc->to_string() << " : " << get_package()->dependencies.size() << std::endl;
+            // look through dependencies for a match
+            // error if there are multiple valid packages to include from. 
+            for(Package* dep  : get_package()->dependencies) {
+                std::string path = dep->path + "/" + inc->path + ".jank";
+                std::cout << "LOOKING AT PACKAGE : " << dep->name << " " << dep->path << std::endl;
+                std::cout << "PATH : " << path << std::endl;
+                if(!fs::exists(path)) {
+                    continue;
+                }
+                if(include_package != nullptr) {
+                    std::cout << "Ambiguous library include : " << inc->to_string() << std::endl;
+                    return false;
+                }
+                include_path = path;
+                include_package = dep;
+            }
+        }
+        if(include_package == nullptr) {
+            std::cout << "Could not find package for include : " << inc->to_string() << std::endl;
+            return false;
+        }
+    }
+    else {                          // relative include
+        include_package = get_package();
+        if(package->is_named) {
+            // relative to package root
+            include_path = package->path + "/" + inc->path;
+        }
+        else {
+            // relative to current file
+            include_path = extract_folder_path(get_filepath()) + inc->path;
+        }
+    }
+    assert(include_path.size() > 0);
+    assert(include_package != nullptr);
+
+    // see if we've already included this file
+    for(std::string _include_path : included_filepaths) {
+        if(_include_path == include_path) {
+            return true;
         }
     }
 
-    //add the include
-    std::string include_path;
-    if(inc->is_library_include) {
-        // stdlib include
-        include_path = stdlib_dir + "/" + inc->path + ".jank";
-    }
-    else {
-        // relative include
-        include_path = extract_folder_path(get_filepath()) + inc->path;
-    }
-    DefinitionSpace *ds = get_definition_space(include_path);
+    // include this file
+    DefinitionSpace *ds = get_definition_space(include_path, include_package);
+    assert(ds != nullptr);
 
-    include_filepaths.push_back(include_path);
+    included_filepaths.push_back(include_path);
     included_definition_spaces.push_back(ds);
-    includes.push_back(inc);
-
-    if(inc->is_library_include) {
-        ds->set_label_prefix("<" + inc->path + ">");
-    }
-}
-
-const std::vector<Include*>& DefinitionSpace::get_includes() {
-    assert(state >= DefinitionSpaceState::Parsed);
-    return includes;
+    return true;
 }
 
 const std::vector<DefinitionSpace*>& DefinitionSpace::get_included_definition_spaces() {

@@ -1,8 +1,8 @@
-#include <crypto/sha2>;
-#include <random>;
-#include <intx>;
-#include <assert>;
-#include <iostream>;
+#include "crypto/sha2.jank";
+#include "random.jank";
+#include "intx.jank";
+#include "assert.jank";
+#include "iostream.jank";
 
 //https://datatracker.ietf.org/doc/html/rfc8032#section-5.1.2
 //ed25519 uses an elliptic curve (twisted edwards curve) defined over the finite field F_{2^255 - 19} (hence the name)

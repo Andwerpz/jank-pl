@@ -82,42 +82,165 @@ int assemble(char src_path[], char res_path[]) {
 int main(int argc, char* argv[]) {
     if(argc == 1) {
         std::cout << "USAGE : jjc { <filepath> , <flag> }\n";
+        std::cout << "\n";
+
+        std::cout << " == GENERAL == \n";
         std::cout << "-S : generate assembly instead of executable\n";
         std::cout << "-o <path> : write output to <path>\n";
-        std::cout << "-k : kernel mode\n";
-        std::cout << "--follow-imports : recursively compile source files referenced by imports\n";
-        std::cout << "--no-default-includes : omits default stdlib includes\n";
+        std::cout << "\n";
+
+        std::cout << " == COMPILATION MODE == \n";
+        std::cout << "--kernel : kernel mode\n";
+        std::cout << "--follow-includes : recursively compile source files referenced by includes\n";
+        std::cout << "--startup-only : only emits startup and driver code\n";
+
+        std::cout << " == PACKAGE == \n";
+        std::cout << "--package <name> <alias> <path> : makes a package available to the compiler\n";
+        std::cout << "--package-dependency <package> <dependency> : adds a dependency to 'package'\n";
+        std::cout << "--package-default-include <package> <include_package> <include_path> : adds an include to every file in package\n";
+        std::cout << "--current-package <name> : notifies the compiler what package the passed in files are from\n";
+        std::cout << "--no-stdlib : omits dependencies from the default package\n";
+        std::cout << "--no-prelude : omits default includes from the default package\n";
+        std::cout << "--emit-dependencies <path> : writes file containing all files required during compilation\n";
+        std::cout << "\n";
+
+        std::cout << " == DEBUG == \n";
+        std::cout << "--debug : makes the compiler print debug information while compiling\n";
         std::cout << "--time : prints some timing info\n";
         std::cout << "--asm-debug : assembly debug mode (prints some helpful (?) comments in the generated assembly)\n";
-        std::cout << "--startup-only : only emits startup and driver code\n";
+        std::cout << "\n";
         return 1;
     }
     int argptr = 1;
     std::vector<std::string> filepaths;
     std::string dst_dir = "a.out";
 
+    //figure out compiler absolute directory
+    {
+        // /proc/self/exe is symlink to currently running binary
+        // so readlink should give the absolute path no matter how this was invoked
+        char exe_path[PATH_MAX];
+        ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
+        if (len != -1) {
+            exe_path[len] = '\0';
+            compiler_dir = dirname(exe_path);
+        }
+        else {
+            std::cout << "Could not find jjc path\n";
+            return 1;
+        }
+    }
+
+    //figure out current working directory
+    {
+        char cwd_path[PATH_MAX];
+        if (getcwd(cwd_path, sizeof(cwd_path)) != NULL) {
+            cwd_dir = std::string(cwd_path);
+        }
+        else {
+            std::cout << "Could not find cwd\n";
+            return 1;
+        }
+    }
+
     //read in arguments
     bool return_asm = false;
     while(argptr < argc) {
         std::string arg(argv[argptr ++]);
+        // == GENERAL ==
         if(arg == "-S") {
             return_asm = true;
         }
         else if(arg == "-o") {
-            if(argptr >= argc) {
-                std::cout << "Missing output directory after -o\n";
+            if(argptr + 1 > argc) {
+                std::cout << "USAGE : -o <path>\n";
                 return 1;
             }
             dst_dir = std::string(argv[argptr ++]);
         }
-        else if(arg == "-k") {
+
+        // == COMPILATION MODE ==
+        else if(arg == "--kernel") {
             kernel_mode = true;
         }
-        else if(arg == "--follow-imports") {
+        else if(arg == "--follow-includes") {
             recursive_compile = true;
         }
+        else if(arg == "--startup-only") {
+            only_emit_driver = true;
+            return_asm = true;
+        }
+
+        // == PACKAGE ==
+        else if(arg == "--package") {
+            if(argptr + 3 > argc) {
+                std::cout << "USAGE : --package <name> <alias> <path> { --package-opts <flag> }\n";
+                return 1;
+            }
+            std::string name = argv[argptr ++];
+            std::string alias = argv[argptr ++];
+            std::string path = argv[argptr ++];
+            if(!add_package(name, alias, path)) {
+                std::cout << "Failed to add package : " << name << "\n";
+                return 1;
+            }
+        }
+        else if(arg == "--package-dependency") {
+            if(argptr + 2 > argc) {
+                std::cout << "USAGE : --package-dependency <A> <B>\n";
+                return 1;
+            }
+            std::string A = argv[argptr ++];
+            std::string B = argv[argptr ++];
+            Package* pA = get_package(A);
+            Package* pB = get_package(B);
+            if(pA == nullptr) {
+                std::cout << "Failed to get package with name : " << A << "\n";
+                return 1;
+            }
+            if(pB == nullptr) {
+                std::cout << "Failed to get package with name : " << B << "\n";
+                return 1;
+            }
+            if(!add_package_dependency(pA, pB)) {
+                std::cout << "Failed to add package dependency : " << A << " " << B << "\n";
+                return 1;
+            }
+        }
+        else if(arg == "--current-package") {
+            if(argptr + 1 > argc) {
+                std::cout << "USAGE : --current-package <name>\n";
+                return 1;
+            }
+            std::string name = argv[argptr ++];
+            Package* package = get_package(name);
+            if(package == nullptr) {
+                std::cout << "Failed to find package with name : " << name << "\n";
+                return 1;
+            }
+            if(!set_current_package(package)) {
+                std::cout << "Failed to set current package to : " << name << "\n";
+                return 1;
+            }
+        }
+        else if(arg == "--no-default-package-dependencies") {
+            no_default_package_dependencies = true;
+        }
         else if(arg == "--no-default-includes") {
-            no_default_includes = true;
+            no_default_package_includes = true;
+        }
+        else if(arg == "--emit-dependencies") {
+            if(argptr + 1 > argc) {
+                std::cout << "USAGE : --emit-dependencies <path>\n";
+                return 1;
+            }
+            emit_dependencies = true;    
+            emit_dependencies_dir = argv[argptr ++];
+        }
+
+        // == DEBUG ==
+        else if(arg == "--debug") {
+            debug = true;
         }
         else if(arg == "--time") {
             print_timing_info = true;
@@ -127,10 +250,7 @@ int main(int argc, char* argv[]) {
         else if(arg == "--asm-debug") {
             asm_debug = true;
         }
-        else if(arg == "--startup-only") {
-            only_emit_driver = true;
-            return_asm = true;
-        }
+
         else {
             //assume everything else is a file
             filepaths.push_back(arg);
@@ -156,40 +276,69 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    //figure out compiler absolute directory
-    {
-        // /proc/self/exe is symlink to currently running binary
-        // so readlink should give the absolute path no matter how this was invoked
-        char exe_path[PATH_MAX];
-        ssize_t len = readlink("/proc/self/exe", exe_path, sizeof(exe_path) - 1);
-        if (len != -1) {
-            exe_path[len] = '\0';
-            compiler_dir = dirname(exe_path);
-            std::cout << "COMPILER DIR : " << compiler_dir << "\n";
+    //if the current package isn't set, synthesize an unnamed package
+    if(current_package == nullptr) {
+        Package* p = new Package();
+        std::string jank_stdlib_name = "jank-stdlib";
+
+        // hmm, need to add jank-stdlib if it's not already added here?
+        if(!no_default_package_dependencies) {
+            // if jank-stdlib doesn't exist as a package, add it
+            // just hardcode the path, TODO find it dynamically somehow
+            if(get_package(jank_stdlib_name) == nullptr) {
+                std::string jank_stdlib_alias = "std";
+                std::string jank_stdlib_path = normalize_path(compiler_dir + "/../stdlib/src");
+                if(!add_package(jank_stdlib_name, jank_stdlib_alias, jank_stdlib_path)) {
+                    assert(false);
+                }
+            }
+
+            // add dependency to jank-stdlib
+            Package* jank_stdlib = get_package(jank_stdlib_name);
+            assert(jank_stdlib != nullptr);
+            if(!add_package_dependency(p, jank_stdlib)) {
+                assert(false);
+            }
         }
-        else {
-            std::cout << "Could not find jjc path\n";
-            return 1;
+        if(!no_default_package_includes) {
+            Package* jank_stdlib = get_package(jank_stdlib_name);
+            if(jank_stdlib == nullptr) {
+                std::cout << "Failed to get jank-stdlib to add to default package\n";
+                return 1;
+            }
+
+            // add default includes
+            // - <std::memory>
+            // - <std::error>
+            // - <std::defs>
+            add_package_default_include(p, jank_stdlib, "memory");
+            add_package_default_include(p, jank_stdlib, "error");
+            add_package_default_include(p, jank_stdlib, "defs");
+
+            //if we're not in kernel mode, can include some utilities provided by the kernel
+            // - <std::syscall>
+            // - <std::malloc>
+            if(!kernel_mode) {
+                add_package_default_include(p, jank_stdlib, "syscall");
+                add_package_default_include(p, jank_stdlib, "malloc");
+            }
+        }
+
+        if(!set_current_package(p)) {
+            assert(false);
         }
     }
+    assert(current_package != nullptr);
 
-    //figure out stdlib absolute directory
-    {
-        //for now just hardcode it
-        stdlib_dir = compiler_dir + "/../stdlib/src";
-    }
+    //normalize filepaths
+    for(std::string& filepath : filepaths) {
+        //make it absolute
+        if(filepath[0] != '/') {
+            filepath = cwd_rel_to_absolute(filepath);
+        }
 
-    //figure out current working directory
-    {
-        char cwd_path[PATH_MAX];
-        if (getcwd(cwd_path, sizeof(cwd_path)) != NULL) {
-            cwd_dir = std::string(cwd_path);
-            std::cout << "CWD : " << cwd_dir << "\n";
-        }
-        else {
-            std::cout << "Could not find cwd\n";
-            return 1;
-        }
+        //normalize
+        filepath = normalize_path(filepath);
     }
 
     //initialize compilation controller
@@ -210,6 +359,17 @@ int main(int argc, char* argv[]) {
             if(status) {
                 exit(status);
             }
+        }
+        if(emit_dependencies) {
+            std::ofstream deps(emit_dependencies_dir);
+            if(!deps) {
+                std::cout << "Failed to open : " << emit_dependencies_dir << std::endl;
+                return 1;
+            }
+            for(auto i = definition_spaces.begin(); i != definition_spaces.end(); i++) {
+                deps << i->first << "\n";
+            }
+            deps.close();
         }
         exit(0);
     }

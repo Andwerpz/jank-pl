@@ -1,4 +1,4 @@
-// Date Generated : 07-14-2026 00:11:56
+// Date Generated : 07-23-2026 23:13:44
 #include "parser.h"
 
 namespace parser {
@@ -17182,6 +17182,190 @@ namespace parser {
         }
     }
 
+    include_package::a0::b0* include_package::a0::b0::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        alpha *_t0 = alpha::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_package::a0::b0* retval = new include_package::a0::b0(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_package::a0::b0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_package::a0::b0::postprocess() {
+        token_type = "include_package::a0::b0";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_package::a0::b1* include_package::a0::b1::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        digit *_t0 = digit::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_package::a0::b1* retval = new include_package::a0::b1(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_package::a0::b1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_package::a0::b1::postprocess() {
+        token_type = "include_package::a0::b1";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_package::a0::b2* include_package::a0::b2::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("_");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_package::a0::b2* retval = new include_package::a0::b2(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_package::a0::b2::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_package::a0::b2::postprocess() {
+        token_type = "include_package::a0::b2";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_package::a0::b3* include_package::a0::b3::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("-");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_package::a0::b3* retval = new include_package::a0::b3(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_package::a0::b3::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void include_package::a0::b3::postprocess() {
+        token_type = "include_package::a0::b3";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    include_package::a0* include_package::a0::parse() {
+        parse_context _start_ctx = get_ctx();
+        if(auto x = include_package::a0::b0::parse()) {
+            include_package::a0* retval = new include_package::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_package::a0::b1::parse()) {
+            include_package::a0* retval = new include_package::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_package::a0::b2::parse()) {
+            include_package::a0* retval = new include_package::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        if(auto x = include_package::a0::b3::parse()) {
+            include_package::a0* retval = new include_package::a0(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
+        return nullptr;
+    }
+
+    std::string include_package::a0::to_string() {
+        if(is_b0) return t0->to_string();
+        if(is_b1) return t1->to_string();
+        if(is_b2) return t2->to_string();
+        if(is_b3) return t3->to_string();
+        assert(false);
+    }
+
+    void include_package::a0::postprocess() {
+        token_type = "include_package::a0";
+        if(is_b0) {
+            token_children.push_back(t0);
+            t0->postprocess();
+        }
+        if(is_b1) {
+            token_children.push_back(t1);
+            t1->postprocess();
+        }
+        if(is_b2) {
+            token_children.push_back(t2);
+            t2->postprocess();
+        }
+        if(is_b3) {
+            token_children.push_back(t3);
+            t3->postprocess();
+        }
+    }
+
+    include_package* include_package::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        std::vector<include_package::a0*> _t0;
+        while(true) {
+            include_package::a0 *tmp = include_package::a0::parse();
+            if(tmp == nullptr) break;
+            _t0.push_back(tmp);
+        }
+        if(_t0.size() == 0) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_package* retval = new include_package(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_package::to_string() {
+        std::string ans = "";
+        for(int i = 0; i < t0.size(); i++) ans += t0[i]->to_string();
+        return ans;
+    }
+
+    void include_package::postprocess() {
+        token_type = "include_package";
+        for(int i = 0; i < t0.size(); i++) {
+            token_children.push_back(t0[i]);
+            t0[i]->postprocess();
+        }
+    }
+
     include_path_relative* include_path_relative::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
@@ -17216,17 +17400,48 @@ namespace parser {
         t2->postprocess();
     }
 
+    include_path_lib::a0* include_path_lib::a0::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        include_package *_t0 = include_package::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        terminal *_t1 = terminal::parse("::");
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        include_path_lib::a0* retval = new include_path_lib::a0(_t0, _t1);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string include_path_lib::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        return ans;
+    }
+
+    void include_path_lib::a0::postprocess() {
+        token_type = "include_path_lib::a0";
+        token_children.push_back(t0);
+        t0->postprocess();
+        token_children.push_back(t1);
+        t1->postprocess();
+    }
+
     include_path_lib* include_path_lib::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
         terminal *_t0 = terminal::parse("<");
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        include_path *_t1 = include_path::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        terminal *_t2 = terminal::parse(">");
+        std::optional<include_path_lib::a0*> _t1 = std::nullopt;
+        if(auto x = include_path_lib::a0::parse()) _t1 = x;
+        include_path *_t2 = include_path::parse();
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        terminal *_t3 = terminal::parse(">");
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        include_path_lib* retval = new include_path_lib(_t0, _t1, _t2);
+        include_path_lib* retval = new include_path_lib(_t0, _t1, _t2, _t3);
         retval->start_ctx = _start_ctx;
         retval->end_ctx = get_ctx();
         return retval;
@@ -17235,8 +17450,9 @@ namespace parser {
     std::string include_path_lib::to_string() {
         std::string ans = "";
         ans += t0->to_string();
-        ans += t1->to_string();
+        if(t1.has_value()) ans += t1.value()->to_string();
         ans += t2->to_string();
+        ans += t3->to_string();
         return ans;
     }
 
@@ -17244,10 +17460,14 @@ namespace parser {
         token_type = "include_path_lib";
         token_children.push_back(t0);
         t0->postprocess();
-        token_children.push_back(t1);
-        t1->postprocess();
+        if(t1.has_value()) {
+            token_children.push_back(t1.value());
+            t1.value()->postprocess();
+        }
         token_children.push_back(t2);
         t2->postprocess();
+        token_children.push_back(t3);
+        t3->postprocess();
     }
 
     include::a0::b0* include::a0::b0::parse() {

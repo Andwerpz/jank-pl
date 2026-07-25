@@ -1,5 +1,5 @@
-#include <put>;
-#include <syscall>;
+#include "put.jank";
+#include "syscall.jank";
 
 template<T> 
 void assert(T x, u8* msg) {

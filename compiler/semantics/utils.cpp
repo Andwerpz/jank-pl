@@ -105,6 +105,20 @@ LoopContext::LoopContext(std::string _start_label, std::string _assignment_label
     declaration_layer = _declaration_layer;
 }
 
+Package::Package() {
+    is_named = false;
+    name = "";
+    alias = "";
+    path = "";
+}
+
+Package::Package(std::string _name, std::string _alias, std::string _path) {
+    is_named = true;
+    name = _name;
+    alias = _alias;
+    path = _path;
+}
+
 // -- GENERAL UTILS --
 std::vector<std::pair<std::string, ld>> duration_stats;
 
@@ -1064,17 +1078,26 @@ bool is_type_primitive(Type *t) {
     return false;
 }
 
-DefinitionSpace* get_definition_space(std::string filepath) {
-    // make sure filepath is normalized
-    if(filepath[0] != '/') {
-        filepath = cwd_rel_to_absolute(filepath);
-    }
+DefinitionSpace* get_definition_space(std::string filepath, Package* package) {
+    assert(package != nullptr);
+
+    // filepath should be absolute
+    assert(filepath[0] == '/');
     filepath = normalize_path(filepath);
 
     if(definition_spaces.contains(filepath)) {
+        DefinitionSpace *ds = definition_spaces.at(filepath);
+        // assert(ds->get_package() == package);
+        if(ds->get_package() != package) {
+            std::cout << "FILEPATH : " << filepath << std::endl;
+            std::cout << "DS->FILEPATH : " << ds->get_filepath() << std::endl;
+            std::cout << "PACKAGE : " << package->name << std::endl;
+            std::cout << "DS->PACKAGE : " << ds->get_package()->name << std::endl;
+            assert(ds->get_package() == package);
+        }   
         return definition_spaces.at(filepath);
     }
-    DefinitionSpace *ds = new DefinitionSpace(filepath);
+    DefinitionSpace *ds = new DefinitionSpace(filepath, package);
     definition_spaces.insert({filepath, ds});
     return ds;
 }
@@ -1540,11 +1563,11 @@ StructLayout* _get_struct_layout(Type *t) {
 //tries to construct the struct layout for the given type. 
 // - first tries to see if it's already generated
 // - otherwise generates it and adds it to the global list
-// TODO make this dynamically parse includes to find missing struct definitions. 
-//   more specifically, when we're constructing the struct layout of some type T, 
-//   it may depend on some or all of the imports of the file defining T. 
-//   just make sure to register the imports of T before trying to construct the struct
-//   layouts of all the member variables. 
+// - dynamically parses includes to find missing struct definitions. 
+//   - more specifically, when we're constructing the struct layout of some type T, 
+//     it may depend on some or all of the imports of the file defining T. 
+//   - Before trying to see if member variable types are defined, first just make sure to
+//     parse the imports of the file defining the struct. 
 bool _construct_struct_layout(Type *t, std::vector<Type*> type_stack, int& byte_off) {
     assert(t != nullptr);
 
@@ -1714,6 +1737,95 @@ std::string get_string_literal_label(std::string str) {
 }
 
 
+// -- PACKAGES --
+
+// TODO make sure that the package path exists and doesn't completely contain some other package. 
+// maybe that should be the job of the package manager?
+bool add_package(std::string name, std::string alias, std::string path) {
+    for(Package* p : packages) {
+        if(p->name == name) {
+            std::cout << "Duplicate package : " << name << std::endl;
+            return false;
+        }
+    }
+    Package* p = new Package();
+    p->name = name;
+    p->alias = alias;
+    p->path = path;
+    packages.push_back(p);
+    return true;
+}
+
+Package* get_package(std::string name) {
+    for(Package* p : packages) {
+        if(p->name == name) {
+            return p;
+        }
+    }
+    std::cout << "Failed to find package with name : " << name << std::endl;
+    return nullptr;
+}
+
+// package named 'name' is dependent on package named 'dep_name'
+// ensures that we don't add duplicate dependencies
+// ensures that we don't add two dependencies with the same alias
+bool add_package_dependency(Package* package, Package* dep) {
+    assert(package != nullptr);
+    assert(dep != nullptr);
+     
+    // see if we've already added this dependency
+    // see if another dependency has the same alias
+    for(Package* _dep : package->dependencies) {
+        if(_dep->name == dep->name) {
+            std::cout << "Package \"" << package->name << "\" already has dependency \"" << dep->name << "\"" << std::endl;
+            return false;
+        }
+        if(_dep->alias == dep->alias) {
+            std::cout << "Package \"" << package->name << "\" already has dependency with alias \"" << dep->alias << "\"" << std::endl;
+            return false;
+        }
+    }
+
+    // add the dependency
+    package->dependencies.push_back(dep);
+    return true;
+}
+
+// it probably should be the build tool's responsibility to make sure that the include path is sane. 
+// the compiler will just spit out an error if it can't resolve it. 
+bool add_package_default_include(Package* package, Package* dep, std::string include_path) {
+    assert(package != nullptr);
+    assert(dep != nullptr);
+
+    // ensure that dep is already a dependency of package
+    bool found = false;
+    for(Package* _dep : package->dependencies) {
+        if(_dep == dep) {
+            found = true;
+            break;   
+        }
+    }
+    if(!found) {
+        std::cout << "Package \"" << package->name << "\" does not have dependency \"" << dep->name << "\"" << std::endl;
+        return false;
+    }
+
+    // add the default include
+    package->default_includes.push_back({dep, include_path});
+    return true;
+}
+
+// this should only work if current_package is nullptr
+// should only be able to set it once. 
+bool set_current_package(Package* package) {
+    if(current_package != nullptr) {
+        return false;
+    }
+    current_package = package;
+    return true;
+}
+
+
 // -- CONTROLLER --
 void initialize_controller() {
     //construct builtin definition space
@@ -1744,12 +1856,6 @@ void initialize_controller() {
     }
 }
 
-// TODO handle global variables
-// - when compiling, just assume that all global variables visible to the file they're 
-//   defined in are available for use. It's up to the user to make sure that their globals are actually initialized when they get used
-// - can also make a 'global variable checker' tool that does more strict checks on all global variables
-// - add 'u8** environ' as a builtin global variable
-
 bool compile(std::string target_filepath) {
     assert(target_filepath.size() != 0);
     std::cout << " -- COMPILING FILE : " << target_filepath << std::endl;
@@ -1758,7 +1864,7 @@ bool compile(std::string target_filepath) {
     // don't place generated instantiations into queue,
     //   if we just compiled another file, there could still be generated instantiations. 
     {
-        DefinitionSpace* ds = get_definition_space(target_filepath);
+        DefinitionSpace* ds = get_definition_space(target_filepath, current_package);
         ds->ensure_ready();
 
         assert(ds != nullptr);
@@ -2014,7 +2120,7 @@ bool compile(std::string target_filepath) {
     // emit global storage
     fout << ".section .data\n";
     {
-        DefinitionSpace *ds = get_definition_space(target_filepath);
+        DefinitionSpace *ds = get_definition_space(target_filepath, current_package);
         assert(ds != nullptr);
         for(GlobalDeclaration *gd : ds->get_global_variables(Visibility::All)) {
             Type *t = gd->declaration->type;
@@ -2048,7 +2154,7 @@ bool compile(std::string target_filepath) {
 bool emit_driver(std::string target_filepath) {
     std::cout << " -- EMIT DRIVER CODE : " << target_filepath << std::endl;
 
-    DefinitionSpace *target_ds = get_definition_space(target_filepath);
+    DefinitionSpace *target_ds = get_definition_space(target_filepath, current_package);
     target_ds->ensure_ready();
 
     // find entry point
@@ -2336,7 +2442,7 @@ bool emit_driver(std::string target_filepath) {
 }
 
 bool compile_all(std::string target_filepath) {
-    DefinitionSpace *target_ds = get_definition_space(target_filepath);
+    DefinitionSpace *target_ds = get_definition_space(target_filepath, current_package);
 
     // find all reachable definition spaces
     // (that correspond to a source file)

@@ -1,8 +1,8 @@
-#include <crypto/sha2>;
-#include <random>;
-#include <assert>;
-#include <intx>;
-#include <iostream>;
+#include "crypto/sha2.jank";
+#include "random.jank";
+#include "assert.jank";
+#include "intx.jank";
+#include "iostream.jank";
 
 // https://datatracker.ietf.org/doc/html/rfc7748
 //X25519 is a key exchange algorithm used to establish shared secret keys on public channels

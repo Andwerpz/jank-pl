@@ -102,8 +102,11 @@ enum class DefinitionSpaceState {
 //   template instantiations should be added as private definitions 
 struct DefinitionSpace {
 public:
-    DefinitionSpace();                                                  // builtin
-    DefinitionSpace(std::string filepath);                              // project files + stdlib
+    // builtin
+    DefinitionSpace();
+
+    // normal files
+    DefinitionSpace(std::string filepath, Package* package);
 
     // adding declarations
     // - returns true on success, false on failure
@@ -137,8 +140,8 @@ public:
     // misc
     void set_label_prefix(std::string _label_prefix);
     std::string get_filepath() const;
-    void add_include(Include* i);
-    const std::vector<Include*>& get_includes();
+    Package* get_package() const;
+    bool add_include(Include* i);
     const std::vector<DefinitionSpace*>& get_included_definition_spaces();
     void add_global_node(GlobalNode* gn);
     const std::vector<GlobalNode*>& get_global_nodes();
@@ -172,10 +175,10 @@ private:
     // misc
     bool is_builtin;
     std::string filepath;
+    Package* package;
     std::string label_prefix;
     std::vector<DefinitionSpace*> included_definition_spaces;
-    std::vector<std::string> include_filepaths;
-    std::vector<Include*> includes;
+    std::vector<std::string> included_filepaths;
     std::vector<GlobalNode*> global_nodes;
 
     // ensures all direct includes have been discovered and parsed

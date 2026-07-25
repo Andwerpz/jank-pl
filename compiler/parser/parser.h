@@ -1,4 +1,4 @@
-// Date Generated : 07-14-2026 00:11:56
+// Date Generated : 07-23-2026 23:13:44
 #pragma once
 #include <vector>
 #include <string>
@@ -131,6 +131,7 @@ namespace parser {
     struct control_statement;
     struct compound_statement;
     struct include_path;
+    struct include_package;
     struct include_path_relative;
     struct include_path_lib;
     struct include;
@@ -7247,6 +7248,82 @@ namespace parser {
         void postprocess() override;
     };
 
+    // include_package = < alpha | digit | "_" | "-" > ;
+    struct include_package : public token {
+        struct a0 : public token {
+            struct b0 : public token {
+                alpha *t0;
+                b0(alpha *_t0) {
+                    t0 = _t0;
+                }
+                static b0* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b1 : public token {
+                digit *t0;
+                b1(digit *_t0) {
+                    t0 = _t0;
+                }
+                static b1* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b2 : public token {
+                terminal *t0;
+                b2(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b2* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            struct b3 : public token {
+                terminal *t0;
+                b3(terminal *_t0) {
+                    t0 = _t0;
+                }
+                static b3* parse();
+                std::string to_string() override;
+                void postprocess() override;
+            };
+            bool is_b0 = false;
+            b0 *t0;
+            bool is_b1 = false;
+            b1 *t1;
+            bool is_b2 = false;
+            b2 *t2;
+            bool is_b3 = false;
+            b3 *t3;
+            a0(b0 *_t0) {
+                is_b0 = true;
+                t0 = _t0;
+            }
+            a0(b1 *_t1) {
+                is_b1 = true;
+                t1 = _t1;
+            }
+            a0(b2 *_t2) {
+                is_b2 = true;
+                t2 = _t2;
+            }
+            a0(b3 *_t3) {
+                is_b3 = true;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string() override;
+            void postprocess() override;
+        };
+        std::vector<a0*> t0;
+        include_package(std::vector<a0*> _t0) {
+            t0 = _t0;
+        }
+        static include_package* parse();
+        std::string to_string() override;
+        void postprocess() override;
+    };
+
     // include_path_relative = "\"" , include_path , "\"" ;
     struct include_path_relative : public token {
         terminal *t0;
@@ -7262,15 +7339,28 @@ namespace parser {
         void postprocess() override;
     };
 
-    // include_path_lib = "<" , include_path , ">" ;
+    // include_path_lib = "<" , [ include_package , "::" ] , include_path , ">" ;
     struct include_path_lib : public token {
+        struct a0 : public token {
+            include_package *t0;
+            terminal *t1;
+            a0(include_package *_t0, terminal *_t1) {
+                t0 = _t0;
+                t1 = _t1;
+            }
+            static a0* parse();
+            std::string to_string() override;
+            void postprocess() override;
+        };
         terminal *t0;
-        include_path *t1;
-        terminal *t2;
-        include_path_lib(terminal *_t0, include_path *_t1, terminal *_t2) {
+        std::optional<a0*> t1;
+        include_path *t2;
+        terminal *t3;
+        include_path_lib(terminal *_t0, std::optional<a0*> _t1, include_path *_t2, terminal *_t3) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
+            t3 = _t3;
         }
         static include_path_lib* parse();
         std::string to_string() override;

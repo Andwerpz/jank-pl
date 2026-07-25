@@ -1,0 +1,66 @@
+
+currently, I have the problem that the compiler may need to dynamically fetch files that are not explicitly
+imported by the file that we're currently compiling. 
+This is an issue when we're compiling files that import files from other packages, as then we suddenly need
+to know what packages this library depends on, which I don't think is a good idea as that blurs the line 
+between the compiler and the build tool. 
+
+
+while talking to agomatam, he brought up the point that it may be better to restrict my file dependencies
+to a DAG. 
+If we do this, the build tool can figure out a topological ordering in which to compile all files in the project
+Furthermore, if we do some extra work, we may be able to make it so that we don't have to dynamically fetch 
+files apart from the ones that are imported. 
+The idea is that once a file is compiled, it'll emit some extra information which its dependents can read
+to compile themselves. 
+I suppose I'll also have to restrict my package dependencies to a DAG, but the build tool can also handle that. 
+
+of course, this requires all file dependencies to be a DAG, I'll have to analyze existing projects to see
+if that is feasible to do. 
+
+probably the more difficult challenge is to actually implement this one-pass compilation. 
+I can see how to handle most things, but the one thing I'm having trouble handling is templates. 
+Currently, templates depend on this dynamic import fetching because I have to reconstruct the compilation
+context of whatever file defined the template in order to compile a template instantiation. 
+And compiling an instantiated template could cause another template to be instantiated from some other 
+random file. 
+
+hmm, without actually doing type analysis on template code, I don't see how I'm going to restrict myself to
+only parsing direct imports. 
+when substituting the template type with a concrete one, we may also need to resolve some function calls. 
+and anyways, we'll also need to create concrete versions of whatever templated stuff we produce as a result
+of instantiating a template, so we'll need to have access to templated methods from outside our direct imports. 
+
+
+another solution is to let the compiler know about projects. 
+This comes with its own issues, as we're now blurring the line between compiler and build tool. 
+at what point does this stop? should the compiler be allowed to dynamically fetch packages from online?
+should it be allowed to dynamically build dependencies?
+
+I think a better solution is to just let the build tool know about projects, and let the build tool feed the
+compiler a fully resolved package dependency graph. 
+The compiler shouldn't know how packages work, it should just know for each file, how to resolve its includes
+so the compiler would have a struct something like 
+```
+struct Package {
+    std::string name;
+    std::string alias;
+    std::string root;
+    std::vector<Package*> dependencies;
+};
+```
+and it would accept commandline arguments like
+```
+--package <name> <alias> <root>
+--package-dependency <name> <dependency>
+```
+then, --current-package will just give the name of some package in the provided dependency graph. 
+if no --current-package is provided, then a 'default package' will be manufactured and will have 
+exactly one dependency, the jank stdlib (unless overridden)
+
+
+TODO analyze jank-os to see how its dependency graph is looking like
+see if it's feasible to transition into a DAG graph. 
+
+
+
