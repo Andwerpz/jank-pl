@@ -18,16 +18,16 @@ using namespace std;
 // out.txt holds the expected STDOUT of the generated executable
 
 // for source files, it's expected that main.jank exists and has a valid entry point
-// all other source files are optional. 
+// all other source files are optional.
 
 // to make a new test, just write main.jank and your other source files into ./wip_test
-// the test runner should automatically create your test and populate info.txt and out.txt 
-//   make sure to double check the generated test afterwards 
+// the test runner should automatically create your test and populate info.txt and out.txt
+//   make sure to double check the generated test afterwards
 
-#include <unistd.h>  
+#include <unistd.h>
 #include <sys/wait.h>
 #include <cstring>
-#include <cstdio>  
+#include <cstdio>
 #include <limits.h>
 #include <libgen.h>
 #include <sys/stat.h>
@@ -43,13 +43,13 @@ namespace fs = std::filesystem;
 string compiler_path = "../compiler/jjc.exe";
 
 std::string read_file(const std::string& filename) {
-    std::ifstream file(filename); 
+    std::ifstream file(filename);
     if (!file) {
         throw std::runtime_error("Failed to open file: " + filename);
     }
     std::ostringstream buffer;
-    buffer << file.rdbuf(); 
-    return buffer.str();     
+    buffer << file.rdbuf();
+    return buffer.str();
 }
 
 std::string read_cstr(char* s) {
@@ -85,7 +85,7 @@ std::string extract_stem(std::string filename) {
         if(filename[i] == '.') return filename.substr(0, i);
     }
     return filename;
-}   
+}
 
 std::string extract_ext(std::string filename) {
     for(int i = filename.size() - 1; i >= 0; i--){
@@ -287,7 +287,7 @@ int validate_test(const string& test_path) {
     return 0;
 }
 
-// runs the entire test. 
+// runs the entire test.
 // returns 0 on success, nonzero on failure
 int run_test(string test_path, string work_path, string& error_message) {
     //parse info.txt
@@ -322,10 +322,11 @@ int run_test(string test_path, string work_path, string& error_message) {
     return 0;
 }
 
-void run_tests_multithreaded(vector<string> tests, size_t thread_count = std::thread::hardware_concurrency()) {
+// returns 0 on success, nonzero on failure
+int run_tests_multithreaded(vector<string> tests, size_t thread_count = std::thread::hardware_concurrency()) {
     assert(thread_count >= 1);
     std::cout << "THREAD COUNT : " << thread_count << std::endl;
-    
+
     vector<bool> passed(tests.size(), false);
     vector<string> error_output(tests.size());
     atomic<size_t> next_test = 0;
@@ -403,6 +404,7 @@ void run_tests_multithreaded(vector<string> tests, size_t thread_count = std::th
     }
     if(passed_all) {
         cout << "All tests passed" << std::endl;
+        return 0;
     }
     else {
         cout << "Failed tests : " << std::endl;
@@ -411,6 +413,7 @@ void run_tests_multithreaded(vector<string> tests, size_t thread_count = std::th
                 cout << tests[i] << " : " << error_output[i] << "\n";
             }
         }
+        return 1;
     }
 }
 
@@ -451,7 +454,7 @@ int main(int argc, char* argv[]) {
             return 1;
         }
 
-        run_tests_multithreaded({testname});
+        return run_tests_multithreaded({testname});
     }
     else if(mode == "run-tests") {
         std::string start_test = "";
@@ -481,7 +484,7 @@ int main(int argc, char* argv[]) {
         sort(tests.begin(), tests.end());
 
         //run tests
-        run_tests_multithreaded(tests);
+        return run_tests_multithreaded(tests);
     }
     else if(mode == "gen-test") {
         if(argc < 3) {
