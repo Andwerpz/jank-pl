@@ -108,14 +108,12 @@ LoopContext::LoopContext(std::string _start_label, std::string _assignment_label
 Package::Package() {
     is_named = false;
     name = "";
-    alias = "";
     path = "";
 }
 
-Package::Package(std::string _name, std::string _alias, std::string _path) {
+Package::Package(std::string _name, std::string _path) {
     is_named = true;
     name = _name;
-    alias = _alias;
     path = _path;
 }
 
@@ -1741,14 +1739,15 @@ std::string get_string_literal_label(std::string str) {
 
 // TODO make sure that the package path exists and doesn't completely contain some other package. 
 // maybe that should be the job of the package manager?
-bool add_package(std::string name, std::string alias, std::string path) {
+// but I should still check that here and fail to add if it's the case. 
+bool add_package(std::string name, std::string path) {
     for(Package* p : packages) {
         if(p->name == name) {
             std::cout << "Duplicate package : " << name << std::endl;
             return false;
         }
     }
-    Package* p = new Package(name, alias, path);
+    Package* p = new Package(name, path);
     packages.push_back(p);
     return true;
 }
@@ -1764,51 +1763,59 @@ Package* get_package(std::string name) {
 }
 
 // package named 'name' is dependent on package named 'dep_name'
+// ensures that a package doesn't depend on itself
 // ensures that we don't add duplicate dependencies
 // ensures that we don't add two dependencies with the same alias
-bool add_package_dependency(Package* package, Package* dep) {
+// doesn't care about circular dependencies between packages
+//   that's the build tool's job
+bool add_package_dependency(Package* package, std::string alias, Package* dep) {
     assert(package != nullptr);
     assert(dep != nullptr);
+
+    // see if the package is depending on itself
+    if(package == dep) {
+        return false;
+    }
+    assert(package->name != dep->name);
      
     // see if we've already added this dependency
     // see if another dependency has the same alias
-    for(Package* _dep : package->dependencies) {
+    for(auto &[_alias, _dep] : package->dependencies) {
         if(_dep->name == dep->name) {
             std::cout << "Package \"" << package->name << "\" already has dependency \"" << dep->name << "\"" << std::endl;
             return false;
         }
-        if(_dep->alias == dep->alias) {
-            std::cout << "Package \"" << package->name << "\" already has dependency with alias \"" << dep->alias << "\"" << std::endl;
+        if(_alias == alias) {
+            std::cout << "Package \"" << package->name << "\" already has dependency with alias \"" << alias << "\"" << std::endl;
             return false;
         }
     }
 
     // add the dependency
-    package->dependencies.push_back(dep);
+    package->dependencies.push_back({alias, dep});
     return true;
 }
 
 // it probably should be the build tool's responsibility to make sure that the include path is sane. 
 // the compiler will just spit out an error if it can't resolve it. 
-bool add_package_default_include(Package* package, Package* dep, std::string include_path) {
+bool add_package_default_include(Package* package, std::string alias, std::string include_path) {
     assert(package != nullptr);
-    assert(dep != nullptr);
 
-    // ensure that dep is already a dependency of package
+    // ensure a dependency with the given alias exists
     bool found = false;
-    for(Package* _dep : package->dependencies) {
-        if(_dep == dep) {
+    for(auto &[_alias, _dep] : package->dependencies) {
+        if(_alias == alias) {
+            assert(!found);
             found = true;
-            break;   
         }
     }
     if(!found) {
-        std::cout << "Package \"" << package->name << "\" does not have dependency \"" << dep->name << "\"" << std::endl;
+        std::cout << "Package \"" << package->name << "\" does not have dependency with alias \"" << alias << "\"" << std::endl;
         return false;
     }
 
     // add the default include
-    package->default_includes.push_back({dep, include_path});
+    package->default_includes.push_back({alias, include_path});
     return true;
 }
 

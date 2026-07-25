@@ -3,7 +3,7 @@ CXX := g++
 CXXFLAGS := -std=c++20 -Iinclude -g -O2
 
 # Entry point
-ENTRY := ./dylan.cpp
+ENTRY := ./src/dylan.cpp
 
 # Output binary name
 TARGET := ./dylan.exe

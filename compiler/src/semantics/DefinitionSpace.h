@@ -94,6 +94,8 @@ enum class DefinitionSpaceState {
 // - arguments for moving label generation elsewhere:
 //   - having label generation as a byproduct of adding a function to a definition space is kinda uncomfortable
 
+// TODO check that all global nodes used in a file are visible to the file via local declaration or include
+
 // represents all definitions tied to a single file
 //   there is also one DefinitionSpace for everything that should be defined globally, 
 //   stuff like primitive types and operators defined on primitive types

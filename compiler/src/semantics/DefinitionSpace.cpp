@@ -453,8 +453,8 @@ bool DefinitionSpace::ensure_parsed() {
     }
 
     // add default library includes
-    for(auto &[dep, path] : package->default_includes) {
-        Include* inc = new Include(true, dep->name, path);
+    for(auto &[alias, path] : package->default_includes) {
+        Include* inc = new Include(true, alias, path);
         if(!add_include(inc)) {
             std::cout << "Failed to add default include : " << inc->to_string() << std::endl;
             return false;
@@ -1073,20 +1073,21 @@ bool DefinitionSpace::add_include(Include* inc) {
     if(inc->is_library_include) {   // library include
         // find which package to include from
         if(inc->package.has_value()) {
-            // make sure given package is in this packages dependencies
+            // the include explicitly refers to a package
+            // see if this matches any dependency aliases
             std::string dep_name = inc->package.value();
-            for(Package* dep : get_package()->dependencies) {
-                if(dep->name == dep_name) {
+            for(auto &[alias, dep] : get_package()->dependencies) {
+                if(alias == dep_name) {
                     assert(include_package == nullptr);
                     include_path = dep->path + "/" + inc->path + ".jank";
                     include_package = dep;
                 }
-            }
+            } 
         }
         else {
             // look through dependencies for a match
             // error if there are multiple valid packages to include from. 
-            for(Package* dep  : get_package()->dependencies) {
+            for(auto &[alias, dep] : get_package()->dependencies) {
                 std::string path = dep->path + "/" + inc->path + ".jank";
                 if(!fs::exists(path)) {
                     continue;

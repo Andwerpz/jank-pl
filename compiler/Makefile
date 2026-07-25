@@ -3,7 +3,7 @@ CXX := g++
 CXXFLAGS := -std=c++20 -Iinclude -g -O2
 
 # Entry point
-ENTRY := ./jjc.cpp
+ENTRY := ./src/jjc.cpp
 
 # Output binary name
 TARGET := ./jjc.exe

@@ -116,16 +116,15 @@ struct LoopContext {
 struct Package {
     bool is_named;
     std::string name;
-    std::string alias;
     std::string path;
-    std::vector<Package*> dependencies;
-    std::vector<std::pair<Package*, std::string>> default_includes; 
+    std::vector<std::pair<std::string, Package*>> dependencies;             // {alias, package}
+    std::vector<std::pair<std::string, std::string>> default_includes;      // {alias, include path}
 
     // unnamed package
     Package();
     
     // named package (library package)
-    Package(std::string name, std::string alias, std::string path);
+    Package(std::string name, std::string path);
 };
 
 // -- GENERAL UTILS --
@@ -234,10 +233,10 @@ bool add_string_literal(std::string str);
 std::string get_string_literal_label(std::string str);
 
 // -- PACKAGES --
-bool add_package(std::string name, std::string alias, std::string path);
+bool add_package(std::string name, std::string path);
 Package* get_package(std::string name);
-bool add_package_dependency(Package* package, Package* dep); 
-bool add_package_default_include(Package* package, Package* dep, std::string path);
+bool add_package_dependency(Package* package, std::string alias, Package* dep); 
+bool add_package_default_include(Package* package, std::string alias, std::string path);
 bool set_current_package(Package* package);
 
 // -- CONTROLLER --

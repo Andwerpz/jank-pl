@@ -97,9 +97,9 @@ int main(int argc, char* argv[]) {
         std::cout << "--startup-only : only emits startup and driver code\n";
 
         std::cout << " == PACKAGE == \n";
-        std::cout << "--package <name> <alias> <path> : makes a package available to the compiler\n";
-        std::cout << "--package-dependency <package> <dependency> : adds a dependency to 'package'\n";
-        std::cout << "--package-default-include <package> <include_package> <include_path> : adds an include to every file in package\n";
+        std::cout << "--package <name> <path> : makes a package available to the compiler\n";
+        std::cout << "--package-dependency <package> <alias> <dependency> : adds a dependency to 'package'\n";
+        std::cout << "--package-default-include <package> <include_alias> <include_path> : adds an include to every file in package\n";
         std::cout << "--current-package <name> : notifies the compiler what package the passed in files are from\n";
         std::cout << "--no-stdlib : omits dependencies from the default package\n";
         std::cout << "--no-prelude : omits default includes from the default package\n";
@@ -176,36 +176,54 @@ int main(int argc, char* argv[]) {
         // == PACKAGE ==
         else if(arg == "--package") {
             if(argptr + 3 > argc) {
-                std::cout << "USAGE : --package <name> <alias> <path> { --package-opts <flag> }\n";
+                std::cout << "USAGE : --package <name> <path> { --package-opts <flag> }\n";
                 return 1;
             }
             std::string name = argv[argptr ++];
-            std::string alias = argv[argptr ++];
             std::string path = argv[argptr ++];
-            if(!add_package(name, alias, path)) {
+            if(!add_package(name, path)) {
                 std::cout << "Failed to add package : " << name << "\n";
                 return 1;
             }
         }
         else if(arg == "--package-dependency") {
-            if(argptr + 2 > argc) {
-                std::cout << "USAGE : --package-dependency <A> <B>\n";
+            if(argptr + 3 > argc) {
+                std::cout << "USAGE : --package-dependency <package> <alias> <dependency>\n";
                 return 1;
             }
-            std::string A = argv[argptr ++];
-            std::string B = argv[argptr ++];
-            Package* pA = get_package(A);
-            Package* pB = get_package(B);
-            if(pA == nullptr) {
-                std::cout << "Failed to get package with name : " << A << "\n";
+            std::string package_name = argv[argptr ++];
+            std::string alias = argv[argptr ++];
+            std::string dep_name = argv[argptr ++];
+            Package* package = get_package(package_name);
+            Package* dep = get_package(dep_name);
+            if(package == nullptr) {
+                std::cout << "Failed to get package with name : " << package_name << "\n";
                 return 1;
             }
-            if(pB == nullptr) {
-                std::cout << "Failed to get package with name : " << B << "\n";
+            if(dep == nullptr) {
+                std::cout << "Failed to get package with name : " << dep_name << "\n";
                 return 1;
             }
-            if(!add_package_dependency(pA, pB)) {
-                std::cout << "Failed to add package dependency : " << A << " " << B << "\n";
+            if(!add_package_dependency(package, alias, dep)) {
+                std::cout << "Failed to add package dependency : " << package_name << " " << dep_name << "\n";
+                return 1;
+            }
+        }
+        else if(arg == "--package-default-include") {
+            if(argptr + 3 > argc) {
+                std::cout << "USAGE : --package-default-include <package> <include-alias> <include-path>\n";
+                return 1;
+            }
+            std::string package_name = argv[argptr ++];
+            std::string alias = argv[argptr ++];
+            std::string path = argv[argptr ++];
+            Package* package = get_package(package_name);
+            if(package == nullptr) {
+                std::cout << "Failed to get package with name : " << package_name << "\n";
+                return 1;
+            }
+            if(!add_package_default_include(package, alias, path)) {
+                std::cout << "Failed to add package default include : " << package_name << " " << alias << " " << path << "\n";
                 return 1;
             }
         }
@@ -282,6 +300,7 @@ int main(int argc, char* argv[]) {
     if(current_package == nullptr) {
         Package* p = new Package();
         std::string jank_stdlib_name = "jank-stdlib";
+        std::string jank_stdlib_alias = "std";
 
         // hmm, need to add jank-stdlib if it's not already added here?
         if(!no_default_package_dependencies) {
@@ -289,18 +308,16 @@ int main(int argc, char* argv[]) {
             // TODO find and load the package information dynamically somehow
             //   right now i'm just hardcoding it
             if(get_package(jank_stdlib_name) == nullptr) {
-                std::string jank_stdlib_alias = "std";
                 std::string jank_stdlib_path = normalize_path(compiler_dir + "/../stdlib/src");
-                if(!add_package(jank_stdlib_name, jank_stdlib_alias, jank_stdlib_path)) {
+                if(!add_package(jank_stdlib_name, jank_stdlib_path)) {
                     assert(false);
                 }
-                
             }
 
             // add dependency to jank-stdlib
             Package* jank_stdlib = get_package(jank_stdlib_name);
             assert(jank_stdlib != nullptr);
-            if(!add_package_dependency(p, jank_stdlib)) {
+            if(!add_package_dependency(p, jank_stdlib_alias, jank_stdlib)) {
                 assert(false);
             }
         }
@@ -315,16 +332,16 @@ int main(int argc, char* argv[]) {
             // - <std::memory>
             // - <std::error>
             // - <std::defs>
-            add_package_default_include(p, jank_stdlib, "memory");
-            add_package_default_include(p, jank_stdlib, "error");
-            add_package_default_include(p, jank_stdlib, "defs");
+            add_package_default_include(p, jank_stdlib_alias, "memory");
+            add_package_default_include(p, jank_stdlib_alias, "error");
+            add_package_default_include(p, jank_stdlib_alias, "defs");
 
             //if we're not in kernel mode, can include some utilities provided by the kernel
             // - <std::syscall>
             // - <std::malloc>
             if(!kernel_mode) {
-                add_package_default_include(p, jank_stdlib, "syscall");
-                add_package_default_include(p, jank_stdlib, "malloc");
+                add_package_default_include(p, jank_stdlib_alias, "syscall");
+                add_package_default_include(p, jank_stdlib_alias, "malloc");
             }
         }
 

@@ -1,30 +1,8 @@
-#include <iostream>
-#include <string>
-#include <vector>
+#include "dylan.h"
 
-#include <unistd.h>  
-#include <sys/wait.h>
-#include <cstring>
-#include <cstdio>  
-#include <limits.h>
-#include <libgen.h>
-#include <sys/stat.h>
-#include <fcntl.h>
-#include <syncstream>
-#include <iomanip>
-#include <chrono>
-#include <algorithm>
-#include <functional>
-
-#include <filesystem>
-namespace fs = std::filesystem;
-
-#include "toml/toml.h"
-#include "utils/utils.h"
-
-// tool for managing projects
-// a project is expected to look like this:
-// project_root/
+// tool for managing packages
+// a package is expected to look like this:
+// package_root/
 //   config.toml
 //   deps.toml
 //   src/
@@ -35,22 +13,22 @@ namespace fs = std::filesystem;
 //     <tmp files here>
 
 // what should this tool be able to do?
-// - build the project (build)
-// - run the project (run)
+// - build some target (build)
+// - run executable generated from a target (run)
 // - delete generated files (clean)
 // - run tests? (test)
 //   - how would this work, what are the responsibilities of the build tool vs test runner
 // - list all targets (targets)
-// - print cool statistics about the project 
+// - print cool statistics about the package 
 //   - dependency graph (deps)
 //   - lines of code (loc)
 //   - file compile times
 
 // structure of config.toml:
 /*
-# project metadata
-[project]
-name: "jank-compiler"            # project name
+# package metadata
+[package]
+name: "jank-compiler"            # package name
 
 # targets
 # each target should specify some sort of thing to build
@@ -58,14 +36,14 @@ name: "jank-compiler"            # project name
 name = "compiler"
 type = "binary"
 entry = "jjc.jank"  # relative to source path
-output = "bin/jjc"  # relative to project root
+output = "bin/jjc"  # relative to package root
 
 # dependencies 
-# each dependency is assumed to be another jank project
+# each dependency is assumed to be another jank package
 # TODO have packages be installed at a known location like /.jank and look for packages there
 #   if the user doesn't specify a path
 [[dependency]]
-name = "jank-stdlib"                    # should match with the name of the project
+name = "jank-stdlib"                    # should match with the name of the package
 alias = "std"                           # optional, if omitted will just be the name
 path = "/home/steven/jank-pl/stdlib"    
 
@@ -92,182 +70,10 @@ path = "/home/steven/jank-pl/stdlib"
 //   - so the main improvements I can make to this system is making the compiler smarter so that it needs to load less files 
 //     when compiling some file A. 
 
-std::string stdlib_path;
-
-// something you can build
-struct target {
-    std::string name;
-    std::string type;
-    std::string entry;
-    std::string output;
-};
-
-// external library description
-struct package {    
-    std::string name;
-    std::string alias;
-    std::string path;
-};
-
-struct project {
-    std::string root;
-    std::string name;
-
-    toml::table config;
-    toml::table deps;
-
-    std::string src_path;
-    std::string build_path;
-    std::string tmp_path;
-
-    std::vector<target> targets;
-    std::vector<package> dependencies;
-};
-
-project* load_project(std::string project_path) {
-    // find config.toml
-    toml::table config;
-    try {
-        config = toml::parse(project_path + "/config.toml");
-    } catch(const toml::parse_error& e) {
-        throw std::runtime_error(std::string("Failed to load config.toml : ").append(e.what()));
-    }
-
-    // load project name
-    std::optional<std::string> _project_name = config["project"]["name"].value<std::string>();
-    if(!_project_name.has_value()) {
-        throw std::runtime_error("project.name missing from config.toml");
-    }
-    std::string project_name = _project_name.value();
-
-    // find /src
-    // TODO load this from config.toml
-    std::string src_path = "/src";
-    if(!fs::exists(fs::path(project_path + src_path))) {
-        throw std::runtime_error("Source directory does not exist : " + src_path);
-    }
-    if(!fs::is_directory(fs::path(project_path + src_path))) {
-        throw std::runtime_error("Source path is not a directory : " + src_path);
-    }
-
-    // find /build
-    // TODO load this from config.toml
-    std::string build_path = "/build";
-    if(!fs::exists(fs::path(project_path + build_path))) {
-        throw std::runtime_error("Build directory does not exist : " + build_path);
-    }
-    if(!fs::is_directory(fs::path(project_path + build_path))) {
-        throw std::runtime_error("Build path is not a directory : " + build_path);
-    }
-
-    // find /tmp
-    // TODO load this from config.toml
-    std::string tmp_path = "/tmp";
-    if(!fs::exists(fs::path(project_path + tmp_path))) {
-        throw std::runtime_error("Temp directory does not exist : " + tmp_path);
-    }
-    if(!fs::is_directory(fs::path(project_path + tmp_path))) {
-        throw std::runtime_error("Temp path is not a directory : " + tmp_path);
-    }
-
-    // targets
-    std::vector<target> targets;
-    if(config.contains("target")) {
-        toml::array* _targets = config["target"].as_array();
-        if(!_targets) {
-            throw std::runtime_error("'target' must be an array");
-        }
-        for(toml::node& node : *_targets) {
-            toml::table* target = node.as_table();
-            if(!target) {
-                throw std::runtime_error("Every element of 'target' must be a table");
-            }
-
-            // process target
-            auto get_field = [](toml::table* t, std::string field) {
-                std::optional<std::string> _val = (*t)[field].value<std::string>();
-                if(!_val.has_value()) {
-                    throw std::runtime_error("Target missing field : " + field);
-                }
-                return _val.value();
-            };
-            std::string name = get_field(target, "name");
-            std::string type = get_field(target, "type");
-            std::string entry = get_field(target, "entry");
-            std::string output = get_field(target, "output");
-
-            targets.push_back({name, type, entry, output});        
-        }
-    }
-
-    // dependencies
-    std::vector<package> dependencies;
-    if(config.contains("dependency")) {
-        toml::array* _dependencies = config["dependency"].as_array();
-        if(!_dependencies) {
-            throw std::runtime_error("'dependency' must be an array");
-        }
-        for(toml::node& node : *_dependencies) {
-            toml::table* dependency = node.as_table();
-            if(!dependency) {
-                throw std::runtime_error("Every element of 'dependency' must be a table");
-            }
-
-            // process dependency
-            auto get_field = [](toml::table* t, std::string field) {
-                std::optional<std::string> _val = (*t)[field].value<std::string>();
-                if(!_val.has_value()) {
-                    throw std::runtime_error("Dependency missing field : " + field);
-                }
-                return _val.value();
-            };
-            std::string name = get_field(dependency, "name");
-            std::string path = get_field(dependency, "path");
-            std::string alias = name;
-            if(dependency->contains("alias")) {
-                alias = get_field(dependency, "alias");
-            }
-
-            dependencies.push_back({name, alias, path});
-        }
-    }
-
-    // make sure no two targets have the same name
-    for(int i = 0; i < targets.size(); i++) {
-        for(int j = 0; j < i; j++) {
-            if(targets[i].name == targets[j].name) {
-                throw std::runtime_error("Duplicate target name : " + targets[i].name);
-            }
-        }
-    }
-
-    // find deps.toml
-    toml::table deps;
-    try {
-        config = toml::parse(project_path + "/deps.toml");
-    } catch(const toml::parse_error& e) {
-        throw std::runtime_error(std::string("Failed to load deps.toml : ").append(e.what()));
-    }
-
-    // assemble project struct
-    project* proj = new project();
-    proj->root = project_path;
-    proj->name = project_name;
-    proj->config = config;
-    proj->deps = deps;
-    proj->src_path = src_path;
-    proj->build_path = build_path;
-    proj->tmp_path = tmp_path;
-    proj->targets = targets;
-    proj->dependencies = dependencies;
-
-    return proj;
-}
-
 // compiles the file at src_path into out_path
 // assumes src_path and out_path are absolute
 // returns 0 on success, nonzero on failure
-int compile(std::string src_path, std::string out_path, std::vector<std::string> args) {
+int compile(fs::path src_path, fs::path out_path, std::vector<std::string> args) {
     pid_t pid = fork();
     if(pid == 0) {
         std::vector<std::string> command_args = {
@@ -302,7 +108,7 @@ int compile(std::string src_path, std::string out_path, std::vector<std::string>
 // links and assembles the given assembly files into out_path
 // assumes all paths in asm_paths and out_path are absolute
 // returns 0 on success, nonzero on failure
-int assemble(std::vector<std::string> asm_paths, std::string out_path) {
+int assemble(std::vector<fs::path> asm_paths, fs::path out_path) {
     pid_t pid = fork();
     if(pid == 0) {
         std::vector<std::string> command_args = {
@@ -340,64 +146,226 @@ int assemble(std::vector<std::string> asm_paths, std::string out_path) {
 // writes the provided toml file to the given path
 // assumes that the path doesn't correspond to an existing directory
 // assumes that the path is an absolute path
-void write_toml(const toml::table& toml, const std::string path) {
+void write_toml(const toml::table& toml, const fs::path path) {
     if(fs::is_directory(path)) {
-        throw std::runtime_error("Tried to write toml to directory : " + path);
+        throw std::runtime_error("Tried to write toml to directory : " + path.string());
     }
     std::ofstream output(path);
     if (!output) {
-        throw std::runtime_error("Failed to open file : " + path);
+        throw std::runtime_error("Failed to open file : " + path.string());
     }
     output << toml;
     if (!output) {
-        throw std::runtime_error("failed to write toml to file : " + path);
+        throw std::runtime_error("failed to write toml to file : " + path.string());
     }
+    output.close();
+}
+
+// if we can already find a package in all_packages, return it. 
+// otherwise try to load it from the filesystem. 
+package* load_package(fs::path package_path) {
+    // check if we've already loaded this package
+    for(package* p : all_packages) {
+        if(fs::equivalent(p->path, package_path)) {
+            return p;
+        }
+    }
+    
+    // see if this path exists
+    if(!fs::is_directory(package_path)) {
+        throw std::runtime_error("Package path is not a directory : " + package_path.string());
+    }
+
+    // find config.toml
+    toml::table config;
+    try {
+        config = toml::parse((package_path / "config.toml").string());
+    } catch(const toml::parse_error& e) {
+        throw std::runtime_error(std::string("Failed to load config.toml : ").append(e.what()));
+    }
+
+    // load package name
+    std::optional<std::string> _package_name = config["package"]["name"].value<std::string>();
+    if(!_package_name.has_value()) {
+        throw std::runtime_error("package.name missing from config.toml");
+    }
+    std::string package_name = _package_name.value();
+
+    // find /src
+    // TODO load this from config.toml
+    fs::path src_path = package_path / "src";
+    if(!fs::exists(src_path)) {
+        throw std::runtime_error("Source directory does not exist : " + src_path.string());
+    }
+    if(!fs::is_directory(src_path)) {
+        throw std::runtime_error("Source path is not a directory : " + src_path.string());
+    }
+
+    // find /build
+    // TODO load this from config.toml
+    fs::path build_path = package_path / "build";
+    if(!fs::exists(build_path)) {
+        throw std::runtime_error("Build directory does not exist : " + build_path.string());
+    }
+    if(!fs::is_directory(build_path)) {
+        throw std::runtime_error("Build path is not a directory : " + build_path.string());
+    }
+
+    // find /tmp
+    // TODO load this from config.toml
+    fs::path tmp_path = package_path / "tmp";
+    if(!fs::exists(tmp_path)) {
+        throw std::runtime_error("Temp directory does not exist : " + tmp_path.string());
+    }
+    if(!fs::is_directory(tmp_path)) {
+        throw std::runtime_error("Temp path is not a directory : " + tmp_path.string());
+    }
+
+    // targets
+    std::vector<target> targets;
+    if(config.contains("target")) {
+        toml::array* _targets = config["target"].as_array();
+        if(!_targets) {
+            throw std::runtime_error("'target' must be an array");
+        }
+        for(toml::node& node : *_targets) {
+            toml::table* target = node.as_table();
+            if(!target) {
+                throw std::runtime_error("Every element of 'target' must be a table");
+            }
+
+            // process target
+            auto get_field = [](toml::table* t, std::string field) {
+                std::optional<std::string> _val = (*t)[field].value<std::string>();
+                if(!_val.has_value()) {
+                    throw std::runtime_error("Target missing field : " + field);
+                }
+                return _val.value();
+            };
+            std::string name = get_field(target, "name");
+            std::string type = get_field(target, "type");
+            std::string entry = get_field(target, "entry");
+            std::string output = get_field(target, "output");
+
+            targets.push_back({name, type, entry, output});        
+        }
+    }
+
+    // dependencies
+    std::vector<std::pair<std::string, package*>> dependencies;
+    if(config.contains("dependency")) {
+        toml::array* _dependencies = config["dependency"].as_array();
+        if(!_dependencies) {
+            throw std::runtime_error("'dependency' must be an array");
+        }
+        for(toml::node& node : *_dependencies) {
+            toml::table* dependency = node.as_table();
+            if(!dependency) {
+                throw std::runtime_error("Every element of 'dependency' must be a table");
+            }
+
+            // process dependency
+            auto get_field = [](toml::table* t, std::string field) {
+                std::optional<std::string> _val = (*t)[field].value<std::string>();
+                if(!_val.has_value()) {
+                    throw std::runtime_error("Dependency missing field : " + field);
+                }
+                return _val.value();
+            };
+            std::string name = get_field(dependency, "name");
+            fs::path path = get_field(dependency, "path");
+            std::string alias = name;
+            if(dependency->contains("alias")) {
+                alias = get_field(dependency, "alias");
+            }
+
+            package* dep = load_package(path);
+            assert(dep != nullptr);
+            if(dep->name != name) {
+                throw std::runtime_error("Dependency name mismatch : " + name + " vs. " + dep->name);
+            }
+            dependencies.push_back({alias, dep});
+        }
+    }
+
+    // make sure no two targets have the same name
+    for(int i = 0; i < targets.size(); i++) {
+        for(int j = 0; j < i; j++) {
+            if(targets[i].name == targets[j].name) {
+                throw std::runtime_error("Duplicate target name : " + targets[i].name);
+            }
+        }
+    }
+
+    // find deps.toml
+    toml::table deps;
+    try {
+        deps = toml::parse((package_path / "deps.toml").string());
+    } catch(const toml::parse_error& e) {
+        throw std::runtime_error(std::string("Failed to load deps.toml : ").append(e.what()));
+    }
+
+    // assemble package struct
+    package* p = new package();
+    p->name = package_name;
+    p->path = package_path;
+    p->config = config;
+    p->deps = deps;
+    p->src_path = src_path;
+    p->build_path = build_path;
+    p->tmp_path = tmp_path;
+    p->targets = targets;
+    p->dependencies = dependencies;
+
+    return p;
 }
 
 // retrieves the list of dependencies of this file
+// filepath is relative to pack->src_path
 // if there is not a list of dependencies for this file, returns std::nullopt
-std::optional<std::vector<std::string>> get_dependencies(project* proj, std::string filepath) {
-    toml::node* _dependencies = proj->deps.get(filepath);
+std::optional<std::vector<fs::path>> get_dependencies(package* pack, fs::path filepath) {
+    std::string filepath_str = filepath.lexically_normal().string();
+    toml::node* _dependencies = pack->deps.get(filepath_str);
     if(_dependencies == nullptr) {
         return std::nullopt;
     }
 
-    std::vector<std::string> dependencies;
+    std::vector<fs::path> dependencies;
     toml::array* _dependencies_arr = _dependencies->as_array();
     if (_dependencies_arr == nullptr) {
-        throw std::runtime_error("Dependencies should be an array of strings : " + filepath);
+        throw std::runtime_error("Dependencies should be an array of strings : " + filepath.string());
     }
     for (const toml::node& node : *_dependencies_arr) {
         auto dependency = node.value<std::string>();
         if(!dependency) {
-            throw std::runtime_error("Dependencies should be an array of strings : " + filepath);
+            throw std::runtime_error("Dependencies should be an array of strings : " + filepath.string());
         }
         assert(dependency.has_value());
-        dependencies.push_back(dependency.value());
+        dependencies.push_back(fs::path(dependency.value()));
     }
     return dependencies;
 }
 
 // figures out which package owns the provided filepath
-package* find_owner(const project* proj, std::string filepath) {
+// looks at all loaded packages
+package* find_owner(fs::path filepath) {
     // TODO
 }
 
-// finds all files under proj->src_path that have the extension `.jank`
-// returned files are relative to proj->src_path
-std::vector<std::string> find_all_source_files(const project* proj) {
-    const fs::path src_root = fs::path(proj->root) / proj->src_path;
-    assert(fs::exists(src_root) && fs::is_directory(src_root));
+// finds all files under pack->src_path that have the extension `.jank`
+// returned files are relative to pack->src_path
+std::vector<fs::path> find_all_source_files(const package* pack) {
+    assert(fs::exists(pack->src_path) && fs::is_directory(pack->src_path));
 
-    std::vector<std::string> source_files;
-    for (const fs::directory_entry& entry : fs::recursive_directory_iterator(src_root)) {
+    std::vector<fs::path> source_files;
+    for (const fs::directory_entry& entry : fs::recursive_directory_iterator(pack->src_path)) {
         if (!entry.is_regular_file()) {
             continue;
         }
         if (entry.path().extension() != ".jank") {
             continue;
         }
-        source_files.push_back(fs::relative(entry.path(), src_root).generic_string());
+        source_files.push_back(fs::relative(entry.path(), pack->src_path));
     }
     std::sort(source_files.begin(), source_files.end());
 
@@ -405,30 +373,23 @@ std::vector<std::string> find_all_source_files(const project* proj) {
 }
 
 // removes all artifacts from the build directory
-void clean(const project* proj) {
-    const fs::path build_root = fs::path(proj->root) / proj->build_path;
-    assert(fs::exists(build_root) && fs::is_directory(build_root));
-
-    fs::remove_all(build_root);
-    fs::create_directories(build_root);
+void clean(const package* pack) {
+    assert(fs::exists(pack->build_path) && fs::is_directory(pack->build_path));
+    fs::remove_all(pack->build_path);
+    fs::create_directories(pack->build_path);
 }
 
-// ensures all dependencies of the project are compiled
-void build_dependencies(project* proj) {
-    // TODO
-}
-
-// ensures all source files in the project are compiled
-void build_sources(project* proj) {
-    std::vector<std::string> source_files = find_all_source_files(proj);
+// ensures all source files in the package are compiled
+void build_sources(package* pack) {
+    std::vector<fs::path> source_files = find_all_source_files(pack);
 
     // check which source files have changed
     // a source file changed if it has been modified after the last time its corresponding 
     //   artifact has been modified. 
-    std::vector<std::string> changed_files;
-    for(const std::string& source_file : source_files) {
-        const fs::path source_abs = fs::path(proj->root) / proj->src_path / source_file;
-        const fs::path build_abs = fs::path(proj->root) / proj->build_path / source_file;
+    std::vector<fs::path> changed_files;
+    for(const fs::path& source_file : source_files) {
+        const fs::path source_abs = pack->src_path / source_file;
+        const fs::path build_abs = pack->build_path / source_file;
         assert(fs::exists(source_abs));
 
         bool changed = false;
@@ -447,24 +408,24 @@ void build_sources(project* proj) {
     // figure out which source files need to be recompiled
     // a source file needs to be recompiled if it or any of its dependencies have changed
     // also should compile any source file that doesn't have an entry in deps. 
-    std::vector<std::string> to_recompile;
-    for(const std::string& source_file : source_files) {
+    std::vector<fs::path> to_recompile;
+    for(const fs::path& source_file : source_files) {
         bool should_recompile = false;
 
         // should recompile if you have been changed. 
         for(int i = 0; i < changed_files.size(); i++) {
-            if(source_file == changed_files[i]) {
+            if(fs::equivalent(source_file, changed_files[i])) {
                 should_recompile = true;
             }
         }
 
         // should recompile if any of your dependencies have been changed
         // or if you don't have a dependencies entry
-        std::optional<std::vector<std::string>> dependencies = get_dependencies(proj, source_file);
+        std::optional<std::vector<fs::path>> dependencies = get_dependencies(pack, source_file);
         if(dependencies.has_value()) {
-            for(const std::string& dependency : dependencies.value()) {
-                for(const std::string changed : changed_files) {
-                    if(changed == dependency) {
+            for(const fs::path& dependency : dependencies.value()) {
+                for(const fs::path changed : changed_files) {
+                    if(fs::equivalent(dependency, changed)) {
                         should_recompile = true;
                     }
                 }
@@ -480,14 +441,14 @@ void build_sources(project* proj) {
     }
 
     // recompile, update deps
-    for(const std::string source_file : source_files) {
-        const fs::path source_abs = fs::path(proj->root) / proj->src_path / source_file;
-        const fs::path build_abs = fs::path(proj->root) / proj->build_path / source_file;
-        const fs::path deps_abs = fs::path(proj->root) / proj->tmp_path / "deps.tmp";
+    for(const fs::path& source_file : source_files) {
+        const fs::path source_abs = pack->src_path / source_file;
+        const fs::path build_abs = pack->build_path / source_file;
+        const fs::path deps_abs = pack->tmp_path / "deps.tmp";
         assert(fs::exists(source_abs));
 
         if(compile(source_abs, build_abs, {"-S", "--emit-dependencies", deps_abs})) {
-            throw std::runtime_error("Failed to compile : " + source_file);
+            throw std::runtime_error("Failed to compile : " + source_file.string());
         }
 
         // read deps file
@@ -503,33 +464,53 @@ void build_sources(project* proj) {
             }
             dependencies.push_back(line);
         }
-        proj->deps.insert_or_assign(source_file, std::move(dependencies));
+        pack->deps.insert_or_assign(source_file, std::move(dependencies));
     }
 
     // write deps to deps.toml
-    write_toml(proj->deps, proj->root + "/deps.toml");
+    write_toml(pack->deps, pack->path / "deps.toml");
+}
+
+// ensures all dependencies of the package are built
+// this includes transitive dependencies
+// checking for circular package dependencies should be done somewhere else
+void build_dependencies(package* pack) {
+    std::vector<package*> all_dependencies;
+    std::function<void(package*)> find_deps = [&](package* p) {
+        for(package* dep : all_dependencies) {
+            if(dep == p) return;
+        }
+        all_dependencies.push_back(p);
+        for(auto &[alias, ndep] : p->dependencies) {
+            find_deps(ndep);
+        }
+    };
+    find_deps(pack);
+    for(package* dep : all_dependencies) {
+        build_sources(dep);
+    }
 }
 
 // builds the provided target
-void build_target(project* proj, const target& tgt) {
+void build_target(package* pack, const target& tgt) {
     // ensure all sources are built
-    build_sources(proj);
+    build_sources(pack);
 
     // build 
     if(tgt.type == "binary") {
         // create driver code
-        const fs::path entry_abs = fs::path(proj->root) / proj->src_path / tgt.entry;
-        const fs::path driver_abs = fs::path(proj->root) / proj->tmp_path / "driver.tmp";
+        const fs::path entry_abs = pack->src_path / tgt.entry;
+        const fs::path driver_abs = pack->tmp_path / "driver.tmp";
         if(compile(entry_abs, driver_abs, {"-S", "--startup-only"})) {
             throw std::runtime_error("Failed to create driver code : " + entry_abs.string());
         }
 
         // recursively find all required source files for this target
-        std::vector<std::pair<project*, std::string>> source_files;
-        std::function<void(project*, std::string)> find_files = [&source_files](project* proj, std::string file) {
+        std::vector<std::pair<package*, std::string>> source_files;
+        std::function<void(package*, std::string)> find_files = [&source_files](package* pack, fs::path filepath) {
             // see if we've already found this
             for(int i = 0; i < source_files.size(); i++) {
-                if(proj == source_files[i].first && file == source_files[i].second) {
+                if(pack == source_files[i].first && file == source_files[i].second) {
                     return;
                 }
             }
@@ -540,12 +521,12 @@ void build_target(project* proj, const target& tgt) {
 
         // locate corresponding assembly files
         std::vector<std::string> asm_files;
-        for(auto &[proj, source_file] : source_files) {
+        for(auto &[pack, source_file] : source_files) {
             // TODO
         }
 
         // assemble
-        const fs::path output_abs = fs::path(proj->root) / tgt.output;
+        const fs::path output_abs = fs::path(pack->root) / tgt.output;
         if(assemble(asm_files, output_abs)) {
             throw std::runtime_error("Failed to assemble");
         }
@@ -558,7 +539,7 @@ void build_target(project* proj, const target& tgt) {
 int main(int argc, char* argv[]) {
     if(argc == 1) {
         std::cout << "USAGE : dylan\n";
-        std::cout << "new <project_path> : creates a new project\n";
+        std::cout << "new <package_path> : creates a new package\n";
         std::cout << "compile : ensures all source files are compiled\n";
         std::cout << "build <target> : builds the target\n";
         std::cout << "run <target> : builds and runs the executable generated by the target\n";
@@ -568,32 +549,32 @@ int main(int argc, char* argv[]) {
     int argptr = 1;
     std::string mode = argv[argptr ++];
 
-    // find stdlib 
-    {
-        // just hardcode it for now
-        stdlib_path = "/home/steven/jank-pl/stdlib";
-        assert(fs::is_directory(stdlib_path));
-    }
-
-    // special case for new projects
+    // special case for new packages
     if(mode == "new") {
         if(argc != 3) {
-            std::cout << "USAGE : dylan new <project_path>\n";
+            std::cout << "USAGE : dylan new <package_path>\n";
             return 1;
         }
-        std::string project_path = argv[argptr ++];
-        std::string project_name = extract_filename(project_path);  
+        std::string package_path = argv[argptr ++];
+        std::string package_name = extract_filename(package_path);  
 
-        std::cout << "PROJECT NAME : " << project_name << "\n";
+        std::cout << "package NAME : " << package_name << "\n";
+
+        // find stdlib and add it as a dependency
+        {
+            // just hardcode it for now
+            std::string stdlib_path = "/home/steven/jank-pl/stdlib";
+            assert(fs::is_directory(stdlib_path));
+        }
 
         // TODO
         assert(false);
     }
 
-    // load project
-    project* proj = nullptr;
+    // load package
+    package* package = nullptr;
     try {
-        // just make project root CWD for now
+        // just make package root CWD for now
         std::string cwd;
         char cwd_path[PATH_MAX];
         if (getcwd(cwd_path, sizeof(cwd_path)) != NULL) {
@@ -603,15 +584,15 @@ int main(int argc, char* argv[]) {
             std::cout << "Could not find CWD\n";
             return 1;
         }
-        proj = load_project(cwd);
-        if(proj == nullptr) {
-            std::cout << "Failed to load project\n";
+        package = load_package(cwd);
+        if(package == nullptr) {
+            std::cout << "Failed to load package\n";
             return 1;
         }
     } catch(const toml::parse_error& e) {
-        throw std::runtime_error(std::string("Failed to load project : ").append(e.what()));
+        throw std::runtime_error(std::string("Failed to load package : ").append(e.what()));
     }  
-    assert(proj != nullptr);
+    assert(package != nullptr);
 
     // do action
     if(mode == "compile") {
@@ -619,12 +600,12 @@ int main(int argc, char* argv[]) {
             std::cout << "USAGE : dylan compile\n";
             return 1;
         }
-        build_sources(proj);
+        build_sources(package);
     }
     else if(mode == "build") {       // build the given target
         if(argc == 2) {
             std::cout << "Available targets : \n";
-            for(const target& tgt : proj->targets) {
+            for(const target& tgt : package->targets) {
                 std::cout << tgt.name << "\n";
             }
             return 1;
@@ -638,9 +619,9 @@ int main(int argc, char* argv[]) {
         // find target
         bool found_target = false;
         target tgt;
-        for(int i = 0; i < proj->targets.size(); i++) {
-            if(proj->targets[i].name == target_name) {
-                tgt = proj->targets[i];
+        for(int i = 0; i < package->targets.size(); i++) {
+            if(package->targets[i].name == target_name) {
+                tgt = package->targets[i];
                 found_target = true;
                 break;
             }
@@ -651,13 +632,13 @@ int main(int argc, char* argv[]) {
         }
 
         // build target
-        build_target(proj, tgt);
+        build_target(package, tgt);
     }
     else if(mode == "run") {    // execute the given target
         assert(false); // TODO
     }
     else if(mode == "clean") {  // clean build directory
-        clean(proj);
+        clean(package);
     }
     else {
         std::cout << "Unknown mode : " << mode << "\n";
