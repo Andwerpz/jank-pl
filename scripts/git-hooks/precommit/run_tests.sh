@@ -21,10 +21,21 @@ cleanup() {
     echo -e "${BLUE}Bai bai Mr Li!${RESET}"
 }
 
+build_compiler() {
+    cd "${REPO_ROOT}/compiler"
+
+    echo -e "${BLUE}Building compiler...${RESET}"
+    if make -s; then
+        echo -e "${GREEN}Compiler built!${RESET}"
+    else
+        echo -e "${RED}Compiler not working... Ask Sanat Dubey @(512) 995-9950!${RESET}"
+        return 1
+    fi
+    echo ""
+}
+
 run_tests() {
     cd "${REPO_ROOT}/testing"
-
-    echo -e "${BLUE}Bello guys! My name is Dylan Janky! I love Andrew Mc Li!${RESET}"
 
     echo -e "${BLUE}Building test runner...${RESET}"
     if make -s; then
@@ -33,6 +44,7 @@ run_tests() {
         echo -e "${RED}Test runner not working... Ask Sanat Dubey @(512) 995-9950!${RESET}"
         return 1
     fi
+    echo ""
 
     echo -e "${BLUE}Running tests...${RESET}"
     if make -s test; then
@@ -41,13 +53,15 @@ run_tests() {
         echo -e "${RED}Not working big man! Ask Sanat Dubey @(512) 995-9950!${RESET}"
         return 1
     fi
+    echo ""
 }
 
+echo -e "${BLUE}Bello guys! My name is Dylan Janky! I love Andrew Mc Li!${RESET}\n"
 echo -e "${YELLOW}Running precommit tests on branch: '${CURRENT_BRANCH}'${RESET}"
 for dir in $WATCHED_DIRS; do
     if echo "$CHANGED_FILES" | grep -q "^$dir"; then
-        echo -e "${YELLOW}Changes detected. Running tests...${RESET}"
-        if run_tests; then
+        echo -e "${YELLOW}Changes detected. Running tests...${RESET}\n"
+        if build_compiler && run_tests; then
             exit 0
         else
             exit 1
