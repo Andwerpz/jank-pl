@@ -18,7 +18,7 @@ stdlib/
 "
 
 cleanup() {
-    echo -e "${BLUE}Bai bai Mr Li!${RESET}"
+    echo -e "${BLUE}Bai bai Mr Li!${RESET}\n"
 }
 
 build_compiler() {
@@ -69,5 +69,5 @@ for dir in $WATCHED_DIRS; do
     fi
 done
 
-echo -e "${YELLOW}No watched directory changes. Skipping tests.${RESET}"
+echo -e "${YELLOW}No watched directory changes. Skipping tests.${RESET}\n"
 exit 0
