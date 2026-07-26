@@ -330,10 +330,15 @@ int main(int argc, char* argv[]) {
         // hmm, need to add jank-stdlib if it's not already added here?
         if(!no_default_package_dependencies) {
             // if jank-stdlib doesn't exist as a package, add it
-            // TODO find and load the package information dynamically somehow
-            //   right now i'm just hardcoding it
             if(get_package(jank_stdlib_name) == nullptr) {
-                std::string jank_stdlib_path = normalize_path(compiler_dir + "/../stdlib/src");
+                // load it from the user package library
+                // TODO when we get system packages working, load it from the system package library instead
+                const char* home = std::getenv("HOME");
+                if (home == nullptr) {
+                    std::cout << "Could not find user package library : HOME is not defined" << std::endl;
+                    return 1;
+                }
+                fs::path jank_stdlib_path = fs::path(home) / ".jank" / jank_stdlib_name / "src";
                 if(!add_package(jank_stdlib_name, jank_stdlib_path)) {
                     assert(false);
                 }

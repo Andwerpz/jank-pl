@@ -61,9 +61,11 @@ int assemble(std::vector<fs::path> asm_paths, fs::path out_path);
 void write_toml(const toml::table& toml, const fs::path path);
 bool is_ancestor(const fs::path& root, const fs::path& target);
 fs::path get_relative_path(const fs::path& root, const fs::path& target);
+void copy_directory(const fs::path& src, const fs::path& dst);
 
 // -- PACKAGE --
 package* load_package(fs::path package_path);
+package* load_package_from_library(const std::string& package_name);
 package* get_package(std::string name);
 package* get_package(package* package, std::string alias);
 target get_target(package* package, std::string target_name);
@@ -78,6 +80,8 @@ void build_sources(package* pack);
 void build_dependencies(package* pack);
 void build_target(package* pack, const target& tgt);
 
+// inline fs::path system_library_path = "/usr/lib/jank";
+inline fs::path user_library_path;
 inline fs::path cwd_path;
 
 // should hold all packages ever loaded

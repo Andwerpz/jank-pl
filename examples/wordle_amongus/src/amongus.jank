@@ -199,7 +199,7 @@ i32 main(u64 argc, u8** argv) {
     //read in all words from guess list
     vector<string> g;
     {   
-        i32 fd = sys_open("./guess_list.txt", O_RDONLY, $mode_t 0);
+        i32 fd = sys_open("./res/guess_list.txt", O_RDONLY, $mode_t 0);
         assert(fd >= 0, "opening guess list should succeed");
         istream fin = new istream(fd);
         string line = fin.next_line();

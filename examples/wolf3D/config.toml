@@ -1,0 +1,33 @@
+[package]
+name = "wolf3D"
+
+[[dependency]]
+package = "jank-stdlib"
+alias = "std"
+
+[[default-include]]
+package = "std"
+path = "memory"
+
+[[default-include]]
+package = "std"
+path = "error"
+
+[[default-include]]
+package = "std"
+path = "defs"
+
+[[default-include]]
+package = "std"
+path = "syscall"
+
+[[default-include]]
+package = "std"
+path = "malloc"
+
+[[target]]
+name = "main"
+type = "binary"
+entry = "main.jank"
+output = "main"
+

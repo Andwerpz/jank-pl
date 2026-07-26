@@ -42,12 +42,11 @@ output = "jjc"      # relative to bin path
 
 # dependencies 
 # each dependency is assumed to be another jank package
-# TODO have packages be installed at a known location like /.jank and look for packages there
-#   if the user doesn't specify a path
 [[dependency]]
-name = "jank-stdlib"                    # should match with the name of the package
-alias = "std"                           # optional, if omitted will just be the name
-path = "/home/steven/jank-pl/stdlib"    
+package = "jank-stdlib"                 # should match with the name of the package
+alias = "std"                           # optional, if omitted will just be the package name
+path = "/home/steven/jank-pl/stdlib"    # if you specify a path, this will be assumed to be the path to the project
+                                        # otherwise dylan will look inside system and user package libraries
 
 # default includes
 # useful for automatically including stuff like <std::malloc>, <std::syscall>, 
@@ -94,10 +93,16 @@ path = "malloc"     # relative to package source directory and excluding extensi
 //   - so the main improvements I can make to this system is making the compiler smarter so that it needs to load less files 
 //     when compiling some file A. 
 
+// -- GENERAL UTILS --
 // executes the given executable with the given arguments
 // returns the status code
 // if redirect_stdout is true, then redirects STDOUT to /dev/null
 int exec(fs::path bin_path, std::vector<std::string> args, bool redirect_stdout) {
+    std::vector<std::string> command_args = {
+        bin_path.string(),
+    };
+    command_args.insert(command_args.end(), args.begin(), args.end());
+
     pid_t pid = fork();
     if(pid == 0) {
         if(redirect_stdout) {
@@ -116,8 +121,8 @@ int exec(fs::path bin_path, std::vector<std::string> args, bool redirect_stdout)
         }
 
         std::vector<char*> argv;
-        argv.reserve(args.size() + 1);
-        for (std::string& arg : args) {
+        argv.reserve(command_args.size() + 1);
+        for (std::string& arg : command_args) {
             argv.push_back(arg.data());
         }
         argv.push_back(nullptr);
@@ -141,7 +146,6 @@ int exec(fs::path bin_path, std::vector<std::string> args, bool redirect_stdout)
 // returns 0 on success, nonzero on failure
 int compile(fs::path src_path, fs::path out_path, std::vector<std::string> args) {
     std::vector<std::string> command_args = {
-        "jjc",
         src_path,
         "-o",
         out_path
@@ -157,7 +161,6 @@ int compile(fs::path src_path, fs::path out_path, std::vector<std::string> args)
 // returns 0 on success, nonzero on failure
 int assemble(std::vector<fs::path> asm_paths, fs::path out_path) {
     std::vector<std::string> command_args = {
-        "gcc",
         "-g",                           // debug metadata, should probably be optional
         "-x", "assembler",              //gcc expects .s files to be assembly, tell it that all files are assembly
         "-nostartfiles", "-nostdlib",   //tell gcc that we're not compiling C assembly
@@ -220,6 +223,19 @@ fs::path get_relative_path(const fs::path& root, const fs::path& target) {
     return rel_path;
 }
 
+// copies the given directory from src to dir
+// before copying, creates dir if it doesn't exist
+// if it already exists, dir is overwritten
+// assumes that src exists
+void copy_directory(const fs::path& src, const fs::path& dir) {
+    assert(fs::exists(src));
+    fs::create_directories(dir);
+    auto options = fs::copy_options::recursive | fs::copy_options::overwrite_existing;
+    fs::copy(src, dir, options);
+}
+
+
+// -- PACKAGE --
 // if we can already find a package in all_packages, return it. 
 // otherwise try to load it from the filesystem. 
 // this checks that the new package doesn't contain and isn't contained by any other loaded package
@@ -378,19 +394,28 @@ package* load_package(fs::path package_path) {
             }
 
             // process dependency
-            std::string name = get_toml_table_field(dependency, "name");
-            fs::path path = get_toml_table_field(dependency, "path");
-            std::string alias = name;
+            std::string package_name = get_toml_table_field(dependency, "package");
+            std::string alias = package_name;
             if(dependency->contains("alias")) {
                 alias = get_toml_table_field(dependency, "alias");
             }
 
             // load dependency package
-            package* dep = load_package(path);
-            assert(dep != nullptr);
-            if(dep->name != name) {
-                throw std::runtime_error("Dependency name mismatch : " + name + " vs. " + dep->name);
+            package* dep = nullptr;
+            if(dependency->contains("path")) {
+                // load package from path
+                fs::path path = get_toml_table_field(dependency, "path");
+                dep = load_package(path);
+                if(dep->name != package_name) {
+                    throw std::runtime_error("Dependency name mismatch : " + package_name + " vs. " + dep->name);
+                }
             }
+            else {
+                // load package from library
+                dep = load_package_from_library(package_name);
+                assert(dep->name == package_name);
+            }
+            assert(dep != nullptr);
 
             // ensure that another dependency with the same alias doesn't exist
             // ensure that another dependency with the same package doesn't exist
@@ -399,7 +424,7 @@ package* load_package(fs::path package_path) {
                     throw std::runtime_error("Duplicate dependency alias : " + alias + " in package : " + pack->name);
                 }
                 if(_dep == dep) {
-                    throw std::runtime_error("Duplicate dependency : " + name + " in package : " + pack->name);
+                    throw std::runtime_error("Duplicate dependency : " + package_name + " in package : " + pack->name);
                 }
             }
 
@@ -459,6 +484,24 @@ package* load_package(fs::path package_path) {
 
     all_packages.push_back(pack);
     return pack;
+}
+
+// looks inside system and user package library for a package of this name
+// if both system and user libraries have the package installed, prefer the user one
+package* load_package_from_library(const std::string& package_name) {
+    std::vector<fs::path> lib_paths = {
+        user_library_path,
+        // system_library_path,
+    };
+    for(const fs::path& lib_path : lib_paths) {
+        try {
+            fs::path package_path = lib_path / package_name;
+            return load_package(package_path);
+        } catch(const std::runtime_error& e) {
+            // ok, onto the next one. 
+        }
+    }
+    throw std::runtime_error("Failed to load package : " + package_name + " from library");
 }
 
 package* get_package(std::string name) {
@@ -607,6 +650,8 @@ std::vector<fs::path> find_all_source_files(const package* pack) {
     return source_files;
 }
 
+
+// -- BUILD --
 // removes all build artifacts
 void clean(const package* pack) {
     auto clean_dir = [](fs::path dir) {
@@ -747,9 +792,10 @@ void build_sources(package* pack) {
     if(to_recompile.size() == 0) {
         std::cout << "Everything up to date :D" << std::endl;
     }
-
-    // write deps to deps.toml
-    write_toml(pack->deps, pack->path / "deps.toml");
+    else {
+        // write deps to deps.toml
+        write_toml(pack->deps, pack->path / "deps.toml");
+    }
 }
 
 // ensures all dependencies of the package are built
@@ -842,12 +888,22 @@ int main(int argc, char* argv[]) {
         std::cout << "new <package_path> : creates a new package\n";
         std::cout << "compile : ensures all source files are compiled\n";
         std::cout << "build <target> : builds the target\n";
-        std::cout << "run <target> : builds and runs the executable generated by the target\n";
+        std::cout << "run <target> { <args> } : builds and runs the executable generated by the target\n";
+        std::cout << "install <scope> : installs the package onto the system with the given scope\n";
         std::cout << "clean : removes all artifacts from the build directory\n";
         return 1;
     }
     int argptr = 1;
     std::string mode = argv[argptr ++];
+
+    // find user package library
+    {
+        const char* home = std::getenv("HOME");
+        if (home == nullptr) {
+            throw std::runtime_error("Could not find user package library : HOME is not defined");
+        }
+        user_library_path = fs::path(home) / ".jank";
+    }
 
     // find CWD
     {
@@ -874,7 +930,7 @@ int main(int argc, char* argv[]) {
         package_path = package_path.lexically_normal();
         std::string package_name = package_path.filename().string();
         
-        // make sure package name fits [a-zA-Z_-]+
+        // make sure package name fits [a-zA-Z0-9_-]+
         if(package_name.size() == 0) {
             std::cout << "Invalid package name : package name must be non-empty\n";
             return 1;
@@ -882,6 +938,7 @@ int main(int argc, char* argv[]) {
         for(char c : package_name) {
             if('A' <= c && c <= 'Z') continue;
             if('a' <= c && c <= 'z') continue;
+            if('0' <= c && c <= '9') continue;
             if(c == '_' || c == '-') continue;
             std::cout << "Invalid package name : invalid character : " << c << "\n";
             return 1;
@@ -914,12 +971,10 @@ int main(int argc, char* argv[]) {
                     << "\n";
 
                 // add jank-stdlib as a dependency  
-                fs::path stdlib_path = "/home/steven/jank-pl/stdlib";
                 config
                     << "[[dependency]]\n"
-                    << "name = \"jank-stdlib\"\n"
+                    << "package = \"jank-stdlib\"\n"
                     << "alias = \"std\"\n"
-                    << "path = \"" << stdlib_path.string() << "\"\n"
                     << "\n";
 
                 // add default includes
@@ -1053,11 +1108,11 @@ i32 main() {
             }
             return 1;
         }
-        if(argc > 3) {
-            std::cout << "USAGE : dylan run <target>\n";
-            return 1;
+        std::string target_name = argv[argptr ++];\
+        std::vector<std::string> args;
+        while(argptr < argc) {
+            args.push_back(argv[argptr ++]);
         }
-        std::string target_name = argv[argptr ++];
 
         // find target
         target tgt = get_target(pack, target_name);
@@ -1077,7 +1132,41 @@ i32 main() {
             std::cout << "Output binary does not exist : " << output_path.string() << std::endl;
             return 1;
         }
-        return exec(output_path, {}, false);
+        return exec(output_path, args, false);
+    }
+    else if(mode == "install") {
+        if(argc == 2) {
+            std::cout << "USAGE : dylan install <scope>\n";
+            std::cout << "--user : installs into ~/.jank\n";
+            std::cout << "--system : installs into /usr/lib/jank\n";
+            return 1;
+        }
+        std::string scope = argv[argptr ++];
+
+        fs::path install_path;
+        if(scope == "--user") {
+            install_path = user_library_path / pack->name;
+        }
+        else if(scope == "--system") {
+            std::cout << "System libraries WIP\n";
+            return 1;
+            // install_path = system_library_path / pack->name;
+        }
+        else {
+            std::cout << "Unrecognized install scope : " << scope << "\n";
+            return 1;
+        }
+
+        // install
+        try {
+            std::cout << "Installing " << pack->name << " to " << install_path.string() << std::endl;
+            fs::remove_all(install_path);
+            copy_directory(pack->path, install_path);
+            std::cout << "Installation successful\n";
+        } catch(const std::runtime_error& e) {
+            std::cout << "Failed to install : " << e.what() << std::endl;
+            return 1;
+        }
     }
     else if(mode == "clean") {          // clean build artifacts
         if(argc > 2) {

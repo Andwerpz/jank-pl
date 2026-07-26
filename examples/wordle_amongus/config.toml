@@ -1,0 +1,33 @@
+[package]
+name = "wordle_amongus"
+
+[[dependency]]
+package = "jank-stdlib"
+alias = "std"
+
+[[default-include]]
+package = "std"
+path = "memory"
+
+[[default-include]]
+package = "std"
+path = "error"
+
+[[default-include]]
+package = "std"
+path = "defs"
+
+[[default-include]]
+package = "std"
+path = "syscall"
+
+[[default-include]]
+package = "std"
+path = "malloc"
+
+[[target]]
+name = "amongus"
+type = "binary"
+entry = "amongus.jank"
+output = "amongus"
+
