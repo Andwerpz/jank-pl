@@ -14,6 +14,7 @@
 #include <queue>
 #include <set>
 #include <iomanip>
+#include <algorithm>
 
 #include "semantics/utils.h"
 
@@ -412,18 +413,25 @@ int main(int argc, char* argv[]) {
             }
         }
         if(emit_dependencies) {
+            std::vector<std::pair<std::string, std::string>> deps_list;
+            for(auto i = definition_spaces.begin(); i != definition_spaces.end(); i++) {
+                std::string filepath = i->first;
+                std::string package_name;
+                DefinitionSpace *ds = i->second;
+                Package* package = ds->get_package();
+                if(package->is_named) package_name = package->name;
+                else package_name = "__unnamed__";
+                deps_list.push_back({package_name, filepath});
+            }
+            std::sort(deps_list.begin(), deps_list.end());
+
             std::ofstream deps(emit_dependencies_dir);
             if(!deps) {
                 std::cout << "Failed to open : " << emit_dependencies_dir << std::endl;
                 return 1;
             }
-            for(auto i = definition_spaces.begin(); i != definition_spaces.end(); i++) {
-                std::string filepath = i->first;
-                DefinitionSpace *ds = i->second;
-                Package* package = ds->get_package();
-                if(package->is_named) deps << package->name << "\n";
-                else deps << "__unnamed__\n";
-                deps << i->first << "\n";
+            for(const auto&[package_name, filepath] : deps_list) {
+                deps << package_name << "\n" << filepath << "\n";
             }
             deps.close();
         }

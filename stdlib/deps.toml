@@ -1,259 +1,259 @@
 'assert.jank' = [
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'error.jank' },
-    { package = 'jank-stdlib', path = 'vector.jank' },
+    { package = 'jank-stdlib', path = 'assert.jank' },
     { package = 'jank-stdlib', path = 'defs.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'error.jank' },
     { package = 'jank-stdlib', path = 'jstring.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'put.jank' },
     { package = 'jank-stdlib', path = 'malloc.jank' },
-    { package = 'jank-stdlib', path = 'assert.jank' }
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'put.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'crypto/X25519.jank' = [
-    { package = 'jank-stdlib', path = 'vector.jank' },
-    { package = 'jank-stdlib', path = 'error.jank' },
+    { package = 'jank-stdlib', path = 'assert.jank' },
     { package = 'jank-stdlib', path = 'crypto/X25519.jank' },
-    { package = 'jank-stdlib', path = 'intx.jank' },
     { package = 'jank-stdlib', path = 'crypto/sha2.jank' },
     { package = 'jank-stdlib', path = 'defs.jank' },
-    { package = 'jank-stdlib', path = 'jstring.jank' },
-    { package = 'jank-stdlib', path = 'random.jank' },
+    { package = 'jank-stdlib', path = 'error.jank' },
+    { package = 'jank-stdlib', path = 'intx.jank' },
     { package = 'jank-stdlib', path = 'iostream.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' },
-    { package = 'jank-stdlib', path = 'assert.jank' },
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'jstring.jank' },
     { package = 'jank-stdlib', path = 'malloc.jank' },
-    { package = 'jank-stdlib', path = 'put.jank' }
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'put.jank' },
+    { package = 'jank-stdlib', path = 'random.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'crypto/chacha20.jank' = [
-    { package = 'jank-stdlib', path = 'error.jank' },
-    { package = 'jank-stdlib', path = 'vector.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' },
-    { package = 'jank-stdlib', path = 'jstring.jank' },
-    { package = 'jank-stdlib', path = 'defs.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'put.jank' },
-    { package = 'jank-stdlib', path = 'malloc.jank' },
     { package = 'jank-stdlib', path = 'assert.jank' },
+    { package = 'jank-stdlib', path = 'crypto/chacha20.jank' },
+    { package = 'jank-stdlib', path = 'defs.jank' },
+    { package = 'jank-stdlib', path = 'error.jank' },
+    { package = 'jank-stdlib', path = 'jstring.jank' },
+    { package = 'jank-stdlib', path = 'malloc.jank' },
     { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'crypto/chacha20.jank' }
+    { package = 'jank-stdlib', path = 'put.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'crypto/ed25519.jank' = [
-    { package = 'jank-stdlib', path = 'vector.jank' },
-    { package = 'jank-stdlib', path = 'defs.jank' },
-    { package = 'jank-stdlib', path = 'crypto/ed25519.jank' },
     { package = 'jank-stdlib', path = 'assert.jank' },
+    { package = 'jank-stdlib', path = 'crypto/ed25519.jank' },
     { package = 'jank-stdlib', path = 'crypto/sha2.jank' },
-    { package = 'jank-stdlib', path = 'iostream.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'defs.jank' },
+    { package = 'jank-stdlib', path = 'error.jank' },
     { package = 'jank-stdlib', path = 'intx.jank' },
-    { package = 'jank-stdlib', path = 'random.jank' },
+    { package = 'jank-stdlib', path = 'iostream.jank' },
     { package = 'jank-stdlib', path = 'jstring.jank' },
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
     { package = 'jank-stdlib', path = 'malloc.jank' },
+    { package = 'jank-stdlib', path = 'memory.jank' },
     { package = 'jank-stdlib', path = 'put.jank' },
-    { package = 'jank-stdlib', path = 'error.jank' }
+    { package = 'jank-stdlib', path = 'random.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'crypto/poly1305.jank' = [
-    { package = 'jank-stdlib', path = 'vector.jank' },
-    { package = 'jank-stdlib', path = 'error.jank' },
-    { package = 'jank-stdlib', path = 'put.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'defs.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' },
-    { package = 'jank-stdlib', path = 'iostream.jank' },
     { package = 'jank-stdlib', path = 'assert.jank' },
+    { package = 'jank-stdlib', path = 'crypto/poly1305.jank' },
+    { package = 'jank-stdlib', path = 'defs.jank' },
+    { package = 'jank-stdlib', path = 'error.jank' },
+    { package = 'jank-stdlib', path = 'intx.jank' },
+    { package = 'jank-stdlib', path = 'iostream.jank' },
+    { package = 'jank-stdlib', path = 'jstring.jank' },
     { package = 'jank-stdlib', path = 'malloc.jank' },
     { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'jstring.jank' },
-    { package = 'jank-stdlib', path = 'intx.jank' },
-    { package = 'jank-stdlib', path = 'crypto/poly1305.jank' }
+    { package = 'jank-stdlib', path = 'put.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'crypto/sha2.jank' = [
-    { package = 'jank-stdlib', path = 'error.jank' },
-    { package = 'jank-stdlib', path = 'vector.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' },
-    { package = 'jank-stdlib', path = 'jstring.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'put.jank' },
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'malloc.jank' },
     { package = 'jank-stdlib', path = 'assert.jank' },
+    { package = 'jank-stdlib', path = 'crypto/sha2.jank' },
     { package = 'jank-stdlib', path = 'defs.jank' },
-    { package = 'jank-stdlib', path = 'crypto/sha2.jank' }
+    { package = 'jank-stdlib', path = 'error.jank' },
+    { package = 'jank-stdlib', path = 'jstring.jank' },
+    { package = 'jank-stdlib', path = 'malloc.jank' },
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'put.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'defs.jank' = [ { package = 'jank-stdlib', path = 'defs.jank' } ]
 'deque.jank' = [
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
     { package = 'jank-stdlib', path = 'defs.jank' },
+    { package = 'jank-stdlib', path = 'deque.jank' },
     { package = 'jank-stdlib', path = 'malloc.jank' },
-    { package = 'jank-stdlib', path = 'deque.jank' }
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' }
 ]
 'dirent.jank' = [
-    { package = 'jank-stdlib', path = 'error.jank' },
-    { package = 'jank-stdlib', path = 'vector.jank' },
-    { package = 'jank-stdlib', path = 'jstring.jank' },
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'defs.jank' },
-    { package = 'jank-stdlib', path = 'put.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' },
     { package = 'jank-stdlib', path = 'assert.jank' },
+    { package = 'jank-stdlib', path = 'defs.jank' },
+    { package = 'jank-stdlib', path = 'dirent.jank' },
+    { package = 'jank-stdlib', path = 'error.jank' },
+    { package = 'jank-stdlib', path = 'jstring.jank' },
     { package = 'jank-stdlib', path = 'malloc.jank' },
-    { package = 'jank-stdlib', path = 'dirent.jank' }
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'put.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'error.jank' = [ { package = 'jank-stdlib', path = 'error.jank' } ]
 'exec.jank' = [
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'error.jank' },
-    { package = 'jank-stdlib', path = 'defs.jank' },
-    { package = 'jank-stdlib', path = 'jstring.jank' },
     { package = 'jank-stdlib', path = 'assert.jank' },
-    { package = 'jank-stdlib', path = 'malloc.jank' },
-    { package = 'jank-stdlib', path = 'put.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'vector.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'defs.jank' },
     { package = 'jank-stdlib', path = 'dirent.jank' },
-    { package = 'jank-stdlib', path = 'exec.jank' }
+    { package = 'jank-stdlib', path = 'error.jank' },
+    { package = 'jank-stdlib', path = 'exec.jank' },
+    { package = 'jank-stdlib', path = 'jstring.jank' },
+    { package = 'jank-stdlib', path = 'malloc.jank' },
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'put.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'hashmap.jank' = [
-    { package = 'jank-stdlib', path = 'vector.jank' },
-    { package = 'jank-stdlib', path = 'error.jank' },
-    { package = 'jank-stdlib', path = 'jstring.jank' },
-    { package = 'jank-stdlib', path = 'put.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'defs.jank' },
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' },
-    { package = 'jank-stdlib', path = 'iostream.jank' },
-    { package = 'jank-stdlib', path = 'pair.jank' },
     { package = 'jank-stdlib', path = 'assert.jank' },
+    { package = 'jank-stdlib', path = 'defs.jank' },
+    { package = 'jank-stdlib', path = 'error.jank' },
+    { package = 'jank-stdlib', path = 'hashmap.jank' },
+    { package = 'jank-stdlib', path = 'iostream.jank' },
+    { package = 'jank-stdlib', path = 'jstring.jank' },
     { package = 'jank-stdlib', path = 'malloc.jank' },
-    { package = 'jank-stdlib', path = 'hashmap.jank' }
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'pair.jank' },
+    { package = 'jank-stdlib', path = 'put.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'intx.jank' = [
-    { package = 'jank-stdlib', path = 'vector.jank' },
+    { package = 'jank-stdlib', path = 'assert.jank' },
     { package = 'jank-stdlib', path = 'defs.jank' },
     { package = 'jank-stdlib', path = 'error.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'put.jank' },
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'intx.jank' },
     { package = 'jank-stdlib', path = 'iostream.jank' },
-    { package = 'jank-stdlib', path = 'malloc.jank' },
-    { package = 'jank-stdlib', path = 'assert.jank' },
     { package = 'jank-stdlib', path = 'jstring.jank' },
-    { package = 'jank-stdlib', path = 'intx.jank' }
+    { package = 'jank-stdlib', path = 'malloc.jank' },
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'put.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'iostream.jank' = [
-    { package = 'jank-stdlib', path = 'vector.jank' },
-    { package = 'jank-stdlib', path = 'defs.jank' },
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'error.jank' },
-    { package = 'jank-stdlib', path = 'put.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'malloc.jank' },
     { package = 'jank-stdlib', path = 'assert.jank' },
+    { package = 'jank-stdlib', path = 'defs.jank' },
+    { package = 'jank-stdlib', path = 'error.jank' },
+    { package = 'jank-stdlib', path = 'iostream.jank' },
     { package = 'jank-stdlib', path = 'jstring.jank' },
+    { package = 'jank-stdlib', path = 'malloc.jank' },
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'put.jank' },
     { package = 'jank-stdlib', path = 'string.jank' },
-    { package = 'jank-stdlib', path = 'iostream.jank' }
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'jstring.jank' = [
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
     { package = 'jank-stdlib', path = 'defs.jank' },
+    { package = 'jank-stdlib', path = 'jstring.jank' },
     { package = 'jank-stdlib', path = 'malloc.jank' },
-    { package = 'jank-stdlib', path = 'jstring.jank' }
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' }
 ]
 'malloc.jank' = [
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
     { package = 'jank-stdlib', path = 'defs.jank' },
-    { package = 'jank-stdlib', path = 'malloc.jank' }
+    { package = 'jank-stdlib', path = 'malloc.jank' },
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' }
 ]
 'math.jank' = [ { package = 'jank-stdlib', path = 'math.jank' } ]
 'memory.jank' = [ { package = 'jank-stdlib', path = 'defs.jank' }, { package = 'jank-stdlib', path = 'memory.jank' } ]
 'networking/inet.jank' = [ { package = 'jank-stdlib', path = 'networking/inet.jank' } ]
 'pair.jank' = [
-    { package = 'jank-stdlib', path = 'vector.jank' },
-    { package = 'jank-stdlib', path = 'defs.jank' },
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'error.jank' },
-    { package = 'jank-stdlib', path = 'put.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'malloc.jank' },
     { package = 'jank-stdlib', path = 'assert.jank' },
-    { package = 'jank-stdlib', path = 'jstring.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'defs.jank' },
+    { package = 'jank-stdlib', path = 'error.jank' },
     { package = 'jank-stdlib', path = 'iostream.jank' },
-    { package = 'jank-stdlib', path = 'pair.jank' }
+    { package = 'jank-stdlib', path = 'jstring.jank' },
+    { package = 'jank-stdlib', path = 'malloc.jank' },
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'pair.jank' },
+    { package = 'jank-stdlib', path = 'put.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'put.jank' = [
-    { package = 'jank-stdlib', path = 'memory.jank' },
     { package = 'jank-stdlib', path = 'defs.jank' },
     { package = 'jank-stdlib', path = 'error.jank' },
-    { package = 'jank-stdlib', path = 'vector.jank' },
-    { package = 'jank-stdlib', path = 'malloc.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' },
     { package = 'jank-stdlib', path = 'jstring.jank' },
+    { package = 'jank-stdlib', path = 'malloc.jank' },
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'put.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
     { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'put.jank' }
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'random.jank' = [
-    { package = 'jank-stdlib', path = 'memory.jank' },
     { package = 'jank-stdlib', path = 'defs.jank' },
     { package = 'jank-stdlib', path = 'malloc.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'random.jank' }
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'random.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' }
 ]
 'sort.jank' = [
     { package = 'jank-stdlib', path = 'defs.jank' },
     { package = 'jank-stdlib', path = 'malloc.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'random.jank' },
     { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'sort.jank' }
+    { package = 'jank-stdlib', path = 'random.jank' },
+    { package = 'jank-stdlib', path = 'sort.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' }
 ]
 'spinlock.jank' = [ { package = 'jank-stdlib', path = 'spinlock.jank' } ]
 'string.jank' = [
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'malloc.jank' },
     { package = 'jank-stdlib', path = 'defs.jank' },
     { package = 'jank-stdlib', path = 'error.jank' },
-    { package = 'jank-stdlib', path = 'vector.jank' },
     { package = 'jank-stdlib', path = 'jstring.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' }
+    { package = 'jank-stdlib', path = 'malloc.jank' },
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'syscall.jank' = [ { package = 'jank-stdlib', path = 'defs.jank' }, { package = 'jank-stdlib', path = 'syscall.jank' } ]
 'termios.jank' = [
-    { package = 'jank-stdlib', path = 'syscall.jank' },
     { package = 'jank-stdlib', path = 'defs.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
     { package = 'jank-stdlib', path = 'termios.jank' }
 ]
 'time.jank' = [
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'error.jank' },
-    { package = 'jank-stdlib', path = 'vector.jank' },
-    { package = 'jank-stdlib', path = 'malloc.jank' },
     { package = 'jank-stdlib', path = 'assert.jank' },
     { package = 'jank-stdlib', path = 'defs.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' },
-    { package = 'jank-stdlib', path = 'put.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'error.jank' },
     { package = 'jank-stdlib', path = 'jstring.jank' },
-    { package = 'jank-stdlib', path = 'time.jank' }
+    { package = 'jank-stdlib', path = 'malloc.jank' },
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'put.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'time.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'vector.jank' = [
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
     { package = 'jank-stdlib', path = 'defs.jank' },
     { package = 'jank-stdlib', path = 'malloc.jank' },
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
     { package = 'jank-stdlib', path = 'vector.jank' }
 ]
 'wait.jank' = [
