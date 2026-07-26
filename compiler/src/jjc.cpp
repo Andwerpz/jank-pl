@@ -442,20 +442,7 @@ int main(int argc, char* argv[]) {
             return 1;
         }
     }
-
-    // if(return_asm) {
-    //     std::ifstream src(asm_file);
-    //     std::ofstream dst(dst_dir);
-    //     if(!src || !dst) {
-    //         std::cout << "Failed to copy over from " << asm_file << " to " << dst_dir << "\n";
-    //         // std::remove(asm_file);
-    //         return 1;
-    //     }
-    //     dst << src.rdbuf();
-    //     std::remove(asm_file);
-    //     return 0;
-    // }
-
+    
     if(return_asm) {
         int status = move_file(fs::path(asm_file), fs::path(dst_file));
         if(status) {
@@ -504,18 +491,6 @@ int main(int argc, char* argv[]) {
         chmod(dst_file.c_str(), 0755);
 
         return 0;
-
-        // std::ifstream src(exe_file);
-        // std::ofstream dst(dst_file);
-        // if(!src || !dst) {
-        //     std::cout << "Failed to copy over from " << exe_file << " to " << dst_file << "\n";
-        //     std::remove(exe_file);
-        //     return 1;
-        // }
-        // dst << src.rdbuf();
-
-        // //give file execute permissions
-        // chmod(dst_file.c_str(), 0755);
     }
     
     //delete exe file
