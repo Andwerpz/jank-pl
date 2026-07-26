@@ -1,33 +1,8 @@
 (main quest)
-When compiling recursively, don't compile stdlib source files
-- use the precompiled assembly files instead. 
-- hmm, this seems like the responsibility of the build tool right? the compiler doesn't really know the difference. 
-  - the compiler should spit out some dependency metadata, and the build tool will be able to apply some 
-    heuristics to know which files are in the stdlib and extract the corresponding assembly files instead of compiling them. 
-
-
-(main quest)
-Make jank build tool
-- its name is 'dylan'
-- should be something like cargo from rust
-- it needs to somehow extract file dependency information 
-  - perhaps can add a mode to the compiler that just spits out dependency information into a file
-  - ig it should try to compile the file, and at the end additionally spit out a file
-    containing all the dependency information if the compilation was successful
-  - this dependency information should also contain transitive dependencies. 
-
-
-(main quest)
 Add IR (D:)
 - this will make codegen easier, the instructions will map more directly to assembly. 
 - this will make performance improvements to generated code easier
 - this will be very difficult, should probably read a textbook on IR design before attempting this. 
-
-
-(side quest)
-Add compiler flag where you can specify default imports
-- One usecase is enabling compiler mode and replacing the default <malloc> with a kernel malloc.
-- also should be able to specify files from stdlib as default
 
 
 (side quest)
@@ -52,8 +27,3 @@ Rewrite jjc in jank
 - mainly for the operating system, and for the flex
 - probably want to wait until IR is done before doing this, so the compiler can actually be relatively fast (relatively).
 
-
-(steven quest!!)
-Add CI/CD pipeline
-- want to make it so that tests are automatically run whenever you try to merge to main
-- also, you shouldn't be allowed to merge to main with failing tests

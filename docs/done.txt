@@ -1,3 +1,20 @@
+(steven quest!!)
+Add CI/CD pipeline
+- want to make it so that tests are automatically run whenever you try to merge to main
+- also, you shouldn't be allowed to merge to main with failing tests
+
+
+(main quest)
+Make jank build tool
+- its name is 'dylan'
+- should be something like cargo from rust
+- it needs to somehow extract file dependency information 
+  - perhaps can add a mode to the compiler that just spits out dependency information into a file
+  - ig it should try to compile the file, and at the end additionally spit out a file
+    containing all the dependency information if the compilation was successful
+  - this dependency information should also contain transitive dependencies. 
+
+
 (side quest)
 Make test runner multithreaded
 - rework so that each test compiles to a separate directory before running. 
