@@ -12,7 +12,7 @@ compiler:
 stdlib:
 	cd ./stdlib && dylan compile
 
-install: compiler stdlib
-	cd ./compiler && make install
+install:
+	bash ./scripts/install_all.sh
 
 .PHONY: all grammar test compiler stdlib install
