@@ -1,27 +1,6 @@
 #include <iostream>;
-#include <assert>;
-#include <wait>;
-#include <exec>;
-#include <crypto/sha2>;
-#include <crypto/X25519>;
-#include <crypto/ed25519>;
-
-#include "test2.jank";
-
-struct A {
-    B foo;
-}
-
-void test() {
-    A foo = new A();
-    foo.foo.foo.foo.foo = 10;
-    cout << "FOO : " << foo.foo.foo.foo.foo << "\n";
-}
 
 i32 main() {
-
-    test();
-    cout << "this should compile\n";
-    
+    cout << "hello\n";
     return 0;
 }

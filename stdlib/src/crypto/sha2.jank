@@ -1,5 +1,6 @@
 #include "assert.jank";
 #include "memory.jank";
+#include "malloc.jank";
 
 // Secure Hash Algorithm 2
 // https://nvlpubs.nist.gov/nistpubs/fips/nist.fips.180-4.pdf

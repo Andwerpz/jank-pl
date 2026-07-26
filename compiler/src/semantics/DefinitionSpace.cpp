@@ -143,7 +143,8 @@ DefinitionSpace::DefinitionSpace(std::string _filepath, Package* _package) {
         assert(filepath.size() > package_path.size());
         assert(filepath.substr(0, package_path.size()) == package_path);
         assert(filepath.size() >= 5);
-        std::string subtracted_path = filepath.substr(package_path.size() + 1, filepath.size() - 5);
+        std::string subtracted_path = filepath.substr(package_path.size() + 1);
+        subtracted_path = subtracted_path.substr(0, subtracted_path.size() - 5);
         label_prefix = "<" + package->name + "::" + subtracted_path + ">";
     }
     else {
@@ -1066,6 +1067,12 @@ bool DefinitionSpace::add_include(Include* inc) {
 
     //should only be adding includes when parsing
     assert(state == DefinitionSpaceState::Unparsed);
+
+    // std::cout << "RESOLVING INCLUDE : " << inc->to_string() << std::endl;
+    // std::cout << "PACKAGE DEPENDENCIES : \n";
+    // for(auto &[alias, package] : get_package()->dependencies) {
+    //     std::cout << alias << " : " << package->name << " : " << package->path << std::endl;
+    // }
 
     //resolve the include
     std::string include_path = "";

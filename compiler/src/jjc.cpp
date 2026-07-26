@@ -25,6 +25,11 @@
 #include <libgen.h>
 #include <sys/stat.h>
 
+#include "semantics/DefinitionSpace.h"
+
+#include <filesystem>
+namespace fs = std::filesystem;
+
 int compile(std::string src_path, char tmp_filename[]) {
     //direct output to tmp file
     fout = std::ofstream(tmp_filename);
@@ -81,6 +86,26 @@ int assemble(char src_path[], char res_path[]) {
     return 0; 
 }
 
+// moves the file at src to dst. 
+// assumes the file at src exists
+// if there is an existing file at dst, overwrites it
+// removes the file at src
+int move_file(const fs::path& src, const fs::path& dst) {
+    try {
+        fs::path src_abs = fs::absolute(src);
+        fs::path dst_abs = fs::absolute(dst);
+        if(dst_abs.has_parent_path()) {
+            fs::create_directories(dst_abs.parent_path());
+        }
+        fs::copy_file(src_abs, dst_abs, fs::copy_options::overwrite_existing);
+        fs::remove(src_abs);
+    } catch(const std::runtime_error& e) {
+        std::cout << "Failed to move file \"" << src.string() << "\" to \"" << dst.string() << "\" : " << e.what() << std::endl;
+        return 1;
+    }
+    return 0;
+}
+
 int main(int argc, char* argv[]) {
     if(argc == 1) {
         std::cout << "USAGE : jjc { <filepath> , <flag> }\n";
@@ -115,7 +140,7 @@ int main(int argc, char* argv[]) {
     }
     int argptr = 1;
     std::vector<std::string> filepaths;
-    std::string dst_dir = "a.out";
+    std::string dst_file = "a.out";
 
     //figure out compiler absolute directory
     {
@@ -158,7 +183,7 @@ int main(int argc, char* argv[]) {
                 std::cout << "USAGE : -o <path>\n";
                 return 1;
             }
-            dst_dir = std::string(argv[argptr ++]);
+            dst_file = std::string(argv[argptr ++]);
         }
 
         // == COMPILATION MODE ==
@@ -388,6 +413,11 @@ int main(int argc, char* argv[]) {
                 return 1;
             }
             for(auto i = definition_spaces.begin(); i != definition_spaces.end(); i++) {
+                std::string filepath = i->first;
+                DefinitionSpace *ds = i->second;
+                Package* package = ds->get_package();
+                if(package->is_named) deps << package->name << "\n";
+                else deps << "__unnamed__\n";
                 deps << i->first << "\n";
             }
             deps.close();
@@ -408,16 +438,25 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // if(return_asm) {
+    //     std::ifstream src(asm_file);
+    //     std::ofstream dst(dst_dir);
+    //     if(!src || !dst) {
+    //         std::cout << "Failed to copy over from " << asm_file << " to " << dst_dir << "\n";
+    //         // std::remove(asm_file);
+    //         return 1;
+    //     }
+    //     dst << src.rdbuf();
+    //     std::remove(asm_file);
+    //     return 0;
+    // }
+
     if(return_asm) {
-        std::ifstream src(asm_file);
-        std::ofstream dst(dst_dir);
-        if(!src || !dst) {
-            std::cout << "Failed to copy over from " << asm_file << " to " << dst_dir << "\n";
+        int status = move_file(fs::path(asm_file), fs::path(dst_file));
+        if(status) {
             std::remove(asm_file);
-            return 1;
+            return status;
         }
-        dst << src.rdbuf();
-        std::remove(asm_file);
         return 0;
     }
 
@@ -450,17 +489,28 @@ int main(int argc, char* argv[]) {
 
     //move exe file to output
     {
-        std::ifstream src(exe_file);
-        std::ofstream dst(dst_dir);
-        if(!src || !dst) {
-            std::cout << "Failed to copy over from " << exe_file << " to " << dst_dir << "\n";
+        int status = move_file(fs::path(exe_file), fs::path(dst_file));
+        if(status) {
             std::remove(exe_file);
-            return 1;
+            return status;
         }
-        dst << src.rdbuf();
 
         //give file execute permissions
-        chmod(dst_dir.c_str(), 0755);
+        chmod(dst_file.c_str(), 0755);
+
+        return 0;
+
+        // std::ifstream src(exe_file);
+        // std::ofstream dst(dst_file);
+        // if(!src || !dst) {
+        //     std::cout << "Failed to copy over from " << exe_file << " to " << dst_file << "\n";
+        //     std::remove(exe_file);
+        //     return 1;
+        // }
+        // dst << src.rdbuf();
+
+        // //give file execute permissions
+        // chmod(dst_file.c_str(), 0755);
     }
     
     //delete exe file

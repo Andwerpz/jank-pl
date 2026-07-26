@@ -10,7 +10,7 @@ compiler:
 	cd ./compiler && make all
 
 stdlib:
-	cd ./stdlib && make all
+	cd ./stdlib && dylan compile
 
 install: compiler stdlib
 	cd ./compiler && make install

@@ -5,10 +5,12 @@
 *.o
 *.vsix
 .env
+**/tmp/
+**/build/
+**/bin/
 
 grammar/gen
 
 stdlib/asm/*
 
 testing/main
-testing/tmp/*

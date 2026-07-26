@@ -1758,7 +1758,6 @@ Package* get_package(std::string name) {
             return p;
         }
     }
-    std::cout << "Failed to find package with name : " << name << std::endl;
     return nullptr;
 }
 
@@ -2193,6 +2192,14 @@ bool emit_driver(std::string target_filepath, Package* target_package) {
         }
     };
     find_definition_spaces(target_ds);
+
+    // ensure all reachable definition spaces are ready
+    for(DefinitionSpace *ds : all_definition_spaces) {
+        if(!ds->ensure_ready()) {
+            std::cout << "Failed to make definition space ready : " << ds->get_filepath() << std::endl;
+            return false;
+        }
+    }
 
     // find all global variables / global variable nodes
     std::vector<GlobalNode*> all_global_nodes;
