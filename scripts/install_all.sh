@@ -26,11 +26,7 @@ make_dylan "install"
 echo -e "${GREEN}Build tool installed!${RESET}"
 echo -e "${YELLOW}==============================${RESET}"
 
-echo -e "${BLUE}Building and installing the standard library...${RESET}"
-make_compiler ""
-make_compiler "install"
-echo -e "${GREEN}Build tool installed!${RESET}"
-echo -e "${YELLOW}==============================${RESET}"
-
+echo -e "${BLUE}Installing the standard library...${RESET}"
 install_stdlib
+echo -e "${GREEN}Standard library installed!${RESET}"
 echo -e "${YELLOW}==============================${RESET}"
