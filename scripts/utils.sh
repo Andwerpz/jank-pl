@@ -10,6 +10,9 @@ trap 'error_handler' ERR
 REPO_ROOT=$(git rev-parse --show-toplevel)
 CURRENT_BRANCH=$(git rev-parse --abbrev-ref HEAD)
 
+BUILD_TOOL_NAME="dylan"
+COMPILER_NAME="jjc"
+
 error_handler() {
     local exit_code=$?
 
@@ -71,7 +74,7 @@ install_stdlib() {
     cd "${REPO_ROOT}/stdlib"
 
     echo -e "${BLUE}Installing standard libraries...${RESET}"
-    if dylan install --user; then
+    if ${BUILD_TOOL_NAME} install --user; then
         echo -e "${GREEN}Installed standard libraries!${RESET}"
     else
         sanat_dubey_error "Standard libraries failed to install!"

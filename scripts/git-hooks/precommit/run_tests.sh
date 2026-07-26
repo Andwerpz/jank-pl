@@ -12,11 +12,12 @@ testing/tests/
 testing/main.cpp
 "
 REQUIRED_DEPENDENCIES="
-jjc
-dylan
+${COMPILER_NAME}
+${BUILD_TOOL_NAME}
 "
 
-echo -e "${BLUE}Bello guys! My name is Dylan Janky! I love Andrew Mc Li!${RESET}\n"
+echo -e "${YELLOW}Running precommit tests on branch: '${CURRENT_BRANCH}'${RESET}"
+echo -e "${BLUE}Bello guys! My name is Dylan Janky! I love Andrew Mc Li!${RESET}"
 
 echo -e "${YELLOW}Checking for required jank dependencies...${RESET}"
 for bin in $REQUIRED_DEPENDENCIES; do
@@ -25,8 +26,12 @@ for bin in $REQUIRED_DEPENDENCIES; do
         exit 1
     fi
 done
+echo ""
 
-echo -e "${YELLOW}Running precommit tests on branch: '${CURRENT_BRANCH}'${RESET}"
+echo -e "${YELLOW}Updating compiler and build tool...${RESET}"
+make_compiler "-s"
+make_dylan "-s"
+
 for dir in $WATCHED_DIRS; do
     if echo "$CHANGED_FILES" | grep -q "^$dir"; then
         echo -e "${YELLOW}Changes detected. Running tests...${RESET}\n"
