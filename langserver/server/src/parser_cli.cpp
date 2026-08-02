@@ -1,11 +1,12 @@
 #include <iostream>
 #include <string>
 #include <iterator>
-#include "../../../compiler/parser/parser.h"
+#include "../../../compiler/src/parser/parser.h"
 #include <set>
 
 std::set<std::string> keywords = {
-	"for", "while", "if", "else", "return", "struct", "template", "operator", "extern", "export", "new",
+	"for", "while", "if", "else", "return", "struct", "template", "operator", "new",
+	"extern", "export", "intrinsic",
 	"break", "continue",
 	"typedef", "#include", "#global_node",
 	"syscall", "sizeof", "asm!",

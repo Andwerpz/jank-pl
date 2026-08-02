@@ -1,0 +1,10 @@
+'exit.jank' = [
+    { package = 'jank-runtime', path = 'exit.jank' },
+    { package = 'jank-stdlib', path = 'defs.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' }
+]
+'malloc.jank' = [
+    { package = 'jank-runtime', path = 'malloc.jank' },
+    { package = 'jank-stdlib', path = 'defs.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' }
+]

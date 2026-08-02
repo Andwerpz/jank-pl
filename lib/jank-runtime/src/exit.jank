@@ -1,0 +1,6 @@
+#include <syscall>;
+
+intrinsic("exit")
+void __exit(i32 status) {
+    sys_exit(status);
+}

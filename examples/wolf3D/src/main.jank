@@ -351,7 +351,6 @@ i32 main() {
         }
         g_screen.render();
 
-        cout << "MEM USAGE : " << (MEM_USED >> ($u64 20)) << " MB\n";
         cout << "VEC2 ALLOC : " << vec2_alloc_cntr << "\n";
         cout << "HITINFO ALLOC : " << hitinfo_alloc_cntr << "\n";
 

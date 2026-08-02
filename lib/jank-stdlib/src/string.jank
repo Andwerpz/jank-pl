@@ -335,7 +335,6 @@ string to_string(i16 x) {
 //also doesn't account for denormalization, NaN, inf. 
 
 [STRING] u8* jstring_f32_base2 = $u8* malloc($u64 512);
-
 string to_string(f32 f) {
     u32 fbits = * $u32* (@f);
 

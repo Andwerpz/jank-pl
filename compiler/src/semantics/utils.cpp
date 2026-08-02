@@ -460,35 +460,6 @@ void emit_mem_store(int sz) {
     }
 }
 
-//allocates sz_bytes memory by calling malloc. Resulting address is in %rax
-void emit_malloc(int sz_bytes) {
-    assert(sz_bytes >= 0);
-
-    FunctionSignature *malloc_signature = new FunctionSignature(new Identifier("malloc"), {primitives::u64});
-    std::string malloc_label = get_function_label(malloc_signature);
-
-    fout << indent() << "mov $" << sz_bytes << ", %rax\n";
-    emit_push("%rax", "emit_malloc() : malloc arg");
-    fout << indent() << "call " << malloc_label << "\n";
-    emit_add_rsp(8, "emit_malloc() : malloc arg");
-}
-
-//frees sz_bytes memory at address provided by %rax
-//resulting free status is in %rax
-void emit_free(int sz_bytes) {
-    assert(sz_bytes >= 0);
-
-    FunctionSignature *free_signature = new FunctionSignature(new Identifier("free"), {new PointerType(primitives::_void), primitives::u64});
-    std::string free_label = get_function_label(free_signature);
-
-    emit_push("%rax", "emit_free() : free addr");
-    fout << indent() << "mov $" << sz_bytes << ", %rax\n";
-    emit_push("%rax", "emit_free() : free sz_bytes");
-    fout << indent() << "call " << free_label << "\n";
-    std::vector<std::string> stk_strs = {"emit_free() : free addr", "emit_free() : free sz_bytes"};
-    emit_add_rsp(16, stk_strs);
-}
-
 //assumes reference type is in %rax (so some sort of memory pointer)
 //returns with value in %rax, address in %rcx
 void emit_dereference(Type *rt) {
@@ -1828,6 +1799,91 @@ bool set_current_package(Package* package) {
     return true;
 }
 
+bool add_runtime_file(Package* package, std::string path) {
+    runtime_files.push_back({package, path});
+    return true;
+}
+
+
+// -- INTRINSICS
+// makes sure there isn't an existing intrinsic with the same name or symbol
+// this method should always succeed
+void add_intrinsic(std::string name, std::string symbol, std::vector<Type*> parameter_types, Type* return_type) {
+    for(Intrinsic* intrinsic : intrinsics) {
+        if(intrinsic->name == name) {
+            std::cout << "Intrinsic with name : " << name << " already exists" << std::endl;
+            assert(false);
+        }
+        if(intrinsic->symbol == symbol) {
+            std::cout << "Intrinsic with symbol : " << symbol << " already exists" << std::endl;
+            assert(false);
+        }
+    }
+
+    Intrinsic* intrinsic = new Intrinsic();
+    intrinsic->name = name;
+    intrinsic->symbol = symbol;
+    intrinsic->parameter_types = parameter_types;
+    intrinsic->return_type = return_type;
+    intrinsics.push_back(intrinsic);
+}
+
+// returns nullptr if it can't find the intrinsic
+Intrinsic* get_intrinsic(std::string name) {
+    for(Intrinsic* intrinsic : intrinsics) {
+        if(intrinsic->name == name) {
+            return intrinsic;
+        }
+    }
+    return nullptr;
+}
+
+// assumes all arguments are on the stack in order.  
+// just emits a call to the corresponding intrinsic symbol
+// output (if any) will be in %rax
+void emit_intrinsic_call(std::string name) {
+    // find intrinsic
+    Intrinsic* intrinsic = get_intrinsic(name);
+    if(intrinsic == nullptr) {
+        std::cout << "Could not find intrinsic : " << name << std::endl;
+        assert(false);
+    }
+
+    // emit call
+    fout << indent() << "call " << intrinsic->symbol << "\n";
+}
+
+//allocates sz_bytes memory by calling malloc. Resulting address is in %rax
+void emit_malloc(int sz_bytes) {
+    assert(sz_bytes >= 0);
+
+    fout << indent() << "mov $" << sz_bytes << ", %rax\n";
+    emit_push("%rax", "emit_malloc() : malloc arg");
+    emit_intrinsic_call("malloc");
+    emit_add_rsp(8, "emit_malloc() : malloc arg");
+}
+
+//expects memory address in %rax
+//frees sz_bytes memory at address provided by %rax
+//resulting free status is in %rax
+void emit_free(int sz_bytes) {
+    assert(sz_bytes >= 0);
+
+    emit_push("%rax", "emit_free() : free addr");
+    fout << indent() << "mov $" << sz_bytes << ", %rax\n";
+    emit_push("%rax", "emit_free() : free sz_bytes");
+    emit_intrinsic_call("free");
+    std::vector<std::string> stk_strs = {"emit_free() : free addr", "emit_free() : free sz_bytes"};
+    emit_add_rsp(16, stk_strs);
+}
+
+// expects status code to be in %rax
+void emit_exit() {
+    emit_push("%rax", "emit_exit() : exit status");
+    emit_intrinsic_call("exit");
+    emit_add_rsp(8, "emit_exit() : exit status");
+}
+
 
 // -- CONTROLLER --
 void initialize_controller() {
@@ -1857,11 +1913,45 @@ void initialize_controller() {
 
         builtin_definition_space->ensure_ready();
     }
+
+    //add all intrinsics
+    {
+        // malloc
+        add_intrinsic(
+            "malloc",
+            "__malloc__",
+            {
+                primitives::u64->make_copy()
+            },
+            new PointerType(primitives::_void->make_copy())
+        );
+
+        // free
+        add_intrinsic(
+            "free",
+            "__free__",
+            {
+                new PointerType(primitives::_void->make_copy()),
+                primitives::u64->make_copy()
+            },
+            primitives::i32->make_copy()
+        );
+
+        // exit
+        add_intrinsic(
+            "exit",
+            "__exit__",
+            {
+                primitives::i32->make_copy()
+            },
+            primitives::_void->make_copy()
+        );
+    }
 }
 
 bool compile(std::string target_filepath, Package* target_package) {
     assert(target_filepath.size() != 0);
-    std::cout << " -- COMPILING FILE : " << target_filepath << std::endl;
+    std::cout << " -- COMPILING FILE : " << target_package->name << " " << target_filepath << std::endl;
 
     // place target file concrete instantiations into work queue
     // don't place generated instantiations into queue,
@@ -2018,7 +2108,7 @@ bool compile(std::string target_filepath, Package* target_package) {
             {
                 std::string label = gd->generate_init_label();
                 fout << ".section \".text." << label << "\",\"ax\",@progbits\n";
-                fout << ".globl " << label << "\n";
+                fout << ".global " << label << "\n";
                 fout << label << ":\n";
 
                 //setup function stack frame
@@ -2058,7 +2148,7 @@ bool compile(std::string target_filepath, Package* target_package) {
             {
                 std::string label = gd->generate_cleanup_label();
                 fout << ".section \".text." << label << "\",\"ax\",@progbits\n";
-                fout << ".globl " << label << "\n";
+                fout << ".global " << label << "\n";
                 fout << label << ":\n";
 
                 //setup function stack frame
@@ -2130,7 +2220,7 @@ bool compile(std::string target_filepath, Package* target_package) {
             Identifier *id = gd->declaration->id;
             std::string label = id->to_string();
             if(!gd->is_extern) {
-                fout << ".globl " << label << "\n";
+                fout << ".global " << label << "\n";
                 fout << label << ": .quad 0";
                 if(asm_debug) fout << " # " << t->to_string() << " " << id->to_string();
                 fout << "\n";
@@ -2179,19 +2269,41 @@ bool emit_driver(std::string target_filepath, Package* target_package) {
 
     // find all reachable definition spaces
     std::vector<DefinitionSpace*> all_definition_spaces;
-    all_definition_spaces.push_back(builtin_definition_space);
-    std::function<void(DefinitionSpace*)> find_definition_spaces = 
-    [&all_definition_spaces, &find_definition_spaces](DefinitionSpace *ds) -> void {
+    std::function<bool(DefinitionSpace*)> find_definition_spaces = 
+    [&all_definition_spaces, &find_definition_spaces](DefinitionSpace *ds) -> bool {
+        assert(ds != nullptr);
         for(int i = 0; i < all_definition_spaces.size(); i++) {
-            if(all_definition_spaces[i] == ds) return;
+            if(all_definition_spaces[i] == ds) return true;
         }
-
         all_definition_spaces.push_back(ds);
-        for(DefinitionSpace* nds : ds->get_included_definition_spaces()) {
-            find_definition_spaces(nds);
+
+        if(!ds->ensure_parsed()) {
+            std::cout << "Failed to parse : " << ds->get_filepath() << std::endl;
+            return false;
         }
+        for(DefinitionSpace* nds : ds->get_included_definition_spaces()) {
+            if(!find_definition_spaces(nds)) {
+                return false;
+            }
+        }
+        return true;
     };
-    find_definition_spaces(target_ds);
+    if(!find_definition_spaces(target_ds)) {
+        return false;
+    }
+
+    // also do this for runtime source files
+    for(auto &[package, path] : runtime_files) {
+        DefinitionSpace *runtime_ds = get_definition_space(path, package);
+        if(runtime_ds == nullptr) {
+            std::cout << "Failed to get definition space for runtime file : " << path << " " << package->name << std::endl;
+            return false;
+        }
+        find_definition_spaces(runtime_ds);
+    }
+
+    // also include builtin definition space
+    all_definition_spaces.push_back(builtin_definition_space);
 
     // ensure all reachable definition spaces are ready
     for(DefinitionSpace *ds : all_definition_spaces) {
@@ -2360,13 +2472,13 @@ bool emit_driver(std::string target_filepath, Package* target_package) {
 
     // emit storage for 'u8** environ'
     fout << ".section .data\n";
-    fout << ".globl environ\n";
+    fout << ".global environ\n";
     fout << "environ: .quad 0\n";
     fout << "\n";
 
     // emit _start label
     fout << ".section .text\n";
-    fout << ".globl _start\n";
+    fout << ".global _start\n";
     fout << "_start:\n";
 
     // parse argc, argv, envp, auxv, reserve stack slot for exit status
@@ -2433,33 +2545,25 @@ bool emit_driver(std::string target_filepath, Package* target_package) {
     }
 
     // emit exit
-    if(!kernel_mode) {
-        //get sys_exit(i32 status) label
-        std::string exit_label = get_function_label(new FunctionSignature(new Identifier("sys_exit"), {primitives::i32->make_copy()}));
-
-        //load exit status from stack
+    {
+        // load exit status from stack
         fout << indent() << "movq 16(%rbp), %rax\n";
 
-        //emit call
-        fout << indent() << "push %rax\n";
-        fout << indent() << "call " << exit_label << "\n";
-    }
-    else {
-        // we can't really exit, TODO decide what to do here
-        // can't really emit an error, just have to assume that the kernel never gets here
+        // exit
+        emit_exit();
     }
 
     return true;
 }
 
-bool compile_all(std::string target_filepath, Package* target_package) {
-    DefinitionSpace *target_ds = get_definition_space(target_filepath, target_package);
+bool compile_all(std::string target_filepath) {
+    DefinitionSpace *target_ds = get_definition_space(target_filepath, current_package);
 
     // find all reachable definition spaces
-    // (that correspond to a source file)
     std::vector<DefinitionSpace*> all_definition_spaces;
     std::function<bool(DefinitionSpace*)> find_definition_spaces = 
     [&all_definition_spaces, &find_definition_spaces](DefinitionSpace *ds) -> bool {
+        assert(ds != nullptr);
         for(int i = 0; i < all_definition_spaces.size(); i++) {
             if(all_definition_spaces[i] == ds) return true;
         }
@@ -2480,6 +2584,16 @@ bool compile_all(std::string target_filepath, Package* target_package) {
         return false;
     }
 
+    // also do this for runtime source files
+    for(auto &[package, path] : runtime_files) {
+        DefinitionSpace *runtime_ds = get_definition_space(path, package);
+        if(runtime_ds == nullptr) {
+            std::cout << "Failed to get definition space for runtime file : " << path << " " << package->name << std::endl;
+            return false;
+        }
+        find_definition_spaces(runtime_ds);
+    }
+
     // compile all files
     for(DefinitionSpace *ds : all_definition_spaces) {
         std::string filepath = ds->get_filepath();
@@ -2490,7 +2604,7 @@ bool compile_all(std::string target_filepath, Package* target_package) {
     }
 
     // emit driver code
-    if(!emit_driver(target_filepath, target_package)) {
+    if(!emit_driver(target_filepath, current_package)) {
         return false;
     }
 

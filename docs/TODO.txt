@@ -1,8 +1,237 @@
 (main quest)
+Make intrinsic compiler methods like malloc and free configurable via 'runtime package'
+- currently, methods like 'malloc' and 'free' are injected into the code by the compiler 
+  by resolving a synthetic malloc or free call against the current compilation context. 
+- this makes it relatively annoying to change the memory allocator being used, as it's dependent
+  on whatever malloc implementation a file happens to import. 
+- want to seperately define these compiler intrinsic methods into the builtin definition space somehow
+- idea: instead of having the compiler resolve calls to malloc while compiling source files, 
+  we can just emit unresolved symbols like '__malloc__' and then resolve them when we emit 
+  driver code. 
+  - want to make it so that we don't have to recompile library code if we want to change the allocator.
+    library code shouldn't need to know what allocator they are using. 
+  - when emitting driver code, the user should be able to specify a 'runtime' package that will
+    provide the definitions for all unresolved compiler intrinsics. 
+- normal library packages should not be able to include runtime packages
+  - a build target should be able to specify what runtime they want to use, then the runtime assembly
+    should get linked into the final executable
+  - when compiling normal library packages, they should have no idea what runtime is being used. 
+- should runtime packages behave like normal packages when compiling? 
+  - probably, it would make handling them much easier. 
+  - i think most of the difference should come from them declaring some compiler intrinsic symbols
+  - they should still compile to individual assembly files 
+- should syscalls be part of the runtime package?
+  - probably not? syscall helpers can be defined in the stdlib and the runtime package can depend 
+    on std::syscall 
+- how exactly should runtime packages declare compiler intrinsic symbols?
+  - maybe they should declare them quietly, a runtime package just promises to declare them somewhere. 
+  - on second thought, perhaps it should be the responsibility of the compiler to declare them
+    if I ever decide to change the exact compiler intrinsic symbols, then this will make it so that
+    I don't have to chase down all runtime packages and also change them there. 
+  - however this would mean that the compiler would have to know which method to choose for each intrinsic. 
+  - perhaps the compiler should just do some function call resolution, like it'll try to resolve 
+    'malloc(u64)' and just take whatever function matches
+  - however the same malloc method could be defined in multiple files within the runtime package
+  - a runtime package should declare intrinsics explicitly in its config.toml
+    something like:
+```
+[[intrinsic]]
+intrinsic = "allocate"      # name of intrinsic
+source = "malloc"           # relative path to source file
+function = "malloc"         # name of function inside source file
+
+[[intrinsic]]
+intrinsic = "free"
+source = "malloc"
+function = "free"    
+```
+  - the compiler should internally define all of the intrinsics it requires, something like
+```
+struct Intrinsic {
+  std::string name;
+  std::string label;
+  std::vector<Type*> argument_types;
+  Type* return_type;
+};
+```
+  - then when compiling a file with an intrinsic, should declare it with something like 
+      '--intrinsic <intrinsic> <function>'
+    and the compiler will resolve the function call 
+      <function>(<argument_types>)
+    and make sure it returns <return_type>
+  - finally it will emit 
+- what if instead we just introduced some syntax for a function to define itself as an intrinsic
+  - something like
+```
+intrinsic("allocate")
+void* malloc(u64 size) {
+  // do alloc here
+}
+```
+  - this would allow us to avoid cluttering the package config, and it would make checking intrinsics
+    way easier. 
+  - however, knowing at the package level what intrinsics the package defines would be harder, however
+    for now we can require that a runtime package must define all intrinsics 
+  - should still have runtime packages be of type 'runtime', the difference is that when compiling source 
+    code from runtime packages we should pass in some sort of flag that makes the compiler not error 
+    when compiling a function that supports an intrinsic
+    - something like '--intrinsic-provider' or '--allow-intrinsic-definitions'
+- how would the compiler know to link all assembly files in a runtime package when doing linking?
+- to summarize
+  - instead of emitting synthetic calls to malloc and free, the compiler will instead emit calls to unresolved 
+    symbols called 'intrinsics'.
+    - an intrinsic should have a name, a fixed label, a set of specified arguments, and a fixed return type. 
+  - going to introduce new type of package: the 'runtime' package. 
+    - runtime packages are resonsible for defining all the intrinsics used by the compiler. 
+    - normal source packages should not be able to directly import from runtime packages, 
+      - when informing the compiler of the package graph, explicitly omit runtime packages unless
+        the runtime package is the one being compiled
+    - a compile target should specify what runtime package to link, and all the source files from the runtime
+      package should be linked into the final executable
+    - runtime packages should be able to import from whatever normal library package they'd like
+  - going to introduce new syntax to mark some functions as intrinsic providers
+    - should specify the name of the intrinsic it's providing. 
+    - it's the linker's job to make sure that an intrinsic has been provided by exactly one function
+    - the compiler should throw an error when trying to compile an intrinsic provider, unless the 
+      '--intrinsic-provider' flag has been passed. 
+      - should only pass this flag when compiling source from a runtime package
+
+
+(main quest)
+Figure out how to better handle code sharing between hosted and freestanding source files
+- right now, jank-os depends on the stdlib for many of its containers, like vector and hashmap. 
+  however, since jank-os requires all code be compatible with a freestanding environment, it relies 
+  on the fact that these containers just happen to not depend on any code that uses syscalls. 
+- the reliance on such a fact feels very icky to me, we should have some flag for a package that 
+  tells the build tool whether or not it requires a hosted environment
+  - packages that are freestanding can only depend on other freestanding packages
+  - packages that are hosted can depend on whatever package they like
+- next problem is I don't want to mark the entire jank-stdlib as requiring a hosted environment, because
+  I still want to use the containers inside, while discarding stuff like iostream and put
+  - one idea is to split the package into a bunch of packages, such as 'jank-stdlib-container' and 
+    'jank-stdlib-io' and mark each of them seperately as hosted or not. 
+    - this would be very annoying, for one, we'd have to register a bunch of packages as dependencies, 
+      and whenever I added a new sub-package, every project that wanted it would need to also import that one
+    - I want to just be able to specify that i'm importing from the stdlib by doing something like 
+      '#include <std::vector>' not '#include <std-container::vector>'
+  - what if we introduced 'aggregator packages' (name WIP). All they would do is depend on a bunch of packages
+    and merge all their code together to present a unified package. 
+    - we can then have a hosted stdlib : 'jank-stdlib' and a freestanding one : 'jank-stdlib-freestanding' 
+      which will each depend on some different subset of stdlib packages 
+    - we can probably also enforce that there should be no conflicting source files in an aggregator package
+      so for example, '/utils.jank' shouldn't be defined in both 'jank-stdlib-container' and 'jank-stdlib-io'
+    - perhaps to avoid such utility files being conflicting, maybe we should introduce the idea of 
+      configuring which files to export from a package, so like public/private but on a package level. 
+    - would an aggregator package literally copy over all their dependencies source code? probably not. 
+      this would destroy the semantics of compiling within a package, they should just act as passthrough 
+      packages. 
+    - I suppose my one issue with this solution is that it would require the compiler to know more about 
+      how packages work, ideally we can cut out all aggregator packages from the package graph before
+      giving it to the compiler. 
+    - if we don't do this, then when registering a package, we'll also have to register what type of package
+      it is. Or maybe we can have a seperate flag, like '--aggregator-package' and '--library-package'
+  - how can we flatten the include graph to remove aggregator packages?
+    - if we don't want the compiler to know about aggregator packages, but allow different packages 
+      to be referred to by the same alias, it would seem like I would have to allow multiple package
+      dependencies with the same alias in the compiler. 
+    - I think that is fine, the package manager should ensure that exported paths from aggregated
+      packages don't collide. 
+    - the compiler now just has to look through all packages with a matching alias and take the first
+      one that exports the path of the import. 
+  - how would we handle circular dependencies between aggregator packages?
+    - just forbid them? 
+      - this would make it simple, but it would be no fun D:
+    - allow them? 
+      - define the set of packages that an aggregator package aggregates as the set
+        of packages reachable from the aggregator package thru purely aggregator packages. 
+  - how would we do default stdlib imports in the compiler if we don't want the compiler to know about
+    aggregator packages?
+    - one way would be to manually import all packages that the aggregator would import
+      however this would require manually updating the compiler every time the stdlib adds
+      a new package. 
+    - another way is to let the compiler know how to resolve aggregator packages, however I don't
+      like this solution as I want the build tool to be responsible for resolving packages.
+    - we can solve this by changing the way the build tool passes in the package graph to the compiler. 
+      - instead of passing the graph via commandline arguments, the build tool can generate a file with 
+        information regarding the fully resolved package graph and pass the file to the compiler. 
+      - can call this file a 'package manifest'? 
+      - then when installing the stdlib, the build tool should also be called on to generate a package
+        manifest for the stdlib that will be placed inside some predictable location. 
+      - the compiler will then load it when not explicitly given a manifest, and will compile according
+        to that manifest. 
+      - should this manifest be generated relative to a root package, or a build target?
+        - now that targets will specify runtime packages, I think they should be relative to a target. 
+        - but if they're relative to a target, then how will I generate the stdlib manifest?
+        - actually, can have a default build target that just says its runtime package is the standard one
+        - the manifest should just give the compiler information regarding packages. 
+          regarding the runtime package, it can just give a list of assembly files to list. 
+- to summarize
+  - introduce 'environment' attribute to a package
+    - for now, environment will have value 'hosted' or 'freestanding'
+    - freestanding packages cannot depend on hosted packages, but hosted packages can depend on freestanding ones
+    - by default, environment will be 'hosted'
+  - introduce 'aggregator' packages
+    - new type of package, all it does is depend on other packages
+    - it's special because from the perspective of source code, it behaves like the union of all packages
+      it depends on. 
+    - should allow aggregator packages to depend on other aggregator packages. 
+      - you should even be able to form cycles. 
+    - define the set of packages that an aggregator package represents as the set of packages that can be 
+      reached starting from the aggregator package purely through itself and other aggregator packages. 
+    - the build tool should make sure that there are no overlapping source files between two packages depended
+      on by the same aggregator package. 
+    - maybe we should call these 'facade' packages?
+  - split up stdlib into many sub-packages
+    - want to do this so that the parts of stdlib that can be used in a freestanding environment get their own 
+      freestanding package, while others go into hosted packages
+      - for example, jank-stdlib-containers could be freestanding and jank-stdlib-filesystem would be hosted
+    - then to have a nice interface, we can make a jank-stdlib facade package that just depends on the required
+      stdlib packages. 
+      - can also have a freestanding jank-stdlib-freestanding that provides kernel utilities
+      - can also make a jank-kernel-runtime which is freestanding that depends on jank-kernel for pagetable stuff 
+  - instead of communicating the package graph to the compiler via commandline arguments, we write the 
+    package information to a 'package manifest'
+    - the main benefit is that we no longer have to hardcode the default package configuration, 
+      the compiler should just have a set path where it looks for the default package manifest. 
+    - should re-emit the default package manifest to somewhere like ~/.jank/default_package.manifest
+  
+
+(main quest)
 Add IR (D:)
 - this will make codegen easier, the instructions will map more directly to assembly. 
 - this will make performance improvements to generated code easier
 - this will be very difficult, should probably read a textbook on IR design before attempting this. 
+
+
+(side quest)
+Use hashing to determine if some source file needs to be recompiled. 
+
+
+(side quest)
+Add the notion of 'workspaces', collections of related packages, to dylan
+- this allows convenient installation of multi-package projects
+
+
+(side quest)
+think more about how package installation should behave
+
+
+(side quest)
+Add ability for packages to customize their exported files
+- should allow packages to choose what files to export, and what paths they are bound to. 
+- should look something like:
+```
+[[export]]
+source = "containers/vector"  # path relative to src directory
+path = "vector"               # path that packages depending on this one will use
+```
+- by default, packages should export all their paths exactly like how they're laid out in source
+
+
+(side quest)
+Write test runner for build tool
+- probably should have a system to write regression tests for the build tool, they've been very valuable in chasing
+  down bugs in the compiler. 
 
 
 (side quest)
@@ -11,6 +240,17 @@ Make parsing faster
   we can probably target this to make faster by writing a grammar that only sees function definitions and skips everything else. 
 - look into a tokenizer
 - first, do benchmarking to figure out where the current parser is slow!!
+
+
+(side quest)
+Make 'assert' have dedicated syntax. 
+- should have some syntax like `"assert" , "(" , parameter_list , ")"`
+- having a dedicated node for it allows us to nicely include source code location information in the error message
+- should also introduce an assert intrinsic
+  - the compiler should lower this custom assert call into calling this assert intrinsic
+  - this way, the runtime can define how asserts get printed. 
+- this would also allow us to have an option to omit all asserts if you want performance
+  - could also do this by just having assert as an intrinsic, but it would be much clunkier to use the intrinsic everywhere
 
 
 (side quest)

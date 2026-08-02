@@ -202,6 +202,11 @@ bool DefinitionSpace::add_operator(Operator* x, Visibility vis, Origin orig) {
         OperatorOverload *oo = dynamic_cast<OperatorOverload*>(x);
         OperatorSignature *os = oo->resolve_operator_signature();
         std::string label = "\"" + label_prefix + "::" + os->to_string() + "\"";
+
+        if(operator_label_map.contains(os)) {
+            std::cout << "Operator label already exists : " << os->to_string() << std::endl;
+            return false;
+        }
         operator_label_map.insert({os, label});
     }
 
@@ -224,6 +229,10 @@ bool DefinitionSpace::add_function(Function* x, Visibility vis, Origin orig) {
     else {
         // generate label normally
         label = "\"" + label_prefix + "::" + fs->to_string() + "\"";
+    }
+    if(function_label_map.contains(fs)) {
+        std::cout << "Function label already exists : " << fs->to_string() << std::endl;
+        return false;
     }
     function_label_map.insert({fs, label});
 
@@ -256,6 +265,10 @@ bool DefinitionSpace::add_constructor(Constructor* x, Visibility vis, Origin ori
     
     // generate label
     std::string label = "\"" + label_prefix + "::" + cs->to_string() + "\"";
+    if(constructor_label_map.contains(cs)) {
+        std::cout << "Constructor label already exists : " << cs->to_string() << std::endl;
+        return false;
+    }
     constructor_label_map.insert({cs, label});
 
     std::cout << "ADD CONSTRUCTOR : " << cs->to_string() << std::endl;
@@ -270,6 +283,10 @@ bool DefinitionSpace::add_destructor(Destructor* x, Visibility vis, Origin orig)
 
     // generate label
     std::string label = "\"" + label_prefix + "::~" + t->to_string() + "\"";
+    if(destructor_label_map.contains(t)) {
+        std::cout << "Destructor label already exists : " << t->to_string() << std::endl;
+        return false;
+    }
     destructor_label_map.insert({t, label});
 
     std::cout << "ADD DESTRUCTOR : " << t->to_string() << std::endl;
@@ -693,7 +710,10 @@ bool DefinitionSpace::ensure_declarations_resolved() {
             // add struct
             StructDefinition *sd = tsd->struct_def->make_copy();
             Type *t = sd->type;
-            add_struct(sd, Visibility::Public, Origin::Source);
+            if(!add_struct(sd, Visibility::Public, Origin::Source)) {
+                std::cout << "Failed to add struct : " << t->to_string() << std::endl;
+                return false;
+            }
 
             // add struct member functions, constructors, destructors
             // don't want to add to work queue, just want to make this struct interface available
@@ -793,14 +813,20 @@ bool DefinitionSpace::ensure_declarations_resolved() {
         if(tf->header->types.size() == 0) {
             Function *f = tf->function->make_copy();
             tf->generated_functions.push_back(f);
-            add_function(f, Visibility::Public, Origin::Source);
+            if(!add_function(f, Visibility::Public, Origin::Source)) {
+                std::cout << "Failed to add function : " << f->resolve_function_signature()->to_string() << std::endl;
+                return false;
+            }
         }
     }
     for(TemplatedOperator* to : templated_operators.get(Visibility::All, Origin::Source)) {
         if(to->header->types.size() == 0) {
             Operator *o = to->op->make_copy();
             to->generated_operators.push_back(o);
-            add_operator(o, Visibility::Public, Origin::Source);
+            if(!add_operator(o, Visibility::Public, Origin::Source)) {
+                std::cout << "Failed to add operator : " << o->resolve_operator_signature()->to_string() << std::endl;
+                return false;
+            }
         }
     }
 

@@ -134,6 +134,24 @@ struct SyscallLiteral : public Literal {
     bool replace_templated_types(TemplateMapping *mapping) override;
 };
 
+struct IntrinsicLiteral : public Literal {
+    std::string intrinsic_name;
+    std::vector<Expression*> arguments;
+
+    IntrinsicLiteral(parser::token *tok);
+    IntrinsicLiteral(const IntrinsicLiteral& other);
+    IntrinsicLiteral(std::string _intrinsic_name, std::vector<Expression*> _arguments);
+
+    static IntrinsicLiteral* convert(parser::literal_intrinsic *i);
+    Type* resolve_type(CompilationContext *ctx) override;
+    void emit_asm(CompilationContext *ctx) override;
+    size_t hash() override;
+    bool equals(Literal *other) override;
+    Literal* make_copy() override;
+    std::string to_string() override;
+    bool replace_templated_types(TemplateMapping *mapping) override;
+};
+
 struct HexLiteral : public Literal {
     std::string hex_str;    //doesn't contain 0x
 

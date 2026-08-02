@@ -1,0 +1,9 @@
+[package]
+name = "jank-runtime"
+type = "runtime"
+environment = "hosted"
+local-include-mode = "absolute"
+
+[[dependency]]
+package = "jank-stdlib"
+alias = "std"

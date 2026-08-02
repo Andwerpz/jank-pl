@@ -15,9 +15,10 @@ struct FunctionCall;
 struct CompilationContext;
 
 struct Function : public ASTNode {    
-    std::optional<Type*> enclosing_type;    //type of containing struct
-    bool is_export;         //if true, will generate label equal to function id
-    Type *type;             //return type
+    std::optional<Type*> enclosing_type;        // type of containing struct
+    std::optional<std::string> intrinsic_name;  // if this has a value, this function is defining an intrinsic
+    bool is_export;         // if true, will generate label equal to function id
+    Type *type;             // return type
     Identifier *id;
     std::vector<Parameter*> parameters;
     CompoundStatement *body;

@@ -39,7 +39,7 @@ int compile(std::string src_path, char tmp_filename[]) {
 
     bool success = false;
     if(recursive_compile) {
-        success = compile_all(src_path, current_package);
+        success = compile_all(src_path);
     }
     else if(only_emit_driver) {
         success = emit_driver(src_path, current_package);
@@ -107,6 +107,156 @@ int move_file(const fs::path& src, const fs::path& dst) {
     return 0;
 }
 
+// parses a package manifest 
+// returns 0 on success, 1 on failure
+int load_package_manifest(std::string package_manifest_path) {
+    std::ifstream fin(package_manifest_path);
+    if(!fin) {
+        std::cout << "Failed to open package manifest for reading" << std::endl;
+        return 1;
+    }
+    std::string line;
+    while(getline(fin, line)) {
+        std::vector<std::string> tok = str_split(line, ' ');
+        if(tok.size() == 0) {
+            continue;
+        }
+        std::string type = tok[0];
+        if(type == "package") {
+            if(tok.size() != 3) {
+                std::cout << "Malformed line : " << line << std::endl;
+                return 1;
+            }
+            std::string name = tok[1];
+            std::string path = tok[2];
+            if(!add_package(name, path)) {
+                std::cout << "Failed to add package : " << name << std::endl;
+                return 1;
+            }
+        }
+        else if(type == "package-dependency") {
+            if(tok.size() != 4) {
+                std::cout << "Malformed line : " << line << std::endl;
+                return 1;
+            }
+            std::string name = tok[1];
+            std::string alias = tok[2];
+            std::string dep_name = tok[3];
+            Package* pack = get_package(name);
+            if(pack == nullptr) {
+                std::cout << "Failed to find package with name : " << name << std::endl;
+                return 1;
+            }
+            Package* dep = get_package(dep_name);
+            if(dep == nullptr) {
+                std::cout << "Failed to find package with name : " << dep_name << std::endl;
+                return 1;
+            }
+            if(!add_package_dependency(pack, alias, dep)) {
+                std::cout << "Failed to add package dependency : " << name << " " << alias << " " << dep_name << std::endl;
+                return 1;
+            }
+        }
+        else if(type == "package-default-include") {
+            if(tok.size() != 4) {
+                std::cout << "Malformed line : " << line << std::endl;
+                return 1;
+            }
+            std::string name = tok[1];
+            std::string alias = tok[2];
+            std::string path = tok[3];
+            Package* pack = get_package(name);
+            if(pack == nullptr) {
+                std::cout << "Failed to find package with name : " << name << std::endl;
+                return 1;
+            }
+            if(!add_package_default_include(pack, alias, path)) {
+                std::cout << "Failed to add package default include : " << name << " " << alias << " " << path << std::endl;
+                return 1;
+            }
+        }
+        else if(type == "current-package") {
+            if(tok.size() != 2) {
+                std::cout << "Malformed line : " << line << std::endl;
+                return 1;
+            }
+            std::string name = tok[1];
+            Package* pack = get_package(name);
+            if(pack == nullptr) {
+                std::cout << "Failed to find package with name : " << name << std::endl;
+                return 1;
+            }
+            if(!set_current_package(pack)) {
+                std::cout << "Failed to set current package" << std::endl;
+                return 1;
+            }
+        }
+        else if(type == "runtime") {
+            if(tok.size() != 3) {
+                std::cout << "Malformed line : " << line << std::endl;
+                return 1;
+            }
+            std::string package_name = tok[1];
+            std::string path = tok[2];
+            Package* pack = get_package(package_name);
+            if(pack == nullptr) {
+                std::cout << "Failed to find package with name : " << package_name << std::endl;
+                return 1;
+            }
+            if(!add_runtime_file(pack, path)) {
+                std::cout << "Failed to add runtime file : " << package_name << " " << path << std::endl;
+                return 1;
+            }
+        }
+        else if(type == "no-current-package") {
+            if(tok.size() != 1) {
+                std::cout << "Malformed line : " << line << std::endl;
+                return 1;
+            }
+            
+            // set current package to be the default unnamed package
+            if(!set_current_package(default_package)) {
+                std::cout << "Failed to set current package to default package\n";
+                return 1;
+            }
+        }
+        else if(type == "default-package-dependency") {
+            if(tok.size() != 3) {
+                std::cout << "Malformed line : " << line << std::endl;
+                return 1;
+            }
+            std::string alias = tok[1];
+            std::string dep_name = tok[2];
+            Package* dep = get_package(dep_name);
+            if(dep == nullptr) {
+                std::cout << "Failed to find package with name : " << dep_name << std::endl;
+                return 1;
+            }
+            if(!add_package_dependency(default_package, alias, dep)) {
+                std::cout << "Failed to add default package dependency : " << alias << " " << dep_name << std::endl;
+                return 1;
+            }
+        }
+        else if(type == "default-package-default-include") {
+            if(tok.size() != 3) {
+                std::cout << "Malformed line : " << line << std::endl;
+                return 1;
+            }
+            std::string alias = tok[1];
+            std::string path = tok[2];
+            if(!add_package_default_include(default_package, alias, path)) {
+                std::cout << "Failed to add default package default include : " << alias << " " << path << std::endl;
+                return 1;
+            }
+        }
+        else {
+            std::cout << "Unknown package manifest line type : " << type << std::endl;
+            return 1;
+        }
+    }
+    return 0;
+}
+
 int main(int argc, char* argv[]) {
     if(argc == 1) {
         std::cout << "USAGE : jjc { <filepath> , <flag> }\n";
@@ -121,14 +271,12 @@ int main(int argc, char* argv[]) {
         std::cout << "--kernel : kernel mode\n";
         std::cout << "--follow-includes : recursively compile source files referenced by includes\n";
         std::cout << "--startup-only : only emits startup and driver code\n";
+        std::cout << "--intrinsic-provider : allow functions to define intrinsics\n";
+        std::cout << "--no-syscall : the compiler treats syscalls as compilation errors\n";
+        std::cout << "\n";
 
         std::cout << " == PACKAGE == \n";
-        std::cout << "--package <name> <path> : makes a package available to the compiler\n";
-        std::cout << "--package-dependency <package> <alias> <dependency> : adds a dependency to 'package'\n";
-        std::cout << "--package-default-include <package> <include_alias> <include_path> : adds an include to every file in package\n";
-        std::cout << "--current-package <name> : notifies the compiler what package the passed in files are from\n";
-        std::cout << "--no-stdlib : omits dependencies from the default package\n";
-        std::cout << "--no-prelude : omits default includes from the default package\n";
+        std::cout << "--package-manifest <path> : tells the compiler where the package manifest is\n";
         std::cout << "--emit-dependencies <path> : writes file containing all files required during compilation\n";
         std::cout << "\n";
 
@@ -143,7 +291,17 @@ int main(int argc, char* argv[]) {
     std::vector<std::string> filepaths;
     std::string dst_file = "a.out";
 
-    //figure out compiler absolute directory
+    // find default package manifest
+    std::string package_manifest_path;
+    {
+        const char* home = std::getenv("HOME");
+        if (home == nullptr) {
+            throw std::runtime_error("Could not find user package library : HOME is not defined");
+        }
+        package_manifest_path = fs::path(home) / ".jank" / "default.jpm";
+    }
+
+    // figure out compiler absolute directory
     {
         // /proc/self/exe is symlink to currently running binary
         // so readlink should give the absolute path no matter how this was invoked
@@ -159,7 +317,7 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    //figure out current working directory
+    // figure out current working directory
     {
         char cwd_path[PATH_MAX];
         if (getcwd(cwd_path, sizeof(cwd_path)) != NULL) {
@@ -193,87 +351,30 @@ int main(int argc, char* argv[]) {
         }
         else if(arg == "--follow-includes") {
             recursive_compile = true;
+
+            // need to also compile runtime files
+            // TODO figure out how to handle this without letting the user define intrinsics 
+            //   within their own code
+            intrinsic_provider = true;  
         }
         else if(arg == "--startup-only") {
             only_emit_driver = true;
             return_asm = true;
         }
+        else if(arg == "--intrinsic-provider") {
+            intrinsic_provider = true;
+        }
+        else if(arg == "--no-syscall") {
+            no_syscall = true;
+        }
 
         // == PACKAGE ==
-        else if(arg == "--package") {
-            if(argptr + 3 > argc) {
-                std::cout << "USAGE : --package <name> <path> { --package-opts <flag> }\n";
-                return 1;
-            }
-            std::string name = argv[argptr ++];
-            std::string path = argv[argptr ++];
-            if(!add_package(name, path)) {
-                std::cout << "Failed to add package : " << name << "\n";
-                return 1;
-            }
-        }
-        else if(arg == "--package-dependency") {
-            if(argptr + 3 > argc) {
-                std::cout << "USAGE : --package-dependency <package> <alias> <dependency>\n";
-                return 1;
-            }
-            std::string package_name = argv[argptr ++];
-            std::string alias = argv[argptr ++];
-            std::string dep_name = argv[argptr ++];
-            Package* package = get_package(package_name);
-            Package* dep = get_package(dep_name);
-            if(package == nullptr) {
-                std::cout << "Failed to get package with name : " << package_name << "\n";
-                return 1;
-            }
-            if(dep == nullptr) {
-                std::cout << "Failed to get package with name : " << dep_name << "\n";
-                return 1;
-            }
-            if(!add_package_dependency(package, alias, dep)) {
-                std::cout << "Failed to add package dependency : " << package_name << " " << dep_name << "\n";
-                return 1;
-            }
-        }
-        else if(arg == "--package-default-include") {
-            if(argptr + 3 > argc) {
-                std::cout << "USAGE : --package-default-include <package> <include-alias> <include-path>\n";
-                return 1;
-            }
-            std::string package_name = argv[argptr ++];
-            std::string alias = argv[argptr ++];
-            std::string path = argv[argptr ++];
-            Package* package = get_package(package_name);
-            if(package == nullptr) {
-                std::cout << "Failed to get package with name : " << package_name << "\n";
-                return 1;
-            }
-            if(!add_package_default_include(package, alias, path)) {
-                std::cout << "Failed to add package default include : " << package_name << " " << alias << " " << path << "\n";
-                return 1;
-            }
-        }
-        else if(arg == "--current-package") {
+        else if(arg == "--package-manifest") {
             if(argptr + 1 > argc) {
-                std::cout << "USAGE : --current-package <name>\n";
+                std::cout << "USAGE : --package-manifest <path>\n";
                 return 1;
             }
-            std::string name = argv[argptr ++];
-            Package* package = get_package(name);
-            if(package == nullptr) {
-                std::cout << "Failed to find package with name : " << name << "\n";
-                return 1;
-            }
-            if(!set_current_package(package)) {
-                std::cout << "Failed to set current package to : " << name << "\n";
-                return 1;
-            }
-        }
-        else if(arg == "--no-default-package-dependencies") {
-            no_default_package_dependencies = true;
-        }
-        else if(arg == "--no-default-includes") {
-            no_default_package_includes = true;
+            package_manifest_path = argv[argptr ++];
         }
         else if(arg == "--emit-dependencies") {
             if(argptr + 1 > argc) {
@@ -322,65 +423,15 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    //if the current package isn't set, synthesize an unnamed package
-    if(current_package == nullptr) {
-        Package* p = new Package();
-        std::string jank_stdlib_name = "jank-stdlib";
-        std::string jank_stdlib_alias = "std";
-
-        // hmm, need to add jank-stdlib if it's not already added here?
-        if(!no_default_package_dependencies) {
-            // if jank-stdlib doesn't exist as a package, add it
-            if(get_package(jank_stdlib_name) == nullptr) {
-                // load it from the user package library
-                // TODO when we get system packages working, load it from the system package library instead
-                const char* home = std::getenv("HOME");
-                if (home == nullptr) {
-                    std::cout << "Could not find user package library : HOME is not defined" << std::endl;
-                    return 1;
-                }
-                fs::path jank_stdlib_path = fs::path(home) / ".jank" / jank_stdlib_name / "src";
-                if(!add_package(jank_stdlib_name, jank_stdlib_path)) {
-                    assert(false);
-                }
-            }
-
-            // add dependency to jank-stdlib
-            Package* jank_stdlib = get_package(jank_stdlib_name);
-            assert(jank_stdlib != nullptr);
-            if(!add_package_dependency(p, jank_stdlib_alias, jank_stdlib)) {
-                assert(false);
-            }
-        }
-        if(!no_default_package_includes) {
-            Package* jank_stdlib = get_package(jank_stdlib_name);
-            if(jank_stdlib == nullptr) {
-                std::cout << "Failed to get jank-stdlib to add to default package\n";
-                return 1;
-            }
-
-            // add default includes
-            // - <std::memory>
-            // - <std::error>
-            // - <std::defs>
-            add_package_default_include(p, jank_stdlib_alias, "memory");
-            add_package_default_include(p, jank_stdlib_alias, "error");
-            add_package_default_include(p, jank_stdlib_alias, "defs");
-
-            //if we're not in kernel mode, can include some utilities provided by the kernel
-            // - <std::syscall>
-            // - <std::malloc>
-            if(!kernel_mode) {
-                add_package_default_include(p, jank_stdlib_alias, "syscall");
-                add_package_default_include(p, jank_stdlib_alias, "malloc");
-            }
-        }
-
-        if(!set_current_package(p)) {
-            assert(false);
-        }
+    //load package manifest
+    if(load_package_manifest(package_manifest_path)) {
+        std::cout << "Failed to load package manifest\n";
+        return 1;
     }
-    assert(current_package != nullptr);
+    if(current_package == nullptr) {
+        std::cout << "Package manifest didn't set current package\n";
+        return 1;
+    }
 
     //normalize filepaths
     for(std::string& filepath : filepaths) {

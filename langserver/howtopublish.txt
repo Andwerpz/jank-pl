@@ -9,14 +9,29 @@ curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
 nvm install 20
 nvm use 20
 
- - do initial build (ctrl + shift + b)
+ - install required packages
+npm install typescript
+npm install vscode-languageserver
+npm install vscode-languageclient
+
+ - if it's been a while, you may have to reinstall node_modules
+rm -rf node_modules
+npm install
+
+ - to build, just do
+make all
+ - this will build the parser_cli, taking from the compiler parser, 
+   and will run 'npm run compile' to build the extension
+
+ - to test it out, do 'ctrl + shift + d' and press the play button
 
  - install vsce
-npm install -g vsce
+npm install @vscode/vsce
 
  - package the extension, do this in package root directory
    should produce some .vsix file
    make sure to bump the version in package.json before doing this
+   or else the package distribution server will refuse to let you publish the new version
 vsce package
 
  - login (should only have to ever do this once)

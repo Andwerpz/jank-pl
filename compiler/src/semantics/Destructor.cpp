@@ -119,7 +119,7 @@ bool Destructor::is_well_formed(CompilationContext *ctx) {
         }
         else {
             fout << ".section \".text." << label_noquotes << "\",\"ax\",@progbits\n";
-            fout << ".globl " << label << "\n";
+            fout << ".global " << label << "\n";
         }
         fout << label << ":\n";
 

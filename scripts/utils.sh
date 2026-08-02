@@ -71,10 +71,10 @@ make_compiler() {
 }
 
 install_stdlib() {
-    cd "${REPO_ROOT}/stdlib"
+    cd "${REPO_ROOT}/lib"
 
     echo -e "${BLUE}Installing standard libraries...${RESET}"
-    if ${BUILD_TOOL_NAME} install --user; then
+    if ./install.sh; then
         echo -e "${GREEN}Installed standard libraries!${RESET}"
     else
         sanat_dubey_error "Standard libraries failed to install!"

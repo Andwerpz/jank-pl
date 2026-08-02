@@ -45,6 +45,10 @@ SyscallLiteral::SyscallLiteral(parser::token *tok) : Literal(tok) {
     // do nothing
 }
 
+IntrinsicLiteral::IntrinsicLiteral(parser::token *tok) : Literal(tok) {
+    // do nothing
+}
+
 HexLiteral::HexLiteral(parser::token *tok) : Literal(tok) {
     // do nothing
 }
@@ -90,6 +94,11 @@ SyscallLiteral::SyscallLiteral(const SyscallLiteral& other) : Literal(other) {
     syscall_id = other.syscall_id;
     for(int i = 0; i < other.arguments.size(); i++) arguments.push_back(other.arguments[i]->make_copy());
     type = other.type->make_copy();
+}
+
+IntrinsicLiteral::IntrinsicLiteral(const IntrinsicLiteral& other) : Literal(other) {
+    intrinsic_name = other.intrinsic_name;
+    for(int i = 0; i < other.arguments.size(); i++) arguments.push_back(other.arguments[i]->make_copy());
 }
 
 HexLiteral::HexLiteral(const HexLiteral& other) : Literal(other) {
@@ -138,6 +147,11 @@ SyscallLiteral::SyscallLiteral(int _syscall_id, std::vector<Expression*> _argume
     syscall_id = _syscall_id;
     arguments = _arguments;
     type = _type;
+}
+
+IntrinsicLiteral::IntrinsicLiteral(std::string _intrinsic_name, std::vector<Expression*> _arguments) {
+    intrinsic_name = _intrinsic_name;
+    arguments = _arguments;
 }
 
 HexLiteral::HexLiteral(std::string _hex_str) : Literal() {
@@ -197,8 +211,12 @@ Literal* Literal::convert(parser::literal *l) {
         parser::literal_syscall *lit = l->t8->t0;
         return SyscallLiteral::convert(lit);
     }
-    else if(l->is_a9) { //function pointer literal
-        parser::literal_function_pointer *lit = l->t9->t0;
+    else if(l->is_a9) { //intrinsic literal
+        parser::literal_intrinsic *lit = l->t9->t0;
+        return IntrinsicLiteral::convert(lit);
+    }
+    else if(l->is_a10) { //function pointer literal
+        parser::literal_function_pointer *lit = l->t10->t0;
         return FunctionPointerLiteral::convert(lit);
     }
     else assert(false);    
@@ -251,6 +269,14 @@ SyscallLiteral* SyscallLiteral::convert(parser::literal_syscall *lit) {
     result->syscall_id = ilit->val;
     if(lit->t9.has_value()) result->arguments = convert_argument_list(lit->t9.value()->t3);
     result->type = Type::convert(lit->t8);  
+    return result;
+}
+
+IntrinsicLiteral* IntrinsicLiteral::convert(parser::literal_intrinsic *lit) {
+    IntrinsicLiteral* result = new IntrinsicLiteral(lit);
+    StringLiteral *slit = StringLiteral::convert(lit->t4);
+    result->intrinsic_name = slit->val;
+    if(lit->t5.has_value()) result->arguments = convert_argument_list(lit->t5.value()->t3);
     return result;
 }
 
@@ -307,6 +333,12 @@ Type* StringLiteral::resolve_type(CompilationContext *ctx) {
 }
 
 Type* SyscallLiteral::resolve_type(CompilationContext *ctx) {
+    // - see if syscalls are allowed
+    if(no_syscall) {
+        std::cout << "Syscalls have been disabled\n";
+        return nullptr;
+    }
+    
     // - all syscall ids are >= 0. 
     if(syscall_id < 0) {
         std::cout << "Syscall id has to be >= 0\n";
@@ -329,6 +361,31 @@ Type* SyscallLiteral::resolve_type(CompilationContext *ctx) {
 
     //assume that the return type is correct
     return type->make_copy();
+}
+
+Type* IntrinsicLiteral::resolve_type(CompilationContext *ctx) {
+    // - see if we can find corresponding intrinsic
+    Intrinsic *intrinsic = get_intrinsic(intrinsic_name);
+    if(intrinsic == nullptr) {
+        std::cout << "Failed to find intrinsic for intrinsic literal : " << intrinsic_name << "\n";
+        return nullptr;
+    }
+
+    // - see if argument types match intrinsic parameter types
+    if(arguments.size() != intrinsic->parameter_types.size()) {
+        std::cout << "Intrinsic literal argument amount does not match intrinsic\n";
+        return nullptr;
+    }
+    for(int i = 0; i < arguments.size(); i++) {
+        Type *atype = arguments[i]->resolve_type(ctx);
+        if(!atype->equals(intrinsic->parameter_types[i])) {
+            std::cout << "Intrinsic literal incorrect argument type for intrinsic : " << intrinsic_name << " : " << atype->to_string() << " vs. " << intrinsic->parameter_types[i]->to_string() << "\n";
+            return nullptr;
+        }
+    }
+
+    //return type is intrinsic return type
+    return intrinsic->return_type->make_copy();
 }
 
 Type* HexLiteral::resolve_type(CompilationContext *ctx) {
@@ -464,6 +521,30 @@ void SyscallLiteral::emit_asm(CompilationContext *ctx) {
     if(asm_debug) fout << indent() << "# done syscall : " << syscall_id << "\n";
 }
 
+void IntrinsicLiteral::emit_asm(CompilationContext *ctx) {
+    if(asm_debug) fout << indent() << "# intrinsic : " << intrinsic_name << "\n";
+
+    //gather all arguments into tmp variables
+    push_declaration_stack();
+    std::vector<Variable*> argv;
+    for(int i = 0; i < arguments.size(); i++){
+        Identifier *id = new Identifier(create_new_tmp_variable_name());
+        Type *vt = arguments[i]->resolve_type(ctx);
+        assert(vt != nullptr);
+        Variable *v = emit_initialize_stack_variable(ctx, vt, id, arguments[i]);
+        argv.push_back(v);
+    }
+    assert(argv.size() == arguments.size());
+
+    //call intrinsic
+    emit_intrinsic_call(intrinsic_name);
+
+    //cleanup tmp variables
+    pop_declaration_stack(ctx);
+
+    if(asm_debug) fout << indent() << "# done intrinsic : " << intrinsic_name << "\n";
+}
+
 void HexLiteral::emit_asm(CompilationContext *ctx) {
     assert(hex_str.size() >= 1 && hex_str.size() <= 16);
     fout << indent() << "mov $0x" << hex_str << ", %rax\n";
@@ -525,6 +606,15 @@ size_t SyscallLiteral::hash() {
         hash_combine(hash, arguments[i]->hash());
     }
     hash_combine(hash, type->hash());
+    return hash;
+}
+
+size_t IntrinsicLiteral::hash() {
+    size_t hash = 0;
+    hash_combine(hash, std::hash<std::string>()(intrinsic_name));
+    for(int i = 0; i < arguments.size(); i++) {
+        hash_combine(hash, arguments[i]->hash());
+    }
     return hash;
 }
 
@@ -595,6 +685,18 @@ bool SyscallLiteral::equals(Literal *_other) {
     return true;
 }
 
+bool IntrinsicLiteral::equals(Literal *_other) {
+    if(dynamic_cast<IntrinsicLiteral*>(_other) == nullptr) return false;
+    IntrinsicLiteral *other = dynamic_cast<IntrinsicLiteral*>(_other);
+
+    if(intrinsic_name != other->intrinsic_name) return false;
+    if(arguments.size() != other->arguments.size()) return false;
+    for(int i = 0; i < arguments.size(); i++){
+        if(!arguments[i]->equals(other->arguments[i])) return false;
+    }
+    return true;
+}
+
 bool HexLiteral::equals(Literal *_other) {
     if(dynamic_cast<HexLiteral*>(_other) == nullptr) return false;
     HexLiteral *other = dynamic_cast<HexLiteral*>(_other);
@@ -653,6 +755,10 @@ Literal* SyscallLiteral::make_copy() {
     return new SyscallLiteral(*this);
 }
 
+Literal* IntrinsicLiteral::make_copy() {
+    return new IntrinsicLiteral(*this);
+}
+
 Literal* HexLiteral::make_copy() {
     return new HexLiteral(*this);
 }
@@ -697,6 +803,15 @@ std::string SyscallLiteral::to_string() {
         if(i != arguments.size() - 1) ret += ", ";
     }
     ret += type->to_string();
+    ret += ")";
+    return ret;
+}
+
+std::string IntrinsicLiteral::to_string() {
+    std::string ret = "intrinsic(" + intrinsic_name;
+    for(int i = 0; i < arguments.size(); i++) {
+        ret += ", " + arguments[i]->to_string();
+    }
     ret += ")";
     return ret;
 }
@@ -751,6 +866,13 @@ bool SyscallLiteral::replace_templated_types(TemplateMapping *mapping) {
     }
     if(auto x = mapping->find_mapped_type(type)) type = x;
     else if(!type->replace_templated_types(mapping)) return false;
+    return true;
+}
+
+bool IntrinsicLiteral::replace_templated_types(TemplateMapping *mapping) {
+    for(int i = 0; i < arguments.size(); i++) {
+        if(!arguments[i]->replace_templated_types(mapping)) return false;
+    }
     return true;
 }
 

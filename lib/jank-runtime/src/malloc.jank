@@ -1,8 +1,5 @@
-#include "defs.jank";
-#include "syscall.jank";
-#include "memory.jank";
-
-#global_node MALLOC;
+#include <defs>;
+#include <syscall>;
 
 // // simple bump allocator
 // // just increases the heap size every time we want to allocate more memory.
@@ -59,7 +56,8 @@
 [__GLOBAL_FIRST__] u64 PAGE_SIZE = $u64 4096;
 [__GLOBAL_FIRST__] u64 MEM_USED = $u64 0;
 
-void* malloc(u64 sz) {
+intrinsic("malloc")
+void* __malloc(u64 sz) {
     //round sz up to nearest page size
     sz = (sz + PAGE_SIZE - $u64 1) / PAGE_SIZE * PAGE_SIZE;
     MEM_USED += sz;
@@ -68,7 +66,8 @@ void* malloc(u64 sz) {
     return addr;
 }
 
-i32 free(void* addr, u64 sz) {
+intrinsic("free") 
+i32 __free(void* addr, u64 sz) {
     //round sz up to nearest page size
     sz = (sz + PAGE_SIZE - $u64 1) / PAGE_SIZE * PAGE_SIZE;
     if(sz > MEM_USED) {

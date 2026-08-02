@@ -104,7 +104,7 @@ struct Variable {
     Variable(bool _is_global, bool _is_extern, Type *_type, Identifier *_id, std::string addr);
 };
 
-//used by break and continue to know where to jump to and how many things to cleanup
+// used by break and continue to know where to jump to and how many things to cleanup
 struct LoopContext {
     std::string start_label;
     std::string assignment_label;
@@ -125,6 +125,15 @@ struct Package {
     
     // named package (library package)
     Package(std::string name, std::string path);
+};
+
+// a symbol that the compiler can emit unresolved and expects the user to define
+// has some requirements in terms of input parameters and output type
+struct Intrinsic {
+    std::string name;
+    std::string symbol;
+    std::vector<Type*> parameter_types;
+    Type* return_type;
 };
 
 // -- GENERAL UTILS --
@@ -167,8 +176,6 @@ void emit_address_array(int sz);
 void emit_write_array(int sz);
 void emit_mem_retrieve(int sz);
 void emit_mem_store(int sz);
-void emit_malloc(int sz_bytes);
-void emit_free(int sz_bytes);
 void emit_dereference(Type *t);
 
 // -- EMIT ASM CLEANUP --
@@ -204,9 +211,9 @@ void pop_loop_stack(std::string start_label, std::string assignment_label, std::
 
 // -- CONTEXT UTILS --
 bool is_type_primitive(Type *t);
-DefinitionSpace* get_definition_space(std::string filepath, Package* package);       // if a definition space doesn't exist, this creates it
-DefinitionSpace* get_definition_space(BaseType* t);                                                 // gets definition space that declares this BaseType
-DefinitionSpace* get_definition_space(Type *t);                                                     // gets definition space that is responsible for this type
+DefinitionSpace* get_definition_space(std::string filepath, Package* package);      // if a definition space doesn't exist, this creates it
+DefinitionSpace* get_definition_space(BaseType* t);                                 // gets definition space that declares this BaseType
+DefinitionSpace* get_definition_space(Type *t);                                     // gets definition space that is responsible for this type
 bool is_templated_type_well_formed(TemplatedType *t, CompilationContext *ctx);
 bool create_templated_type(TemplatedType *t, CompilationContext *ctx);
 bool create_array_type(ArrayType* t, CompilationContext *ctx);
@@ -222,6 +229,12 @@ bool add_constructor(DefinitionSpace* ds, Constructor* x, Visibility vis, Compil
 bool add_destructor(DefinitionSpace* ds, Destructor* x, Visibility vis, CompilationContext* ctx);
 
 // -- GLOBAL UTILS --
+// TODO should probably fold all of these into CompilationContext
+//   storing a global map of labels makes it so that two unrelated files can't both define the same method
+//   for now I'll just check the label map and throw an error if a function of the same signature already exists
+//   but having a per-compilation context set of labels would solve this issue. 
+//   actually, also making the functions themselves store the labels would also solve this issue. 
+//   and anyways, anything that needs to call a function should first resolve which function they're calling. 
 StructDefinition* get_struct_definition(Type *t);
 TemplatedStructDefinition* get_templated_struct_definition(BaseType *t);
 StructLayout* get_struct_layout(Type *t);
@@ -238,20 +251,39 @@ Package* get_package(std::string name);
 bool add_package_dependency(Package* package, std::string alias, Package* dep); 
 bool add_package_default_include(Package* package, std::string alias, std::string path);
 bool set_current_package(Package* package);
+bool add_runtime_file(Package* package, std::string path);
+
+// -- INTRINSICS --
+void add_intrinsic(std::string name, std::string symbol, std::vector<Type*> parameter_types, Type* return_type);
+Intrinsic* get_intrinsic(std::string name);
+void emit_intrinsic_call(std::string name);
+void emit_malloc(int sz_bytes);
+void emit_free(int sz_bytes);
 
 // -- CONTROLLER --
 //important directories
 inline std::string compiler_dir;        // directory of compiler executable
 inline std::string cwd_dir;
 
+//list of all available intrinsics the compiler can use
+inline std::vector<Intrinsic*> intrinsics;
+
 //list of available packages used to resolve library includes
 //these should all be PackageType::Named packages
 inline std::vector<Package*> packages;
 
 //package of any file supplied as an argument to the compiler
+//is read in from the package manifest
 //should not be nullptr by the time the compiler runs
-//  if the user does not specify a current package a synthetic unnamed package should be generated 
 inline Package* current_package = nullptr;
+
+//unnamed package used as current package when no current package is specified
+//has to be explicitly set as current package by package manifest
+inline Package* default_package = new Package();
+
+//list of {package, filepath} which are the runtime files 
+//these are responsible for collectively defining all compiler intrinsics 
+inline std::vector<std::pair<Package*, std::string>> runtime_files;
 
 //list of files we parsed source from
 //this list is referred to in the ASTNode struct
@@ -294,22 +326,24 @@ inline std::vector<LoopContext*> loop_stack;
 //add some helpful (?) comments in the generated asm. 
 inline bool asm_debug = false;
 
+//if true, trying to resolve the type of a syscall literal will result in an error
+inline bool no_syscall = false;
+
 //does some various changes to support a kernel
 // - doesn't import syscall by default
 // - doesn't call sys_exit() when returning out of main
 inline bool kernel_mode = false;
+
+//allows functions to define intrinsics
+//if this flag is false, then the compiler will emit an error when running into 
+//  a function that is trying to define an intrinsic
+inline bool intrinsic_provider = false;
 
 //add some helpful (?) prints in the compiler
 inline bool debug = false;
 
 //toggle to print various performance related information
 inline bool print_timing_info = false;
-
-//disables all default package dependencies
-inline bool no_default_package_dependencies = false;
-
-//disables all default package includes
-inline bool no_default_package_includes = false;
 
 //only emit driver code
 inline bool only_emit_driver = false;
@@ -334,7 +368,7 @@ void initialize_controller();                           // should call this once
 
 // these functions do some work and emit assembly via fout
 // it's assumed that the target file belongs to the target package
-bool compile(std::string target_filepath, Package* target_package);              // compiles the target file
-bool emit_driver(std::string target_filepath, Package* target_package);          // looks for a main() in the target file, emits code to handle initialization and cleanup of program
-bool compile_all(std::string target_filepath, Package* target_package);          // recursively look for all files that the target depends on and compiles them all
+bool compile(std::string target_filepath, Package* target_package);             // compiles the target file
+bool emit_driver(std::string target_filepath, Package* target_package);         // looks for a main() in the target file, emits code to handle initialization and cleanup of program
+bool compile_all(std::string target_filepath);                                  // recursively look for all files that the target depends on and compiles them all
 

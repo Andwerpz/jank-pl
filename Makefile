@@ -15,4 +15,7 @@ stdlib:
 install:
 	bash ./scripts/install_all.sh
 
+uninstall:
+	bash ./scripts/uninstall_all.sh
+
 .PHONY: all grammar test compiler stdlib install

@@ -1,4 +1,4 @@
-// Date Generated : 07-23-2026 23:13:44
+// Date Generated : 08-01-2026 12:58:57
 #pragma once
 #include <vector>
 #include <string>
@@ -67,6 +67,7 @@ namespace parser {
     struct literal_char;
     struct literal_string;
     struct literal_syscall;
+    struct literal_intrinsic;
     struct literal_hex;
     struct literal_binary;
     struct literal_function_pointer;
@@ -167,28 +168,53 @@ namespace parser {
         void postprocess() override;
     };
 
-    // function = [ "export" , rws ] , function_definition , ows , compound_statement ;
+    // function = [ "intrinsic" , ows , "(" , ows , literal_string , ows , ")" , rws ] , [ "export" , rws ] , function_definition , ows , compound_statement ;
     struct function : public token {
         struct a0 : public token {
             terminal *t0;
-            rws *t1;
-            a0(terminal *_t0, rws *_t1) {
+            ows *t1;
+            terminal *t2;
+            ows *t3;
+            literal_string *t4;
+            ows *t5;
+            terminal *t6;
+            rws *t7;
+            a0(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, literal_string *_t4, ows *_t5, terminal *_t6, rws *_t7) {
                 t0 = _t0;
                 t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+                t4 = _t4;
+                t5 = _t5;
+                t6 = _t6;
+                t7 = _t7;
             }
             static a0* parse();
             std::string to_string() override;
             void postprocess() override;
         };
+        struct a1 : public token {
+            terminal *t0;
+            rws *t1;
+            a1(terminal *_t0, rws *_t1) {
+                t0 = _t0;
+                t1 = _t1;
+            }
+            static a1* parse();
+            std::string to_string() override;
+            void postprocess() override;
+        };
         std::optional<a0*> t0;
-        function_definition *t1;
-        ows *t2;
-        compound_statement *t3;
-        function(std::optional<a0*> _t0, function_definition *_t1, ows *_t2, compound_statement *_t3) {
+        std::optional<a1*> t1;
+        function_definition *t2;
+        ows *t3;
+        compound_statement *t4;
+        function(std::optional<a0*> _t0, std::optional<a1*> _t1, function_definition *_t2, ows *_t3, compound_statement *_t4) {
             t0 = _t0;
             t1 = _t1;
             t2 = _t2;
             t3 = _t3;
+            t4 = _t4;
         }
         static function* parse();
         std::string to_string() override;
@@ -577,6 +603,46 @@ namespace parser {
             t11 = _t11;
         }
         static literal_syscall* parse();
+        std::string to_string() override;
+        void postprocess() override;
+    };
+
+    // literal_intrinsic = "intrinsic" , ows , "(" , ows , literal_string , [ ows , "," , ows , argument_list ] , ows , ")" ;
+    struct literal_intrinsic : public token {
+        struct a0 : public token {
+            ows *t0;
+            terminal *t1;
+            ows *t2;
+            argument_list *t3;
+            a0(ows *_t0, terminal *_t1, ows *_t2, argument_list *_t3) {
+                t0 = _t0;
+                t1 = _t1;
+                t2 = _t2;
+                t3 = _t3;
+            }
+            static a0* parse();
+            std::string to_string() override;
+            void postprocess() override;
+        };
+        terminal *t0;
+        ows *t1;
+        terminal *t2;
+        ows *t3;
+        literal_string *t4;
+        std::optional<a0*> t5;
+        ows *t6;
+        terminal *t7;
+        literal_intrinsic(terminal *_t0, ows *_t1, terminal *_t2, ows *_t3, literal_string *_t4, std::optional<a0*> _t5, ows *_t6, terminal *_t7) {
+            t0 = _t0;
+            t1 = _t1;
+            t2 = _t2;
+            t3 = _t3;
+            t4 = _t4;
+            t5 = _t5;
+            t6 = _t6;
+            t7 = _t7;
+        }
+        static literal_intrinsic* parse();
         std::string to_string() override;
         void postprocess() override;
     };
@@ -1013,7 +1079,7 @@ namespace parser {
         void postprocess() override;
     };
 
-    // literal = literal_hex | literal_binary | literal_octal | literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall | literal_function_pointer ;
+    // literal = literal_hex | literal_binary | literal_octal | literal_float | literal_integer | literal_sizeof | literal_char | literal_string | literal_syscall | literal_intrinsic | literal_function_pointer ;
     struct literal : public token {
         struct a0 : public token {
             literal_hex *t0;
@@ -1097,11 +1163,20 @@ namespace parser {
             void postprocess() override;
         };
         struct a9 : public token {
-            literal_function_pointer *t0;
-            a9(literal_function_pointer *_t0) {
+            literal_intrinsic *t0;
+            a9(literal_intrinsic *_t0) {
                 t0 = _t0;
             }
             static a9* parse();
+            std::string to_string() override;
+            void postprocess() override;
+        };
+        struct a10 : public token {
+            literal_function_pointer *t0;
+            a10(literal_function_pointer *_t0) {
+                t0 = _t0;
+            }
+            static a10* parse();
             std::string to_string() override;
             void postprocess() override;
         };
@@ -1125,6 +1200,8 @@ namespace parser {
         a8 *t8;
         bool is_a9 = false;
         a9 *t9;
+        bool is_a10 = false;
+        a10 *t10;
         literal(a0 *_t0) {
             is_a0 = true;
             t0 = _t0;
@@ -1164,6 +1241,10 @@ namespace parser {
         literal(a9 *_t9) {
             is_a9 = true;
             t9 = _t9;
+        }
+        literal(a10 *_t10) {
+            is_a10 = true;
+            t10 = _t10;
         }
         static literal* parse();
         std::string to_string() override;

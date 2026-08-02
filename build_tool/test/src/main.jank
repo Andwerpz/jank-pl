@@ -1,0 +1,6 @@
+#include <iostream>;
+
+i32 main() {
+cout << "bello\n";
+return 0;
+}

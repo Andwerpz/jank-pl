@@ -5,13 +5,10 @@
     { package = 'jank-stdlib', path = 'iostream.jank' },
     { package = 'jank-stdlib', path = 'jstring.jank' },
     { package = 'jank-stdlib', path = 'malloc.jank' },
-    { package = 'jank-stdlib', path = 'math.jank' },
     { package = 'jank-stdlib', path = 'memory.jank' },
     { package = 'jank-stdlib', path = 'put.jank' },
-    { package = 'jank-stdlib', path = 'random.jank' },
     { package = 'jank-stdlib', path = 'string.jank' },
     { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'time.jank' },
     { package = 'jank-stdlib', path = 'vector.jank' },
-    { package = 'wolf3D', path = 'main.jank' }
+    { package = 'test', path = 'main.jank' }
 ]

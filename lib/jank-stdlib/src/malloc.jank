@@ -1,0 +1,11 @@
+#global_node MALLOC;
+
+// wrappers around compiler intrinsics
+void* malloc(u64 sz) {
+    return intrinsic("malloc", sz);
+}
+
+i32 free(void* addr, u64 sz) {
+    return intrinsic("free", addr, sz);
+}
+

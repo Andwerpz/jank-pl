@@ -4,7 +4,7 @@
 	"author": "Andrew Li",
 	"publisher": "andwerp",
 	"icon": "janky.png",
-	"version": "3.1.13",
+	"version": "3.1.15",
 	"categories": [],
 	"keywords": [],
 	"engines": {
@@ -70,11 +70,17 @@
 	"devDependencies": {
 		"@eslint/js": "^9.13.0",
 		"@stylistic/eslint-plugin": "^2.9.0",
+		"@types/glob": "^8.1.0",
 		"@types/mocha": "^10.0.6",
 		"@types/node": "^22",
 		"eslint": "^9.13.0",
 		"mocha": "^10.3.0",
-		"typescript": "^5.9.2",
+		"typescript": "^5.9.3",
 		"typescript-eslint": "^8.39.0"
+	},
+	"dependencies": {
+		"@vscode/vsce": "^3.9.2",
+		"vscode-languageclient": "^10.1.0",
+		"vscode-languageserver": "^10.1.0"
 	}
 }

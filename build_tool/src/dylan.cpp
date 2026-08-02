@@ -1,19 +1,12 @@
 #include "dylan.h"
 
-// tool for managing packages
-// a package is expected to look like this:
-// package_root/
-//   config.toml
-//   deps.toml
-//   src/
-//     <source files here>
-//   build/
-//     <build artifacts here>
-//   tmp/
-//     <tmp files here>
-//   bin/
-//     <build results here>
+#include "toml/toml.h"
+#include "utils/utils.h"
+#include "utils/Package.h"
+#include "utils/PackageGraph.h"
+#include "utils/Target.h"
 
+// tool for managing packages
 // what should this tool be able to do?
 // - build some target (build)
 // - run executable generated from a target (run)
@@ -25,53 +18,6 @@
 //   - dependency graph (deps)
 //   - lines of code (loc)
 //   - file compile times
-
-// structure of config.toml:
-/*
-# package metadata
-[package]
-name = "jank-compiler"            # package name
-
-# targets
-# each target should specify some sort of thing to build
-[[target]]
-name = "compiler"
-type = "binary"
-entry = "jjc.jank"  # relative to source path
-output = "jjc"      # relative to bin path
-
-# dependencies 
-# each dependency is assumed to be another jank package
-[[dependency]]
-package = "jank-stdlib"                 # should match with the name of the package
-alias = "std"                           # optional, if omitted will just be the package name
-path = "/home/steven/jank-pl/stdlib"    # if you specify a path, this will be assumed to be the path to the project
-                                        # otherwise dylan will look inside system and user package libraries
-
-# default includes
-# useful for automatically including stuff like <std::malloc>, <std::syscall>, 
-#   or <std::defs> in every source file
-[[default-include]]
-package = "std"     # alias of the package you want to include
-path = "malloc"     # relative to package source directory and excluding extension
-
-# TODO think about package local default includes?
-#   maybe can omit the 'alias' field?
-#   but I still want to store an alias because jjc takes in an alias
-
-# TODO also be able to specify compilation args for each individual file or all files?
-*/
-
-// structure of deps.toml
-/*
-# for each source file, should have an array of tables giving you 
-# - package where the source file comes from
-# - path of source file inside package
-"jjc.jank" = [
-    { package = "jank-compiler", path = "semantics/utils.jank" },
-    { package = "jank-stdlib", path = "vector.jank" },
-]
-*/
 
 // incremental compilation notes
 // - the build tool should query the compiler to figure out all (direct and indirect) dependencies for each file
@@ -93,573 +39,258 @@ path = "malloc"     # relative to package source directory and excluding extensi
 //   - so the main improvements I can make to this system is making the compiler smarter so that it needs to load less files 
 //     when compiling some file A. 
 
-// -- GENERAL UTILS --
-// executes the given executable with the given arguments
-// returns the status code
-// if redirect_stdout is true, then redirects STDOUT to /dev/null
-int exec(fs::path bin_path, std::vector<std::string> args, bool redirect_stdout) {
-    std::vector<std::string> command_args = {
-        bin_path.string(),
-    };
-    command_args.insert(command_args.end(), args.begin(), args.end());
+PackageGraph* graph;
 
-    pid_t pid = fork();
-    if(pid == 0) {
-        if(redirect_stdout) {
-            // redirect output to trash
-            int dev_null = open("/dev/null", O_WRONLY);
-            if (dev_null == -1) {
-                perror("open /dev/null failed");
-                _exit(1);
+// -- PACKAGE MANIFEST
+// generates a package manifest and places it into out_file
+// sets the current package
+void generate_package_manifest(
+    const fs::path out_file, 
+    std::string current_package_name, 
+    std::optional<std::string> runtime_package_name
+) {
+    std::ofstream fout(out_file);
+    if(!fout) {
+        throw std::runtime_error("Failed to open : " + out_file.string() + " when writing package manifest");
+    }
+
+    // find all packages relevant to the current package and runtime package
+    std::vector<Package*> packages;
+    std::function<void(std::string)> add_package = [&packages](const std::string& package_name) {
+        std::vector<Package*> all_deps = graph->get_package_dependencies(package_name);
+        for(Package* dep : all_deps) {
+            bool found = false;
+            for(Package* _dep : packages) {
+                if(_dep == dep) found = true;
             }
-            if (dup2(dev_null, STDOUT_FILENO) == -1) {
-                perror("dup2 failed");
-                close(dev_null);
-                _exit(1);
-            }
-            close(dev_null);
+            if(found) continue;
+            packages.push_back(dep);
         }
-
-        std::vector<char*> argv;
-        argv.reserve(command_args.size() + 1);
-        for (std::string& arg : command_args) {
-            argv.push_back(arg.data());
-        }
-        argv.push_back(nullptr);
-
-        execvp(bin_path.string().c_str(), argv.data());
-        perror("compiler exec failed");
-        _exit(1);
-    }
-    else {
-        int status;
-        waitpid(pid, &status, 0);
-        if(!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
-
-// compiles the file at src_path into out_path
-// assumes src_path and out_path are absolute
-// returns 0 on success, nonzero on failure
-int compile(fs::path src_path, fs::path out_path, std::vector<std::string> args) {
-    std::vector<std::string> command_args = {
-        src_path,
-        "-o",
-        out_path
     };
-    command_args.insert(command_args.end(), args.begin(), args.end());
-
-    std::cout << "Compiling : " << src_path.string() << std::endl;
-    return exec("jjc", command_args, true);
-}
-
-// links and assembles the given assembly files into out_path
-// assumes all paths in asm_paths and out_path are absolute
-// returns 0 on success, nonzero on failure
-int assemble(std::vector<fs::path> asm_paths, fs::path out_path) {
-    std::vector<std::string> command_args = {
-        "-g",                           // debug metadata, should probably be optional
-        "-x", "assembler",              //gcc expects .s files to be assembly, tell it that all files are assembly
-        "-nostartfiles", "-nostdlib",   //tell gcc that we're not compiling C assembly
-        "-m64"                          //64 bit mode?
-    };
-    command_args.insert(command_args.end(), asm_paths.begin(), asm_paths.end());
-    command_args.push_back("-o");
-    command_args.push_back(out_path);
-
-    std::cout << "Assembling : " << out_path.string() << std::endl;
-    return exec("gcc", command_args, false);
-}
-
-// writes the provided toml file to the given path
-// assumes that the path doesn't correspond to an existing directory
-// assumes that the path is an absolute path
-void write_toml(const toml::table& toml, const fs::path path) {
-    if(fs::is_directory(path)) {
-        throw std::runtime_error("Tried to write toml to directory : " + path.string());
-    }
-    std::ofstream output(path);
-    if (!output) {
-        throw std::runtime_error("Failed to open file : " + path.string());
-    }
-    output << toml;
-    if (!output) {
-        throw std::runtime_error("failed to write toml to file : " + path.string());
-    }
-    output.close();
-}
-
-// returns true if root is an ancestor of target
-// use to tell if a directory contains a file
-bool is_ancestor(const fs::path& root, const fs::path& target) {
-    // normalize paths to resolve "." and ".." components lexically
-    auto canon_root = root.lexically_normal();
-    auto canon_target = target.lexically_normal();
-
-    // compare path elements
-    // don't want to take a string prefix because something like
-    //   "/home/bla", "/home/bla.txt"
-    // would then be considered to be containing
-    auto [target_it, prefix_it] = std::mismatch(
-        canon_target.begin(), canon_target.end(),
-        canon_root.begin(), canon_root.end()
-    );
+    add_package(current_package_name);
+    if(runtime_package_name.has_value()) add_package(runtime_package_name.value());
     
-    // if we reached the end of the root, it is an ancestor of target
-    return prefix_it == canon_root.end();
-}
-
-// assumes that root is an ancestor of target
-// returns the relative path from root to target
-fs::path get_relative_path(const fs::path& root, const fs::path& target) {
-    auto canon_root = root.lexically_normal();
-    auto canon_target = target.lexically_normal();
-
-    assert(is_ancestor(canon_root, canon_target));
-    fs::path rel_path = fs::path(canon_target).lexically_relative(canon_root);
-    return rel_path;
-}
-
-// copies the given directory from src to dir
-// before copying, creates dir if it doesn't exist
-// if it already exists, dir is overwritten
-// assumes that src exists
-void copy_directory(const fs::path& src, const fs::path& dir) {
-    assert(fs::exists(src));
-    fs::create_directories(dir);
-    auto options = fs::copy_options::recursive | fs::copy_options::overwrite_existing;
-    fs::copy(src, dir, options);
-}
-
-
-// -- PACKAGE --
-// if we can already find a package in all_packages, return it. 
-// otherwise try to load it from the filesystem. 
-// this checks that the new package doesn't contain and isn't contained by any other loaded package
-// TODO if we ever make it so that we can configure important directories from config.toml, 
-//   should also check that these important directories aren't containing each other
-package* load_package(fs::path package_path) {
-    // check if we've already loaded this package
-    for(package* p : all_packages) {
-        if(fs::equivalent(p->path, package_path)) {
-            return p;
-        }
-    }
-
-    // create package struct
-    package* pack = new package();
-    
-    // see if this path exists
-    if(!fs::is_directory(package_path)) {
-        throw std::runtime_error("Package path is not a directory : " + package_path.string());
-    }
-    pack->path = package_path;
-
-    // find config.toml
-    toml::table config;
-    try {
-        config = toml::parse_file((package_path / "config.toml").string());
-    } catch(const toml::parse_error& e) {
-        throw std::runtime_error(std::string("Failed to load config.toml : ").append(e.what()));
-    }
-    pack->config = config;
-
-    // find deps.toml
-    toml::table deps;
-    try {
-        deps = toml::parse_file((package_path / "deps.toml").string());
-    } catch(const toml::parse_error& e) {
-        throw std::runtime_error(std::string("Failed to load deps.toml : ").append(e.what()));
-    }
-    pack->deps = deps;
-
-    // load package name
-    std::optional<std::string> _package_name = config["package"]["name"].value<std::string>();
-    if(!_package_name.has_value()) {
-        throw std::runtime_error("package.name missing from config.toml");
-    }
-    // make sure there isn't another package with the same name
-    for(package* _pack : all_packages) {
-        if(_pack->name == _package_name.value()) {
-            throw std::runtime_error("Duplicate package name : " + pack->name);
-        }
-    }
-    pack->name = _package_name.value();
-
-    // find /src
-    fs::path src_path = package_path / "src";
-    if(!fs::exists(src_path)) {
-        throw std::runtime_error("Source directory does not exist : " + src_path.string());
-    }
-    if(!fs::is_directory(src_path)) {
-        throw std::runtime_error("Source path is not a directory : " + src_path.string());
-    }
-    pack->src_path = src_path;
-
-    // find /build
-    fs::path build_path = package_path / "build";
-    if(!fs::exists(build_path)) {
-        try {
-            fs::create_directories(build_path);
-        } catch(const std::runtime_error& e) {
-            throw std::runtime_error("Failed to create build directory : " + build_path.string());
-        }
-    }
-    if(!fs::is_directory(build_path)) {
-        throw std::runtime_error("Build path is not a directory : " + build_path.string());
-    }
-    pack->build_path = build_path;
-
-    // find /tmp
-    fs::path tmp_path = package_path / "tmp";
-    if(!fs::exists(tmp_path)) {
-        try {
-            fs::create_directories(tmp_path);
-        } catch(const std::runtime_error& e) {
-            throw std::runtime_error("Failed to create temp directory : " + tmp_path.string());
-        }
-    }
-    if(!fs::is_directory(tmp_path)) {
-        throw std::runtime_error("Temp path is not a directory : " + tmp_path.string());
-    }
-    pack->tmp_path = tmp_path;
-
-    // find /bin
-    fs::path bin_path = package_path / "bin";
-    if(!fs::exists(bin_path)) {
-        try {
-            fs::create_directories(bin_path);
-        } catch(const std::runtime_error& e) {
-            throw std::runtime_error("Failed to create bin directory : " + bin_path.string());
-        }
-    }
-    if(!fs::is_directory(bin_path)) {
-        throw std::runtime_error("Bin path is not a directory : " + bin_path.string());
-    }
-    pack->bin_path = bin_path;
-
-    auto get_toml_table_field = [](toml::table* t, std::string field) {
-        std::optional<std::string> _val = (*t)[field].value<std::string>();
-        if(!_val.has_value()) {
-            throw std::runtime_error("Dependency missing field : " + field);
-        }
-        return _val.value();
-    };
-
-    // targets
-    std::vector<target> targets;
-    if(config.contains("target")) {
-        toml::array* _targets = config["target"].as_array();
-        if(!_targets) {
-            throw std::runtime_error("'target' must be an array");
-        }
-        for(toml::node& node : *_targets) {
-            toml::table* target = node.as_table();
-            if(!target) {
-                throw std::runtime_error("Every element of 'target' must be a table");
-            }
-
-            // process target
-            std::string name = get_toml_table_field(target, "name");
-            std::string type = get_toml_table_field(target, "type");
-            std::string entry = get_toml_table_field(target, "entry");
-            std::string output = get_toml_table_field(target, "output");
-
-            // ensure that another target with the same name doesn't exist
-            for(const auto& _target : targets) {
-                if(_target.name == name) {
-                    throw std::runtime_error("Duplicate target : " + name + " in package : " + pack->name);
-                }
-            }
-
-            targets.push_back({name, type, entry, output});        
-        }
-    }
-    pack->targets = targets;
-
-    // dependencies
-    std::vector<std::pair<std::string, package*>> dependencies;
-    if(config.contains("dependency")) {
-        toml::array* _dependencies = config["dependency"].as_array();
-        if(!_dependencies) {
-            throw std::runtime_error("'dependency' must be an array");
-        }
-        for(toml::node& node : *_dependencies) {
-            toml::table* dependency = node.as_table();
-            if(!dependency) {
-                throw std::runtime_error("Every element of 'dependency' must be a table");
-            }
-
-            // process dependency
-            std::string package_name = get_toml_table_field(dependency, "package");
-            std::string alias = package_name;
-            if(dependency->contains("alias")) {
-                alias = get_toml_table_field(dependency, "alias");
-            }
-
-            // load dependency package
-            package* dep = nullptr;
-            if(dependency->contains("path")) {
-                // load package from path
-                fs::path path = get_toml_table_field(dependency, "path");
-                dep = load_package(path);
-                if(dep->name != package_name) {
-                    throw std::runtime_error("Dependency name mismatch : " + package_name + " vs. " + dep->name);
-                }
-            }
-            else {
-                // load package from library
-                dep = load_package_from_library(package_name);
-                assert(dep->name == package_name);
-            }
-            assert(dep != nullptr);
-
-            // ensure that another dependency with the same alias doesn't exist
-            // ensure that another dependency with the same package doesn't exist
-            for(const auto &[_alias, _dep] : dependencies) {
-                if(_alias == alias) {
-                    throw std::runtime_error("Duplicate dependency alias : " + alias + " in package : " + pack->name);
-                }
-                if(_dep == dep) {
-                    throw std::runtime_error("Duplicate dependency : " + package_name + " in package : " + pack->name);
-                }
-            }
-
-            dependencies.push_back({alias, dep});
-        }
-    }
-    pack->dependencies = dependencies;
-
-    // default includes
-    std::vector<std::pair<std::string, fs::path>> default_includes;
-    if(config.contains("default-include")) {
-        toml::array* _default_includes = config["default-include"].as_array();
-        if(!_default_includes) {
-            throw std::runtime_error("'default-include' must be an array");
-        }
-        for(toml::node& node : *_default_includes) {
-            toml::table* default_include = node.as_table();
-            if(!default_include) {
-                throw std::runtime_error("Every element of 'default-include' must be a table");
-            }
-
-            // process default include
-            std::string alias = get_toml_table_field(default_include, "package");
-            fs::path path = get_toml_table_field(default_include, "path");
-
-            // find package referred to by alias
-            package* dep = nullptr;
-            for(const auto&[_alias, _dep] : dependencies) {
-                if(_alias == alias) {
-                    assert(dep == nullptr);
-                    dep = _dep;
-                }
-            }
-            if(dep == nullptr) {
-                throw std::runtime_error("Default include refers to unknown package : " + alias);
-            }
-            assert(dep != nullptr);
-            assert(dep != pack);
-
-            // make sure path refers to existing source file
-            if(path.has_extension()) {
-                throw std::runtime_error("Default include path should not have extension : " + path.string());
-            }
-            fs::path source_abs = dep->src_path / path;
-            source_abs = source_abs.replace_extension(".jank");
-            if(!fs::exists(source_abs)) {
-                throw std::runtime_error("Default include source file does not exist : " + source_abs.string());
-            }
-            if(!fs::is_regular_file(source_abs)) {
-                throw std::runtime_error("Default include source file should be a regular file : " + source_abs.string());
-            }
-
-            default_includes.push_back({alias, path});
-        }
-    }
-    pack->default_includes = default_includes;
-
-    all_packages.push_back(pack);
-    return pack;
-}
-
-// looks inside system and user package library for a package of this name
-// if both system and user libraries have the package installed, prefer the user one
-package* load_package_from_library(const std::string& package_name) {
-    std::vector<fs::path> lib_paths = {
-        user_library_path,
-        // system_library_path,
-    };
-    for(const fs::path& lib_path : lib_paths) {
-        try {
-            fs::path package_path = lib_path / package_name;
-            return load_package(package_path);
-        } catch(const std::runtime_error& e) {
-            // ok, onto the next one. 
-        }
-    }
-    throw std::runtime_error("Failed to load package : " + package_name + " from library");
-}
-
-package* get_package(std::string name) {
-    for(package* pack : all_packages) {
-        if(pack->name == name) {
-            return pack;
-        }
-    }
-    throw std::runtime_error("Failed to find package with name : " + name);
-}
-
-package* get_package(package* pack, std::string alias) {
-    for(const auto &[_alias, dep] : pack->dependencies) {
-        if(_alias == alias) {
-            return dep;
-        }
-    }
-    throw std::runtime_error("Failed to find dependency of package : " + pack->name + " with alias : " + alias);
-}
-
-target get_target(package* pack, std::string target_name) {
-    for(const auto& target : pack->targets) {
-        if(target.name == target_name) {
-            return target;
-        }
-    }
-    throw std::runtime_error("Failed to find target with name : " + target_name);
-}
-
-// creates all the commandline arguments needed to inform the compiler of the 
-//   currently loaded package graph
-std::vector<std::string> generate_compiler_package_args(package* current_pack) {
-    std::vector<std::string> res;
-
     // register all packages
-    for(package* pack : all_packages) {
-        res.push_back("--package");
-        res.push_back(pack->name);
-        res.push_back(pack->src_path);
+    for(Package* pack : packages) {
+        fout << "package " << pack->name << " " << pack->src_path.string() << "\n";
     }
+
+    // set current package
+    Package* current_package = graph->get_package(current_package_name);
+    assert(current_package != nullptr);
+    fout << "current-package " << current_package->name << "\n";
 
     // register all package dependencies
-    for(package* pack : all_packages) {
-        for(auto &[alias, dep] : pack->dependencies) {
-            res.push_back("--package-dependency");
-            res.push_back(pack->name);
-            res.push_back(alias);
-            res.push_back(dep->name);
+    for(Package* pack : packages) {
+        for(const auto &dep_name : pack->package_dependencies) {
+            assert(pack->reverse_alias_map.contains(dep_name));
+            std::string alias = pack->reverse_alias_map[dep_name];
+            fout << "package-dependency " << pack->name << " " << alias << " " << dep_name << "\n";
         }
     }
 
     // register all default includes
-    for(package* pack : all_packages) {
-        for(const auto&[alias, path] : pack->default_includes) {
-            res.push_back("--package-default-include");
-            res.push_back(pack->name);
-            res.push_back(alias);
-            res.push_back(path.string());
+    for(Package* pack : packages) {
+        for(const auto&[dep_name, path] : pack->default_includes) {
+            assert(pack->reverse_alias_map.contains(dep_name));
+            std::string alias = pack->reverse_alias_map[dep_name];
+            fout << "package-default-include " << pack->name << " " << alias << " " << path.string() << "\n";
         }
+    }
+
+    // set runtime files
+    if(runtime_package_name.has_value()) {
+        Package* runtime_package = graph->get_package(runtime_package_name.value());
+        assert(runtime_package != nullptr);
+        std::vector<fs::path> source_files = runtime_package->find_all_source_files();
+        for(const fs::path& source_file : source_files) {
+            const fs::path abs_path = runtime_package->src_path / source_file;
+            fout << "runtime " << runtime_package->name << " " << abs_path.string() << "\n";
+        }
+    }
+
+    fout.close();
+}
+
+// generates a package manifest and places it into out_file
+// does not set a current package
+// used for giving jjc a default package manifest
+// all packages here should be able to be loaded from the library
+void generate_default_package_manifest(const fs::path& out_file) {
+    std::ofstream fout(out_file);
+    if(!fout) {
+        throw std::runtime_error("Failed to open : " + out_file.string() + " when writing package manifest");
+    }
+
+    // make sure to load relevant library packages
+    graph->load_package_from_library("jank-stdlib");
+    graph->load_package_from_library("jank-runtime");
+    
+    // find all relevant packages
+    std::vector<Package*> packages;
+    std::function<void(std::string)> add_package = [&packages](const std::string& package_name) {
+        std::vector<Package*> all_deps = graph->get_package_dependencies(package_name);
+        for(Package* dep : all_deps) {
+            bool found = false;
+            for(Package* _dep : packages) {
+                if(_dep == dep) found = true;
+            }
+            if(found) continue;
+            packages.push_back(dep);
+        }
+    };
+    add_package("jank-stdlib");
+    add_package("jank-runtime");
+    
+    // register all packages
+    for(Package* pack : packages) {
+        fout << "package " << pack->name << " " << pack->src_path.string() << "\n";
     }
 
     // set current package
-    res.push_back("--current-package");
-    res.push_back(current_pack->name);
+    fout << "no-current-package" << "\n";
 
-    return res;
+    // register all package dependencies
+    for(Package* pack : packages) {
+        for(const auto &dep_name : pack->package_dependencies) {
+            assert(pack->reverse_alias_map.contains(dep_name));
+            std::string alias = pack->reverse_alias_map[dep_name];
+            fout << "package-dependency " << pack->name << " " << alias << " " << dep_name << "\n";
+        }
+    }
+
+    // register all default includes
+    for(Package* pack : packages) {
+        for(const auto&[dep_name, path] : pack->default_includes) {
+            assert(pack->reverse_alias_map.contains(dep_name));
+            std::string alias = pack->reverse_alias_map[dep_name];
+            fout << "package-default-include " << pack->name << " " << alias << " " << path.string() << "\n";
+        }
+    }
+
+    // register default package dependencies
+    fout << "default-package-dependency " << "std " << "jank-stdlib" << "\n";
+
+    // register default package default includes
+    fout << "default-package-default-include " << "std " << "memory" << "\n";
+    fout << "default-package-default-include " << "std " << "error" << "\n";
+    fout << "default-package-default-include " << "std " << "defs" << "\n";
+    fout << "default-package-default-include " << "std " << "syscall" << "\n";
+    fout << "default-package-default-include " << "std " << "malloc" << "\n";
+
+    // set runtime files
+    {
+        Package* runtime_package = graph->get_package("jank-runtime");
+        assert(runtime_package != nullptr);
+        std::vector<fs::path> source_files = runtime_package->find_all_source_files();
+        for(const fs::path& source_file : source_files) {
+            const fs::path abs_path = runtime_package->src_path / source_file;
+            fout << "runtime " << runtime_package->name << " " << abs_path.string() << "\n";
+        }
+    }
+
+    fout.close();
 }
 
-// retrieves the list of dependencies of this file
-// filepath is relative to pack->src_path
-// if there is not a list of dependencies for this file, returns std::nullopt
-// otherwise returns a list of {package, path} pairs where 
-//   path is relative to the corresponding package source filepath
-std::optional<std::vector<std::pair<package*, fs::path>>> get_dependencies(package* pack, fs::path filepath) {
-    const std::string filepath_str = filepath.lexically_normal().string();
-    const toml::node* dependencies_node = pack->deps.get(filepath_str);
-    if(dependencies_node == nullptr) {
-        // don't have list of dependencies for this file
-        return std::nullopt;
+void create_new_package(const fs::path& package_path, std::string package_name) {
+    // make package folder
+    fs::create_directories(package_path);
+
+    // make config.toml
+    {
+        std::ofstream config(package_path / "config.toml");
+        if (!config) {
+            throw std::runtime_error("Failed to create config.toml");
+        }
+        config
+            << "[package]\n"
+            << "name = \"" << package_name << "\"\n"
+            << "\n";
+
+        // add jank-stdlib as a dependency  
+        config
+            << "[[dependency]]\n"
+            << "package = \"jank-stdlib\"\n"
+            << "alias = \"std\"\n"
+            << "\n";
+
+        // add jank-runtime as a dependency
+        config
+            << "[[dependency]]\n"
+            << "package = \"jank-runtime\"\n"
+            << "\n";
+
+        // add default includes
+        // - <std::memory>
+        // - <std::error>
+        // - <std::defs>
+        // - <std::syscall>
+        // - <std::malloc>
+        auto add_default_include = [&config](std::string path) {
+            config
+                << "[[default-include]]\n"
+                << "package = \"std\"\n"
+                << "path = \"" << path << "\"\n"
+                << "\n";
+        };
+        add_default_include("memory");
+        add_default_include("error");
+        add_default_include("defs");
+        add_default_include("syscall");
+        add_default_include("malloc");
+
+        // add target : main.jank -> main
+        config
+            << "[[target]]\n"
+            << "name = \"main\"\n"
+            << "type = \"binary\"\n"
+            << "entry = \"main.jank\"\n"
+            << "output = \"main\"\n"
+            << "runtime = \"jank-runtime\"\n"
+            << "\n";
     }
 
-    const toml::array* dependencies_array = dependencies_node->as_array();
-    if(dependencies_array == nullptr) {
-        throw std::runtime_error("Dependencies should be an array of tables: " + filepath.string());
+    // make deps.toml
+    {
+        std::ofstream deps(package_path / "deps.toml");
+        if (!deps) {
+            throw std::runtime_error("Failed to create deps.toml");
+        }
+        // empty file
     }
 
-    std::vector<std::pair<package*, fs::path>> dependencies;
-    dependencies.reserve(dependencies_array->size());
-    for(const toml::node& node : *dependencies_array) {
-        const toml::table* dependency_table = node.as_table();
-        if(dependency_table == nullptr) {
-            throw std::runtime_error("Each dependency should be a table: " + filepath.string());
-        }
+    // make directories
+    fs::create_directories(package_path / "src");
+    fs::create_directories(package_path / "build");
+    fs::create_directories(package_path / "tmp");
+    fs::create_directories(package_path / "bin");
 
-        const toml::node* package_node = dependency_table->get("package");
-        const toml::node* path_node = dependency_table->get("path");
-        if (package_node == nullptr || path_node == nullptr) {
-            throw std::runtime_error("Dependency is missing 'package' or 'path': " + filepath.string());
+    // create main.jank
+    {
+        std::ofstream main_file(package_path / "src" / "main.jank");
+        if (!main_file) {
+            throw std::runtime_error("Failed to create src/main.jank");
         }
+        main_file << 
+R"(#include <iostream>;
 
-        std::optional<std::string> package_name = package_node->value<std::string>();
-        std::optional<std::string> dependency_path = path_node->value<std::string>();
-        if (!package_name || !dependency_path) {
-            throw std::runtime_error("Dependency 'package' and 'path' must be strings: " + filepath.string());
-        }
-
-        package* dependency_package = get_package(*package_name);
-        if (dependency_package == nullptr) {
-            throw std::runtime_error("Unknown dependency package '" + package_name.value() + "' referenced by " + filepath.string());
-        }
-
-        dependencies.push_back({dependency_package, fs::path(*dependency_path).lexically_normal()});
-    }
-    return dependencies;
+i32 main() {
+cout << "bello\n";
+return 0;
 }
-
-// figures out which package owns the provided filepath
-// the provided filepath is assumed to be absolute
-// looks at all loaded packages
-package* find_owner(fs::path filepath) {
-    for(package* pack : all_packages) {
-        if(is_ancestor(pack->path, filepath)) {
-            return pack;
-        }
+)";
     }
-    throw std::runtime_error("Failed to find owning package for : " + filepath.string());
 }
-
-// finds all files under pack->src_path that have the extension `.jank`
-// returned files are relative to pack->src_path
-std::vector<fs::path> find_all_source_files(const package* pack) {
-    assert(fs::exists(pack->src_path) && fs::is_directory(pack->src_path));
-
-    std::vector<fs::path> source_files;
-    for (const fs::directory_entry& entry : fs::recursive_directory_iterator(pack->src_path)) {
-        if (!entry.is_regular_file()) {
-            continue;
-        }
-        if (entry.path().extension() != ".jank") {
-            continue;
-        }
-        source_files.push_back(fs::relative(entry.path(), pack->src_path));
-    }
-    std::sort(source_files.begin(), source_files.end());
-
-    return source_files;
-}
-
 
 // -- BUILD --
 // removes all build artifacts
-void clean(const package* pack) {
+void clean(const std::string& package_name) {
+    Package* pack = graph->get_package(package_name);
     auto clean_dir = [](fs::path dir) {
         assert(fs::exists(dir) && fs::is_directory(dir));
         fs::remove_all(dir);
         fs::create_directories(dir);
     };
-
     clean_dir(pack->build_path);
     clean_dir(pack->tmp_path);
     clean_dir(pack->bin_path);
@@ -668,11 +299,14 @@ void clean(const package* pack) {
 // ensures all source files in the package are compiled
 // only recompiles files within the given package
 //   recompiling files from dependency packages is handled elsewhere
-void build_sources(package* pack) {
-    std::cout << "Building sources : " << pack->name << std::endl;
+void build_sources(const std::string& package_name) {
+    std::cout << "Building sources : " << package_name << std::endl;
+
+    // get package
+    Package* pack = graph->get_package(package_name);
 
     // find all source files in package source dir
-    std::vector<fs::path> source_files = find_all_source_files(pack);
+    std::vector<fs::path> source_files = pack->find_all_source_files();
 
     // check which source files have changed
     // a source file changed if it has been modified after the last time its corresponding 
@@ -711,14 +345,42 @@ void build_sources(package* pack) {
             }
         }
 
-        // should recompile if any of your dependencies have been changed
-        // or if you don't have a dependencies entry
-        std::optional<std::vector<std::pair<package*, fs::path>>> dependencies = get_dependencies(pack, source_file);
+        // should recompile if 
+        // - you don't have a dependencies entry
+        // - any of your dependencies entries are invalid
+        //   - missing source file
+        //   - invalid package
+        // - any of your dependencies have been changed
+        std::optional<std::vector<std::pair<std::string, fs::path>>> dependencies = graph->get_source_dependencies(package_name, source_file);
         if(dependencies.has_value()) {
-            for(auto &[dep, dep_path] : dependencies.value()) {
-                // see if this dependency is from the current package
-                if(dep != pack) {
+            for(auto &[dep_name, dep_path] : dependencies.value()) {
+                // see if we can find this package
+                try {
+                    Package* dep = graph->get_package(dep_name);
+                } catch(std::runtime_error e) {
+                    // couldn't find the package, need to recompile
+                    should_recompile = true;
+                }
+
+                // assume dependencies from other packages have not been changed
+                // TODO figure out a better way of tracking this. 
+                //   this is fine if the only packages you depend on are from the stdlib. 
+                //   this is not always going to be true if you're working on a multi-package project
+                //   the issue is that when we recompile sources of a package, we lose all information
+                //   as to which files are out of date. 
+                if(dep_name != package_name) {
                     continue;
+                }
+
+                // check if source file exists
+                bool found = false;
+                for(const fs::path& _source_file : source_files) {
+                    if(_source_file == dep_path) {
+                        found = true;
+                    }
+                }
+                if(!found) {
+                    should_recompile = true;
                 }
 
                 // check if it's changed
@@ -741,18 +403,35 @@ void build_sources(package* pack) {
     // recompile, update deps
     for(const fs::path& source_file : to_recompile) {
         const fs::path source_abs = pack->src_path / source_file;
-        fs::path build_abs = pack->build_path / source_file;
-        const fs::path deps_abs = pack->tmp_path / "deps.tmp";
         assert(fs::exists(source_abs));
-        build_abs = build_abs.replace_extension(".s");
+        const fs::path deps_abs = pack->tmp_path / "deps.tmp";        
 
-        std::vector<std::string> compile_args = generate_compiler_package_args(pack);
-        compile_args.push_back("-S");
-        compile_args.push_back("--emit-dependencies");
-        compile_args.push_back(deps_abs);
+        // compile
+        {
+            fs::path build_abs = pack->build_path / source_file;
+            build_abs = build_abs.replace_extension(".s");
 
-        if(compile(source_abs, build_abs, compile_args)) {
-            throw std::runtime_error("Failed to compile : " + source_file.string());
+            const fs::path manifest_abs = pack->tmp_path / "manifest.jpm";
+            generate_package_manifest(manifest_abs, package_name, std::nullopt);
+
+            std::vector<std::string> compile_args;
+            compile_args.push_back("-S");
+            compile_args.push_back("--emit-dependencies");
+            compile_args.push_back(deps_abs);
+            compile_args.push_back("--package-manifest");
+            compile_args.push_back(manifest_abs.string());
+
+            // allow runtime packages to define intrinsics
+            if(pack->type == Package::Type::Runtime) {
+                compile_args.push_back("--intrinsic-provider");
+            }
+
+            if(compile(source_abs, build_abs, compile_args)) {
+                throw std::runtime_error("Failed to compile : " + source_file.string());
+            }
+        }
+        if(!fs::exists(deps_abs)) {
+            throw std::runtime_error("Compiler didn't create deps file");
         }
 
         // read deps file
@@ -761,83 +440,94 @@ void build_sources(package* pack) {
             throw std::runtime_error("Failed to open dependency file: " + deps_abs.string());
         }
 
-        toml::array dependencies;
-        std::string package_name;
+        std::vector<std::pair<std::string, fs::path>> dependencies;
+        std::string dep_name;
         std::string dependency_path;
-        while(std::getline(input, package_name)) {
-            if (package_name.empty()) {
+        while(std::getline(input, dep_name)) {
+            if (dep_name.empty()) {
                 continue;
             }
             if(!std::getline(input, dependency_path)) {
-                throw std::runtime_error("Dependency package '" + package_name + "' is missing its path in: " + deps_abs.string());
+                throw std::runtime_error("Dependency package '" + dep_name + "' is missing its path in: " + deps_abs.string());
             }
             if (dependency_path.empty()) {
-                throw std::runtime_error("Dependency package '" + package_name + "' has an empty path in: " + deps_abs.string());
+                throw std::runtime_error("Dependency package '" + dep_name + "' has an empty path in: " + deps_abs.string());
             }
 
             // convert dependency path to be relative to package src path
-            package* dep = get_package(package_name);
+            Package* dep = graph->get_package(dep_name);
             assert(dep != nullptr);
             fs::path dependency_rel = get_relative_path(dep->src_path, dependency_path);
 
-            toml::table dependency{
-                { "package", package_name },
-                { "path", dependency_rel.string() }
-            };
-            dependency.is_inline(true);
-            dependencies.push_back(std::move(dependency));
+            dependencies.push_back({dep_name, dependency_rel});
         }
-        pack->deps.insert_or_assign(source_file.lexically_normal().string(), std::move(dependencies));
+        pack->source_dependencies[source_file] = dependencies;
     }
     if(to_recompile.size() == 0) {
         std::cout << "Everything up to date :D" << std::endl;
     }
     else {
         // write deps to deps.toml
-        write_toml(pack->deps, pack->path / "deps.toml");
+        pack->write_source_dependencies();
     }
 }
 
 // ensures all dependencies of the package are built
 // this includes transitive dependencies
 // TODO decide if we even care about circular package dependencies
-void build_dependencies(package* pack) {
-    std::vector<package*> all_dependencies;
-    std::function<void(package*)> find_deps = [&](package* p) {
-        for(package* dep : all_dependencies) {
-            if(dep == p) return;
+void build_dependencies(const std::string& package_name) {
+    std::vector<std::string> all_dependencies;
+    std::function<void(std::string)> find_deps = [&all_dependencies, &find_deps](std::string package_name) {
+        for(std::string dep_name : all_dependencies) {
+            if(dep_name == package_name) return;
         }
-        all_dependencies.push_back(p);
-        for(auto &[alias, ndep] : p->dependencies) {
-            find_deps(ndep);
+        all_dependencies.push_back(package_name);
+        Package *pack = graph->get_package(package_name);
+        for(const auto& dep_name : pack->package_dependencies) {
+            find_deps(dep_name);
         }
     };
-    find_deps(pack);
-    for(package* dep : all_dependencies) {
-        build_sources(dep);
+    find_deps(package_name);
+    for(std::string dep_name : all_dependencies) {
+        build_sources(dep_name);
     }
 }
 
 // builds the provided target
-void build_target(package* pack, const target& tgt) {
-    // ensure everything is built
-    build_dependencies(pack);
+void build_target(const std::string& package_name, const std::string& target_name) {
+    // ensure this package is built
+    build_dependencies(package_name);
 
     // build 
-    if(tgt.type == "binary") {
-        // create driver code
-        const fs::path entry_abs = pack->src_path / tgt.entry;
+    Package* pack = graph->get_package(package_name);
+    Target* tgt = pack->get_target(target_name);
+    if(tgt->type == "binary") {
+        // ensure runtime package is built
+        build_dependencies(tgt->runtime);
+
+        const fs::path entry_abs = pack->src_path / tgt->entry;
         const fs::path driver_abs = pack->tmp_path / "driver.tmp";
-        std::vector<std::string> compile_args = generate_compiler_package_args(pack);
-        compile_args.push_back("-S");
-        compile_args.push_back("--startup-only");
-        if(compile(entry_abs, driver_abs, compile_args)) {
-            throw std::runtime_error("Failed to create driver code : " + entry_abs.string());
+
+        // create driver code
+        {
+            Package* runtime_pack = graph->get_package(tgt->runtime);
+            const fs::path manifest_abs = pack->tmp_path / "manifest.jpm";
+            generate_package_manifest(manifest_abs, pack->name, runtime_pack->name);
+
+            std::vector<std::string> compile_args;
+            compile_args.push_back("-S");
+            compile_args.push_back("--startup-only");
+            compile_args.push_back("--package-manifest");
+            compile_args.push_back(manifest_abs.string());
+
+            if(compile(entry_abs, driver_abs, compile_args)) {
+                throw std::runtime_error("Failed to create driver code : " + entry_abs.string());
+            }
         }
 
         // recursively find all required source files for this target
-        std::vector<std::pair<package*, fs::path>> source_files;    // {package, relative path}
-        std::function<void(package*, fs::path)> find_files = [&source_files, &find_files](package* pack, fs::path filepath) {
+        std::vector<std::pair<Package*, fs::path>> source_files;    // {package, relative path}
+        std::function<void(Package*, fs::path)> find_files = [&source_files, &find_files](Package* pack, fs::path filepath) {
             // see if we've already found this
             for(auto &[_pack, _filepath] : source_files) {
                 if(_pack == pack && _filepath == filepath) {
@@ -849,13 +539,14 @@ void build_target(package* pack, const target& tgt) {
             source_files.push_back({pack, filepath});
 
             // find all source files this one depends on
-            std::optional<std::vector<std::pair<package*, fs::path>>> dependencies = get_dependencies(pack, filepath);
+            std::optional<std::vector<std::pair<std::string, fs::path>>> dependencies = pack->get_source_dependencies(filepath);
             assert(dependencies.has_value());
-            for(auto &[dep, path] : dependencies.value()) {
+            for(auto &[dep_name, path] : dependencies.value()) {
+                Package* dep = graph->get_package(dep_name);
                 find_files(dep, path);
             }
         };
-        find_files(pack, tgt.entry);
+        find_files(pack, tgt->entry);
 
         // locate corresponding assembly files
         std::vector<fs::path> asm_files;
@@ -866,8 +557,19 @@ void build_target(package* pack, const target& tgt) {
             asm_files.push_back(pack->build_path / asm_file_rel);
         }
 
+        // add runtime assembly files
+        {
+            Package* runtime_pack = graph->get_package(tgt->runtime);
+            std::vector<fs::path> runtime_source_files = runtime_pack->find_all_source_files();
+            for(const fs::path& source_file : runtime_source_files) {
+                fs::path asm_file_rel = source_file;
+                asm_file_rel.replace_extension(".s");
+                asm_files.push_back(runtime_pack->build_path / asm_file_rel);
+            }
+        }
+
         // make sure output directory exists
-        const fs::path output_abs = pack->bin_path / tgt.output;
+        const fs::path output_abs = pack->bin_path / tgt->output;
         fs::path output_dir = output_abs;
         output_dir.remove_filename();
         fs::create_directories(output_dir);
@@ -878,19 +580,28 @@ void build_target(package* pack, const target& tgt) {
         }
     }
     else {
-        throw std::runtime_error("Unknown target type : " + tgt.type);
+        throw std::runtime_error("Unknown target type : " + tgt->type);
     }
 }
 
 int main(int argc, char* argv[]) {
     if(argc == 1) {
-        std::cout << "USAGE : dylan\n";
+        std::cout << "USAGE : dylan <mode>\n";
+        std::cout << "\n";
+
+        std::cout << "== GENERAL ==\n";
         std::cout << "new <package_path> : creates a new package\n";
+        std::cout << "default-manifest : generates the default package manifest for jjc\n";
+        std::cout << "\n";
+
+        std::cout << "== PACKAGE ==\n";
         std::cout << "compile : ensures all source files are compiled\n";
         std::cout << "build <target> : builds the target\n";
         std::cout << "run <target> { <args> } : builds and runs the executable generated by the target\n";
-        std::cout << "install <scope> : installs the package onto the system with the given scope\n";
-        std::cout << "clean : removes all artifacts from the build directory\n";
+        std::cout << "install : installs the package for the current user\n";
+        std::cout << "uninstall : uninstalls the current package for the current user\n";
+        std::cout << "clean : removes all build artifacts\n";
+        std::cout << "\n";
         return 1;
     }
     int argptr = 1;
@@ -920,7 +631,10 @@ int main(int argc, char* argv[]) {
         cwd_path = fs::path(cwd);
     }
 
-    // special case for new packages
+    // create package graph
+    graph = new PackageGraph();
+
+    // modes not requiring loading package at cwd
     if(mode == "new") {
         if(argc != 3) {
             std::cout << "USAGE : dylan new <package_path>\n";
@@ -956,117 +670,45 @@ int main(int argc, char* argv[]) {
         
         std::cout << "Creating package \"" << package_name << "\" at " << package_path.string() << std::endl;
         try {
-            // make package folder
-            fs::create_directories(package_path);
-
-            // make config.toml
-            {
-                std::ofstream config(package_path / "config.toml");
-                if (!config) {
-                    throw std::runtime_error("Failed to create config.toml");
-                }
-                config
-                    << "[package]\n"
-                    << "name = \"" << package_name << "\"\n"
-                    << "\n";
-
-                // add jank-stdlib as a dependency  
-                config
-                    << "[[dependency]]\n"
-                    << "package = \"jank-stdlib\"\n"
-                    << "alias = \"std\"\n"
-                    << "\n";
-
-                // add default includes
-                // - <std::memory>
-                // - <std::error>
-                // - <std::defs>
-                // - <std::syscall>
-                // - <std::malloc>
-                auto add_default_include = [&config](std::string path) {
-                    config
-                        << "[[default-include]]\n"
-                        << "package = \"std\"\n"
-                        << "path = \"" << path << "\"\n"
-                        << "\n";
-                };
-                add_default_include("memory");
-                add_default_include("error");
-                add_default_include("defs");
-                add_default_include("syscall");
-                add_default_include("malloc");
-
-                // add target : main.jank -> main
-                config
-                    << "[[target]]\n"
-                    << "name = \"main\"\n"
-                    << "type = \"binary\"\n"
-                    << "entry = \"main.jank\"\n"
-                    << "output = \"main\"\n"
-                    << "\n";
-            }
-
-            // make deps.toml
-            {
-                std::ofstream deps(package_path / "deps.toml");
-                if (!deps) {
-                    throw std::runtime_error("Failed to create deps.toml");
-                }
-                // empty file
-            }
-
-            // make directories
-            fs::create_directories(package_path / "src");
-            fs::create_directories(package_path / "build");
-            fs::create_directories(package_path / "tmp");
-            fs::create_directories(package_path / "bin");
-
-            // create main.jank
-            {
-                std::ofstream main_file(package_path / "src" / "main.jank");
-                if (!main_file) {
-                    throw std::runtime_error("Failed to create src/main.jank");
-                }
-                main_file << 
-R"(#include <iostream>;
-
-i32 main() {
-    cout << "bello\n";
-    return 0;
-}
-)";
-            }
-
-            std::cout << "Package created successfully\n";
-            return 0;
+            create_new_package(package_path, package_name);
         }
-        catch (const fs::filesystem_error& error) {
-            std::cerr << "Filesystem error : " << error.what() << '\n';
-
-            std::error_code cleanup_error;
-            fs::remove_all(package_path, cleanup_error);
+        catch(const std::runtime_error& e) {
+            std::cout << "Failed to create package : " << e.what() << "\n";
+            fs::remove_all(package_path);
             return 1;
         }
-        catch (const std::exception& error) {
-            std::cerr << "Failed to create package : " << error.what() << '\n';
-
-            std::error_code cleanup_error;
-            fs::remove_all(package_path, cleanup_error);
+        std::cout << "Package created successfully\n";
+        return 0;
+    }
+    else if(mode == "default-manifest") {
+        if(argc != 2) {
+            std::cout << "USAGE : dylan default-manifest\n";
             return 1;
         }
-        assert(false);
+
+        fs::path default_manifest_path = user_library_path / "default.jpm";
+        std::cout << "Creating default package manifest at : " << default_manifest_path.string() << std::endl;
+        try { 
+            generate_default_package_manifest(default_manifest_path);
+        } 
+        catch (const std::runtime_error& e) {
+            std::cout << "Failed to create default package manifest\n";
+            return 1;
+        }
+        std::cout << "Default package manifest created successfully\n";
+        return 0;
     }
 
-    // load package
-    package* pack = nullptr;
+    // load package at cwd
+    Package* pack = nullptr;
     try {
         // just make package root CWD for now
-        pack = load_package(cwd_path);
+        pack = graph->load_package(cwd_path);
         if(pack == nullptr) {
             std::cout << "Failed to load package\n";
             return 1;
         }
-    } 
+    }
     catch(const std::runtime_error& e) {
         throw std::runtime_error(std::string("Failed to load package : ").append(e.what()));
     }  
@@ -1078,13 +720,13 @@ i32 main() {
             std::cout << "USAGE : dylan compile\n";
             return 1;
         }
-        build_dependencies(pack);
+        build_dependencies(pack->name);
     }
     else if(mode == "build") {          // build the given target
         if(argc == 2) {
             std::cout << "Available targets : \n";
-            for(const target& tgt : pack->targets) {
-                std::cout << tgt.name << "\n";
+            for(const Target* tgt : pack->targets) {
+                std::cout << tgt->name << "\n";
             }
             return 1;
         }
@@ -1094,17 +736,14 @@ i32 main() {
         }
         std::string target_name = argv[argptr ++];
 
-        // find target
-        target tgt = get_target(pack, target_name);
-
         // build target
-        build_target(pack, tgt);
+        build_target(pack->name, target_name);
     }
     else if(mode == "run") {            // execute the given target
         if(argc == 2) {
             std::cout << "Available targets : \n";
-            for(const target& tgt : pack->targets) {
-                std::cout << tgt.name << "\n";
+            for(const Target* tgt : pack->targets) {
+                std::cout << tgt->name << "\n";
             }
             return 1;
         }
@@ -1114,20 +753,18 @@ i32 main() {
             args.push_back(argv[argptr ++]);
         }
 
-        // find target
-        target tgt = get_target(pack, target_name);
-
         // can only run when target type is "binary"
-        if(tgt.type != "binary") {
+        Target* tgt = pack->get_target(target_name);
+        if(tgt->type != "binary") {
             std::cout << "Can only run targets of type \"binary\"\n";
             return 1;
         }
 
         // build target
-        build_target(pack, tgt);
+        build_target(pack->name, target_name);
 
         // run target
-        fs::path output_path = pack->bin_path / tgt.output;
+        fs::path output_path = pack->bin_path / tgt->output;
         if(!fs::exists(output_path)) {
             std::cout << "Output binary does not exist : " << output_path.string() << std::endl;
             return 1;
@@ -1135,29 +772,13 @@ i32 main() {
         return exec(output_path, args, false);
     }
     else if(mode == "install") {
-        if(argc == 2) {
-            std::cout << "USAGE : dylan install <scope>\n";
-            std::cout << "--user : installs into ~/.jank\n";
-            std::cout << "--system : installs into /usr/lib/jank\n";
-            return 1;
-        }
-        std::string scope = argv[argptr ++];
-
-        fs::path install_path;
-        if(scope == "--user") {
-            install_path = user_library_path / pack->name;
-        }
-        else if(scope == "--system") {
-            std::cout << "System libraries WIP\n";
-            return 1;
-            // install_path = system_library_path / pack->name;
-        }
-        else {
-            std::cout << "Unrecognized install scope : " << scope << "\n";
+        if(argc > 2) {
+            std::cout << "USAGE : dylan install\n";
             return 1;
         }
 
         // install
+        fs::path install_path = user_library_path / pack->name;
         try {
             std::cout << "Installing " << pack->name << " to " << install_path.string() << std::endl;
             fs::remove_all(install_path);
@@ -1168,12 +789,58 @@ i32 main() {
             return 1;
         }
     }
+    else if(mode == "uninstall") {
+        if(argc > 2) {
+            std::cout << "USAGE : dylan uninstall\n";
+            return 1;
+        }
+
+        // uninstall
+        fs::path install_path = user_library_path / pack->name;
+        try {
+            std::cout << "Uninstalling " << pack->name << " from " << install_path.string() << std::endl;
+            fs::remove_all(install_path);
+            std::cout << "Uninstallation successful\n";
+        } catch(const std::runtime_error& e) {
+            std::cout << "Failed to uninstall : " << e.what() << std::endl;
+            return 1;
+        }
+    }
     else if(mode == "clean") {          // clean build artifacts
         if(argc > 2) {
             std::cout << "USAGE : dylan clean\n";
             return 1;
         }
-        clean(pack);
+        clean(pack->name);
+    }
+    else if(mode == "manifest") {
+        // parse args
+        fs::path out_path = cwd_path / "manifest.jpm";
+        std::optional<std::string> runtime_package_name = std::nullopt;
+        while(argptr < argc) {
+            std::string flag = argv[argptr ++];
+            if(flag == "-o") {
+                if(argptr + 1 > argc) {
+                    std::cout << "USAGE : dylan manifest -o <path>\n";
+                    return 1;
+                }
+                out_path = argv[argptr ++];
+            }
+            else if(flag == "--runtime") {
+                if(argptr + 1 > argc) {
+                    std::cout << "USAGE : dylan manifest --runtime <package-name>\n";
+                    return 1;
+                }
+                runtime_package_name = argv[argptr ++];
+            }
+            else {
+                std::cout << "Unrecognized flag : " << flag << "\n";
+                return 1;
+            }
+        }
+
+        // write manifest
+        generate_package_manifest(out_path, pack->name, runtime_package_name);
     }
     else {
         std::cout << "Unknown mode : " << mode << "\n";

@@ -1,4 +1,4 @@
-// Date Generated : 07-23-2026 23:13:44
+// Date Generated : 08-01-2026 12:58:57
 #include "parser.h"
 
 namespace parser {
@@ -254,12 +254,24 @@ namespace parser {
     function::a0* function::a0::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        terminal *_t0 = terminal::parse("export");
+        terminal *_t0 = terminal::parse("intrinsic");
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
-        rws *_t1 = rws::parse();
+        ows *_t1 = ows::parse();
         if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        terminal *_t2 = terminal::parse("(");
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t3 = ows::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        literal_string *_t4 = literal_string::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t5 = ows::parse();
+        if(_t5 == nullptr) {pop_stack(); return nullptr;}
+        terminal *_t6 = terminal::parse(")");
+        if(_t6 == nullptr) {pop_stack(); return nullptr;}
+        rws *_t7 = rws::parse();
+        if(_t7 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        function::a0* retval = new function::a0(_t0, _t1);
+        function::a0* retval = new function::a0(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7);
         retval->start_ctx = _start_ctx;
         retval->end_ctx = get_ctx();
         return retval;
@@ -269,11 +281,58 @@ namespace parser {
         std::string ans = "";
         ans += t0->to_string();
         ans += t1->to_string();
+        ans += t2->to_string();
+        ans += t3->to_string();
+        ans += t4->to_string();
+        ans += t5->to_string();
+        ans += t6->to_string();
+        ans += t7->to_string();
         return ans;
     }
 
     void function::a0::postprocess() {
         token_type = "function::a0";
+        token_children.push_back(t0);
+        t0->postprocess();
+        token_children.push_back(t1);
+        t1->postprocess();
+        token_children.push_back(t2);
+        t2->postprocess();
+        token_children.push_back(t3);
+        t3->postprocess();
+        token_children.push_back(t4);
+        t4->postprocess();
+        token_children.push_back(t5);
+        t5->postprocess();
+        token_children.push_back(t6);
+        t6->postprocess();
+        token_children.push_back(t7);
+        t7->postprocess();
+    }
+
+    function::a1* function::a1::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("export");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rws *_t1 = rws::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        function::a1* retval = new function::a1(_t0, _t1);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string function::a1::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        return ans;
+    }
+
+    void function::a1::postprocess() {
+        token_type = "function::a1";
         token_children.push_back(t0);
         t0->postprocess();
         token_children.push_back(t1);
@@ -285,14 +344,16 @@ namespace parser {
         push_stack();
         std::optional<function::a0*> _t0 = std::nullopt;
         if(auto x = function::a0::parse()) _t0 = x;
-        function_definition *_t1 = function_definition::parse();
-        if(_t1 == nullptr) {pop_stack(); return nullptr;}
-        ows *_t2 = ows::parse();
+        std::optional<function::a1*> _t1 = std::nullopt;
+        if(auto x = function::a1::parse()) _t1 = x;
+        function_definition *_t2 = function_definition::parse();
         if(_t2 == nullptr) {pop_stack(); return nullptr;}
-        compound_statement *_t3 = compound_statement::parse();
+        ows *_t3 = ows::parse();
         if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        compound_statement *_t4 = compound_statement::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
-        function* retval = new function(_t0, _t1, _t2, _t3);
+        function* retval = new function(_t0, _t1, _t2, _t3, _t4);
         retval->start_ctx = _start_ctx;
         retval->end_ctx = get_ctx();
         return retval;
@@ -301,9 +362,10 @@ namespace parser {
     std::string function::to_string() {
         std::string ans = "";
         if(t0.has_value()) ans += t0.value()->to_string();
-        ans += t1->to_string();
+        if(t1.has_value()) ans += t1.value()->to_string();
         ans += t2->to_string();
         ans += t3->to_string();
+        ans += t4->to_string();
         return ans;
     }
 
@@ -313,12 +375,16 @@ namespace parser {
             token_children.push_back(t0.value());
             t0.value()->postprocess();
         }
-        token_children.push_back(t1);
-        t1->postprocess();
+        if(t1.has_value()) {
+            token_children.push_back(t1.value());
+            t1.value()->postprocess();
+        }
         token_children.push_back(t2);
         t2->postprocess();
         token_children.push_back(t3);
         t3->postprocess();
+        token_children.push_back(t4);
+        t4->postprocess();
     }
 
     templated_function::a0* templated_function::a0::parse() {
@@ -1267,6 +1333,106 @@ namespace parser {
         t10->postprocess();
         token_children.push_back(t11);
         t11->postprocess();
+    }
+
+    literal_intrinsic::a0* literal_intrinsic::a0::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        ows *_t0 = ows::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        terminal *_t1 = terminal::parse(",");
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t2 = ows::parse();
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        argument_list *_t3 = argument_list::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_intrinsic::a0* retval = new literal_intrinsic::a0(_t0, _t1, _t2, _t3);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_intrinsic::a0::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2->to_string();
+        ans += t3->to_string();
+        return ans;
+    }
+
+    void literal_intrinsic::a0::postprocess() {
+        token_type = "literal_intrinsic::a0";
+        token_children.push_back(t0);
+        t0->postprocess();
+        token_children.push_back(t1);
+        t1->postprocess();
+        token_children.push_back(t2);
+        t2->postprocess();
+        token_children.push_back(t3);
+        t3->postprocess();
+    }
+
+    literal_intrinsic* literal_intrinsic::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        terminal *_t0 = terminal::parse("intrinsic");
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t1 = ows::parse();
+        if(_t1 == nullptr) {pop_stack(); return nullptr;}
+        terminal *_t2 = terminal::parse("(");
+        if(_t2 == nullptr) {pop_stack(); return nullptr;}
+        ows *_t3 = ows::parse();
+        if(_t3 == nullptr) {pop_stack(); return nullptr;}
+        literal_string *_t4 = literal_string::parse();
+        if(_t4 == nullptr) {pop_stack(); return nullptr;}
+        std::optional<literal_intrinsic::a0*> _t5 = std::nullopt;
+        if(auto x = literal_intrinsic::a0::parse()) _t5 = x;
+        ows *_t6 = ows::parse();
+        if(_t6 == nullptr) {pop_stack(); return nullptr;}
+        terminal *_t7 = terminal::parse(")");
+        if(_t7 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal_intrinsic* retval = new literal_intrinsic(_t0, _t1, _t2, _t3, _t4, _t5, _t6, _t7);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal_intrinsic::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        ans += t1->to_string();
+        ans += t2->to_string();
+        ans += t3->to_string();
+        ans += t4->to_string();
+        if(t5.has_value()) ans += t5.value()->to_string();
+        ans += t6->to_string();
+        ans += t7->to_string();
+        return ans;
+    }
+
+    void literal_intrinsic::postprocess() {
+        token_type = "literal_intrinsic";
+        token_children.push_back(t0);
+        t0->postprocess();
+        token_children.push_back(t1);
+        t1->postprocess();
+        token_children.push_back(t2);
+        t2->postprocess();
+        token_children.push_back(t3);
+        t3->postprocess();
+        token_children.push_back(t4);
+        t4->postprocess();
+        if(t5.has_value()) {
+            token_children.push_back(t5.value());
+            t5.value()->postprocess();
+        }
+        token_children.push_back(t6);
+        t6->postprocess();
+        token_children.push_back(t7);
+        t7->postprocess();
     }
 
     literal_hex::a0::b0* literal_hex::a0::b0::parse() {
@@ -2519,7 +2685,7 @@ namespace parser {
     literal::a9* literal::a9::parse() {
         parse_context _start_ctx = get_ctx();
         push_stack();
-        literal_function_pointer *_t0 = literal_function_pointer::parse();
+        literal_intrinsic *_t0 = literal_intrinsic::parse();
         if(_t0 == nullptr) {pop_stack(); return nullptr;}
         rm_stack();
         literal::a9* retval = new literal::a9(_t0);
@@ -2536,6 +2702,30 @@ namespace parser {
 
     void literal::a9::postprocess() {
         token_type = "literal::a9";
+        token_children.push_back(t0);
+        t0->postprocess();
+    }
+
+    literal::a10* literal::a10::parse() {
+        parse_context _start_ctx = get_ctx();
+        push_stack();
+        literal_function_pointer *_t0 = literal_function_pointer::parse();
+        if(_t0 == nullptr) {pop_stack(); return nullptr;}
+        rm_stack();
+        literal::a10* retval = new literal::a10(_t0);
+        retval->start_ctx = _start_ctx;
+        retval->end_ctx = get_ctx();
+        return retval;
+    }
+
+    std::string literal::a10::to_string() {
+        std::string ans = "";
+        ans += t0->to_string();
+        return ans;
+    }
+
+    void literal::a10::postprocess() {
+        token_type = "literal::a10";
         token_children.push_back(t0);
         t0->postprocess();
     }
@@ -2602,6 +2792,12 @@ namespace parser {
             retval->end_ctx = get_ctx();
             return retval;
         }
+        if(auto x = literal::a10::parse()) {
+            literal* retval = new literal(x);
+            retval->start_ctx = _start_ctx;
+            retval->end_ctx = get_ctx();
+            return retval;
+        }
         return nullptr;
     }
 
@@ -2616,6 +2812,7 @@ namespace parser {
         if(is_a7) return t7->to_string();
         if(is_a8) return t8->to_string();
         if(is_a9) return t9->to_string();
+        if(is_a10) return t10->to_string();
         assert(false);
     }
 
@@ -2660,6 +2857,10 @@ namespace parser {
         if(is_a9) {
             token_children.push_back(t9);
             t9->postprocess();
+        }
+        if(is_a10) {
+            token_children.push_back(t10);
+            t10->postprocess();
         }
     }
 

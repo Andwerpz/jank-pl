@@ -1,5 +1,5 @@
 [package]
-name = "wordle_amongus"
+name = "test"
 
 [[dependency]]
 package = "jank-stdlib"
@@ -29,9 +29,9 @@ package = "std"
 path = "malloc"
 
 [[target]]
-name = "amongus"
+name = "main"
 type = "binary"
-entry = "amongus.jank"
-output = "amongus"
+entry = "main.jank"
+output = "main"
 runtime = "jank-runtime"
 

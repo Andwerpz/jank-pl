@@ -16,6 +16,7 @@
 #include "FunctionCall.h"
 #include "CompilationContext.h"
 #include "DefinitionSpace.h"
+#include "Literal.h"
 
 #include <algorithm>
 #include <map>
@@ -28,6 +29,7 @@ Function::Function(parser::token *tok) : ASTNode(tok) {
 Function::Function(const Function& other) : ASTNode(other) {
     enclosing_type = std::nullopt;
     if(other.enclosing_type.has_value()) enclosing_type = other.enclosing_type.value()->make_copy();
+    intrinsic_name = other.intrinsic_name;
     is_export = other.is_export;
     type = other.type->make_copy();
     id = other.id->make_copy();
@@ -86,13 +88,19 @@ bool Function::operator!=(const Function& other) const {
 Function* Function::convert(parser::function *f) {
     Function* result = new Function(f);
     result->enclosing_type = std::nullopt;  //need context for this
-    result->is_export = f->t0.has_value();
-    parser::function_definition *def = f->t1;
+    result->intrinsic_name = std::nullopt;
+    if(f->t0.has_value()) {
+        StringLiteral* slit = StringLiteral::convert(f->t0.value()->t4);
+        result->intrinsic_name = slit->val;
+
+    }
+    result->is_export = f->t1.has_value();
+    parser::function_definition *def = f->t2;
     parser::parameter_list *pl = def->t6;
     result->type = Type::convert(def->t0);
     result->id = new Identifier(def->t2->to_string());
     result->parameters = convert_parameter_list(pl);
-    result->body = CompoundStatement::convert(f->t3);
+    result->body = CompoundStatement::convert(f->t4);
     return result;
 }
 
@@ -106,22 +114,77 @@ bool Function::is_well_formed(CompilationContext *ctx) {
         return false;
     }
 
+    // intrinsic
+    if(intrinsic_name.has_value()) {
+        // - can only define intrinsics if intrinsic_provider is set
+        if(!intrinsic_provider) {
+            std::cout << "Cannot define intrinsic without intrinsic provider flag : " << resolve_function_signature()->to_string() << "\n";
+            return false;   
+        }
+
+        // - make sure this isn't a struct member function
+        if(enclosing_type.has_value()) {
+            std::cout << "Struct member function cannot define intrinsic : " << resolve_function_signature()->to_string() << std::endl;
+            return false;
+        }
+
+        // - make sure this isn't a templated function instantiation
+        if(is_generated) {
+            std::cout << "Templated function cannot define intrinsic : " << resolve_function_signature()->to_string() << std::endl;
+            return false;
+        } 
+
+        // - make sure intrinsic exists
+        Intrinsic* intrinsic = get_intrinsic(intrinsic_name.value());
+        if(intrinsic == nullptr) {
+            std::cout << "Function trying to define intrinsic that does not exist : " << intrinsic_name.value() << std::endl;
+            return false;
+        }
+
+        // - make sure the parameter types match exactly
+        if(parameters.size() != intrinsic->parameter_types.size()) {
+            std::cout << "Incorrect number of parameters for intrinsic : " << intrinsic->name << std::endl;
+            return false;
+        }
+        for(int i = 0; i < parameters.size(); i++) {
+            if(!parameters[i]->type->equals(intrinsic->parameter_types[i])) {
+                std::cout << "Parameter : " << (i + 1) << " does not match intrinsic : " << parameters[i]->type->to_string() << " vs. " << intrinsic->parameter_types[i]->to_string() << std::endl;
+                return false;
+            }
+        }
+
+        // - make sure the return type matches exactly
+        if(!type->equals(intrinsic->return_type)) {
+            std::cout << "Return type does not match intrinsic : " << type->to_string() << " vs. " << intrinsic->return_type->to_string() << std::endl;
+            return false;
+        }
+
+        // define the intrinsic
+        std::string function_label = get_function_label(fs);
+        if(asm_debug) fout << "# defining intrinsic : " << intrinsic->name << "\n";
+        fout << ".set " << intrinsic->symbol << ", " << function_label << "\n";
+        fout << ".global " << intrinsic->symbol << "\n";
+        fout << "\n";
+    }
+
     //print function header
-    if(asm_debug) fout << "# " << fs->to_string() << "\n";
-    std::string label = get_function_label(fs);
-    std::string label_noquotes = label;
-    if(label.size() >= 2 && label[0] == '\"' && label[label.size() - 1] == '\"') {
-        label_noquotes = label.substr(1, label.size() - 2);
+    {
+        if(asm_debug) fout << "# " << fs->to_string() << "\n";
+        std::string label = get_function_label(fs);
+        std::string label_noquotes = label;
+        if(label.size() >= 2 && label[0] == '\"' && label[label.size() - 1] == '\"') {
+            label_noquotes = label.substr(1, label.size() - 2);
+        }
+        if(is_generated) {
+            fout << ".section \".text." << label_noquotes << "\",\"axG\",@progbits," << label << ",comdat\n";
+            fout << ".weak " << label << "\n";
+        }
+        else {
+            fout << ".section \".text." << label_noquotes << "\",\"ax\",@progbits\n";
+            fout << ".global " << label << "\n";
+        }
+        fout << label << ":\n";
     }
-    if(is_generated) {
-        fout << ".section \".text." << label_noquotes << "\",\"axG\",@progbits," << label << ",comdat\n";
-        fout << ".weak " << label << "\n";
-    }
-    else {
-        fout << ".section \".text." << label_noquotes << "\",\"ax\",@progbits\n";
-        fout << ".globl " << label << "\n";
-    }
-    fout << label << ":\n";
 
     //setup function stack frame
     fout << indent() << "push %rbp\n";  //should not be managed by local_offset
@@ -246,6 +309,8 @@ bool Function::look_for_templates(CompilationContext *ctx) {
 
 std::string Function::to_string() {
     std::string ret = "";
+    if(intrinsic_name.has_value()) ret += "intrinsic(\"" + intrinsic_name.value() + "\") ";
+    if(is_export) ret += "export ";
     ret += type->to_string() + " ";
     if(enclosing_type.has_value()) ret += enclosing_type.value()->to_string() + "::";
     ret += id->name + "(";

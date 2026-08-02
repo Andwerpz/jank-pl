@@ -5,6 +5,9 @@ name = "wolf3D"
 package = "jank-stdlib"
 alias = "std"
 
+[[dependency]]
+package = "jank-runtime"
+
 [[default-include]]
 package = "std"
 path = "memory"
@@ -30,4 +33,5 @@ name = "main"
 type = "binary"
 entry = "main.jank"
 output = "main"
+runtime = "jank-runtime"
 
