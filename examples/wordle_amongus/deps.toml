@@ -1,14 +1,14 @@
 'amongus.jank' = [
-    { package = 'jank-stdlib', path = 'malloc.jank' },
-    { package = 'jank-stdlib', path = 'syscall.jank' },
-    { package = 'jank-stdlib', path = 'defs.jank' },
-    { package = 'jank-stdlib', path = 'memory.jank' },
-    { package = 'jank-stdlib', path = 'put.jank' },
     { package = 'jank-stdlib', path = 'assert.jank' },
-    { package = 'jank-stdlib', path = 'vector.jank' },
-    { package = 'jank-stdlib', path = 'jstring.jank' },
-    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'defs.jank' },
     { package = 'jank-stdlib', path = 'error.jank' },
     { package = 'jank-stdlib', path = 'iostream.jank' },
+    { package = 'jank-stdlib', path = 'jstring.jank' },
+    { package = 'jank-stdlib', path = 'malloc.jank' },
+    { package = 'jank-stdlib', path = 'memory.jank' },
+    { package = 'jank-stdlib', path = 'put.jank' },
+    { package = 'jank-stdlib', path = 'string.jank' },
+    { package = 'jank-stdlib', path = 'syscall.jank' },
+    { package = 'jank-stdlib', path = 'vector.jank' },
     { package = 'wordle_amongus', path = 'amongus.jank' }
 ]

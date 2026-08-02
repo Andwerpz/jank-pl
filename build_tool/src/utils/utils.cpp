@@ -1,4 +1,6 @@
 #include "utils.h"
+#include <openssl/evp.h>
+#include <sstream>
 
 // -- GENERAL UTILS --
 // executes the given executable with the given arguments
@@ -171,3 +173,126 @@ void copy_directory(const fs::path& src, const fs::path& dir) {
     auto options = fs::copy_options::recursive | fs::copy_options::overwrite_existing;
     fs::copy(src, dir, options);
 }
+
+
+// -- HASHING --
+Sha256Hash sha256(std::span<const std::uint8_t> data) {
+    EVP_MD_CTX* context = EVP_MD_CTX_new();
+    if(context == nullptr) {
+        throw std::runtime_error("EVP_MD_CTX_new failed");
+    }
+    if(
+        EVP_DigestInit_ex(context, EVP_sha256(), nullptr) != 1 ||
+        EVP_DigestUpdate(context, data.data(), data.size()) != 1
+    ) {
+        EVP_MD_CTX_free(context);
+        throw std::runtime_error("SHA-256 initialization/update failed");
+    }
+    Sha256Hash hash{};
+    unsigned int hash_size = 0;
+    if(EVP_DigestFinal_ex(context, hash.data(), &hash_size) != 1) {
+        EVP_MD_CTX_free(context);
+        throw std::runtime_error("SHA-256 finalization failed");
+    }
+    EVP_MD_CTX_free(context);
+    if(hash_size != hash.size()) {
+        throw std::runtime_error("Unexpected SHA-256 digest size");
+    }
+    return hash;
+}
+
+Sha256Hash sha256(std::string str) {
+    return sha256(std::span<const std::uint8_t>((std::uint8_t*) str.data(), str.size()));
+}
+
+// computes hash of the contents of the file
+// assumes that path is absolute
+Sha256Hash sha256_file(const fs::path& path) {
+    std::ifstream file(path, std::ios::binary);
+    if(!file) {
+        throw std::runtime_error("Failed to open file : " + path.string());
+    }
+    EVP_MD_CTX* context = EVP_MD_CTX_new();
+    if(context == nullptr) {
+        throw std::runtime_error("EVP_MD_CTX_new failed");
+    }
+    if(EVP_DigestInit_ex(context, EVP_sha256(), nullptr) != 1) {
+        EVP_MD_CTX_free(context);
+        throw std::runtime_error("SHA-256 initialization failed");
+    }
+    std::array<std::uint8_t, 64 * 1024> buffer{};
+    while(file) {
+        file.read(
+            reinterpret_cast<char*>(buffer.data()),
+            static_cast<std::streamsize>(buffer.size())
+        );
+        std::streamsize bytes_read = file.gcount();
+        if(bytes_read > 0 && EVP_DigestUpdate(context, buffer.data(), static_cast<std::size_t>(bytes_read)) != 1) {
+            EVP_MD_CTX_free(context);
+            throw std::runtime_error("SHA-256 update failed");
+        }
+    }
+    if(!file.eof()) {
+        EVP_MD_CTX_free(context);
+        throw std::runtime_error("Failed while reading file: " + path.string());
+    }
+    Sha256Hash hash{};
+    unsigned int hash_size = 0;
+    if(EVP_DigestFinal_ex(context, hash.data(), &hash_size) != 1) {
+        EVP_MD_CTX_free(context);
+        throw std::runtime_error("SHA-256 finalization failed");
+    }
+    EVP_MD_CTX_free(context);
+    if(hash_size != hash.size()) {
+        throw std::runtime_error("Unexpected SHA-256 digest size");
+    }
+    return hash;
+}
+
+// combine hashes by hashing their concatenation
+Sha256Hash combine_hashes(const Sha256Hash& first, const Sha256Hash& second) {
+    std::array<std::uint8_t, 64> combined{};
+    std::copy(first.begin(), first.end(), combined.begin());
+    std::copy(second.begin(), second.end(), combined.begin() + first.size());
+    Sha256Hash ret = sha256(combined);
+    return ret;
+}
+
+std::string hash_to_hex(const Sha256Hash& hash) {
+    constexpr char digits[] = "0123456789abcdef";
+    std::string result;
+    result.resize(hash.size() * 2);
+    for(std::size_t i = 0; i < hash.size(); ++i) {
+        result[i * 2]     = digits[hash[i] >> 4];
+        result[i * 2 + 1] = digits[hash[i] & 0x0f];
+    }
+    return result;
+}
+
+Sha256Hash hex_to_hash(const std::string& hex) {
+    if(hex.size() != 64) {
+        throw std::invalid_argument("Invalid SHA-256 hex length: expected 64 characters");
+    }
+    auto hex_digit_value = [](char c) -> std::uint8_t {
+        if(c >= '0' && c <= '9') {
+            return static_cast<std::uint8_t>(c - '0');
+        }
+        if(c >= 'a' && c <= 'f') {
+            return static_cast<std::uint8_t>(c - 'a' + 10);
+        }
+        if(c >= 'A' && c <= 'F') {
+            return static_cast<std::uint8_t>(c - 'A' + 10);
+        }
+        throw std::invalid_argument(std::string("Invalid hexadecimal character: ") + c);
+    };
+    Sha256Hash hash{};
+    for(std::size_t i = 0; i < hash.size(); ++i) {
+        std::uint8_t high = hex_digit_value(hex[i * 2]);
+        std::uint8_t low  = hex_digit_value(hex[i * 2 + 1]);
+        hash[i] = static_cast<std::uint8_t>((high << 4) | low);
+    }
+    return hash;
+}
+
+
+

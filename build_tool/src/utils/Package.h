@@ -12,6 +12,7 @@ namespace fs = std::filesystem;
 // package_root/
 //   config.toml
 //   deps.toml
+//   hash.toml
 //   src/
 //     <source files here>
 //   build/
@@ -28,7 +29,6 @@ namespace fs = std::filesystem;
 name = "jank-compiler"              # package name
 type = "library"                    # package type
 environment = "hosted"              # package environment requirements
-local-include-mode = "absolute"     # settings for local (quoted) includes
 
 # dependencies 
 # each dependency is assumed to be another jank package
@@ -75,6 +75,13 @@ runtime = "jank-runtime"    # what runtime package to link with the final exe
 ]
 */
 
+// structure of hash.toml
+/*
+# for each source file, should store a hash of itself + all of its dependencies + config.toml
+# when building, this hash gets recomputed to decide whether or not to recompile the file
+"jjc.jank" = "..."
+*/
+
 // package type can be
 // - library
 //   - 'normal' package that exposes source code that other packages can include
@@ -87,7 +94,11 @@ runtime = "jank-runtime"    # what runtime package to link with the final exe
 //   - package that is responsible for defining compiler intrinsics
 //   - the code in this package cannot be included from other packages, but this package
 //     can include code from other packages. 
+//     - this is enforced by not registering runtime packages as dependencies package manifests
+//     - packages definitely should be able to register runtime packages as dependencies in the config
+//       as how else would you be able to set the runtime package of a target?
 
+// TODO implement this
 // package environment can be
 // - hosted
 //   - this package assumes an underlying operating system
@@ -95,13 +106,7 @@ runtime = "jank-runtime"    # what runtime package to link with the final exe
 // - freestanding
 //   - this package does not assume an underlying operating system. 
 //   - freestanding packages can only depend on other freestanding packages. 
-
-// local include mode can be
-// - absolute
-//   - local includes are resolved relative to src_path
-//   - this is the default mode
-// - relative
-//   - local includes are resolved relative to each file's parent directory
+//     - this should be enforced in the package config
 
 struct Target;
 
@@ -143,6 +148,9 @@ struct Package {
     // map from package dependency name to alias
     std::unordered_map<std::string, std::string> reverse_alias_map;
 
+    // map from source file to sha256 hash of dependencies
+    std::unordered_map<fs::path, std::string> dependency_hashes;
+
     std::vector<Target*> targets;
 
     // {package name, include path}
@@ -156,7 +164,9 @@ struct Package {
 
     Target* get_target(const std::string& name) const;
     std::vector<fs::path> find_all_source_files() const;
-    std::optional<std::vector<std::pair<std::string, fs::path>>> get_source_dependencies(const fs::path source_file);
+    std::optional<std::vector<std::pair<std::string, fs::path>>> get_source_dependencies(const fs::path& source_file);
     void write_source_dependencies();
-
+    std::optional<std::string> get_dependency_hash(const fs::path& source_file);
+    void set_dependency_hash(const fs::path& source_file, std::string hash);
+    void write_dependency_hashes();
 };

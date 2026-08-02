@@ -23,6 +23,10 @@
 // - the build tool should query the compiler to figure out all (direct and indirect) dependencies for each file
 // - when a file changes, its dependencies can change.
 // - if a source file is older than its artifact, then we consider it 'unchanged', otherwise it's 'changed'. 
+//   - actually a more robust way to see if a file is 'changed' is to compute a hash of the entire file 
+//     and compare it to a previously generated hash. 
+//   - this solves cases where a package is depended on by multiple packages, is built by one of them, but the 
+//     other packages aren't notified. 
 // - when building, have set of 'changed' files. 
 // - should recompile any file that is changed, or has a dependency that is changed. 
 //   - is this correct? the goal is to compile exactly the set of files that need to be compiled. 
@@ -84,6 +88,11 @@ void generate_package_manifest(
     for(Package* pack : packages) {
         for(const auto &dep_name : pack->package_dependencies) {
             assert(pack->reverse_alias_map.contains(dep_name));
+            Package* dep = graph->get_package(dep_name);
+            if(dep->type == Package::Type::Runtime) {
+                // don't allow runtime packages to be depended on
+                continue;
+            }
             std::string alias = pack->reverse_alias_map[dep_name];
             fout << "package-dependency " << pack->name << " " << alias << " " << dep_name << "\n";
         }
@@ -93,6 +102,8 @@ void generate_package_manifest(
     for(Package* pack : packages) {
         for(const auto&[dep_name, path] : pack->default_includes) {
             assert(pack->reverse_alias_map.contains(dep_name));
+            Package* dep = graph->get_package(dep_name);
+            assert(dep->type != Package::Type::Runtime);
             std::string alias = pack->reverse_alias_map[dep_name];
             fout << "package-default-include " << pack->name << " " << alias << " " << path.string() << "\n";
         }
@@ -154,6 +165,11 @@ void generate_default_package_manifest(const fs::path& out_file) {
     for(Package* pack : packages) {
         for(const auto &dep_name : pack->package_dependencies) {
             assert(pack->reverse_alias_map.contains(dep_name));
+            Package* dep = graph->get_package(dep_name);
+            if(dep->type == Package::Type::Runtime) {
+                // don't allow runtime packages to be depended on
+                continue;
+            }
             std::string alias = pack->reverse_alias_map[dep_name];
             fout << "package-dependency " << pack->name << " " << alias << " " << dep_name << "\n";
         }
@@ -163,6 +179,8 @@ void generate_default_package_manifest(const fs::path& out_file) {
     for(Package* pack : packages) {
         for(const auto&[dep_name, path] : pack->default_includes) {
             assert(pack->reverse_alias_map.contains(dep_name));
+            Package* dep = graph->get_package(dep_name);
+            assert(dep->type != Package::Type::Runtime);
             std::string alias = pack->reverse_alias_map[dep_name];
             fout << "package-default-include " << pack->name << " " << alias << " " << path.string() << "\n";
         }
@@ -250,15 +268,6 @@ void create_new_package(const fs::path& package_path, std::string package_name) 
             << "\n";
     }
 
-    // make deps.toml
-    {
-        std::ofstream deps(package_path / "deps.toml");
-        if (!deps) {
-            throw std::runtime_error("Failed to create deps.toml");
-        }
-        // empty file
-    }
-
     // make directories
     fs::create_directories(package_path / "src");
     fs::create_directories(package_path / "build");
@@ -308,94 +317,61 @@ void build_sources(const std::string& package_name) {
     // find all source files in package source dir
     std::vector<fs::path> source_files = pack->find_all_source_files();
 
-    // check which source files have changed
-    // a source file changed if it has been modified after the last time its corresponding 
-    //   artifact has been modified. 
-    std::vector<fs::path> changed_files;
-    for(const fs::path& source_file : source_files) {
-        const fs::path source_abs = pack->src_path / source_file;
-        assert(fs::exists(source_abs));
-        fs::path build_abs = pack->build_path / source_file;
-        build_abs.replace_extension(".s");
-
-        bool changed = false;
-        if(!fs::exists(build_abs)) {
-            changed = true;
-        }
-        else if(fs::last_write_time(source_abs) > fs::last_write_time(build_abs)) {
-            changed = true;
-        }
-
-        if(changed) {
-            changed_files.push_back(source_file);
-        }
-    }
-
     // figure out which source files need to be recompiled
-    // a source file needs to be recompiled if it or any of its dependencies have changed
-    // also should compile any source file that doesn't have an entry in deps. 
+    // should recompile if 
+    // - you don't have a dependencies entry
+    // - any of your dependencies entries are invalid
+    //   - missing source file
+    //   - invalid package
+    // - you or any of your source dependencies have changed
+    std::function<bool(const fs::path&)> should_recompile = [&should_recompile, &pack](const fs::path& source_file) -> bool {
+        std::optional<std::vector<std::pair<std::string, fs::path>>> dependencies = graph->get_source_dependencies(pack->name, source_file);
+
+        // - does this source file have a dependencies entry?
+        if(!dependencies.has_value()) {
+            return true;
+        }
+
+        // - are any of your dependencies entries invalid?
+        for(auto &[dep_name, dep_source_file] : dependencies.value()) {
+            // see if we can find this package
+            Package* dep = nullptr;
+            try {
+                dep = graph->get_package(dep_name);
+            } catch(std::runtime_error e) {
+                return true;
+            }
+            assert(dep != nullptr);
+
+            // check if source file exists
+            fs::path dep_source_file_abs = dep->src_path / dep_source_file;
+            if(!fs::exists(dep_source_file_abs)) {
+                return true;
+            }
+            if(!fs::is_regular_file(dep_source_file_abs)) {
+                return true;
+            }
+        }
+
+        // - do we have an existing hash for this source file?
+        std::optional<std::string> prev_dependency_hash = pack->get_dependency_hash(source_file);
+        if(!prev_dependency_hash.has_value()) {
+            return true;
+        }
+
+        // - does the current hash match the previous one?
+        std::string cur_dependency_hash = graph->compute_source_dependency_hash(pack->name, source_file);
+        if(cur_dependency_hash != prev_dependency_hash.value()) {
+            return true;
+        }
+
+        // no need to recompile
+        return false;
+    };
+
     std::vector<fs::path> to_recompile;
     for(const fs::path& source_file : source_files) {
-        bool should_recompile = false;
-
-        // should recompile if you have been changed. 
-        for(int i = 0; i < changed_files.size(); i++) {
-            if(fs::equivalent(pack->src_path / source_file, pack->src_path / changed_files[i])) {
-                should_recompile = true;
-            }
-        }
-
-        // should recompile if 
-        // - you don't have a dependencies entry
-        // - any of your dependencies entries are invalid
-        //   - missing source file
-        //   - invalid package
-        // - any of your dependencies have been changed
-        std::optional<std::vector<std::pair<std::string, fs::path>>> dependencies = graph->get_source_dependencies(package_name, source_file);
-        if(dependencies.has_value()) {
-            for(auto &[dep_name, dep_path] : dependencies.value()) {
-                // see if we can find this package
-                try {
-                    Package* dep = graph->get_package(dep_name);
-                } catch(std::runtime_error e) {
-                    // couldn't find the package, need to recompile
-                    should_recompile = true;
-                }
-
-                // assume dependencies from other packages have not been changed
-                // TODO figure out a better way of tracking this. 
-                //   this is fine if the only packages you depend on are from the stdlib. 
-                //   this is not always going to be true if you're working on a multi-package project
-                //   the issue is that when we recompile sources of a package, we lose all information
-                //   as to which files are out of date. 
-                if(dep_name != package_name) {
-                    continue;
-                }
-
-                // check if source file exists
-                bool found = false;
-                for(const fs::path& _source_file : source_files) {
-                    if(_source_file == dep_path) {
-                        found = true;
-                    }
-                }
-                if(!found) {
-                    should_recompile = true;
-                }
-
-                // check if it's changed
-                for(const fs::path changed : changed_files) {
-                    if(dep_path == changed) {
-                        should_recompile = true;
-                    }
-                }
-            }
-        }
-        else {
-            should_recompile = true;
-        }
-        
-        if(should_recompile) {
+        if(should_recompile(source_file)) {
             to_recompile.push_back(source_file);
         }
     }
@@ -405,6 +381,10 @@ void build_sources(const std::string& package_name) {
         const fs::path source_abs = pack->src_path / source_file;
         assert(fs::exists(source_abs));
         const fs::path deps_abs = pack->tmp_path / "deps.tmp";        
+
+        // compute source dependency hash
+        std::string dep_hash = graph->compute_source_dependency_hash(pack->name, source_file);
+        pack->set_dependency_hash(source_file, dep_hash);
 
         // compile
         {
@@ -469,6 +449,9 @@ void build_sources(const std::string& package_name) {
     else {
         // write deps to deps.toml
         pack->write_source_dependencies();
+
+        // write hashes to hash.toml
+        pack->write_dependency_hashes();
     }
 }
 
@@ -502,9 +485,6 @@ void build_target(const std::string& package_name, const std::string& target_nam
     Package* pack = graph->get_package(package_name);
     Target* tgt = pack->get_target(target_name);
     if(tgt->type == "binary") {
-        // ensure runtime package is built
-        build_dependencies(tgt->runtime);
-
         const fs::path entry_abs = pack->src_path / tgt->entry;
         const fs::path driver_abs = pack->tmp_path / "driver.tmp";
 
@@ -547,6 +527,13 @@ void build_target(const std::string& package_name, const std::string& target_nam
             }
         };
         find_files(pack, tgt->entry);
+        {
+            Package* runtime_pack = graph->get_package(tgt->runtime);
+            std::vector<fs::path> runtime_source_files = runtime_pack->find_all_source_files();
+            for(const fs::path& source_file : runtime_source_files) {
+                find_files(runtime_pack, source_file);
+            }
+        }
 
         // locate corresponding assembly files
         std::vector<fs::path> asm_files;
@@ -555,17 +542,6 @@ void build_target(const std::string& package_name, const std::string& target_nam
             fs::path asm_file_rel = source_file;
             asm_file_rel.replace_extension(".s");
             asm_files.push_back(pack->build_path / asm_file_rel);
-        }
-
-        // add runtime assembly files
-        {
-            Package* runtime_pack = graph->get_package(tgt->runtime);
-            std::vector<fs::path> runtime_source_files = runtime_pack->find_all_source_files();
-            for(const fs::path& source_file : runtime_source_files) {
-                fs::path asm_file_rel = source_file;
-                asm_file_rel.replace_extension(".s");
-                asm_files.push_back(runtime_pack->build_path / asm_file_rel);
-            }
         }
 
         // make sure output directory exists

@@ -35,11 +35,37 @@ Package* PackageGraph::load_package(const fs::path& package_path) {
     }
 
     // find deps.toml
+    // if it doesn't exist, create it
     toml::table deps;
+    const fs::path deps_path = package_path / "deps.toml";
+    if(!fs::exists(deps_path)) {
+        std::ofstream fout(deps_path);
+        if(!fout) {
+            throw std::runtime_error("Failed to create deps.toml");
+        }
+        // empty file
+    }
     try {
-        deps = toml::parse_file((package_path / "deps.toml").string());
+        deps = toml::parse_file(deps_path.string());
     } catch(const toml::parse_error& e) {
         throw std::runtime_error(std::string("Failed to load deps.toml : ").append(e.what()));
+    }
+
+    // find hash.toml
+    // if it doesn't exist, create it
+    toml::table hash;
+    const fs::path hash_path = package_path / "hash.toml";
+    if(!fs::exists(hash_path)) {
+        std::ofstream fout(hash_path);
+        if(!fout) {
+            throw std::runtime_error("Failed to create hash.toml");
+        }
+        // empty file
+    }
+    try {
+        hash = toml::parse_file(hash_path.string());
+    } catch(const toml::parse_error& e) {
+        throw std::runtime_error(std::string("Failed to load hash.toml : ").append(e.what()));
     }
 
     // load package metadata
@@ -302,6 +328,11 @@ Package* PackageGraph::load_package(const fs::path& package_path) {
             assert(dep != nullptr);
             assert(dep != pack);
 
+            // make sure default include isn't a runtime package
+            if(dep->type == Package::Type::Runtime) {
+                throw std::runtime_error("Default include cannot be runtime package : " + dep->name + " in package : " + pack->name);
+            }
+
             // make sure path refers to existing source file
             if(path.has_extension()) {
                 throw std::runtime_error("Default include path should not have extension : " + path.string());
@@ -357,6 +388,19 @@ Package* PackageGraph::load_package(const fs::path& package_path) {
         source_dependencies.insert({source_file, dependencies});
     }
     pack->source_dependencies = source_dependencies;
+
+    // source dependency hashes
+    std::unordered_map<fs::path, std::string> dependency_hashes;
+    for(auto &[_source_file, node] : hash) {
+        fs::path source_file = _source_file.str();
+        std::optional<std::string> _hash = node.value<std::string>();
+        if(!_hash.has_value()) {
+            throw std::runtime_error("Dependency hash should be a string : " + source_file.string() + " for package : " + pack->name);
+        }
+        std::string hash_str = _hash.value();
+        dependency_hashes.insert({source_file.string(), hash_str});
+    }
+    pack->dependency_hashes = dependency_hashes;
 
     packages.push_back(pack);
     return pack;
@@ -437,6 +481,53 @@ std::vector<Package*> PackageGraph::get_package_dependencies(const std::string& 
         packages.push_back(get_package(_package_name));
     }
     return packages;
+}
+
+// computes the source dependency hash of the given source file. 
+// the source dependency hash is a function of 
+// - contents of package config.toml
+// - contents of source file + relative path
+// - contents of all source files this one depends on + relative paths
+// this method does not set the dependency hash in the package after computing it
+// if the source dependencies for the given file are unavailable, this method will throw an error
+// if some package or source file is missing, this method will throw an error
+std::string PackageGraph::compute_source_dependency_hash(const std::string& package_name, const fs::path& filepath) {
+    std::optional<std::vector<std::pair<std::string, fs::path>>> _source_dependencies = get_source_dependencies(package_name, filepath);
+    if(!_source_dependencies.has_value()) {
+        throw std::runtime_error("Compute source dependency hash expects that source dependencies for file are available : " + package_name + " " + filepath.string());
+    }
+    std::vector<std::pair<std::string, fs::path>> source_dependencies = _source_dependencies.value();
+
+    // sort dependencies to make hash deterministic
+    std::sort(source_dependencies.begin(), source_dependencies.end(), [](auto& a, auto& b) -> bool {
+        if(a.first != b.first) {
+            return a.first < b.first;
+        }
+        if(a.second.string() != b.second.string()) {
+            return a.second.string() < b.second.string();
+        }
+        throw std::runtime_error("There should not be two equal entries in source dependencies");
+    });
+
+    Sha256Hash hash{};
+
+    // hash config.toml
+    Package* pack = get_package(package_name);
+    assert(pack != nullptr);
+    const fs::path config_toml_path = pack->path / "config.toml";
+    hash = combine_hashes(hash, sha256_file(config_toml_path));
+
+    // hash source dependencies
+    // this should include the source file itself
+    for(auto &[_package_name, source_file] : source_dependencies) {
+        Package *pack = get_package(_package_name);
+        assert(pack != nullptr);
+        const fs::path source_file_abs = pack->src_path / source_file;
+        hash = combine_hashes(hash, sha256(source_file.string()));
+        hash = combine_hashes(hash, sha256_file(source_file_abs));
+    }
+
+    return hash_to_hex(hash);
 }
 
 

@@ -26,4 +26,6 @@ struct PackageGraph {
     
     std::optional<std::vector<std::pair<std::string, fs::path>>> get_source_dependencies(const std::string& package_name, const fs::path& filepath);
     std::vector<Package*> get_package_dependencies(const std::string& package_name);
+
+    std::string compute_source_dependency_hash(const std::string& package_name, const fs::path& filepath);
 };

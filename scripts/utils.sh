@@ -81,6 +81,15 @@ install_stdlib() {
         return 1
     fi
     echo ""
+
+    echo -e "${BLUE}Creating default package manifest...${RESET}"
+    if dylan default-manifest; then
+        echo -e "${GREEN}Default package manifest created!${RESET}"
+    else
+        sanat_dubey_error "Failed to create default package manifest!"
+        return 1
+    fi
+    echo ""
 }
 
 make_tests() {

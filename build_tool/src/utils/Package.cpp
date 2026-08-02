@@ -31,7 +31,7 @@ std::vector<fs::path> Package::find_all_source_files() const {
 
 // if the source file has source dependencies, returns them
 // otherwise returns nullopt
-std::optional<std::vector<std::pair<std::string, fs::path>>> Package::get_source_dependencies(const fs::path source_file) {
+std::optional<std::vector<std::pair<std::string, fs::path>>> Package::get_source_dependencies(const fs::path& source_file) {
     if(source_dependencies.contains(source_file)) {
         return source_dependencies[source_file];
     }
@@ -48,13 +48,13 @@ void Package::write_source_dependencies() {
     sort(all_source_files.begin(), all_source_files.end());
     toml::table root;
     for(const fs::path& source_file : all_source_files) {
-        auto it = source_dependencies.find(source_file);
-        if(it == source_dependencies.end()) {
+        if(!source_dependencies.contains(source_file)) {
             continue;
         }
+
         std::string key = source_file.string();
         toml::array dependencies;
-        for(const auto& [package_name, dependency_path] : it->second) {
+        for(const auto& [package_name, dependency_path] : source_dependencies[source_file]) {
             toml::table dependency;
             dependency.insert("package", package_name);
             dependency.insert("path", dependency_path.generic_string());
@@ -73,5 +73,48 @@ void Package::write_source_dependencies() {
     output << root;
     if(!output) {
         throw std::runtime_error("failed to write deps.toml : " + toml_abs.string());
+    }
+}
+
+// if the source file has a dependency hash, returns it
+// otherwise returns std::nullopt
+std::optional<std::string> Package::get_dependency_hash(const fs::path& source_file) {
+    if(dependency_hashes.contains(source_file)) {
+        return dependency_hashes[source_file];
+    }   
+    else {
+        return std::nullopt;
+    }
+}
+
+void Package::set_dependency_hash(const fs::path& source_file, std::string hash) {
+    dependency_hashes[source_file] = hash;
+}
+
+// writes dependency hashes to pack->path / hash.toml
+// only writes hashes of source files that exist
+void Package::write_dependency_hashes() {
+    // generate hash.toml
+    std::vector<fs::path> all_source_files = find_all_source_files();
+    sort(all_source_files.begin(), all_source_files.end());
+    toml::table root;
+    for(const fs::path& source_file : all_source_files) {
+        if(!dependency_hashes.contains(source_file)) {
+            continue;
+        }
+
+        std::string key = source_file.string();
+        root.insert(key, dependency_hashes[source_file]);
+    }
+
+    // write hash.toml
+    const fs::path toml_abs = path / "hash.toml";
+    std::ofstream output(toml_abs, std::ios::trunc);
+    if(!output) {
+        throw std::runtime_error("Failed to open hash.toml for writing : " + toml_abs.string());
+    }
+    output << root;
+    if(!output) {
+        throw std::runtime_error("failed to write hash.toml : " + toml_abs.string());
     }
 }

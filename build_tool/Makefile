@@ -1,6 +1,7 @@
 # Compiler and flags
 CXX := g++
 CXXFLAGS := -std=c++20 -Iinclude -g -O2
+LDLIBS := -lcrypto
 
 # Entry point
 ENTRY := ./src/dylan.cpp
@@ -20,7 +21,7 @@ all: $(TARGET)
 
 # Build the final binary
 $(TARGET): $(OBJS) build/$(subst .cpp,.o,$(ENTRY))
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDLIBS)
 
 # Compile .cpp to .o into build/ directory
 build/%.o: %.cpp

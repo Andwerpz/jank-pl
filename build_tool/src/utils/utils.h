@@ -32,6 +32,15 @@ bool is_ancestor(const fs::path& root, const fs::path& target);
 fs::path get_relative_path(const fs::path& root, const fs::path& target);
 void copy_directory(const fs::path& src, const fs::path& dst);
 
+// -- HASHING --
+using Sha256Hash = std::array<std::uint8_t, 32>;
+Sha256Hash sha256(std::span<const std::uint8_t> data);
+Sha256Hash sha256(std::string str);
+Sha256Hash sha256_file(const fs::path& path);
+Sha256Hash combine_hashes(const Sha256Hash& first, const Sha256Hash& second);
+std::string hash_to_hex(const Sha256Hash& hash);
+Sha256Hash hex_to_hash(const std::string& hex);
+
 // important paths
 // inline fs::path system_library_path = "/usr/lib/jank";
 inline fs::path user_library_path;
