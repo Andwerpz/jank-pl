@@ -1,3 +1,102 @@
+(main quest)
+Make intrinsic compiler methods like malloc and free configurable via 'runtime package'
+- currently, methods like 'malloc' and 'free' are injected into the code by the compiler 
+  by resolving a synthetic malloc or free call against the current compilation context. 
+- this makes it relatively annoying to change the memory allocator being used, as it's dependent
+  on whatever malloc implementation a file happens to import. 
+- want to seperately define these compiler intrinsic methods into the builtin definition space somehow
+- idea: instead of having the compiler resolve calls to malloc while compiling source files, 
+  we can just emit unresolved symbols like '__malloc__' and then resolve them when we emit 
+  driver code. 
+  - want to make it so that we don't have to recompile library code if we want to change the allocator.
+    library code shouldn't need to know what allocator they are using. 
+  - when emitting driver code, the user should be able to specify a 'runtime' package that will
+    provide the definitions for all unresolved compiler intrinsics. 
+- normal library packages should not be able to include runtime packages
+  - a build target should be able to specify what runtime they want to use, then the runtime assembly
+    should get linked into the final executable
+  - when compiling normal library packages, they should have no idea what runtime is being used. 
+- should runtime packages behave like normal packages when compiling? 
+  - probably, it would make handling them much easier. 
+  - i think most of the difference should come from them declaring some compiler intrinsic symbols
+  - they should still compile to individual assembly files 
+- should syscalls be part of the runtime package?
+  - probably not? syscall helpers can be defined in the stdlib and the runtime package can depend 
+    on std::syscall 
+- how exactly should runtime packages declare compiler intrinsic symbols?
+  - maybe they should declare them quietly, a runtime package just promises to declare them somewhere. 
+  - on second thought, perhaps it should be the responsibility of the compiler to declare them
+    if I ever decide to change the exact compiler intrinsic symbols, then this will make it so that
+    I don't have to chase down all runtime packages and also change them there. 
+  - however this would mean that the compiler would have to know which method to choose for each intrinsic. 
+  - perhaps the compiler should just do some function call resolution, like it'll try to resolve 
+    'malloc(u64)' and just take whatever function matches
+  - however the same malloc method could be defined in multiple files within the runtime package
+  - a runtime package should declare intrinsics explicitly in its config.toml
+    something like:
+```
+[[intrinsic]]
+intrinsic = "allocate"      # name of intrinsic
+source = "malloc"           # relative path to source file
+function = "malloc"         # name of function inside source file
+
+[[intrinsic]]
+intrinsic = "free"
+source = "malloc"
+function = "free"    
+```
+  - the compiler should internally define all of the intrinsics it requires, something like
+```
+struct Intrinsic {
+  std::string name;
+  std::string label;
+  std::vector<Type*> argument_types;
+  Type* return_type;
+};
+```
+  - then when compiling a file with an intrinsic, should declare it with something like 
+      '--intrinsic <intrinsic> <function>'
+    and the compiler will resolve the function call 
+      <function>(<argument_types>)
+    and make sure it returns <return_type>
+  - finally it will emit 
+- what if instead we just introduced some syntax for a function to define itself as an intrinsic
+  - something like
+```
+intrinsic("allocate")
+void* malloc(u64 size) {
+  // do alloc here
+}
+```
+  - this would allow us to avoid cluttering the package config, and it would make checking intrinsics
+    way easier. 
+  - however, knowing at the package level what intrinsics the package defines would be harder, however
+    for now we can require that a runtime package must define all intrinsics 
+  - should still have runtime packages be of type 'runtime', the difference is that when compiling source 
+    code from runtime packages we should pass in some sort of flag that makes the compiler not error 
+    when compiling a function that supports an intrinsic
+    - something like '--intrinsic-provider' or '--allow-intrinsic-definitions'
+- how would the compiler know to link all assembly files in a runtime package when doing linking?
+- to summarize
+  - instead of emitting synthetic calls to malloc and free, the compiler will instead emit calls to unresolved 
+    symbols called 'intrinsics'.
+    - an intrinsic should have a name, a fixed label, a set of specified arguments, and a fixed return type. 
+  - going to introduce new type of package: the 'runtime' package. 
+    - runtime packages are resonsible for defining all the intrinsics used by the compiler. 
+    - normal source packages should not be able to directly import from runtime packages, 
+      - when informing the compiler of the package graph, explicitly omit runtime packages unless
+        the runtime package is the one being compiled
+    - a compile target should specify what runtime package to link, and all the source files from the runtime
+      package should be linked into the final executable
+    - runtime packages should be able to import from whatever normal library package they'd like
+  - going to introduce new syntax to mark some functions as intrinsic providers
+    - should specify the name of the intrinsic it's providing. 
+    - it's the linker's job to make sure that an intrinsic has been provided by exactly one function
+    - the compiler should throw an error when trying to compile an intrinsic provider, unless the 
+      '--intrinsic-provider' flag has been passed. 
+      - should only pass this flag when compiling source from a runtime package
+
+
 (steven quest!!)
 Add CI/CD pipeline
 - want to make it so that tests are automatically run whenever you try to merge to main

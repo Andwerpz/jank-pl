@@ -12,12 +12,15 @@ namespace fs = std::filesystem;
 #include "utils.h"
 
 struct Package;
-struct Target;
 
 // graph of packages and their dependencies
 struct PackageGraph {
     // all packages loaded by this PackageGraph
     std::vector<Package*> packages;
+
+    Package* parse_package(const fs::path& package_path);
+    Package* parse_package_from_library(const std::string& package_name);
+    void resolve_package(const std::string& package_name);
 
     Package* load_package(const fs::path& package_path);
     Package* load_package_from_library(const std::string& package_name);

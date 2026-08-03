@@ -1,10 +1,9 @@
 #include "Package.h"
-#include "Target.h"
 #include <algorithm>
 
-Target* Package::get_target(const std::string& name) const {
-    for(Target *tgt : targets) {
-        if(tgt->name == name) {
+Package::Target Package::get_target(const std::string& name) const {
+    for(const Package::Target& tgt : targets) {
+        if(tgt.name == name) {
             return tgt;
         }
     }

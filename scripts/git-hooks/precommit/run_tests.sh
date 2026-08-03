@@ -7,7 +7,7 @@ source $REPO_ROOT/scripts/utils.sh
 CHANGED_FILES=$(git -C "$REPO_ROOT" diff --cached --name-only)
 WATCHED_DIRS="
 compiler/src/
-stdlib/src/
+lib/src/
 testing/tests/
 testing/main.cpp
 "

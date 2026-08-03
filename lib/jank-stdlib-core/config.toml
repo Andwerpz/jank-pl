@@ -1,0 +1,5 @@
+[package]
+name = "jank-stdlib-core"
+type = "library"
+environment = "freestanding"
+

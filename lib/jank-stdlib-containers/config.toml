@@ -1,0 +1,16 @@
+[package]
+name = "jank-stdlib-containers"
+type = "library"
+environment = "freestanding"
+
+[[dependency]]
+package = "jank-stdlib"
+alias = "std"
+
+[[target]]
+name = "main"
+type = "binary"
+entry = "main.jank"
+output = "main"
+runtime = "jank-runtime"
+

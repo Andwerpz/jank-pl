@@ -37,6 +37,8 @@ package = "jank-stdlib"                 # should match with the name of the pack
 alias = "std"                           # optional, if omitted will just be the package name
 path = "/home/steven/jank-pl/stdlib"    # if you specify a path, this will be assumed to be the path to the project
                                         # otherwise dylan will look inside system and user package libraries
+export = false                          # whether or not this dependency should be implicitly depended on by 
+                                        # packages that depend on this package. Useful for making libraries. 
 
 [[dependency]]
 package = "jank-runtime"
@@ -86,10 +88,6 @@ runtime = "jank-runtime"    # what runtime package to link with the final exe
 // - library
 //   - 'normal' package that exposes source code that other packages can include
 //   - this is the default package type
-// - facade
-//   - package that depends on other packages and exposes the source code of the packages
-//     it depends on as its own. 
-//   - it should not have any source code
 // - runtime
 //   - package that is responsible for defining compiler intrinsics
 //   - the code in this package cannot be included from other packages, but this package
@@ -98,7 +96,6 @@ runtime = "jank-runtime"    # what runtime package to link with the final exe
 //     - packages definitely should be able to register runtime packages as dependencies in the config
 //       as how else would you be able to set the runtime package of a target?
 
-// TODO implement this
 // package environment can be
 // - hosted
 //   - this package assumes an underlying operating system
@@ -108,19 +105,24 @@ runtime = "jank-runtime"    # what runtime package to link with the final exe
 //   - freestanding packages can only depend on other freestanding packages. 
 //     - this should be enforced in the package config
 
-struct Target;
-
 // a bundle of source code
 // all paths are absolute
 // aliases should all be resolved when parsing the package
 //   this struct should only hold package names
+// package dependency exports should be resolved when parsing the package
 struct Package {
+    enum State {
+        Unparsed        = 0,
+        Parsed          = 1,
+        Resolved        = 2,
+    };
+    State state = State::Unparsed;
+
     std::string name;
     fs::path path;
 
-    // TODO support facade packages
     enum Type {
-        Library, Runtime,
+        Library, Runtime, 
     };
     Type type;
 
@@ -129,32 +131,50 @@ struct Package {
     };
     Environment environment;
 
-    enum LocalIncludeMode {
-        Absolute, Relative,
-    };
-    LocalIncludeMode local_include_mode;
-
     fs::path src_path;
     fs::path build_path;
     fs::path tmp_path;
     fs::path bin_path;
-    
-    // list of package dependency names 
-    std::vector<std::string> package_dependencies;
 
-    // map from alias to package dependency name
+    // dependencies as read in from config.toml
+    struct Dependency {
+        std::string package;
+        std::string alias;
+        std::optional<fs::path> path;       // if not present, this refers to a package in the library
+        bool is_exported;
+    };
+    std::vector<Dependency> dependencies;
+
+    // something you can build
+    struct Target {
+        enum Type {
+            Binary
+        };
+
+        std::string name;
+        Type type;
+        fs::path entry;
+        fs::path output;
+        std::string runtime;
+    };
+    std::vector<Target> targets;
+
+    // an include that is added by default to all source files in this package
+    struct DefaultInclude {
+        std::string package;
+        fs::path path;
+    };
+    std::vector<DefaultInclude> default_includes;
+
+    // list of package names this package directly depends on
+    // this does not include the package itself
+    std::vector<std::string> resolved_dependencies;
+
+    // resolved map from alias to package dependency name
     std::unordered_map<std::string, std::string> alias_map;
 
-    // map from package dependency name to alias
+    // resolved map from package dependency name to alias
     std::unordered_map<std::string, std::string> reverse_alias_map;
-
-    // map from source file to sha256 hash of dependencies
-    std::unordered_map<fs::path, std::string> dependency_hashes;
-
-    std::vector<Target*> targets;
-
-    // {package name, include path}
-    std::vector<std::pair<std::string, fs::path>> default_includes;
 
     // map from source file to list of {package name, source file} pairs
     // the list of source files that this source file depends on.
@@ -162,7 +182,10 @@ struct Package {
     //   they can be transitively included from packages not directly depended on. 
     std::unordered_map<fs::path, std::vector<std::pair<std::string, fs::path>>> source_dependencies;
 
-    Target* get_target(const std::string& name) const;
+    // map from source file to sha256 hash of dependencies
+    std::unordered_map<fs::path, std::string> dependency_hashes;
+
+    Target get_target(const std::string& name) const;
     std::vector<fs::path> find_all_source_files() const;
     std::optional<std::vector<std::pair<std::string, fs::path>>> get_source_dependencies(const fs::path& source_file);
     void write_source_dependencies();

@@ -4,7 +4,6 @@
 #include "utils/utils.h"
 #include "utils/Package.h"
 #include "utils/PackageGraph.h"
-#include "utils/Target.h"
 
 // tool for managing packages
 // what should this tool be able to do?
@@ -86,7 +85,7 @@ void generate_package_manifest(
 
     // register all package dependencies
     for(Package* pack : packages) {
-        for(const auto &dep_name : pack->package_dependencies) {
+        for(const auto &dep_name : pack->resolved_dependencies) {
             assert(pack->reverse_alias_map.contains(dep_name));
             Package* dep = graph->get_package(dep_name);
             if(dep->type == Package::Type::Runtime) {
@@ -163,7 +162,7 @@ void generate_default_package_manifest(const fs::path& out_file) {
 
     // register all package dependencies
     for(Package* pack : packages) {
-        for(const auto &dep_name : pack->package_dependencies) {
+        for(const auto &dep_name : pack->resolved_dependencies) {
             assert(pack->reverse_alias_map.contains(dep_name));
             Package* dep = graph->get_package(dep_name);
             if(dep->type == Package::Type::Runtime) {
@@ -223,6 +222,8 @@ void create_new_package(const fs::path& package_path, std::string package_name) 
         config
             << "[package]\n"
             << "name = \"" << package_name << "\"\n"
+            << "type = \"library\"\n"
+            << "environment = \"hosted\"\n"
             << "\n";
 
         // add jank-stdlib as a dependency  
@@ -313,7 +314,7 @@ void build_sources(const std::string& package_name) {
 
     // get package
     Package* pack = graph->get_package(package_name);
-
+    
     // find all source files in package source dir
     std::vector<fs::path> source_files = pack->find_all_source_files();
 
@@ -326,6 +327,13 @@ void build_sources(const std::string& package_name) {
     // - you or any of your source dependencies have changed
     std::function<bool(const fs::path&)> should_recompile = [&should_recompile, &pack](const fs::path& source_file) -> bool {
         std::optional<std::vector<std::pair<std::string, fs::path>>> dependencies = graph->get_source_dependencies(pack->name, source_file);
+
+        // - does the build artifact for this source file exist?
+        fs::path artifact_path_abs = pack->build_path / source_file;
+        artifact_path_abs.replace_extension(".s");
+        if(!fs::exists(artifact_path_abs)) {
+            return true;
+        }
 
         // - does this source file have a dependencies entry?
         if(!dependencies.has_value()) {
@@ -382,10 +390,6 @@ void build_sources(const std::string& package_name) {
         assert(fs::exists(source_abs));
         const fs::path deps_abs = pack->tmp_path / "deps.tmp";        
 
-        // compute source dependency hash
-        std::string dep_hash = graph->compute_source_dependency_hash(pack->name, source_file);
-        pack->set_dependency_hash(source_file, dep_hash);
-
         // compile
         {
             fs::path build_abs = pack->build_path / source_file;
@@ -414,7 +418,7 @@ void build_sources(const std::string& package_name) {
             throw std::runtime_error("Compiler didn't create deps file");
         }
 
-        // read deps file
+        // gather source dependencies
         std::ifstream input(deps_abs);
         if(!input) {
             throw std::runtime_error("Failed to open dependency file: " + deps_abs.string());
@@ -442,6 +446,10 @@ void build_sources(const std::string& package_name) {
             dependencies.push_back({dep_name, dependency_rel});
         }
         pack->source_dependencies[source_file] = dependencies;
+
+        // compute source dependency hash
+        std::string dep_hash = graph->compute_source_dependency_hash(pack->name, source_file);
+        pack->set_dependency_hash(source_file, dep_hash);
     }
     if(to_recompile.size() == 0) {
         std::cout << "Everything up to date :D" << std::endl;
@@ -457,7 +465,6 @@ void build_sources(const std::string& package_name) {
 
 // ensures all dependencies of the package are built
 // this includes transitive dependencies
-// TODO decide if we even care about circular package dependencies
 void build_dependencies(const std::string& package_name) {
     std::vector<std::string> all_dependencies;
     std::function<void(std::string)> find_deps = [&all_dependencies, &find_deps](std::string package_name) {
@@ -466,7 +473,7 @@ void build_dependencies(const std::string& package_name) {
         }
         all_dependencies.push_back(package_name);
         Package *pack = graph->get_package(package_name);
-        for(const auto& dep_name : pack->package_dependencies) {
+        for(const auto& dep_name : pack->resolved_dependencies) {
             find_deps(dep_name);
         }
     };
@@ -483,14 +490,14 @@ void build_target(const std::string& package_name, const std::string& target_nam
 
     // build 
     Package* pack = graph->get_package(package_name);
-    Target* tgt = pack->get_target(target_name);
-    if(tgt->type == "binary") {
-        const fs::path entry_abs = pack->src_path / tgt->entry;
+    Package::Target tgt = pack->get_target(target_name);
+    if(tgt.type == Package::Target::Type::Binary) {
+        const fs::path entry_abs = pack->src_path / tgt.entry;
         const fs::path driver_abs = pack->tmp_path / "driver.tmp";
 
         // create driver code
         {
-            Package* runtime_pack = graph->get_package(tgt->runtime);
+            Package* runtime_pack = graph->get_package(tgt.runtime);
             const fs::path manifest_abs = pack->tmp_path / "manifest.jpm";
             generate_package_manifest(manifest_abs, pack->name, runtime_pack->name);
 
@@ -526,9 +533,9 @@ void build_target(const std::string& package_name, const std::string& target_nam
                 find_files(dep, path);
             }
         };
-        find_files(pack, tgt->entry);
+        find_files(pack, tgt.entry);
         {
-            Package* runtime_pack = graph->get_package(tgt->runtime);
+            Package* runtime_pack = graph->get_package(tgt.runtime);
             std::vector<fs::path> runtime_source_files = runtime_pack->find_all_source_files();
             for(const fs::path& source_file : runtime_source_files) {
                 find_files(runtime_pack, source_file);
@@ -545,7 +552,7 @@ void build_target(const std::string& package_name, const std::string& target_nam
         }
 
         // make sure output directory exists
-        const fs::path output_abs = pack->bin_path / tgt->output;
+        const fs::path output_abs = pack->bin_path / tgt.output;
         fs::path output_dir = output_abs;
         output_dir.remove_filename();
         fs::create_directories(output_dir);
@@ -556,7 +563,7 @@ void build_target(const std::string& package_name, const std::string& target_nam
         }
     }
     else {
-        throw std::runtime_error("Unknown target type : " + tgt->type);
+        throw std::runtime_error("Unknown target type : " + tgt.type);
     }
 }
 
@@ -701,8 +708,8 @@ int main(int argc, char* argv[]) {
     else if(mode == "build") {          // build the given target
         if(argc == 2) {
             std::cout << "Available targets : \n";
-            for(const Target* tgt : pack->targets) {
-                std::cout << tgt->name << "\n";
+            for(const Package::Target& tgt : pack->targets) {
+                std::cout << tgt.name << "\n";
             }
             return 1;
         }
@@ -718,8 +725,8 @@ int main(int argc, char* argv[]) {
     else if(mode == "run") {            // execute the given target
         if(argc == 2) {
             std::cout << "Available targets : \n";
-            for(const Target* tgt : pack->targets) {
-                std::cout << tgt->name << "\n";
+            for(const Package::Target& tgt : pack->targets) {
+                std::cout << tgt.name << "\n";
             }
             return 1;
         }
@@ -730,8 +737,8 @@ int main(int argc, char* argv[]) {
         }
 
         // can only run when target type is "binary"
-        Target* tgt = pack->get_target(target_name);
-        if(tgt->type != "binary") {
+        Package::Target tgt = pack->get_target(target_name);
+        if(tgt.type != Package::Target::Type::Binary) {
             std::cout << "Can only run targets of type \"binary\"\n";
             return 1;
         }
@@ -740,7 +747,7 @@ int main(int argc, char* argv[]) {
         build_target(pack->name, target_name);
 
         // run target
-        fs::path output_path = pack->bin_path / tgt->output;
+        fs::path output_path = pack->bin_path / tgt.output;
         if(!fs::exists(output_path)) {
             std::cout << "Output binary does not exist : " << output_path.string() << std::endl;
             return 1;

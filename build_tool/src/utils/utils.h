@@ -32,6 +32,16 @@ bool is_ancestor(const fs::path& root, const fs::path& target);
 fs::path get_relative_path(const fs::path& root, const fs::path& target);
 void copy_directory(const fs::path& src, const fs::path& dst);
 
+// -- TOML --
+template<typename T = std::string>
+T get_toml_table_field(toml::table* table, const std::string& field) {
+    auto value = (*table)[field].value<T>();
+    if (!value) {
+        throw std::runtime_error("Missing or invalid field: " + std::string(field));
+    }
+    return *value;
+}
+
 // -- HASHING --
 using Sha256Hash = std::array<std::uint8_t, 32>;
 Sha256Hash sha256(std::span<const std::uint8_t> data);

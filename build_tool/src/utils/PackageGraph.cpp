@@ -1,18 +1,20 @@
 #include "PackageGraph.h"
 #include "Package.h"
-#include "Target.h"
 
 #include <functional>
+#include <unordered_set>
 
-// if we've already loaded this package, return it
-// otherwise try to load it from the filesystem. 
-// TODO checks that the new package doesn't contain and isn't contained by any other loaded package
-// TODO if we ever make it so that we can configure important directories from config.toml, 
-//   should also check that these important directories aren't containing each other
-Package* PackageGraph::load_package(const fs::path& package_path) {
-    // check if we've already loaded this package
+// should parse the given package and add it to the package graph
+// returns the parsed package
+// expects package_path to be absolute
+// does not do semantic checks beyond what's required to parse the package. 
+// if the package already exists in the graph, does nothing
+// does not parse package dependencies
+Package* PackageGraph::parse_package(const fs::path& package_path) {
+    // check if we've already parsed this package
     for(Package* p : packages) {
         if(fs::equivalent(p->path, package_path)) {
+            assert(p->state >= Package::State::Parsed);
             return p;
         }
     }
@@ -75,12 +77,6 @@ Package* PackageGraph::load_package(const fs::path& package_path) {
         if(!_name.has_value()) {
             throw std::runtime_error("package.name missing from config.toml");
         }
-        // make sure there isn't another package with the same name
-        for(Package* _pack : packages) {
-            if(_pack->name == _name.value()) {
-                throw std::runtime_error("Duplicate package name : " + pack->name);
-            }
-        }
         pack->name = _name.value();
 
         // type
@@ -112,23 +108,7 @@ Package* PackageGraph::load_package(const fs::path& package_path) {
             pack->environment = Package::Environment::Freestanding;
         }
         else {
-            throw std::runtime_error("Invalid package.environment: " + environment.value());
-        }
-
-        // local include mode
-        std::optional<std::string> local_include_mode = config["package"]["local-include-mode"].value<std::string>();
-        if(!local_include_mode.has_value()) {
-            // default local include mode is absolute
-            pack->local_include_mode = Package::LocalIncludeMode::Absolute;
-        }
-        else if(local_include_mode.value() == "absolute") {
-            pack->local_include_mode = Package::LocalIncludeMode::Absolute;
-        }
-        else if(local_include_mode.value() == "relative") {
-            pack->local_include_mode = Package::LocalIncludeMode::Relative;
-        }
-        else {
-            throw std::runtime_error("Invalid package.local-include-mode: " + local_include_mode.value());
+            throw std::runtime_error("Invalid package.environment : " + environment.value());
         }
     }
 
@@ -184,77 +164,42 @@ Package* PackageGraph::load_package(const fs::path& package_path) {
     }
     pack->bin_path = bin_path;
 
-    auto get_toml_table_field = [](toml::table* t, std::string field) {
-        std::optional<std::string> _val = (*t)[field].value<std::string>();
-        if(!_val.has_value()) {
-            throw std::runtime_error("Missing field : " + field);
-        }
-        return _val.value();
-    };
-
     // package dependencies
-    std::vector<std::string> package_dependencies;
-    std::unordered_map<std::string, std::string> alias_map;
-    std::unordered_map<std::string, std::string> reverse_alias_map;
+    std::vector<Package::Dependency> dependencies;
     if(config.contains("dependency")) {
         toml::array* _dependencies = config["dependency"].as_array();
         if(!_dependencies) {
             throw std::runtime_error("'dependency' must be an array");
         }
         for(toml::node& node : *_dependencies) {
-            toml::table* dependency = node.as_table();
-            if(!dependency) {
+            toml::table* _dependency = node.as_table();
+            if(!_dependency) {
                 throw std::runtime_error("Every element of 'dependency' must be a table");
             }
 
-            // process dependency
-            std::string dep_name = get_toml_table_field(dependency, "package");
-            std::string alias = dep_name;
-            if(dependency->contains("alias")) {
-                alias = get_toml_table_field(dependency, "alias");
+            // parse dependency
+            Package::Dependency dependency;
+            dependency.package = get_toml_table_field(_dependency, "package");
+            dependency.alias = dependency.package;
+            if(_dependency->contains("alias")) {
+                dependency.alias = get_toml_table_field(_dependency, "alias");
+            }
+            dependency.path = std::nullopt;
+            if(_dependency->contains("path")) {
+                dependency.path = get_toml_table_field(_dependency, "path");
+            }
+            dependency.is_exported = false;
+            if(_dependency->contains("export")) {
+                dependency.is_exported = get_toml_table_field<bool>(_dependency, "export");
             }
 
-            // load dependency package
-            Package* dep = nullptr;
-            if(dependency->contains("path")) {
-                // load package from path
-                fs::path path = get_toml_table_field(dependency, "path");
-                dep = load_package(path);
-                if(dep->name != dep_name) {
-                    throw std::runtime_error("Dependency name mismatch : " + dep_name + " vs. " + dep->name);
-                }
-            }
-            else {
-                // load package from library
-                dep = load_package_from_library(dep_name);
-                assert(dep->name == dep_name);
-            }
-            assert(dep != nullptr);
-
-            // ensure that another dependency with the same alias doesn't exist
-            if(alias_map.contains(alias)) {
-                throw std::runtime_error("Duplicate dependency alias : " + alias + " in package : " + pack->name);
-            }
-
-            // ensure that another dependency with the same package doesn't exist
-            for(const auto& _dep_name : package_dependencies) {
-                if(_dep_name == dep_name) {
-                    throw std::runtime_error("Duplicate dependency : " + dep_name + " in package : " + pack->name);
-                }
-            }
-            assert(!reverse_alias_map.contains(dep_name));
-
-            package_dependencies.push_back(dep_name);
-            alias_map.insert({alias, dep_name});
-            reverse_alias_map.insert({dep_name, alias});
+            dependencies.push_back(dependency);
         }
     }
-    pack->package_dependencies = package_dependencies;
-    pack->alias_map = alias_map;
-    pack->reverse_alias_map = reverse_alias_map;
+    pack->dependencies = dependencies;
 
     // targets
-    std::vector<Target*> targets;
+    std::vector<Package::Target> targets;
     if(config.contains("target")) {
         toml::array* _targets = config["target"].as_array();
         if(!_targets) {
@@ -266,44 +211,27 @@ Package* PackageGraph::load_package(const fs::path& package_path) {
                 throw std::runtime_error("Every element of 'target' must be a table");
             }
 
-            // process target
-            std::string name = get_toml_table_field(target, "name");
-            std::string type = get_toml_table_field(target, "type");
-            std::string entry = get_toml_table_field(target, "entry");
-            std::string output = get_toml_table_field(target, "output");
-            std::string runtime_alias = get_toml_table_field(target, "runtime");
+            // parse target
+            Package::Target tgt;
+            tgt.name = get_toml_table_field(target, "name");
+            std::string target_type = get_toml_table_field(target, "type");
+            if(target_type == "binary") {
+                tgt.type = Package::Target::Type::Binary;
+            }
+            else {
+                throw std::runtime_error("Unknown target type : " + target_type + " for target : " + tgt.name + " for package : " + pack->name);
+            }
+            tgt.entry = get_toml_table_field(target, "entry");
+            tgt.output = get_toml_table_field(target, "output");
+            tgt.runtime = get_toml_table_field(target, "runtime");    
 
-            // ensure that another target with the same name doesn't exist
-            for(const auto& _target : targets) {
-                if(_target->name == name) {
-                    throw std::runtime_error("Duplicate target : " + name + " in package : " + pack->name);
-                }
-            }
-
-            // ensure runtime package is actually a runtime package
-            if(!alias_map.contains(runtime_alias)) {
-                throw std::runtime_error("Target : " + name + " refers to runtime package : " + runtime_alias + " that isn't in dependencies for package : " + pack->name);
-            }
-            std::string runtime_name = alias_map[runtime_alias];
-            Package* runtime_package = get_package(runtime_name);
-            assert(runtime_package != nullptr);
-            if(runtime_package->type != Package::Type::Runtime) {
-                throw std::runtime_error("Target : " + name + " refers to runtime package : " + runtime_name + " that isn't a runtime package for package : " + pack->name);
-            }
-            
-            Target *_target = new Target();
-            _target->name = name;
-            _target->type = type;
-            _target->entry = entry;
-            _target->output = output;
-            _target->runtime = runtime_name;
-            targets.push_back(_target);        
+            targets.push_back(tgt);
         }
     }
     pack->targets = targets;
 
     // default includes
-    std::vector<std::pair<std::string, fs::path>> default_includes;
+    std::vector<Package::DefaultInclude> default_includes;
     if(config.contains("default-include")) {
         toml::array* _default_includes = config["default-include"].as_array();
         if(!_default_includes) {
@@ -315,45 +243,17 @@ Package* PackageGraph::load_package(const fs::path& package_path) {
                 throw std::runtime_error("Every element of 'default-include' must be a table");
             }
 
-            // process default include
-            std::string alias = get_toml_table_field(default_include, "package");
-            fs::path path = get_toml_table_field(default_include, "path");
+            // parse default include
+            Package::DefaultInclude inc;
+            inc.package = get_toml_table_field(default_include, "package");
+            inc.path = get_toml_table_field(default_include, "path");
 
-            // find package referred to by alias
-            if(!alias_map.contains(alias)) {
-                throw std::runtime_error("Default include refers to alias that does not exist : " + alias + " in package : " + pack->name);
-            }
-            std::string dep_name = alias_map[alias];
-            Package* dep = get_package(dep_name);
-            assert(dep != nullptr);
-            assert(dep != pack);
-
-            // make sure default include isn't a runtime package
-            if(dep->type == Package::Type::Runtime) {
-                throw std::runtime_error("Default include cannot be runtime package : " + dep->name + " in package : " + pack->name);
-            }
-
-            // make sure path refers to existing source file
-            if(path.has_extension()) {
-                throw std::runtime_error("Default include path should not have extension : " + path.string());
-            }
-            fs::path source_abs = dep->src_path / path;
-            source_abs = source_abs.replace_extension(".jank");
-            if(!fs::exists(source_abs)) {
-                throw std::runtime_error("Default include source file does not exist : " + source_abs.string());
-            }
-            if(!fs::is_regular_file(source_abs)) {
-                throw std::runtime_error("Default include source file should be a regular file : " + source_abs.string());
-            }
-
-            default_includes.push_back({dep_name, path});
+            default_includes.push_back(inc);
         }
     }
     pack->default_includes = default_includes;
 
     // source dependencies
-    // unknown packages and paths should be able to fail silently here, 
-    //   we'll check these when building sources and regenerate if needed
     std::unordered_map<fs::path, std::vector<std::pair<std::string, fs::path>>> source_dependencies;
     for(auto &[_source_file, node] : deps) {
         fs::path source_file = _source_file.str();
@@ -402,7 +302,247 @@ Package* PackageGraph::load_package(const fs::path& package_path) {
     }
     pack->dependency_hashes = dependency_hashes;
 
+    // make sure there isn't another package with the same name
+    for(Package* _pack : packages) {
+        if(_pack->name == pack->name) {
+            throw std::runtime_error("Duplicate package name : " + pack->name + " at paths : " + pack->path.string() + " and " + _pack->path.string());
+        }
+    }
+
+    // add package to package graph 
+    pack->state = Package::State::Parsed;
     packages.push_back(pack);
+
+    return pack;
+}
+
+Package* PackageGraph::parse_package_from_library(const std::string& package_name) {
+    std::vector<fs::path> lib_paths = {
+        user_library_path,
+        // system_library_path,
+    };
+    for(const fs::path& lib_path : lib_paths) {
+        try {
+            fs::path package_path = lib_path / package_name;
+            return parse_package(package_path);
+        } catch(const std::runtime_error& e) {
+            // ok, onto the next one. 
+        }
+    }
+    throw std::runtime_error("Failed to parse package : " + package_name + " from library");
+}
+
+// should fully resolve a package
+//   all alias mappings should be figured out
+//   all aliases should be transformed into package names
+// all semantic checks should be performed here. 
+// if the package is already resolved, does nothing
+// expects that the package is already parsed, throws an error if it isn't
+// expects that all dependencies of this package are already parsed, throws an error if they aren't
+void PackageGraph::resolve_package(const std::string& package_name) {
+    // get the package
+    Package* pack = get_package(package_name);
+    if(pack->state == Package::State::Resolved) {
+        return;
+    }
+    assert(pack->state == Package::State::Parsed);
+
+    // make sure direct dependencies are well formed
+    for(Package::Dependency& dependency : pack->dependencies) {
+        // dependency should exist
+        Package* dep = get_package(dependency.package);
+        assert(dep != nullptr);
+
+        // ensure this is not a self dependency
+        if(dep == pack) {
+            throw std::runtime_error("Explicit self dependency in package : " + pack->name);
+        }
+        
+        // name of dependency should match the name in config
+        if(dependency.package != dep->name) {
+            throw std::runtime_error("Dependency name does not match config : " + dep->name + " vs. " + dependency.package + " for package : " + pack->name);   
+        }
+
+        // if dependency was specified via path, paths should match as well
+        if(dependency.path.has_value() && !fs::equivalent(dependency.path.value(), dep->path)) {
+            throw std::runtime_error("Dependency path does not match config : " + dep->path.string() + " vs. " + dependency.path.value().string() + " for package : " + pack->name);
+        }
+    }
+
+    // figure out all packages this one directly depends on
+    // this includes implicit dependencies via export
+    // this explicitly does not include itself
+    std::vector<Package*> package_dependencies;
+    std::function<void(Package*)> find_implicit_dependencies = 
+    [&package_dependencies, &pack, this, &find_implicit_dependencies](Package* dep) -> void {
+        // explicitly exclude the original package
+        if(dep == pack) return;
+
+        // see if it already exists
+        for(Package* _dep : package_dependencies) {
+            if(_dep == dep) return;
+        }
+        package_dependencies.push_back(dep);
+
+        // add any dependencies exported by dep
+        for(Package::Dependency dependency : dep->dependencies) {
+            if(!dependency.is_exported) continue;
+            Package* exported_dep = this->get_package(dependency.package);
+            find_implicit_dependencies(exported_dep);
+        }
+    };
+    for(Package::Dependency& dependency : pack->dependencies) {
+        Package* dep = get_package(dependency.package);
+        find_implicit_dependencies(dep);
+    }
+
+    // make sure all direct dependencies are well formed
+    std::vector<std::string> resolved_dependencies;
+    for(Package* dep : package_dependencies) {
+        // if we are freestanding, ensure that we aren't depending on a hosted package
+        if(pack->environment == Package::Environment::Freestanding && dep->environment == Package::Environment::Hosted) {
+            throw std::runtime_error("Freestanding package : " + pack->name + " cannot depend on hosted package : " + dep->name);
+        }
+
+        resolved_dependencies.push_back(dep->name);
+    }
+    pack->resolved_dependencies = resolved_dependencies;
+
+    // figure out all alias mappings
+    // this is just the union of all aliases defined by this package
+    //   plus all the aliases defined by its dependencies
+    // for now, we enforce a 1:1 alias to package mapping
+    //   maybe can lift the restriction to allow multiple aliases to refer to the same package
+    std::unordered_map<std::string, std::string> alias_map;
+    std::unordered_map<std::string, std::string> reverse_alias_map;
+    {
+        // {alias, package name}
+        std::vector<std::pair<std::string, std::string>> aliases;
+
+        // aliases defined by this package
+        for(Package::Dependency dependency : pack->dependencies) {
+            aliases.push_back({dependency.alias, dependency.package});
+        }
+
+        // aliases exported by immediate dependencies
+        for(Package* dep : package_dependencies) {
+            for(Package::Dependency dependency : dep->dependencies) {
+                if(!dependency.is_exported) continue;
+                aliases.push_back({dependency.alias, dependency.package});
+            }
+        }
+
+        for(const auto &[alias, name] : aliases) {
+            if(alias_map.contains(alias)) {
+                throw std::runtime_error("Duplicate alias : " + alias + " for package : " + pack->name);
+            }
+            if(reverse_alias_map.contains(name)) {
+                throw std::runtime_error("Multiple aliases for one package : " + name + " for package : " + pack->name);
+            }
+            alias_map.insert({alias, name});
+            reverse_alias_map.insert({name, alias});
+        }
+    }
+    pack->alias_map = alias_map;
+    pack->reverse_alias_map = reverse_alias_map;
+
+    auto resolve_alias = [&alias_map, &pack](const std::string& alias) -> std::string {
+        if(!alias_map.contains(alias)) {
+            throw std::runtime_error("Unknown alias : " + alias + " for package : " + pack->name);
+        }
+        return alias_map[alias];
+    };
+
+    // resolve aliases in targets
+    // make sure targets are well formed
+    std::unordered_set<std::string> target_names;
+    for(Package::Target& target : pack->targets) {
+        // resolve aliases
+        target.runtime = resolve_alias(target.runtime);
+
+        // ensure that another target with the same name doesn't exist
+        if(target_names.contains(target.name)) {
+            throw std::runtime_error("Duplicate target name : " + target.name + " for package : " + pack->name);
+        }
+        target_names.insert(target.name);
+
+        // ensure runtime package is actually a runtime package
+        Package* runtime_package = get_package(target.runtime);
+        assert(runtime_package != nullptr);
+        if(runtime_package->type != Package::Type::Runtime) {
+            throw std::runtime_error("Target : " + target.name + " refers to runtime package : " + target.runtime + " that isn't a runtime package for package : " + pack->name);
+        }
+    }
+    
+    // resolve aliases in default includes
+    // make sure default includes are well formed
+    for(Package::DefaultInclude& inc : pack->default_includes) {
+        // resolve aliases
+        inc.package = resolve_alias(inc.package);
+
+        // make sure package referred to exists, and is not 
+        Package* dep = get_package(inc.package);
+        assert(dep != nullptr);
+
+        // make sure this isn't referring to itself
+        if(dep == pack) {
+            throw std::runtime_error("Explicit self dependency in default include : " + pack->name);
+        }
+
+        // make sure this include refers to an existing source file
+        if(inc.path.has_extension()) {
+            throw std::runtime_error("Default include path should not have extension : " + dep->name + " : " + inc.path.string() + " for package : " + pack->name);
+        }
+        fs::path source_abs = dep->src_path / inc.path;
+        source_abs = source_abs.replace_extension(".jank");
+        if(!fs::exists(source_abs)) {
+            throw std::runtime_error("Default include source file does not exist : " + dep->name + " : " + inc.path.string() + " for package : " + pack->name);
+        }
+        if(!fs::is_regular_file(source_abs)) {
+            throw std::runtime_error("Default include should be a regular file : " + dep->name + " : " + inc.path.string() + " for package : " + pack->name);
+        }
+    }
+
+    pack->state = Package::State::Resolved;
+}
+
+// if we've already loaded this package, return it
+// otherwise parses it and all of its dependencies, and resolves them. 
+Package* PackageGraph::load_package(const fs::path& package_path) {
+    // check if we've already loaded this package
+    for(Package* p : packages) {
+        if(fs::equivalent(p->path, package_path)) {
+            return p;
+        }
+    }
+
+    // parse the package and all of its dependencies
+    std::vector<std::string> all_packages;
+    std::function<void(Package*)> parse_dependencies = [&all_packages, this, &parse_dependencies](Package* pack) -> void {
+        // see if we already parsed the dependencies of this package
+        for(const std::string& package_name : all_packages) {
+            if(package_name == pack->name) return;
+        }
+
+        // parse dependencies
+        all_packages.push_back(pack->name);
+        for(Package::Dependency& dependency : pack->dependencies) {
+            if(dependency.path.has_value()) {
+                parse_dependencies(this->parse_package(dependency.path.value()));
+            }
+            else {
+                parse_dependencies(this->parse_package_from_library(dependency.package));
+            }
+        }
+    };
+    Package* pack = parse_package(package_path);
+    parse_dependencies(pack);
+
+    // resolve the package and all of its dependencies
+    for(std::string package_name : all_packages) {
+        resolve_package(package_name);
+    }
+
     return pack;
 }
 
@@ -471,7 +611,7 @@ std::vector<Package*> PackageGraph::get_package_dependencies(const std::string& 
         }
         package_names.push_back(package_name);
         Package* pack = this->get_package(package_name);
-        for(const std::string& dep_name : pack->package_dependencies) {
+        for(const std::string& dep_name : pack->resolved_dependencies) {
             find_packages(dep_name);
         }
     };
