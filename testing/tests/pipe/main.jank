@@ -2,6 +2,7 @@
 #include <assert>;
 #include <wait>;
 #include <exec>;
+#include <syscall>;
 
 i32 main() {
 

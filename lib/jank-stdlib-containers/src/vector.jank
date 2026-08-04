@@ -1,0 +1,144 @@
+#include <core::malloc>;
+
+//the elements in range [0, sz) will be valid instances of T.
+
+template<T>
+struct vector {
+    u64 cap;
+    u64 sz;
+    T* arr;
+
+    vector() {
+        this.cap = $u64 1;
+        this.sz = $u64 0;
+        this.arr = $T* malloc(sizeof(T) * this.cap);
+    }
+
+    vector(vector& other) {
+        this.cap = other.cap;
+        this.sz = other.sz;
+        this.arr = $T* malloc(sizeof(T) * this.cap);
+        for(u64 i = 0x0; i < this.sz; i++) new (@this.arr[i]) T(other.arr[i]);
+    }
+
+    vector(u64 n, T default) {
+        this.cap = n;
+        this.sz = n;
+        if(this.cap == $u64 0) this.cap = $u64 1;
+        this.arr = $T* malloc(sizeof(T) * this.cap);
+        for(u64 i = 0x0; i < this.sz; i++) new (@this.arr[i]) T(default);
+    }
+
+    vector(i32 n, T default) {
+        this.cap = $u64 n;
+        this.sz = $u64 n;
+        if(this.cap == $u64 0) this.cap = $u64 1;
+        this.arr = $T* malloc(sizeof(T) * this.cap);
+        for(u64 i = 0x0; i < this.sz; i++) new (@this.arr[i]) T(default);
+    }
+
+    vector(u64 n) {
+        this.cap = n;
+        this.sz = n;
+        if(this.cap == $u64 0) this.cap = $u64 1;
+        this.arr = $T* malloc(sizeof(T) * this.cap);
+        for(u64 i = 0x0; i < this.sz; i++) new (@this.arr[i]) T();
+    }
+
+    vector(i32 n) {
+        this.cap = $u64 n;
+        this.sz = $u64 n;
+        if(this.cap == $u64 0) this.cap = $u64 1;
+        this.arr = $T* malloc(sizeof(T) * this.cap);
+        for(u64 i = 0x0; i < this.sz; i++) new (@this.arr[i]) T();
+    }
+
+    ~vector() {
+        for(u64 i = 0x0; i < this.sz; i++) this.arr[i].~();
+        free($void* this.arr, this.cap * sizeof(T));
+    }
+
+    void grow() {
+        u64 old_cap = this.cap;
+        this.cap = this.cap * $u64 2;
+        T* narr = $T* malloc(sizeof(T) * this.cap);
+        for(u64 i = $u64 0; i < this.sz; i++) {
+            new (@narr[i]) T(this.arr[i]);
+        }
+        for(u64 i = 0x0; i < this.sz; i++) this.arr[i].~();
+        free($void* this.arr, old_cap * sizeof(T));
+        this.arr = narr;
+    }
+
+    void pop_back() {
+        if(this.sz == $u64 0) return;
+        this.sz = this.sz - $u64 1;
+        this.arr[this.sz].~();
+    }
+
+    void push_back(T x) {
+        if(this.sz == this.cap) this.grow();
+        new (@this.arr[this.sz]) T(x);
+        this.sz = this.sz + $u64 1;
+    }
+
+    void erase(u64 ind) {
+        this.arr[ind].~();
+        this.sz --;
+        for(u64 i = ind; i < this.sz; i++) {
+            new (@this.arr[i]) T(this.arr[i + 0x1]);
+            this.arr[i + 0x1].~();
+        }
+    }
+
+    void insert(u64 ind, T x) {
+        if(this.sz == this.cap) this.grow();
+        for(u64 i = this.sz; i > ind; i--) {
+            new (@this.arr[i]) T(this.arr[i - 0x1]);
+            this.arr[i - 0x1].~();
+        }
+        new (@this.arr[ind]) T(x);
+        this.sz ++;
+    }
+
+    //some structs don't have '==' operator implemented
+    // //on success, returns the first index where this[ind] == val
+    // //on failure, returns this.sz
+    // u64 find(T val) {
+    //     for(u64 i = 0x0; i < this.sz; i++) {
+    //         if(this.arr[i] == val) return i;
+    //     }
+    //     return this.sz;
+    // }
+
+    void clear() {
+        for(u64 i = 0x0; i < this.sz; i++) this.arr[i].~();
+        this.sz = 0x0;
+    }
+
+    u64 size() {
+        return this.sz; 
+    }
+}
+
+template<T>
+T& operator[](vector<T>& a, u64 ind) {
+    return a.arr[ind];
+}
+
+template<T>
+T& operator[](vector<T>& a, u32 ind) {
+    return a.arr[ind];
+}
+
+template<T>
+T& operator[](vector<T>& a, i64 ind) {
+    return a.arr[ind];
+}
+
+template<T>
+T& operator[](vector<T>& a, i32 ind) {
+    return a.arr[ind];
+}
+
+

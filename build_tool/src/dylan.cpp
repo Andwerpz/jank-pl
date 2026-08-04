@@ -126,6 +126,8 @@ void generate_package_manifest(
 // does not set a current package
 // used for giving jjc a default package manifest
 // all packages here should be able to be loaded from the library
+// TODO somehow integrate the default package into the package graph 
+//   so implicit imports can be automatically be resolved
 void generate_default_package_manifest(const fs::path& out_file) {
     std::ofstream fout(out_file);
     if(!fout) {
@@ -186,14 +188,22 @@ void generate_default_package_manifest(const fs::path& out_file) {
     }
 
     // register default package dependencies
-    fout << "default-package-dependency " << "std " << "jank-stdlib" << "\n";
+    // depend on stdlib + all its direct implicit dependencies
+    {
+        Package* stdlib_package = graph->get_package("jank-stdlib");
+        fout << "default-package-dependency " << "std " << "jank-stdlib" << "\n";
+        for(Package::Dependency& dep : stdlib_package->dependencies) {
+            if(dep.is_exported) {
+                fout << "default-package-dependency " << dep.alias << " " << dep.package << "\n";
+            }
+        }
+    }
 
     // register default package default includes
-    fout << "default-package-default-include " << "std " << "memory" << "\n";
-    fout << "default-package-default-include " << "std " << "error" << "\n";
-    fout << "default-package-default-include " << "std " << "defs" << "\n";
-    fout << "default-package-default-include " << "std " << "syscall" << "\n";
-    fout << "default-package-default-include " << "std " << "malloc" << "\n";
+    fout << "default-package-default-include " << "core " << "memory" << "\n";
+    fout << "default-package-default-include " << "core " << "error" << "\n";
+    fout << "default-package-default-include " << "core " << "defs" << "\n";
+    fout << "default-package-default-include " << "core " << "malloc" << "\n";
 
     // set runtime files
     {
@@ -245,18 +255,17 @@ void create_new_package(const fs::path& package_path, std::string package_name) 
         // - <std::defs>
         // - <std::syscall>
         // - <std::malloc>
-        auto add_default_include = [&config](std::string path) {
+        auto add_default_include = [&config](std::string package, std::string path) {
             config
                 << "[[default-include]]\n"
-                << "package = \"std\"\n"
+                << "package = \"" << package << "\"\n"
                 << "path = \"" << path << "\"\n"
                 << "\n";
         };
-        add_default_include("memory");
-        add_default_include("error");
-        add_default_include("defs");
-        add_default_include("syscall");
-        add_default_include("malloc");
+        add_default_include("core", "memory");
+        add_default_include("core", "error");
+        add_default_include("core", "defs");
+        add_default_include("core", "malloc");
 
         // add target : main.jank -> main
         config

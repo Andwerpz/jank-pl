@@ -6,6 +6,7 @@
 #include <random>;
 #include <time>;
 #include <string>;
+#include <syscall>;
 
 Screen g_screen = new Screen();
 

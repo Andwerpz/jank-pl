@@ -2,6 +2,7 @@
 #include <string>;
 #include <vector>;
 #include <assert>;
+#include <syscall>;
 
 i32 VCORRECT    = 1;
 i32 VEXISTS     = 2;

@@ -1,0 +1,13 @@
+[package]
+name = "jank-stdlib-sys"
+type = "library"
+environment = "hosted"
+
+[[dependency]]
+package = "jank-stdlib-core"
+alias = "core"
+
+[[dependency]]
+package = "jank-stdlib-containers"
+alias = "containers"
+

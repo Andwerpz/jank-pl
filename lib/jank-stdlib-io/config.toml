@@ -1,0 +1,25 @@
+[package]
+name = "jank-stdlib-io"
+type = "library"
+environment = "hosted"
+
+[[dependency]]
+package = "jank-stdlib-core"
+alias = "core"
+
+[[dependency]]
+package = "jank-stdlib-containers"
+alias = "containers"
+
+[[dependency]]
+package = "jank-stdlib-sys"
+alias = "sys"
+
+[[dependency]]
+package = "jank-stdlib-math"
+alias = "math"
+
+[[dependency]]
+package = "jank-stdlib-crypto"
+alias = "crypto"
+

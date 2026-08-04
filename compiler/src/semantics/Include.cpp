@@ -8,6 +8,7 @@ Include::Include(parser::token *tok) : ASTNode(tok) {
 
 Include::Include(const Include& other) : ASTNode(other) {
     is_library_include = other.is_library_include;
+    package = other.package;
     path = other.path;
 }
 
@@ -25,15 +26,16 @@ Include* Include::convert(parser::include *inc) {
     Include* result = new Include(inc);
     if(inc->t2->is_b0) {
         result->is_library_include = false;
+        result->package = std::nullopt;
         parser::include_path_relative* inc_rel = inc->t2->t0->t0;
         result->path = inc_rel->t1->to_string();
     }
     else if(inc->t2->is_b1){
         result->is_library_include = true;
         parser::include_path_lib* inc_lib = inc->t2->t1->t0;
-        std::optional<std::string> package = std::nullopt;
+        result->package = std::nullopt;
         if(inc_lib->t1.has_value()) {
-            package = inc_lib->t1.value()->t0->to_string();
+            result->package = inc_lib->t1.value()->t0->to_string();
         }
         result->path = inc_lib->t2->to_string();
     }

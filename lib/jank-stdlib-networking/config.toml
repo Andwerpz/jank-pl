@@ -1,9 +1,8 @@
 [package]
-name = "jank-stdlib-containers"
+name = "jank-stdlib-networking"
 type = "library"
 environment = "freestanding"
 
 [[dependency]]
 package = "jank-stdlib-core"
 alias = "core"
-

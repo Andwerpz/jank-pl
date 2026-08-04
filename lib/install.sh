@@ -4,6 +4,20 @@ set -u
 
 # Paths are relative to the directory from which this script is run.
 directories=(
+    "jank-stdlib-core"
+    "jank-stdlib-containers"
+    "jank-stdlib-sys"
+    
+    "jank-stdlib-algorithm"
+    
+    
+    "jank-stdlib-crypto"
+    "jank-stdlib-io"
+    "jank-stdlib-math"
+    "jank-stdlib-networking"
+    "jank-stdlib-sync"
+    
+
     "jank-stdlib"
     "jank-runtime"
 )

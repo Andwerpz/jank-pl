@@ -9,6 +9,9 @@
 **/build/
 **/bin/
 
+**/deps.toml
+**/hash.toml
+
 grammar/gen
 
 stdlib/asm/*

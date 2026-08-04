@@ -1,0 +1,19 @@
+[package]
+name = "jank-stdlib-crypto"
+type = "library"
+environment = "hosted"
+# TODO make assert part of core so that this can be freestanding
+# TODO make random not be part of sys so that we can be freestanding
+#   or just make the user provide a random seed
+
+[[dependency]]
+package = "jank-stdlib-core"
+alias = "core"
+
+[[dependency]]
+package = "jank-stdlib-sys"
+alias = "sys"
+
+[[dependency]]
+package = "jank-stdlib-math"
+alias = "math"

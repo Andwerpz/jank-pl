@@ -1,29 +1,11 @@
-#include <iostream>;
-#include <assert>;
-#include <wait>;
-#include <exec>;
-
-// 7/12/2026
-
-// when building struct layouts, you need to recursively find files that define your member variable types. 
-
-#include "src/B.jank";
-
-struct A {
-    B foo;
-}
-
-void test() {
-    A foo = new A();
-    foo.foo.foo.foo.foo = 10;
-    cout << "FOO : " << foo.foo.foo.foo.foo << "\n";
-}
+#include <io::iostream>;
+#include <containers::vector>;
+#include <core::defs>;
+#include <core::malloc>;
 
 i32 main() {
 
-    test();
-    cout << "sizeof(A) : " << sizeof(A) << "\n";
-    cout << "this should compile\n";
+    
     
     return 0;
 }

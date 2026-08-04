@@ -1,5 +1,5 @@
 [package]
-name = "jank-stdlib-containers"
+name = "jank-stdlib-sync"
 type = "library"
 environment = "freestanding"
 

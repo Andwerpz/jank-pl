@@ -5,23 +5,23 @@
 #include <vector>;
 
 template<T, U>
-struct pair {
+struct my_pair {
     T first;
     U second;
 
-    pair() {
+    my_pair() {
         this.first = new T();
         this.second = new U();
     }
-    pair(pair& other) {
+    my_pair(my_pair& other) {
         this.first = other.first;
         this.second = other.second;
     }
-    pair(T _first, U _second) {
+    my_pair(T _first, U _second) {
         this.first = _first;
         this.second = _second;
     }
-    ~pair() {
+    ~my_pair() {
 
     }
 }
@@ -31,8 +31,8 @@ i32 main() {
     i32 n = 10;
     vector<vector<i32>> dp = new vector<vector<i32>>(n, new vector<i32>(n, 0));
 
-    pair<i32, u8*> p = new pair<i32, u8*>(5, "asdf");
-    pair<i32, u8*> p2 = p;
+    my_pair<i32, u8*> p = new my_pair<i32, u8*>(5, "asdf");
+    my_pair<i32, u8*> p2 = p;
     cout << p.first << " " << p.second << "\n";
     cout << p2.first << " " << p2.second << "\n";
 

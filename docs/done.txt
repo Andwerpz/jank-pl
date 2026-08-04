@@ -1,4 +1,143 @@
 (main quest)
+Figure out how to better handle code sharing between hosted and freestanding source files
+- right now, jank-os depends on the stdlib for many of its containers, like vector and hashmap. 
+  however, since jank-os requires all code be compatible with a freestanding environment, it relies 
+  on the fact that these containers just happen to not depend on any code that uses syscalls. 
+- the reliance on such a fact feels very icky to me, we should have some flag for a package that 
+  tells the build tool whether or not it requires a hosted environment
+  - packages that are freestanding can only depend on other freestanding packages
+  - packages that are hosted can depend on whatever package they like
+- next problem is I don't want to mark the entire jank-stdlib as requiring a hosted environment, because
+  I still want to use the containers inside, while discarding stuff like iostream and put
+  - one idea is to split the package into a bunch of packages, such as 'jank-stdlib-container' and 
+    'jank-stdlib-io' and mark each of them seperately as hosted or not. 
+    - this would be very annoying, for one, we'd have to register a bunch of packages as dependencies, 
+      and whenever I added a new sub-package, every project that wanted it would need to also import that one
+    - I want to just be able to specify that i'm importing from the stdlib by doing something like 
+      '#include <std::vector>' not '#include <std-container::vector>'
+  - what if we introduced 'aggregator packages' (name WIP). All they would do is depend on a bunch of packages
+    and merge all their code together to present a unified package. 
+    - we can then have a hosted stdlib : 'jank-stdlib' and a freestanding one : 'jank-stdlib-freestanding' 
+      which will each depend on some different subset of stdlib packages 
+    - we can probably also enforce that there should be no conflicting source files in an aggregator package
+      so for example, '/utils.jank' shouldn't be defined in both 'jank-stdlib-container' and 'jank-stdlib-io'
+    - perhaps to avoid such utility files being conflicting, maybe we should introduce the idea of 
+      configuring which files to export from a package, so like public/private but on a package level. 
+    - would an aggregator package literally copy over all their dependencies source code? probably not. 
+      this would destroy the semantics of compiling within a package, they should just act as passthrough 
+      packages. 
+    - I suppose my one issue with this solution is that it would require the compiler to know more about 
+      how packages work, ideally we can cut out all aggregator packages from the package graph before
+      giving it to the compiler. 
+    - if we don't do this, then when registering a package, we'll also have to register what type of package
+      it is. Or maybe we can have a seperate flag, like '--aggregator-package' and '--library-package'
+  - how can we flatten the include graph to remove aggregator packages?
+    - if we don't want the compiler to know about aggregator packages, but allow different packages 
+      to be referred to by the same alias, it would seem like I would have to allow multiple package
+      dependencies with the same alias in the compiler. 
+    - I think that is fine, the package manager should ensure that exported paths from aggregated
+      packages don't collide. 
+    - the compiler now just has to look through all packages with a matching alias and take the first
+      one that exports the path of the import. 
+  - how would we handle circular dependencies between aggregator packages?
+    - just forbid them? 
+      - this would make it simple, but it would be no fun D:
+    - allow them? 
+      - define the set of packages that an aggregator package aggregates as the set
+        of packages reachable from the aggregator package thru purely aggregator packages. 
+  - how would we do default stdlib imports in the compiler if we don't want the compiler to know about
+    aggregator packages?
+    - one way would be to manually import all packages that the aggregator would import
+      however this would require manually updating the compiler every time the stdlib adds
+      a new package. 
+    - another way is to let the compiler know how to resolve aggregator packages, however I don't
+      like this solution as I want the build tool to be responsible for resolving packages.
+    - we can solve this by changing the way the build tool passes in the package graph to the compiler. 
+      - instead of passing the graph via commandline arguments, the build tool can generate a file with 
+        information regarding the fully resolved package graph and pass the file to the compiler. 
+      - can call this file a 'package manifest'? 
+      - then when installing the stdlib, the build tool should also be called on to generate a package
+        manifest for the stdlib that will be placed inside some predictable location. 
+      - the compiler will then load it when not explicitly given a manifest, and will compile according
+        to that manifest. 
+      - should this manifest be generated relative to a root package, or a build target?
+        - now that targets will specify runtime packages, I think they should be relative to a target. 
+        - but if they're relative to a target, then how will I generate the stdlib manifest?
+        - actually, can have a default build target that just says its runtime package is the standard one
+        - the manifest should just give the compiler information regarding packages. 
+          regarding the runtime package, it can just give a list of assembly files to list. 
+- to summarize
+  - introduce 'environment' attribute to a package
+    - for now, environment will have value 'hosted' or 'freestanding'
+    - freestanding packages cannot depend on hosted packages, but hosted packages can depend on freestanding ones
+    - by default, environment will be 'hosted'
+  - introduce 'aggregator' packages
+    - new type of package, all it does is depend on other packages
+    - it's special because from the perspective of source code, it behaves like the union of all packages
+      it depends on. 
+    - should allow aggregator packages to depend on other aggregator packages. 
+      - you should even be able to form cycles. 
+    - define the set of packages that an aggregator package represents as the set of packages that can be 
+      reached starting from the aggregator package purely through itself and other aggregator packages. 
+    - the build tool should make sure that there are no overlapping source files between two packages depended
+      on by the same aggregator package. 
+    - maybe we should call these 'facade' packages?
+  - split up stdlib into many sub-packages
+    - want to do this so that the parts of stdlib that can be used in a freestanding environment get their own 
+      freestanding package, while others go into hosted packages
+      - for example, jank-stdlib-containers could be freestanding and jank-stdlib-filesystem would be hosted
+    - then to have a nice interface, we can make a jank-stdlib facade package that just depends on the required
+      stdlib packages. 
+      - can also have a freestanding jank-stdlib-freestanding that provides kernel utilities
+      - can also make a jank-kernel-runtime which is freestanding that depends on jank-kernel for pagetable stuff 
+  - instead of communicating the package graph to the compiler via commandline arguments, we write the 
+    package information to a 'package manifest'
+    - the main benefit is that we no longer have to hardcode the default package configuration, 
+      the compiler should just have a set path where it looks for the default package manifest. 
+    - should re-emit the default package manifest to somewhere like ~/.jank/default_package.manifest
+- hmm, perhaps shouldn't introduce 'aggregator' packages, maybe should just make this dependency exporting
+  a thing that all packages can do. 
+  - for package dependencies, you can mark them as exported by doing something like
+```
+[[dependency]]
+package = "jank-containers"
+alias = "containers"
+export = true
+```
+  - the idea is that when you import a package, you also implicitly import all of its exported dependencies. 
+    - by 'implicitly import', i mean that it should be identical to importing them yourself with the same settings. 
+    - should you be able to override these implicit imports? 
+      - suppose that A exports B. Then if C exports A, it will automatically export B as well. 
+        then suppose that C explicitly depends on B but does not export it. Should B be exported or not?
+        - it should still be exported because whatever package depending on C will still implicitly import A, 
+          which exports B. It's just that B is not explicitly exported by C. 
+      - suppose that A exports B under the alias 'Beta'. Then if C exports A and (B under the alias 'Beta2'), 
+        should this be an error?
+        - no, a package D depending on C should see that 'Beta' and 'Beta2' both refer to B. 
+  - the one issue i'm having is deciding how to handle aliases. 
+    - Should aliases be inherited? 
+      - probably? it would be pretty convenient
+    - how should alias conflicts be resolved? there are two cases:
+      - two packages you depend on export the same alias to different packages
+        - this should just be an error, you can't depend on these two packages simultaneously. 
+      - two packages you depend on export different aliases to the same package
+        - maybe we should allow this
+        - i'll allow this for now, it makes figuring out the set of aliases for a package easy
+    - should aliases explicitly defined in the package override any aliases inherited from dependencies?
+      - no, it should just add a new alias for the given package. 
+    - for each package, how do I compute the full set of aliases?
+      - the set of aliases of a package is the union of exported aliases by its dependencies, 
+        plus aliases defined by the package itself. 
+      - the set of exported aliases of a package is the union of exported aliases by its exported dependencies, 
+        plus exported aliases defined by the package itself.
+      - naively
+        - first gather all aliases defined by the package itself. 
+        - then gather all exported aliases defined by immediate dependencies. 
+        - can just BFS and gather all exported aliases from reachable packages. 
+- i'll probably also disallow the same alias referring to different packages. I think that's way too much.
+
+
+(main quest)
 Make intrinsic compiler methods like malloc and free configurable via 'runtime package'
 - currently, methods like 'malloc' and 'free' are injected into the code by the compiler 
   by resolving a synthetic malloc or free call against the current compilation context. 

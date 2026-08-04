@@ -9,23 +9,19 @@ alias = "std"
 package = "jank-runtime"
 
 [[default-include]]
-package = "std"
+package = "core"
 path = "memory"
 
 [[default-include]]
-package = "std"
+package = "core"
 path = "error"
 
 [[default-include]]
-package = "std"
+package = "core"
 path = "defs"
 
 [[default-include]]
-package = "std"
-path = "syscall"
-
-[[default-include]]
-package = "std"
+package = "core"
 path = "malloc"
 
 [[target]]

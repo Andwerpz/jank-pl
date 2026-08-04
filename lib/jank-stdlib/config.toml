@@ -1,5 +1,49 @@
 [package]
 name = "jank-stdlib"
 type = "library"
+environment = "hosted"
 
+[[dependency]]
+package = "jank-stdlib-algorithm"
+alias = "algorithm"
+export = true
 
+[[dependency]]
+package = "jank-stdlib-containers"
+alias = "containers"
+export = true
+
+[[dependency]]
+package = "jank-stdlib-core"
+alias = "core"
+export = true
+
+[[dependency]]
+package = "jank-stdlib-crypto"
+alias = "crypto"
+export = true
+
+[[dependency]]
+package = "jank-stdlib-io"
+alias = "io"
+export = true
+
+[[dependency]]
+package = "jank-stdlib-math"
+alias = "math"
+export = true
+
+[[dependency]]
+package = "jank-stdlib-networking"
+alias = "networking"
+export = true
+
+[[dependency]]
+package = "jank-stdlib-sync"
+alias = "sync"
+export = true
+
+[[dependency]]
+package = "jank-stdlib-sys"
+alias = "sys"
+export = true

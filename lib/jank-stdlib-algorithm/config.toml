@@ -1,0 +1,14 @@
+[package]
+name = "jank-stdlib-algorithm"
+type = "library"
+environment = "hosted"      
+# TODO make sort not use random so we can remove the dependency on sys to make this freestanding
+
+[[dependency]]
+package = "jank-stdlib-core"
+alias = "core"
+
+[[dependency]]
+package = "jank-stdlib-sys"
+alias = "sys"
+

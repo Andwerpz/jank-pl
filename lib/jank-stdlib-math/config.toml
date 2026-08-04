@@ -1,0 +1,13 @@
+[package]
+name = "jank-stdlib-math"
+type = "library"
+environment = "hosted"
+# TODO make assert part of core so that we can make this freestanding
+
+[[dependency]]
+package = "jank-stdlib-core"
+alias = "core"
+
+[[dependency]]
+package = "jank-stdlib-sys"
+alias = "sys"

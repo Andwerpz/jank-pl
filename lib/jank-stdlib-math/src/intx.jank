@@ -1,0 +1,1041 @@
+#include <sys::assert>;
+#include <core::memory>;
+
+// wide integer types
+// all these integers are little endian
+
+struct u128 {
+    u64 lo;
+    u64 hi;
+
+    u128(u64 val) {
+        this.lo = val;
+        this.hi = 0x0;
+    }
+
+    u128(u64 hi, u64 lo) {
+        this.lo = lo;
+        this.hi = hi;
+    }
+
+    u64 get_bit(u64 ind) {
+        if(ind < $u64 64) return (this.lo >> ind) & 0x1;
+        else return (this.hi >> (ind - $u64 64)) & 0x1;
+    }   
+
+    void set_bit(u64 ind) {
+        if(ind < $u64 64) this.lo |= 0x1 << ind;
+        else this.hi |= 0x1 << (ind - $u64 64);
+    }
+}
+
+u128& operator=(u128& a, u64 b) {
+    a.lo = b;
+    a.hi = $u64 0;
+    return a;
+}
+
+u128& operator=(u128& a, i32 b) {
+    if(b < 0) {
+        a.lo = $u64 b;
+        a.hi = $u64 -1;
+    }
+    else {
+        a.lo = $u64 b;
+        a.hi = $u64 0;
+    }
+    return a;
+}
+
+u128 operatorx++(u128& a) {
+    u128 res = a;
+    a.lo ++;
+    if(a.lo == 0x0) a.hi ++;
+    return res;
+}
+
+u128 operatorx--(u128& a) {
+    u128 res = a;
+    if(a.lo == 0x0) a.hi --;
+    a.lo --;
+    return res;
+}
+
+i32 operator==(u128 a, u128 b) {
+    return a.lo == b.lo && a.hi == b.hi;
+}
+
+i32 operator==(u128 a, u64 b) {
+    return a.lo == b && a.hi == 0x0;
+}
+
+i32 operator!=(u128 a, u128 b) {
+    return a.lo != b.lo || a.hi != b.hi;
+}
+
+i32 operator!=(u128 a, u64 b) {
+    return a.lo != b || a.hi != 0x0;
+}
+
+i32 operator>(u128 a, u128 b) {
+    return (a.hi > b.hi) || (a.hi == b.hi && a.lo > b.lo);
+}
+
+i32 operator<(u128 a, u128 b) {
+    return (a.hi < b.hi) || (a.hi == b.hi && a.lo < b.lo);
+}
+
+i32 operator>=(u128 a, u128 b) {
+    return (a.hi > b.hi) || (a.hi == b.hi && a.lo >= b.lo);
+}
+
+i32 operator<=(u128 a, u128 b) {
+    return (a.hi < b.hi) || (a.hi == b.hi && a.lo <= b.lo);
+}
+
+u128& operator+=(u128& a, u128 b) {
+    a.lo += b.lo;
+    a.hi += b.hi;
+    if(a.lo < b.lo) a.hi ++;
+    return a;
+}
+
+u128& operator-=(u128& a, u128 b) {
+    a.hi -= b.hi;
+    if(a.lo < b.lo) a.hi --;
+    a.lo -= b.lo;
+    return a;
+}
+
+u128& operator*=(u128& a, u128 b) {
+    u128 tmp = a;
+    u128 bit = 0x1;
+    a = 0;
+    for(u64 i = 0x0; i < $u64 128; i++) {
+        if((tmp & bit) != 0x0) a += b;
+        b <<= 0x1;
+        bit <<= 0x1;
+    }   
+    return a;
+}   
+
+u128& operator/=(u128& a, u128 b) {
+    assert(b != 0x0, "u128::operator/=() : division by 0");
+    u128 q = 0;
+    u128 r = 0;
+    for(u64 i = $u64 127; ; i--) {
+        r <<= 0x1;
+        r.lo |= a.get_bit(i);
+        if(b <= r) {
+            r -= b;
+            q.set_bit(i);
+        }
+        if(i == 0x0) break;
+    }
+    a = q;
+    return a;
+}
+
+u128& operator%=(u128& a, u128 b) {
+    assert(b != 0x0, "u128::operator%=() : mod by 0");
+    u128 r = 0;
+    for(u64 i = $u64 127; ; i--) {
+        r <<= 0x1;
+        r.lo |= a.get_bit(i);
+        if(b <= r) {
+            r -= b;
+        }
+        if(i == 0x0) break;
+    }
+    a = r;
+    return a;
+}
+
+u128& operator&=(u128& a, u128 b) {
+    a.lo &= b.lo;
+    a.hi &= b.hi;
+    return a;
+}
+
+u128& operator|=(u128& a, u128 b) {
+    a.lo |= b.lo;
+    a.hi |= b.hi;
+    return a;
+}
+
+u128& operator^=(u128& a, u128 b) {
+    a.lo ^= b.lo;
+    a.hi ^= b.hi;
+    return a;
+}
+
+u128& operator>>=(u128& a, u64 b) {
+    if(b == 0x0) return a;
+    if(b >= $u64 128) {
+        a.lo = 0x0;
+        a.hi = 0x0;
+        return a;
+    }
+    else if(b >= $u64 64) {
+        b -= $u64 64;
+        a.lo = a.hi >> b;
+        a.hi = 0x0;
+        return a;
+    }
+    else {
+        a.lo = (a.lo >> b) | (a.hi << ($u64 64 - b));
+        a.hi >>= b;
+        return a;
+    }
+}
+
+u128& operator<<=(u128& a, u64 b) {
+    if(b == 0x0) return a;
+    if(b >= $u64 128) {
+        a.lo = 0x0;
+        a.hi = 0x0;
+        return a;
+    }
+    else if(b >= $u64 64) {
+        b -= $u64 64;
+        a.hi = a.lo << b;
+        a.lo = 0x0;
+        return a;
+    }
+    else {
+        a.hi = (a.hi << b) | (a.lo >> ($u64 64 - b));
+        a.lo <<= b;
+        return a;
+    }
+}
+
+u128 operator+(u128 a, u128 b) { return a += b; }
+u128 operator-(u128 a, u128 b) { return a -= b; }
+u128 operator*(u128 a, u128 b) { return a *= b; }
+u128 operator/(u128 a, u128 b) { return a /= b; }
+u128 operator%(u128 a, u128 b) { return a %= b; }
+u128 operator&(u128 a, u128 b) { return a &= b; }
+u128 operator|(u128 a, u128 b) { return a |= b; }
+u128 operator^(u128 a, u128 b) { return a ^= b; }
+u128 operator>>(u128 a, u64 b) { return a >>= b; }
+u128 operator<<(u128 a, u64 b) { return a <<= b; }
+
+
+struct u256 {
+    u128 lo;
+    u128 hi;
+
+    u256(u64 val) {
+        this.lo = val;
+        this.hi = 0x0;
+    }
+
+    u256(u128 hi, u128 lo) {
+        this.lo = lo;
+        this.hi = hi;
+    }
+
+    u64 get_bit(u64 ind) {
+        if(ind < $u64 128) return this.lo.get_bit(ind);
+        else return this.hi.get_bit(ind - $u64 128);
+    }
+
+    void set_bit(u64 ind) {
+        if(ind < $u64 128) this.lo.set_bit(ind);
+        else this.hi.set_bit(ind - $u64 128);
+    }
+}
+
+u256& operator=(u256& a, u64 b) {
+    a.lo = b;
+    a.hi = 0x0;
+    return a;
+}
+
+u256& operator=(u256& a, i32 b) {
+    if(b < 0) {
+        a.lo = b;
+        a.hi = -1;
+    }
+    else {
+        a.lo = b;
+        a.hi = 0x0;
+    }
+    return a;
+}
+
+u256 operatorx++(u256& a) {
+    u256 res = a;
+    a.lo ++;
+    if(a.lo == 0x0) a.hi ++;
+    return res;
+}
+
+u256 operatorx--(u256& a) {
+    u256 res = a;
+    if(a.lo == 0x0) a.hi --;
+    a.lo --;
+    return res;
+}
+
+i32 operator==(u256 a, u256 b) {
+    return a.lo == b.lo && a.hi == b.hi;
+}
+
+i32 operator==(u256 a, u64 b) {
+    return a.lo == b && a.hi == 0x0;
+}
+
+i32 operator!=(u256 a, u256 b) {
+    return a.lo != b.lo || a.hi != b.hi;
+}
+
+i32 operator!=(u256 a, u64 b) {
+    return a.lo != b || a.hi != 0x0;
+}
+
+i32 operator>(u256 a, u256 b) {
+    return (a.hi > b.hi) || (a.hi == b.hi && a.lo > b.lo);
+}
+
+i32 operator<(u256 a, u256 b) {
+    return (a.hi < b.hi) || (a.hi == b.hi && a.lo < b.lo);
+}
+
+i32 operator>=(u256 a, u256 b) {
+    return (a.hi > b.hi) || (a.hi == b.hi && a.lo >= b.lo);
+}
+
+i32 operator<=(u256 a, u256 b) {
+    return (a.hi < b.hi) || (a.hi == b.hi && a.lo <= b.lo);
+}
+
+u256& operator+=(u256& a, u256 b) {
+    a.lo += b.lo;
+    a.hi += b.hi;
+    if(a.lo < b.lo) a.hi ++;
+    return a;
+}
+
+u256& operator-=(u256& a, u256 b) {
+    a.hi -= b.hi;
+    if(a.lo < b.lo) a.hi --;
+    a.lo -= b.lo;
+    return a;
+}
+
+u256& operator*=(u256& a, u256 b) {
+    u256 tmp = a;
+    u256 bit = 0x1;
+    a = 0;
+    for(u64 i = 0x0; i < $u64 256; i++) {
+        if((tmp & bit) != 0x0) a += b;
+        b <<= 0x1;
+        bit <<= 0x1;
+    }   
+    return a;
+}   
+
+u256& operator/=(u256& a, u256 b) {
+    assert(b != 0x0, "u256::operator/=() : division by 0");
+    u256 q = 0;
+    u256 r = 0;
+    for(u64 i = $u64 255; ; i--) {
+        r <<= 0x1;
+        r.lo.lo |= a.get_bit(i);
+        if(b <= r) {
+            r -= b;
+            q.set_bit(i);
+        }
+        if(i == 0x0) break;
+    }
+    a = q;
+    return a;
+}
+
+u256& operator%=(u256& a, u256 b) {
+    assert(b != 0x0, "u256::operator%=() : mod by 0");
+    u256 r = 0;
+    for(u64 i = $u64 255; ; i--) {
+        r <<= 0x1;
+        r.lo.lo |= a.get_bit(i);
+        if(b <= r) {
+            r -= b;
+        }
+        if(i == 0x0) break;
+    }
+    a = r;
+    return a;
+}
+
+u256& operator&=(u256& a, u256 b) {
+    a.lo &= b.lo;
+    a.hi &= b.hi;
+    return a;
+}
+
+u256& operator|=(u256& a, u256 b) {
+    a.lo |= b.lo;
+    a.hi |= b.hi;
+    return a;
+}
+
+u256& operator^=(u256& a, u256 b) {
+    a.lo ^= b.lo;
+    a.hi ^= b.hi;
+    return a;
+}
+
+u256& operator>>=(u256& a, u64 b) {
+    if(b == 0x0) return a;
+    if(b >= $u64 256) {
+        a.lo = 0x0;
+        a.hi = 0x0;
+        return a;
+    }
+    else if(b >= $u64 128) {
+        b -= $u64 128;
+        a.lo = a.hi >> b;
+        a.hi = 0x0;
+        return a;
+    }
+    else {
+        a.lo = (a.lo >> b) | (a.hi << ($u64 128 - b));
+        a.hi >>= b;
+        return a;
+    }
+}
+
+u256& operator<<=(u256& a, u64 b) {
+    if(b == 0x0) return a;
+    if(b >= $u64 256) {
+        a.lo = 0x0;
+        a.hi = 0x0;
+        return a;
+    }
+    else if(b >= $u64 128) {
+        b -= $u64 128;
+        a.hi = a.lo << b;
+        a.lo = 0x0;
+        return a;
+    }
+    else {
+        a.hi = (a.hi << b) | (a.lo >> ($u64 128 - b));
+        a.lo <<= b;
+        return a;
+    }
+}
+
+u256 operator+(u256 a, u256 b) { return a += b; }
+u256 operator-(u256 a, u256 b) { return a -= b; }
+u256 operator*(u256 a, u256 b) { return a *= b; }
+u256 operator/(u256 a, u256 b) { return a /= b; }
+u256 operator%(u256 a, u256 b) { return a %= b; }
+u256 operator&(u256 a, u256 b) { return a &= b; }
+u256 operator|(u256 a, u256 b) { return a |= b; }
+u256 operator^(u256 a, u256 b) { return a ^= b; }
+u256 operator>>(u256 a, u64 b) { return a >>= b; }
+u256 operator<<(u256 a, u64 b) { return a <<= b; }
+
+[__GLOBAL_FIRST__] u64 U512_DEFAULT_CONSTRUCT_COUNT = 0x0;
+[__GLOBAL_FIRST__] u64 U512_COPY_COUNT = 0x0;
+[__GLOBAL_FIRST__] u64 U512_DESTRUCT_COUNT = 0x0;
+struct u512 {
+    u64[8] limbs;
+
+    u512() {
+        U512_DEFAULT_CONSTRUCT_COUNT ++;
+    }
+
+    u512(u512& other) {
+        U512_COPY_COUNT ++;
+        memcpy($void* @(this.limbs), $void* @(other.limbs), 0x40);
+    }
+
+    u512(u64 val) {
+        this.limbs[0] = val;
+    }
+
+    ~u512() {
+        U512_DESTRUCT_COUNT ++;
+    }
+
+    u64 get_bit(u64 ind) {
+        if(ind >= $u64 512) return 0x0;
+        return (($u64 this.limbs[ind >> 0x6]) >> (ind & 0x3F)) & 0x1;
+    }
+
+    void set_bit(u64 ind) {
+        if(ind < $u64 512) this.limbs[ind >> 0x6] |= (0x1 << (ind & 0x3F));
+    }
+}
+
+u512& operator=(u512& a, u64 b) {
+    a.limbs[0] = b;
+    for(u64 i = 0x1; i < $u64 8; i++) {
+        a.limbs[i] = 0x0;
+    }
+    return a;
+}
+
+u512& operator=(u512& a, i32 b) {
+    a.limbs[0] = $u64 b;
+    if(b < 0) {
+        for(i32 i = 1; i < 8; i++) {
+            a.limbs[i] = 0xFFFFFFFFFFFFFFFF;
+        }
+    }
+    else {
+        for(i32 i = 1; i < 8; i++) {
+            a.limbs[i] = 0x0;
+        }
+    }
+    return a;
+}
+
+[__GLOBAL_FIRST__] u64 U512_INCDEC_COUNT = 0x0;
+u512 operatorx++(u512& a) {
+    U512_INCDEC_COUNT ++;
+    u512 res = a;
+    for(i32 i = 0; i < 8; i++) {
+        a.limbs[i] ++;
+        if(a.limbs[i] != 0x0) break;
+    }
+    return res;
+}
+
+u512 operatorx--(u512& a) {
+    U512_INCDEC_COUNT ++;
+    u512 res = a;
+    for(i32 i = 0; i < 8; i++) {
+        a.limbs[i] --;
+        if(a.limbs[i] != 0xFFFFFFFFFFFFFFFF) break;
+    }
+    return res;
+}
+
+[__GLOBAL_FIRST__] u64 U512_COMPARE_COUNT = 0x0;
+i32 operator==(u512 a, u512 b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 0; i < 8; i++) {
+        if(a.limbs[i] != b.limbs[i]) return 0;
+    }
+    return 1;
+}
+
+i32 operator==(u512 a, u512& b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 0; i < 8; i++) {
+        if(a.limbs[i] != b.limbs[i]) return 0;
+    }
+    return 1;
+}
+
+i32 operator==(u512& a, u512 b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 0; i < 8; i++) {
+        if(a.limbs[i] != b.limbs[i]) return 0;
+    }
+    return 1;
+}
+
+i32 operator==(u512& a, u512& b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 0; i < 8; i++) {
+        if(a.limbs[i] != b.limbs[i]) return 0;
+    }
+    return 1;
+}
+
+i32 operator==(u512 a, u64 b) {
+    U512_COMPARE_COUNT ++;
+    if(b != a.limbs[0]) return 0;
+    for(i32 i = 1; i < 8; i++) {
+        if(a.limbs[i] != 0x0) return 0;
+    }
+    return 1;
+}
+
+i32 operator!=(u512 a, u512 b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 0; i < 8; i++) {
+        if(a.limbs[i] != b.limbs[i]) return 1;
+    }
+    return 0;
+}
+
+i32 operator!=(u512 a, u512& b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 0; i < 8; i++) {
+        if(a.limbs[i] != b.limbs[i]) return 1;
+    }
+    return 0;
+}
+
+i32 operator!=(u512& a, u512 b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 0; i < 8; i++) {
+        if(a.limbs[i] != b.limbs[i]) return 1;
+    }
+    return 0;
+}
+
+i32 operator!=(u512& a, u512& b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 0; i < 8; i++) {
+        if(a.limbs[i] != b.limbs[i]) return 1;
+    }
+    return 0;
+}
+
+i32 operator!=(u512 a, u64 b) {
+    U512_COMPARE_COUNT ++;
+    if(b != a.limbs[0]) return 1;
+    for(i32 i = 1; i < 8; i++) {
+        if(a.limbs[i] != 0x0) return 1;
+    }
+    return 0;
+}
+
+i32 operator>(u512 a, u512 b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 7; i >= 0; i--) {
+        if(a.limbs[i] != b.limbs[i]) return a.limbs[i] > b.limbs[i];
+    }
+    return 0;
+}
+
+i32 operator>(u512 a, u512& b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 7; i >= 0; i--) {
+        if(a.limbs[i] != b.limbs[i]) return a.limbs[i] > b.limbs[i];
+    }
+    return 0;
+}
+
+i32 operator>(u512& a, u512 b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 7; i >= 0; i--) {
+        if(a.limbs[i] != b.limbs[i]) return a.limbs[i] > b.limbs[i];
+    }
+    return 0;
+}
+
+i32 operator>(u512& a, u512& b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 7; i >= 0; i--) {
+        if(a.limbs[i] != b.limbs[i]) return a.limbs[i] > b.limbs[i];
+    }
+    return 0;
+}
+
+i32 operator<(u512 a, u512 b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 7; i >= 0; i--) {
+        if(a.limbs[i] != b.limbs[i]) return a.limbs[i] < b.limbs[i];
+    }
+    return 0;
+}
+
+i32 operator<(u512 a, u512& b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 7; i >= 0; i--) {
+        if(a.limbs[i] != b.limbs[i]) return a.limbs[i] < b.limbs[i];
+    }
+    return 0;
+}
+
+i32 operator<(u512& a, u512 b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 7; i >= 0; i--) {
+        if(a.limbs[i] != b.limbs[i]) return a.limbs[i] < b.limbs[i];
+    }
+    return 0;
+}
+
+i32 operator<(u512& a, u512& b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 7; i >= 0; i--) {
+        if(a.limbs[i] != b.limbs[i]) return a.limbs[i] < b.limbs[i];
+    }
+    return 0;
+}
+
+i32 operator>=(u512 a, u512 b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 7; i >= 0; i--) {
+        if(a.limbs[i] != b.limbs[i]) return a.limbs[i] > b.limbs[i];
+    }
+    return 1;
+}
+
+i32 operator>=(u512& a, u512 b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 7; i >= 0; i--) {
+        if(a.limbs[i] != b.limbs[i]) return a.limbs[i] > b.limbs[i];
+    }
+    return 1;
+}
+
+i32 operator>=(u512 a, u512& b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 7; i >= 0; i--) {
+        if(a.limbs[i] != b.limbs[i]) return a.limbs[i] > b.limbs[i];
+    }
+    return 1;
+}
+
+i32 operator>=(u512& a, u512& b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 7; i >= 0; i--) {
+        if(a.limbs[i] != b.limbs[i]) return a.limbs[i] > b.limbs[i];
+    }
+    return 1;
+}
+
+i32 operator<=(u512 a, u512 b) {
+    U512_COMPARE_COUNT ++;
+    for(i32 i = 7; i >= 0; i--) {
+        if(a.limbs[i] != b.limbs[i]) return a.limbs[i] < b.limbs[i];
+    }
+    return 1;
+}
+
+[__GLOBAL_FIRST__] u64 U512_ADDSUB_COUNT = 0x0;
+u512& operator+=(u512& a, u512 b) {
+    U512_ADDSUB_COUNT ++;
+    u64 carry = 0x0;
+    u64 tmp;
+    for(i32 i = 0; i < 8; i++) {
+        b.limbs[i] += carry;
+        if(b.limbs[i] == 0x0) continue;
+        tmp = a.limbs[i];
+        a.limbs[i] += b.limbs[i];
+        carry = $u64 (a.limbs[i] < tmp);
+    }
+    return a;
+}
+
+u512& operator+=(u512& a, u512& b) {
+    U512_ADDSUB_COUNT ++;
+    u64 carry = 0x0;
+    u64 tmp;
+    u64 tmp2;
+    for(i32 i = 0; i < 8; i++) {
+        tmp2 = b.limbs[i];
+        tmp2 += carry;
+        if(tmp2 == 0x0) continue;
+        tmp = a.limbs[i];
+        a.limbs[i] += tmp2;
+        carry = $u64 (a.limbs[i] < tmp);
+    }
+    return a;
+}
+
+u512& operator-=(u512& a, u512 b) {
+    U512_ADDSUB_COUNT ++;
+    u64 borrow = 0x0;
+    for(i32 i = 0; i < 8; i++) {
+        b.limbs[i] += borrow;
+        if(b.limbs[i] == 0x0) continue;
+        borrow = $u64 (b.limbs[i] > a.limbs[i]);
+        a.limbs[i] -= b.limbs[i];
+    }
+    return a;
+}
+
+u512& operator-=(u512& a, u512& b) {
+    U512_ADDSUB_COUNT ++;
+    u64 borrow = 0x0;
+    u64 tmp;
+    for(i32 i = 0; i < 8; i++) {
+        tmp = b.limbs[i];
+        tmp += borrow;
+        if(tmp == 0x0) continue;
+        borrow = $u64 (tmp > a.limbs[i]);
+        a.limbs[i] -= tmp;
+    }
+    return a;
+}
+
+[__GLOBAL_FIRST__] u64 U512_MUL_COUNT = 0x0;
+u512& operator*=(u512& a, u512 b) {
+    U512_MUL_COUNT ++;
+    u64[8] tmp;
+    u64 ta;
+    u64 tb;
+    for(i32 i = 0; i < 8; i++) {
+        for(i32 j = 0; j <= i; j++) {
+            ta = a.limbs[j];
+            tb = b.limbs[i - j];
+            asm!("mov {ta}, %rax");
+            asm!("mov {tb}, %rbx");
+            asm!("mul %rbx");
+            asm!("mov %rax, {ta}");     //low bits in ta
+            asm!("mov %rdx, {tb}");     //high bits in tb
+            tmp[i] += ta;
+            ta = $u64 (tmp[i] < ta);
+            if(i < 7) {
+                tmp[i + 1] += ta;
+                ta = $u64 (tmp[i + 1] < ta);
+                tmp[i + 1] += tb;
+                tb = $u64 (tmp[i + 1] < tb);
+            }
+            if(i < 6) {
+                tmp[i + 2] += ta + tb;
+            }
+        }
+    }
+    memcpy($void* @a, $void* @tmp, sizeof(u512));
+    return a;
+}
+
+u512& operator*=(u512& a, u512& b) {
+    U512_MUL_COUNT ++;
+    u64[8] tmp;
+    u64 ta;
+    u64 tb;
+    for(i32 i = 0; i < 8; i++) {
+        for(i32 j = 0; j <= i; j++) {
+            ta = a.limbs[j];
+            tb = b.limbs[i - j];
+            asm!("mov {ta}, %rax");
+            asm!("mov {tb}, %rbx");
+            asm!("mul %rbx");
+            asm!("mov %rax, {ta}");     //low bits in ta
+            asm!("mov %rdx, {tb}");     //high bits in tb
+            tmp[i] += ta;
+            ta = $u64 (tmp[i] < ta);
+            if(i < 7) {
+                tmp[i + 1] += ta;
+                ta = $u64 (tmp[i + 1] < ta);
+                tmp[i + 1] += tb;
+                tb = $u64 (tmp[i + 1] < tb);
+            }
+            if(i < 6) {
+                tmp[i + 2] += ta + tb;
+            }
+        }
+    }
+    memcpy($void* @a, $void* @tmp, sizeof(u512));
+    return a;
+}
+
+[__GLOBAL_FIRST__] u64 U512_DIVMOD_COUNT = 0x0;
+u512& operator/=(u512& a, u512 b) {
+    U512_DIVMOD_COUNT ++;
+    assert(b != 0x0, "u512::operator/=() : division by 0");
+    u512 q = 0;
+    u512 r = 0;
+    for(u64 i = $u64 511; ; i--) {
+        r <<= 0x1;
+        r.limbs[0] |= a.get_bit(i);
+        if(b <= r) {
+            r -= b;
+            q.set_bit(i);
+        }
+        if(i == 0x0) break;
+    }
+    a = q;
+    return a;
+}
+
+u512& operator%=(u512& a, u512 b) {
+    U512_DIVMOD_COUNT ++;
+    assert(b != 0x0, "u512::operator%=() : mod by 0");
+    u512 r = 0;
+    for(u64 i = $u64 511; ; i--) {
+        r <<= 0x1;
+        r.limbs[0] |= a.get_bit(i);
+        if(b <= r) {
+            r -= b;
+        }
+        if(i == 0x0) break;
+    }
+    a = r;
+    return a;
+}
+
+[__GLOBAL_FIRST__] u64 U512_BITOP_COUNT = 0x0;
+u512& operator&=(u512& a, u512 b) {
+    U512_BITOP_COUNT ++;
+    for(i32 i = 0; i < 8; i++) {
+        a.limbs[i] &= b.limbs[i];
+    }
+    return a;
+}
+
+u512& operator&=(u512& a, u512& b) {
+    U512_BITOP_COUNT ++;
+    for(i32 i = 0; i < 8; i++) {
+        a.limbs[i] &= b.limbs[i];
+    }
+    return a;
+}
+
+u512& operator|=(u512& a, u512 b) {
+    U512_BITOP_COUNT ++;
+    for(i32 i = 0; i < 8; i++) {
+        a.limbs[i] |= b.limbs[i];
+    }
+    return a;
+}
+
+u512& operator|=(u512& a, u512& b) {
+    U512_BITOP_COUNT ++;
+    for(i32 i = 0; i < 8; i++) {
+        a.limbs[i] |= b.limbs[i];
+    }
+    return a;
+}
+
+u512& operator^=(u512& a, u512 b) {
+    U512_BITOP_COUNT ++;
+    for(i32 i = 0; i < 8; i++) {
+        a.limbs[i] ^= b.limbs[i];
+    }
+    return a;
+}
+
+u512& operator^=(u512& a, u512& b) {
+    U512_BITOP_COUNT ++;
+    for(i32 i = 0; i < 8; i++) {
+        a.limbs[i] ^= b.limbs[i];
+    }
+    return a;
+}
+
+[__GLOBAL_FIRST__] u64 U512_SHIFT_COUNT = 0x0;
+u512& operator>>=(u512& a, u64 b) {
+    U512_SHIFT_COUNT ++;
+    if(b == 0x0) return a;
+    if(b >= $u64 512) {
+        for(i32 i = 0; i < 8; i++) {
+            a.limbs[i] = 0x0;
+        }
+        return a;
+    }
+    u64 word = b >> 0x6;
+    u64 bits = b & 0x3F;
+    if(word) {
+        for(i32 i = 0; i < 8; i++) {
+            if(i + $i32 word >= 8) a.limbs[i] = 0x0;
+            else a.limbs[i] = a.limbs[i + $i32 word];
+        }
+    }
+    if(bits) {
+        for(i32 i = 0; i < 8; i++) {
+            a.limbs[i] >>= bits;
+            if(i != 7) a.limbs[i] |= a.limbs[i + 1] << ($u64 64 - bits);
+        }
+    }
+    return a;
+}
+
+u512& operator<<=(u512& a, u64 b) {
+    U512_SHIFT_COUNT ++;
+    if(b == 0x0) return a;
+    if(b >= $u64 512) {
+        for(i32 i = 0; i < 8; i++) {
+            a.limbs[i] = 0x0;
+        }
+        return a;
+    }
+    u64 word = b >> 0x6;
+    u64 bits = b & 0x3F;
+    if(word != 0x0) {
+        for(i32 i = 7; i >= 0; i--) {
+            if(i - $i32 word < 0) a.limbs[i] = 0x0;
+            else a.limbs[i] = a.limbs[i - $i32 word];
+        }
+    }
+    if(bits != 0x0) {
+        for(i32 i = 7; i >= 0; i--) {
+            a.limbs[i] <<= bits;
+            if(i != 0) a.limbs[i] |= a.limbs[i - 1] >> ($u64 64 - bits);
+        }
+    }
+    return a;
+}
+
+u512 operator+(u512 a, u512 b) { a += b; return a; }
+u512 operator-(u512 a, u512 b) { a -= b; return a; }
+u512 operator*(u512 a, u512 b) { a *= b; return a; }
+u512 operator/(u512 a, u512 b) { a /= b; return a; }
+u512 operator%(u512 a, u512 b) { a %= b; return a; }
+u512 operator&(u512 a, u512 b) { a &= b; return a; }
+u512 operator|(u512 a, u512 b) { a |= b; return a; }
+u512 operator^(u512 a, u512 b) { a ^= b; return a; }
+u512 operator>>(u512 a, u64 b) { a >>= b; return a; }
+u512 operator<<(u512 a, u64 b) { a <<= b; return a; }
+
+u512 operator+(u512 a, u512& b) { a += b; return a; }
+u512 operator-(u512 a, u512& b) { a -= b; return a; }
+u512 operator*(u512 a, u512& b) { a *= b; return a; }
+u512 operator/(u512 a, u512& b) { a /= b; return a; }
+u512 operator%(u512 a, u512& b) { a %= b; return a; }
+u512 operator&(u512 a, u512& b) { a &= b; return a; }
+u512 operator|(u512 a, u512& b) { a |= b; return a; }
+u512 operator^(u512 a, u512& b) { a ^= b; return a; }
+
+
+//returns a^b
+u128 pow(u128 a, u128 b) {
+    u128 res = 0x1;
+    for(u64 i = 0x0; i < $u64 128; i++) {
+        if(b.get_bit(i)) res *= a;
+        a *= a;
+    }
+    return res;
+}
+
+//returns a^b
+u256 pow(u256 a, u256 b) {
+    u256 res = 0x1;
+    for(u64 i = 0x0; i < $u64 256; i++) {
+        if(b.get_bit(i)) res *= a;
+        a *= a;
+    }
+    return res;
+}
+
+//returns a^b
+u512 pow(u512 a, u512 b) {
+    u512 res = 0x1;
+    for(u64 i = 0x0; i < $u64 512; i++) {
+        if(b.get_bit(i)) res *= a;
+        a *= a;
+    }
+    return res;
+}
+
+u128 pow(u128 a, u64 b) {
+    u128 res = 0x1;
+    for(u64 i = 0x0; i < $u64 64; i++) {
+        if(b & 0x1) res *= a;
+        a *= a;
+        b >>= 0x1;
+    }
+    return res;
+}
+
+u256 pow(u256 a, u64 b) {
+    u256 res = 0x1;
+    for(u64 i = 0x0; i < $u64 64; i++) {
+        if(b & 0x1) res *= a;
+        a *= a;
+        b >>= 0x1;
+    }
+    return res;
+}
+
+u512 pow(u512 a, u64 b) {
+    u512 res = 0x1;
+    for(u64 i = 0x0; i < $u64 64; i++) {
+        if(b & 0x1) res *= a;
+        a *= a;
+        b >>= 0x1;
+    }
+    return res;
+}
+
