@@ -15,7 +15,7 @@ Don't make iostream depend on everything that wants to use it to print
   - for example, we don't want a freestanding package like container depending on a hosted package like iostream. 
 - solutions:
   - make iostream and anything that wants to use it depend on some interface package. They can both adhere to the interface
-    and iostream will be able to print it out or smth. 
+    and iostream will be able to print out anything that implements the interface or smth. 
 
 
 (side quest)
@@ -30,6 +30,8 @@ Add 'workspaces', collections of related packages, to dylan
   - this makes it so that you have to install any changes you made to make them visible to other packages 
   - should be able to just do relative dependencies within the workspace, and these should get transformed 
     into references to the corresponding stdlib packages when installed
+  - I suppose references to packages outside of the workspace will have to be references to their corresponding
+    stdlib packages, but I think that's fine. 
 
 
 (side quest)
@@ -49,6 +51,19 @@ path = "vector"               # path that packages depending on this one will us
 Write test runner for dylan
 - probably should have a system to write regression tests for the build tool, they've been very valuable in chasing
   down bugs in the compiler. 
+- have to think about how exactly to test the build tool. 
+  - maybe write a bash script that uses the build tool and check for some file structure at the end?
+  - unlike the compiler, I think it's quite important that we test for expected errors here
+    - well, it's also important to test for expected errors in the compiler, but i'm lazy D:
+
+
+(side quest)
+Allow source files not directly connected by an include to define conflicting structs, functions, etc. 
+
+
+(side quest) 
+Write import semantic tests for the compiler. 
+- first probably have to make the import semantics well defined
 
 
 (side quest)
@@ -78,6 +93,7 @@ Make 'assert' have dedicated syntax.
   - this way the runtime implementation doesn't have to re-check the condition, it just prints and exits
   - 'void(u8* msg, u64 msg_len)'
     - also pass in the length so panic doesn't have to parse the string for null terminator, it just prints
+
 
 (side quest)
 Add better semantic error messages to the compiler

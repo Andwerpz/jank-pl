@@ -115,7 +115,11 @@ Package* PackageGraph::parse_package(const fs::path& package_path) {
     // find /src
     fs::path src_path = package_path / "src";
     if(!fs::exists(src_path)) {
-        throw std::runtime_error("Source directory does not exist : " + src_path.string());
+        try {
+            fs::create_directories(src_path);
+        } catch(const std::runtime_error& e) {
+            throw std::runtime_error("Failed to create src directory : " + src_path.string());
+        }
     }
     if(!fs::is_directory(src_path)) {
         throw std::runtime_error("Source path is not a directory : " + src_path.string());
