@@ -6,6 +6,15 @@ set -u
 directories=(
     "jank-runtime"
     "jank-stdlib"
+    "jank-stdlib-sync"
+    "jank-stdlib-networking"
+    "jank-stdlib-io"
+    "jank-stdlib-crypto"
+    "jank-stdlib-math"
+    "jank-stdlib-algorithm"
+    "jank-stdlib-sys"
+    "jank-stdlib-containers"
+    "jank-stdlib-core"
 )
 
 root_directory="$PWD"
